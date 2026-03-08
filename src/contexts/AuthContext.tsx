@@ -103,6 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (profileError) throw profileError;
+
+    // Recharger le profil immédiatement pour éviter la race avec onAuthStateChange
+    // (le callback peut s'exécuter avant l'insert et laisser profile à null)
+    const profileData = await fetchProfile(data.user.id);
+    if (profileData) setProfile(profileData);
   };
 
   const signIn = async (email: string, password: string) => {

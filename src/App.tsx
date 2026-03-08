@@ -34,7 +34,7 @@ import { AccountDetailsPage } from "./components/profile/AccountDetailsPage";
 import { useNotifications } from "./contexts/NotificationContext";
 
 function AppContent() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const { setNavigationCallback } = useNotifications();
   const [authView, setAuthView] = useState<"login" | "register" | "landing">(
     "landing"
@@ -49,6 +49,13 @@ function AppContent() {
   useEffect(() => {
     setNavigationCallback(handleNavigate);
   }, []);
+
+  // Si on a un user mais pas de profil (ex. délai après inscription), réessayer de charger le profil
+  useEffect(() => {
+    if (!user || profile) return;
+    const t = setTimeout(() => refreshProfile(), 500);
+    return () => clearTimeout(t);
+  }, [user, profile, refreshProfile]);
   const hideNavbarViews = ["play-quiz", "play-training", "play-duel"];
   const shouldShowNavbar = !hideNavbarViews.includes(currentView);
 
@@ -76,6 +83,18 @@ function AppContent() {
     if (profile.force_username_change) {
       return <ForceUsernamePage />;
     }
+  }
+
+  // Utilisateur connecté mais profil pas encore chargé (ex. juste après inscription)
+  if (user && !profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-700 text-lg font-medium">Préparation de votre compte...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
