@@ -248,12 +248,23 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </a>
 
             <a
-              href="https://www.patreon.com/VOTRE_PAGE"
+              href="https://fr.tipeee.com/terracoast/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md hover:shadow-lg font-medium"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              <span className="hidden sm:inline">Tipeee</span>
+            </a>
+            <a
+              href="https://www.patreon.com/cw/TerraCoast?utm_source=search&vanity=TerraCoast"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF424D] text-white rounded-lg hover:bg-[#E13D47] transition-all shadow-md hover:shadow-lg font-medium"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d="M15.386.524c-4.764 0-8.64 3.876-8.64 8.64 0 4.75 3.876 8.613 8.64 8.613 4.75 0 8.614-3.864 8.614-8.613C24 4.4 20.136.524 15.386.524M.003 23.537h4.22V.524H.003" />
               </svg>
               <span className="hidden sm:inline">Patreon</span>
@@ -511,7 +522,18 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   Discord
                 </a>
                 <a
-                  href="https://www.patreon.com/VOTRE_PAGE"
+                  href="https://fr.tipeee.com/terracoast/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                  </svg>
+                  Tipeee
+                </a>
+                <a
+                  href="https://www.patreon.com/cw/TerraCoast?utm_source=search&vanity=TerraCoast"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
@@ -520,6 +542,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                     className="w-5 h-5"
                     viewBox="0 0 24 24"
                     fill="currentColor"
+                    aria-hidden
                   >
                     <path d="M15.386.524c-4.764 0-8.64 3.876-8.64 8.64 0 4.75 3.876 8.613 8.64 8.613 4.75 0 8.614-3.864 8.614-8.613C24 4.4 20.136.524 15.386.524M.003 23.537h4.22V.524H.003" />
                   </svg>
