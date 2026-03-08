@@ -10,13 +10,19 @@ import { supabase } from "../lib/supabase";
 import type { Database } from "../lib/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
 
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, pseudo: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    pseudo: string,
+    options?: { acceptTerms?: boolean; acceptPrivacy?: boolean }
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -87,7 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, pseudo: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    pseudo: string,
+    options?: { acceptTerms?: boolean; acceptPrivacy?: boolean }
+  ) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -96,11 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     if (!data.user) throw new Error("No user returned");
 
-    const { error: profileError } = await supabase.from("profiles").insert({
+    const now = new Date().toISOString();
+    const profileInsert: ProfileInsert = {
       id: data.user.id,
       pseudo,
       email_newsletter: false,
-    });
+      terms_accepted_at: options?.acceptTerms ? now : null,
+      privacy_accepted_at: options?.acceptPrivacy ? now : null,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase insert inference can fail with custom Database types
+    const { error: profileError } = await supabase.from("profiles").insert(profileInsert as any);
 
     if (profileError) throw profileError;
 

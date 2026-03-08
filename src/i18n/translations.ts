@@ -664,6 +664,38 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.pseudoTooShort": "Le pseudo doit contenir au moins 3 caractères",
     "auth.emailAlreadyUsed": "Cet email est déjà utilisé",
     "auth.pseudoAlreadyTaken": "Ce pseudo est déjà pris",
+    "auth.acceptTerms": "J'accepte les conditions d'utilisation",
+    "auth.acceptPrivacy": "J'accepte la politique de confidentialité",
+    "auth.mustAcceptTerms": "Vous devez accepter les conditions d'utilisation et la politique de confidentialité",
+    "auth.readTerms": "Lire les conditions d'utilisation",
+    "auth.readPrivacy": "Lire la politique de confidentialité",
+    // Legal (pages CGU / confidentialité)
+    "legal.title.terms": "Conditions d'utilisation",
+    "legal.title.privacy": "Politique de confidentialité",
+    "legal.terms.acceptance": "Acceptation des conditions",
+    "legal.terms.acceptanceText":
+      "En utilisant TerraCoast, vous acceptez les présentes conditions d'utilisation.",
+    "legal.terms.useOfService": "Utilisation du service",
+    "legal.terms.useOfServiceText":
+      "TerraCoast est une plateforme gratuite d'apprentissage de la géographie. Vous vous engagez à utiliser le service de manière responsable.",
+    "legal.terms.userContent": "Contenu utilisateur",
+    "legal.terms.userContentText":
+      "En créant des quiz, vous accordez à TerraCoast le droit de les diffuser sur la plateforme. Vous restez propriétaire de votre contenu.",
+    "legal.terms.behavior": "Comportement",
+    "legal.terms.behaviorText":
+      "Tout comportement inapproprié (spam, harcèlement, contenu illégal) entraînera la suspension ou la suppression de votre compte.",
+    "legal.privacy.dataCollection": "Collecte des données",
+    "legal.privacy.dataCollectionText":
+      "TerraCoast collecte uniquement les données nécessaires au fonctionnement du service : adresse email, pseudo, et statistiques de jeu.",
+    "legal.privacy.dataUse": "Utilisation des données",
+    "legal.privacy.dataUseText":
+      "Vos données sont utilisées uniquement pour améliorer votre expérience sur la plateforme. Nous ne vendons ni ne partageons vos données avec des tiers.",
+    "legal.privacy.cookies": "Cookies",
+    "legal.privacy.cookiesText":
+      "Le site utilise des cookies essentiels pour assurer son bon fonctionnement et votre authentification.",
+    "legal.privacy.rights": "Vos droits",
+    "legal.privacy.rightsText":
+      "Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles.",
     // Force Username Change
     "forceUsername.title": "Changement de Pseudo Requis",
     "forceUsername.subtitle":
@@ -712,6 +744,38 @@ export const translations: Record<Language, Record<string, string>> = {
     "auth.noAccount": "Don't have an account?",
     "auth.signIn": "Sign In",
     "auth.signUp": "Sign Up",
+    "auth.acceptTerms": "I accept the terms of use",
+    "auth.acceptPrivacy": "I accept the privacy policy",
+    "auth.mustAcceptTerms":
+      "You must accept the terms of use and the privacy policy",
+    "auth.readTerms": "Read the terms of use",
+    "auth.readPrivacy": "Read the privacy policy",
+    "legal.title.terms": "Terms of Use",
+    "legal.title.privacy": "Privacy Policy",
+    "legal.terms.acceptance": "Acceptance of terms",
+    "legal.terms.acceptanceText":
+      "By using TerraCoast, you accept these terms of use.",
+    "legal.terms.useOfService": "Use of the service",
+    "legal.terms.useOfServiceText":
+      "TerraCoast is a free geography learning platform. You agree to use the service responsibly.",
+    "legal.terms.userContent": "User content",
+    "legal.terms.userContentText":
+      "By creating quizzes, you grant TerraCoast the right to publish them on the platform. You remain the owner of your content.",
+    "legal.terms.behavior": "Behavior",
+    "legal.terms.behaviorText":
+      "Any inappropriate behavior (spam, harassment, illegal content) will result in suspension or deletion of your account.",
+    "legal.privacy.dataCollection": "Data collection",
+    "legal.privacy.dataCollectionText":
+      "TerraCoast only collects data necessary for the service: email, username, and game statistics.",
+    "legal.privacy.dataUse": "Use of data",
+    "legal.privacy.dataUseText":
+      "Your data is used only to improve your experience. We do not sell or share your data with third parties.",
+    "legal.privacy.cookies": "Cookies",
+    "legal.privacy.cookiesText":
+      "The site uses essential cookies for operation and authentication.",
+    "legal.privacy.rights": "Your rights",
+    "legal.privacy.rightsText":
+      "You have the right to access, rectify and delete your personal data.",
     "quiz.create": "Create Quiz",
     "quiz.edit": "Edit",
     "quiz.delete": "Delete",

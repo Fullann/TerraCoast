@@ -31,16 +31,27 @@ import { LandingPage } from "./components/landing/LandingPage";
 import { BannedPage } from "./components/auth/BannedPage";
 import { ForceUsernamePage } from "./components/auth/ForceUsernamePage";
 import { AccountDetailsPage } from "./components/profile/AccountDetailsPage";
+import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 import { useNotifications } from "./contexts/NotificationContext";
 
 function AppContent() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const { setNavigationCallback } = useNotifications();
-  const [authView, setAuthView] = useState<"login" | "register" | "landing">(
-    "landing"
-  );
+  const [authView, setAuthView] = useState<
+    "login" | "register" | "landing" | "terms" | "privacy"
+  >("landing");
+  const [authViewBeforeLegal, setAuthViewBeforeLegal] = useState<
+    "login" | "register" | "landing"
+  >("landing");
   const [currentView, setCurrentView] = useState<string>("home");
   const [viewData, setViewData] = useState<any>(null);
+
+  const openLegal = (view: "terms" | "privacy") => {
+    if (authView !== "terms" && authView !== "privacy") {
+      setAuthViewBeforeLegal(authView);
+    }
+    setAuthView(view);
+  };
 
   const handleNavigate = (view: string, data?: any) => {
     setCurrentView(view);
@@ -101,7 +112,22 @@ function AppContent() {
     if (authView === "landing") {
       return (
         <LandingPage
-          onNavigate={(view) => setAuthView(view as "login" | "register")}
+          onNavigate={(view) => {
+            if (view === "terms" || view === "privacy") openLegal(view);
+            else
+              setAuthView(
+                view as "login" | "register" | "landing" | "terms" | "privacy"
+              );
+          }}
+        />
+      );
+    }
+
+    if (authView === "terms" || authView === "privacy") {
+      return (
+        <LegalDocumentPage
+          type={authView}
+          onBack={() => setAuthView(authViewBeforeLegal)}
         />
       );
     }
@@ -120,7 +146,11 @@ function AppContent() {
           {authView === "login" ? (
             <LoginForm onSwitchToRegister={() => setAuthView("register")} />
           ) : (
-            <RegisterForm onSwitchToLogin={() => setAuthView("login")} />
+            <RegisterForm
+              onSwitchToLogin={() => setAuthView("login")}
+              onShowTerms={() => openLegal("terms")}
+              onShowPrivacy={() => openLegal("privacy")}
+            />
           )}
         </div>
       </div>
