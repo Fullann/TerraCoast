@@ -851,12 +851,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                             <option value="single_answer">
                               {getQuestionTypeLabel("single_answer")}
                             </option>
-                            <option value="text_free">
-                              {getQuestionTypeLabel("text_free")}
-                            </option>
-                            <option value="map_click">
-                              {getQuestionTypeLabel("map_click")}
-                            </option>
                           </select>
                         </div>
 

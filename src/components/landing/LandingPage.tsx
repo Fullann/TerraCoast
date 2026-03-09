@@ -236,7 +236,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Badges sociaux */}
           <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
             <a
-              href="https://discord.gg/VOTRE_INVITE_CODE"
+              href="https://discord.gg/KUU9WeDuPj"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
@@ -507,7 +507,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               <h4 className="font-bold text-lg mb-4">{t("landing.footer.social")}</h4>
               <div className="flex flex-col space-y-3">
                 <a
-                  href="https://discord.gg/VOTRE_INVITE_CODE"
+                  href="https://discord.gg/KUU9WeDuPj"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"

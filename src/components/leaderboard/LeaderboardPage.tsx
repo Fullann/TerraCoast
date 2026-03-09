@@ -39,19 +39,27 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
 
   const loadLeaderboard = async () => {
     setLoading(true);
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
     let profiles: Profile[] = [];
 
     if (view === "global") {
       const orderBy =
         period === "monthly" ? "monthly_score" : "experience_points";
-      const { data } = await supabase
+      let query = supabase
         .from("profiles")
         .select("*")
         .eq("is_banned", false)
         .order(orderBy, { ascending: false })
         .limit(100);
 
+      // En mode mensuel : ne garder que les joueurs ayant joué ce mois-ci
+      // (last_reset_month = mois en cours quand ils ont joué au moins une partie)
+      if (period === "monthly") {
+        query = query.eq("last_reset_month", currentMonth);
+      }
+
+      const { data } = await query;
       profiles = data || [];
     } else if (view === "friends" && profile) {
       const { data: friendshipsAsSender } = await supabase
@@ -86,6 +94,13 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
       }
 
       profiles = [profile, ...uniqueFriends];
+
+      // En mode mensuel : ne garder que les amis (et soi) ayant joué ce mois-ci
+      if (period === "monthly") {
+        profiles = profiles.filter(
+          (p) => (p as Profile & { last_reset_month?: string | null }).last_reset_month === currentMonth
+        );
+      }
     }
 
     if (profiles.length > 0) {
