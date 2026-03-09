@@ -718,6 +718,52 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.terms.behavior": "Comportement",
     "legal.terms.behaviorText":
       "Tout comportement inapproprié (spam, harcèlement, contenu illégal) entraînera la suspension ou la suppression de votre compte.",
+    "legal.terms.lastUpdated": "Dernière mise à jour : 17 novembre 2025",
+    "legal.terms.fullText": `Bienvenue sur TerraCoast, un site de quiz consacré à la géographie. L’accès et l’utilisation du site impliquent l’acceptation pleine et entière des présentes Conditions d’utilisation. Si vous n’acceptez pas ces conditions, vous êtes invité à ne pas utiliser le service.
+
+1. Objet du service
+TerraCoast permet aux utilisateurs de :
+- Créer un compte pour accéder aux quiz de géographie.
+- Participer à des classements et obtenir des scores.
+- Utiliser un système de chat privé pour échanger avec d’autres utilisateurs.
+
+2. Création de compte et données collectées
+Lors de l’inscription, les données suivantes sont collectées :
+- Pseudo
+- Adresse email
+- Mot de passe
+Les utilisateurs s’engagent à fournir des informations exactes et à les mettre à jour en cas de modification.
+
+3. Protection et stockage des données
+- Les données personnelles sont hébergées exclusivement en Europe.
+- Les informations de connexion sont sécurisées et les mots de passe chiffrés.
+- Les messages échangés via le chat sont privés et chiffrés de manière à ne pas être lisibles par des tiers.
+Aucune donnée ne sera vendue ou transmise à des tiers sans consentement, sauf obligation légale.
+
+4. Utilisation du site et comportement des utilisateurs
+L’utilisateur s’engage à :
+- Ne pas tenter d’accéder aux comptes d’autres utilisateurs.
+- Ne pas diffuser de contenu insultant, discriminatoire, violent, illégal ou inapproprié.
+- Respecter les autres membres et l’esprit éducatif du site.
+Le non-respect de ces règles peut entraîner la suspension ou la suppression définitive du compte.
+
+5. Responsabilités
+- TerraCoast met tout en oeuvre pour assurer un service stable et sécurisé, mais ne peut garantir une disponibilité permanente du site.
+- TerraCoast n’est pas responsable des pertes de données, des problèmes liés au réseau ou des comportements des utilisateurs dans le chat.
+
+6. Propriété intellectuelle
+Les contenus du site (textes, visuels, quiz, logo, nom TerraCoast, etc.) sont protégés par le droit de la propriété intellectuelle. Toute reproduction, représentation ou diffusion, sans autorisation, est interdite.
+
+7. Suppression du compte et droit à l’effacement
+Les utilisateurs peuvent demander la suppression de leur compte et de leurs données à tout moment via l’adresse suivante :
+helpdesk@terracoast.ch
+
+8. Modification des conditions
+TerraCoast se réserve le droit de modifier les présentes Conditions d’utilisation à tout moment. Les utilisateurs seront informés en cas de changement majeur.
+
+9. Contact
+Pour toute question concernant l’utilisation du service ou les données personnelles :
+helpdesk@terracoast.ch`,
     "legal.privacy.dataCollection": "Collecte des données",
     "legal.privacy.dataCollectionText":
       "TerraCoast collecte uniquement les données nécessaires au fonctionnement du service : adresse email, pseudo, et statistiques de jeu.",
@@ -730,6 +776,64 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.privacy.rights": "Vos droits",
     "legal.privacy.rightsText":
       "Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles.",
+    "legal.privacy.lastUpdated": "Date de mise à jour : 15 novembre 2025",
+    "legal.privacy.fullText": `La présente Politique de Confidentialité vise à informer les utilisateurs du site TerraCoast (ci-après « le Site ») sur la manière dont leurs données personnelles sont collectées, utilisées, protégées et, le cas échéant, partagées.
+
+TerraCoast accorde une grande importance au respect de la vie privée et s’engage à prendre toutes les mesures nécessaires afin de garantir la protection des données personnelles des utilisateurs.
+
+1. Données collectées
+Lors de l’inscription et de l’utilisation du Site, TerraCoast collecte uniquement les données nécessaires au bon fonctionnement de la plateforme :
+- Pseudo : identification dans le jeu et sur le chat (obligatoire)
+- Adresse e-mail : gestion du compte et récupération du mot de passe (obligatoire)
+- Mot de passe : accès sécurisé au compte (obligatoire)
+- Messages du chat : communication privée entre utilisateurs (facultatif)
+Aucune donnée sensible n’est collectée.
+
+2. Utilisation des données
+Les données collectées sont utilisées pour :
+- La création, la gestion et la sécurisation du compte utilisateur
+- L’accès aux quiz et aux fonctionnalités du Site
+- L’utilisation du chat privé entre utilisateurs
+- Le contact des utilisateurs en cas de nécessité (assistance, notifications, sécurité)
+Aucune donnée n’est vendue, louée ou partagée à des fins commerciales.
+
+3. Localisation et conformité du stockage des données
+L’ensemble des données collectées est hébergé et traité en Europe, dans des pays suivant les conventions de l’Union européenne en matière de protection des données et offrant un niveau de protection adéquat.
+
+4. Sécurité des données
+TerraCoast met en place des mesures techniques et organisationnelles destinées à protéger les données contre :
+- L’accès non autorisé
+- La perte ou la destruction accidentelle
+- La modification ou la divulgation illicite
+Les discussions du chat sont chiffrées et strictement privées.
+Les mots de passe sont stockés de manière chiffrée et jamais conservés en clair.
+
+5. Durée de conservation
+- Les données sont conservées tant que le compte est actif.
+- En cas de suppression du compte, l’ensemble des données est effacé dans un délai maximum de 30 jours.
+
+6. Droits des utilisateurs
+Selon la législation applicable, chaque utilisateur dispose des droits suivants :
+- Accès
+- Rectification
+- Effacement
+- Limitation du traitement
+- Opposition
+- Portabilité des données
+Toute demande peut être envoyée à : helpdesk@terracoast.ch
+Une réponse sera fournie sous 30 jours maximum.
+
+7. Cookies
+TerraCoast utilise uniquement des cookies techniques nécessaires au fonctionnement du Site (connexion, maintien de session).
+Aucun cookie publicitaire ou de tracking externe n’est utilisé.
+
+8. Modification de la Politique de Confidentialité
+TerraCoast se réserve le droit de modifier la présente Politique de Confidentialité à tout moment.
+En cas de changement important, les utilisateurs seront informés par notification ou e-mail.
+
+9. Contact
+Pour toute question relative à la protection des données personnelles :
+helpdesk@terracoast.ch`,
     // Force Username Change
     "forceUsername.title": "Changement de Pseudo Requis",
     "forceUsername.subtitle":
@@ -798,6 +902,52 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.terms.behavior": "Behavior",
     "legal.terms.behaviorText":
       "Any inappropriate behavior (spam, harassment, illegal content) will result in suspension or deletion of your account.",
+    "legal.terms.lastUpdated": "Last updated: November 17, 2025",
+    "legal.terms.fullText": `Welcome to TerraCoast, a quiz website dedicated to geography. Accessing and using the site implies full acceptance of these Terms of Use. If you do not accept these terms, you are invited not to use the service.
+
+1. Purpose of the service
+TerraCoast allows users to:
+- Create an account to access geography quizzes.
+- Participate in leaderboards and obtain scores.
+- Use a private chat system to communicate with other users.
+
+2. Account creation and collected data
+During registration, the following data is collected:
+- Username
+- Email address
+- Password
+Users agree to provide accurate information and update it in case of changes.
+
+3. Data protection and storage
+- Personal data is hosted exclusively in Europe.
+- Login information is secured and passwords are encrypted.
+- Messages exchanged through chat are private and encrypted so they cannot be read by third parties.
+No data will be sold or transmitted to third parties without consent, except where required by law.
+
+4. Site usage and user behavior
+Users agree to:
+- Not attempt to access other users' accounts.
+- Not publish insulting, discriminatory, violent, illegal or inappropriate content.
+- Respect other members and the educational spirit of the site.
+Failure to comply with these rules may result in suspension or permanent deletion of the account.
+
+5. Responsibilities
+- TerraCoast makes every effort to ensure a stable and secure service, but cannot guarantee permanent availability of the site.
+- TerraCoast is not responsible for data loss, network-related issues, or user behavior in chat.
+
+6. Intellectual property
+Site content (texts, visuals, quizzes, logo, TerraCoast name, etc.) is protected by intellectual property law. Any reproduction, representation or distribution without authorization is prohibited.
+
+7. Account deletion and right to erasure
+Users may request deletion of their account and data at any time via:
+helpdesk@terracoast.ch
+
+8. Modification of terms
+TerraCoast reserves the right to modify these Terms of Use at any time. Users will be informed in the event of major changes.
+
+9. Contact
+For any questions regarding service use or personal data:
+helpdesk@terracoast.ch`,
     "legal.privacy.dataCollection": "Data collection",
     "legal.privacy.dataCollectionText":
       "TerraCoast only collects data necessary for the service: email, username, and game statistics.",
@@ -810,6 +960,64 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.privacy.rights": "Your rights",
     "legal.privacy.rightsText":
       "You have the right to access, rectify and delete your personal data.",
+    "legal.privacy.lastUpdated": "Last updated: November 15, 2025",
+    "legal.privacy.fullText": `This Privacy Policy informs users of the TerraCoast website (the “Site”) about how their personal data is collected, used, protected and, where applicable, shared.
+
+TerraCoast places great importance on privacy and is committed to taking all necessary measures to ensure the protection of users' personal data.
+
+1. Data collected
+When registering and using the Site, TerraCoast only collects data required for proper platform operation:
+- Username: identification in the game and chat (required)
+- Email address: account management and password recovery (required)
+- Password: secure account access (required)
+- Chat messages: private communication between users (optional)
+No sensitive data is collected.
+
+2. Use of data
+Collected data is used for:
+- Creating, managing and securing user accounts
+- Accessing quizzes and Site features
+- Using private chat between users
+- Contacting users when necessary (support, notifications, security)
+No data is sold, rented or shared for commercial purposes.
+
+3. Data storage location and compliance
+All collected data is hosted and processed in Europe, in countries that follow European Union data protection conventions and provide an adequate level of protection.
+
+4. Data security
+TerraCoast implements technical and organizational measures to protect data against:
+- Unauthorized access
+- Accidental loss or destruction
+- Unlawful modification or disclosure
+Chat conversations are encrypted and strictly private.
+Passwords are stored in encrypted form and are never kept in plain text.
+
+5. Retention period
+- Data is kept as long as the account is active.
+- If an account is deleted, all data is erased within a maximum of 30 days.
+
+6. User rights
+Under applicable law, each user has the following rights:
+- Access
+- Rectification
+- Erasure
+- Restriction of processing
+- Objection
+- Data portability
+Requests can be sent to: helpdesk@terracoast.ch
+A response will be provided within 30 days maximum.
+
+7. Cookies
+TerraCoast uses only technical cookies necessary for Site operation (login, session persistence).
+No advertising cookies or external tracking cookies are used.
+
+8. Changes to this Privacy Policy
+TerraCoast reserves the right to modify this Privacy Policy at any time.
+In case of significant changes, users will be informed by notification or email.
+
+9. Contact
+For any questions regarding personal data protection:
+helpdesk@terracoast.ch`,
     "quiz.create": "Create Quiz",
     "quiz.edit": "Edit",
     "quiz.delete": "Delete",
@@ -2064,6 +2272,52 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.terms.userContentText": "Al crear cuestionarios, otorgas a TerraCoast el derecho de publicarlos en la plataforma. Sigues siendo el propietario de tu contenido.",
     "legal.terms.behavior": "Comportamiento",
     "legal.terms.behaviorText": "Cualquier comportamiento inapropiado (spam, acoso, contenido ilegal) resultará en la suspensión o eliminación de tu cuenta.",
+    "legal.terms.lastUpdated": "Última actualización: 17 de noviembre de 2025",
+    "legal.terms.fullText": `Bienvenido a TerraCoast, un sitio de cuestionarios dedicado a la geografía. El acceso y uso del sitio implican la aceptación plena de estas Condiciones de uso. Si no aceptas estas condiciones, te invitamos a no utilizar el servicio.
+
+1. Objeto del servicio
+TerraCoast permite a los usuarios:
+- Crear una cuenta para acceder a los cuestionarios de geografía.
+- Participar en clasificaciones y obtener puntuaciones.
+- Utilizar un sistema de chat privado para comunicarse con otros usuarios.
+
+2. Creación de cuenta y datos recopilados
+Durante el registro, se recopilan los siguientes datos:
+- Nombre de usuario
+- Correo electrónico
+- Contraseña
+Los usuarios se comprometen a proporcionar información exacta y a actualizarla en caso de modificación.
+
+3. Protección y almacenamiento de datos
+- Los datos personales se alojan exclusivamente en Europa.
+- La información de inicio de sesión está protegida y las contraseñas están cifradas.
+- Los mensajes intercambiados en el chat son privados y están cifrados para que no puedan ser leídos por terceros.
+Ningún dato será vendido o transmitido a terceros sin consentimiento, salvo obligación legal.
+
+4. Uso del sitio y comportamiento de los usuarios
+El usuario se compromete a:
+- No intentar acceder a las cuentas de otros usuarios.
+- No difundir contenido insultante, discriminatorio, violento, ilegal o inapropiado.
+- Respetar a los demás miembros y el espíritu educativo del sitio.
+El incumplimiento de estas normas puede provocar la suspensión o eliminación definitiva de la cuenta.
+
+5. Responsabilidades
+- TerraCoast hace todo lo posible para garantizar un servicio estable y seguro, pero no puede garantizar una disponibilidad permanente del sitio.
+- TerraCoast no es responsable de pérdidas de datos, problemas de red o del comportamiento de los usuarios en el chat.
+
+6. Propiedad intelectual
+Los contenidos del sitio (textos, elementos visuales, cuestionarios, logotipo, nombre TerraCoast, etc.) están protegidos por la legislación de propiedad intelectual. Toda reproducción, representación o difusión sin autorización está prohibida.
+
+7. Eliminación de la cuenta y derecho de supresión
+Los usuarios pueden solicitar la eliminación de su cuenta y de sus datos en cualquier momento a través de:
+helpdesk@terracoast.ch
+
+8. Modificación de las condiciones
+TerraCoast se reserva el derecho de modificar estas Condiciones de uso en cualquier momento. Los usuarios serán informados en caso de cambio importante.
+
+9. Contacto
+Para cualquier pregunta sobre el uso del servicio o los datos personales:
+helpdesk@terracoast.ch`,
     "legal.privacy.dataCollection": "Recopilación de datos",
     "legal.privacy.dataCollectionText": "TerraCoast solo recopila los datos necesarios para el funcionamiento del servicio: dirección de email, nombre de usuario y estadísticas de juego.",
     "legal.privacy.dataUse": "Uso de los datos",
@@ -2072,6 +2326,64 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.privacy.cookiesText": "El sitio utiliza cookies esenciales para asegurar su buen funcionamiento y tu autenticación.",
     "legal.privacy.rights": "Tus derechos",
     "legal.privacy.rightsText": "Tienes derecho de acceso, rectificación y eliminación de tus datos personales.",
+    "legal.privacy.lastUpdated": "Fecha de actualización: 15 de noviembre de 2025",
+    "legal.privacy.fullText": `La presente Política de Privacidad tiene como objetivo informar a los usuarios del sitio TerraCoast (en adelante, el “Sitio”) sobre la manera en que sus datos personales se recopilan, utilizan, protegen y, en su caso, comparten.
+
+TerraCoast concede gran importancia al respeto de la vida privada y se compromete a adoptar todas las medidas necesarias para garantizar la protección de los datos personales de los usuarios.
+
+1. Datos recopilados
+Durante el registro y el uso del Sitio, TerraCoast recopila únicamente los datos necesarios para el correcto funcionamiento de la plataforma:
+- Nombre de usuario: identificación en el juego y en el chat (obligatorio)
+- Correo electrónico: gestión de la cuenta y recuperación de contraseña (obligatorio)
+- Contraseña: acceso seguro a la cuenta (obligatorio)
+- Mensajes del chat: comunicación privada entre usuarios (opcional)
+No se recopilan datos sensibles.
+
+2. Uso de los datos
+Los datos recopilados se utilizan para:
+- La creación, gestión y seguridad de la cuenta de usuario
+- El acceso a los cuestionarios y funcionalidades del Sitio
+- El uso del chat privado entre usuarios
+- El contacto con los usuarios en caso de necesidad (soporte, notificaciones, seguridad)
+Ningún dato se vende, alquila ni comparte con fines comerciales.
+
+3. Ubicación y cumplimiento del almacenamiento de datos
+Todos los datos recopilados se alojan y tratan en Europa, en países que siguen las normas de la Unión Europea en materia de protección de datos y ofrecen un nivel de protección adecuado.
+
+4. Seguridad de los datos
+TerraCoast aplica medidas técnicas y organizativas para proteger los datos contra:
+- Acceso no autorizado
+- Pérdida o destrucción accidental
+- Modificación o divulgación ilícita
+Las conversaciones del chat están cifradas y son estrictamente privadas.
+Las contraseñas se almacenan de forma cifrada y nunca en texto plano.
+
+5. Plazo de conservación
+- Los datos se conservan mientras la cuenta esté activa.
+- En caso de eliminación de la cuenta, todos los datos se borran en un plazo máximo de 30 días.
+
+6. Derechos de los usuarios
+Según la legislación aplicable, cada usuario dispone de los siguientes derechos:
+- Acceso
+- Rectificación
+- Supresión
+- Limitación del tratamiento
+- Oposición
+- Portabilidad de los datos
+Toda solicitud puede enviarse a: helpdesk@terracoast.ch
+Se proporcionará una respuesta en un plazo máximo de 30 días.
+
+7. Cookies
+TerraCoast utiliza únicamente cookies técnicas necesarias para el funcionamiento del Sitio (inicio de sesión, mantenimiento de sesión).
+No se utilizan cookies publicitarias ni de seguimiento externo.
+
+8. Modificación de la Política de Privacidad
+TerraCoast se reserva el derecho de modificar esta Política de Privacidad en cualquier momento.
+En caso de cambios importantes, los usuarios serán informados mediante notificación o correo electrónico.
+
+9. Contacto
+Para cualquier pregunta relativa a la protección de datos personales:
+helpdesk@terracoast.ch`,
     "forceUsername.title": "Cambio de Nombre de Usuario Requerido",
     "forceUsername.subtitle": "Debes elegir un nuevo nombre de usuario para continuar",
     "forceUsername.flaggedTitle": "Tu nombre de usuario actual ha sido reportado",
@@ -2089,7 +2401,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "forceUsername.errorTaken": "Este nombre de usuario ya está ocupado",
     "forceUsername.errorUpdate": "Error al actualizar el nombre de usuario",
     "forceUsername.errorGeneric": "Ocurrió un error",
-    "settings.twoFactorConfirmActivation": "Conectar"
+    "settings.twoFactorConfirmActivation": "Conectar",
   },
   de: {
     "app.title": "TerraCoast",
@@ -2731,6 +3043,52 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.terms.userContentText": "Durch das Erstellen von Quizzen gewährst du TerraCoast das Recht, diese auf der Plattform zu veröffentlichen. Du bleibst Eigentümer deiner Inhalte.",
     "legal.terms.behavior": "Verhalten",
     "legal.terms.behaviorText": "Jegliches unangemessenes Verhalten (Spam, Belästigung, illegale Inhalte) führt zur Sperrung oder Löschung deines Kontos.",
+    "legal.terms.lastUpdated": "Letzte Aktualisierung: 17. November 2025",
+    "legal.terms.fullText": `Willkommen bei TerraCoast, einer Quiz-Website zum Thema Geografie. Der Zugriff auf und die Nutzung der Website setzen die vollständige Annahme dieser Nutzungsbedingungen voraus. Wenn du diese Bedingungen nicht akzeptierst, nutze den Dienst bitte nicht.
+
+1. Zweck des Dienstes
+TerraCoast ermöglicht Nutzern:
+- Ein Konto zu erstellen, um auf Geografie-Quizze zuzugreifen.
+- An Ranglisten teilzunehmen und Punkte zu erhalten.
+- Ein privates Chat-System für den Austausch mit anderen Nutzern zu verwenden.
+
+2. Kontoerstellung und erhobene Daten
+Bei der Registrierung werden folgende Daten erhoben:
+- Benutzername
+- E-Mail-Adresse
+- Passwort
+Nutzer verpflichten sich, korrekte Angaben zu machen und diese bei Änderungen zu aktualisieren.
+
+3. Schutz und Speicherung der Daten
+- Personenbezogene Daten werden ausschließlich in Europa gehostet.
+- Anmeldeinformationen sind gesichert und Passwoerter verschluesselt.
+- Im Chat ausgetauschte Nachrichten sind privat und verschluesselt, sodass sie von Dritten nicht gelesen werden können.
+Ohne Einwilligung werden keine Daten an Dritte verkauft oder uebermittelt, außer bei gesetzlicher Verpflichtung.
+
+4. Nutzung der Website und Verhalten der Nutzer
+Der Nutzer verpflichtet sich:
+- Nicht zu versuchen, auf Konten anderer Nutzer zuzugreifen.
+- Keine beleidigenden, diskriminierenden, gewalttaetigen, illegalen oder unangemessenen Inhalte zu verbreiten.
+- Andere Mitglieder sowie den Bildungscharakter der Website zu respektieren.
+Ein Verstoß gegen diese Regeln kann zur Sperrung oder endgueltigen Loeschung des Kontos fuehren.
+
+5. Verantwortlichkeiten
+- TerraCoast unternimmt alles, um einen stabilen und sicheren Dienst bereitzustellen, kann jedoch keine dauerhafte Verfügbarkeit der Website garantieren.
+- TerraCoast haftet nicht für Datenverluste, netzwerkbezogene Probleme oder das Verhalten von Nutzern im Chat.
+
+6. Geistiges Eigentum
+Die Inhalte der Website (Texte, Grafiken, Quizze, Logo, Name TerraCoast usw.) sind durch das Recht des geistigen Eigentums geschuetzt. Jede Vervielfaeltigung, Darstellung oder Verbreitung ohne Genehmigung ist untersagt.
+
+7. Kontoloeschung und Recht auf Loeschung
+Nutzer können die Löschung ihres Kontos und ihrer Daten jederzeit über folgende Adresse beantragen:
+helpdesk@terracoast.ch
+
+8. Änderung der Bedingungen
+TerraCoast behält sich das Recht vor, diese Nutzungsbedingungen jederzeit zu ändern. Bei wesentlichen Änderungen werden die Nutzer informiert.
+
+9. Kontakt
+Für alle Fragen zur Nutzung des Dienstes oder zu personenbezogenen Daten:
+helpdesk@terracoast.ch`,
     "legal.privacy.dataCollection": "Datenerfassung",
     "legal.privacy.dataCollectionText": "TerraCoast sammelt nur Daten, die für den Betrieb des Dienstes erforderlich sind: E-Mail-Adresse, Benutzername und Spielstatistiken.",
     "legal.privacy.dataUse": "Datennutzung",
@@ -2739,6 +3097,64 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.privacy.cookiesText": "Die Website verwendet essenzielle Cookies, um das ordnungsgemäße Funktionieren und deine Authentifizierung zu gewährleisten.",
     "legal.privacy.rights": "Deine Rechte",
     "legal.privacy.rightsText": "Du hast das Recht auf Auskunft, Berichtigung und Löschung deiner personenbezogenen Daten.",
+    "legal.privacy.lastUpdated": "Aktualisierungsdatum: 15. November 2025",
+    "legal.privacy.fullText": `Diese Datenschutzrichtlinie informiert die Nutzer der Website TerraCoast (nachfolgend „die Website“) darüber, wie ihre personenbezogenen Daten erhoben, verwendet, geschützt und gegebenenfalls weitergegeben werden.
+
+TerraCoast misst dem Schutz der Privatsphäre große Bedeutung bei und verpflichtet sich, alle notwendigen Maßnahmen zum Schutz der personenbezogenen Daten der Nutzer zu ergreifen.
+
+1. Erhobene Daten
+Bei der Registrierung und Nutzung der Website erhebt TerraCoast nur die für den ordnungsgemäßen Betrieb der Plattform erforderlichen Daten:
+- Benutzername: Identifikation im Spiel und im Chat (erforderlich)
+- E-Mail-Adresse: Kontoverwaltung und Passwort-Wiederherstellung (erforderlich)
+- Passwort: sicherer Kontozugang (erforderlich)
+- Chat-Nachrichten: private Kommunikation zwischen Nutzern (optional)
+Es werden keine sensiblen Daten erhoben.
+
+2. Verwendung der Daten
+Die erhobenen Daten werden verwendet für:
+- Erstellung, Verwaltung und Absicherung des Benutzerkontos
+- Zugriff auf Quizze und Funktionen der Website
+- Nutzung des privaten Chats zwischen Nutzern
+- Kontaktaufnahme mit Nutzern bei Bedarf (Support, Benachrichtigungen, Sicherheit)
+Keine Daten werden zu kommerziellen Zwecken verkauft, vermietet oder weitergegeben.
+
+3. Speicherort und Compliance
+Alle erhobenen Daten werden in Europa in Ländern gespeichert und verarbeitet, die den Datenschutzstandards der Europäischen Union folgen und ein angemessenes Schutzniveau gewährleisten.
+
+4. Datensicherheit
+TerraCoast setzt technische und organisatorische Maßnahmen ein, um Daten zu schützen vor:
+- Unbefugtem Zugriff
+- Verlust oder versehentlicher Zerstörung
+- Unrechtmäßiger Änderung oder Offenlegung
+Chat-Unterhaltungen sind verschlüsselt und streng privat.
+Passwörter werden verschlüsselt gespeichert und niemals im Klartext aufbewahrt.
+
+5. Speicherdauer
+- Daten werden aufbewahrt, solange das Konto aktiv ist.
+- Bei Löschung des Kontos werden alle Daten innerhalb von maximal 30 Tagen gelöscht.
+
+6. Rechte der Nutzer
+Nach geltendem Recht hat jeder Nutzer folgende Rechte:
+- Auskunft
+- Berichtigung
+- Löschung
+- Einschränkung der Verarbeitung
+- Widerspruch
+- Datenübertragbarkeit
+Anfragen können gesendet werden an: helpdesk@terracoast.ch
+Eine Antwort erfolgt innerhalb von maximal 30 Tagen.
+
+7. Cookies
+TerraCoast verwendet ausschließlich technisch notwendige Cookies für den Betrieb der Website (Anmeldung, Sitzungserhalt).
+Es werden keine Werbe- oder externen Tracking-Cookies verwendet.
+
+8. Änderungen der Datenschutzrichtlinie
+TerraCoast behält sich das Recht vor, diese Datenschutzrichtlinie jederzeit zu ändern.
+Bei wesentlichen Änderungen werden die Nutzer per Benachrichtigung oder E-Mail informiert.
+
+9. Kontakt
+Bei Fragen zum Schutz personenbezogener Daten:
+helpdesk@terracoast.ch`,
     "forceUsername.title": "Änderung des Benutzernamens Erforderlich",
     "forceUsername.subtitle": "Du musst einen neuen Benutzernamen wählen, um fortzufahren",
     "forceUsername.flaggedTitle": "Dein aktueller Benutzername wurde gemeldet",
@@ -2756,8 +3172,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "forceUsername.errorTaken": "Dieser Benutzername ist bereits vergeben",
     "forceUsername.errorUpdate": "Fehler beim Aktualisieren des Benutzernamens",
     "forceUsername.errorGeneric": "Ein Fehler ist aufgetreten",
-    "settings.twoFactorConfirmActivation": "Anmelden"
-
+    "settings.twoFactorConfirmActivation": "Anmelden",
   },
   it: {
     "app.title": "TerraCoast",
@@ -3398,6 +3813,52 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.terms.userContentText": "Creando dei quiz, concedi a TerraCoast il diritto di pubblicarli sulla piattaforma. Rimani il proprietario dei tuoi contenuti.",
     "legal.terms.behavior": "Comportamento",
     "legal.terms.behaviorText": "Qualsiasi comportamento inappropriato (spam, molestie, contenuti illegali) comporterà la sospensione o l'eliminazione del tuo account.",
+    "legal.terms.lastUpdated": "Ultimo aggiornamento: 17 novembre 2025",
+    "legal.terms.fullText": `Benvenuto su TerraCoast, un sito di quiz dedicato alla geografia. L'accesso e l'utilizzo del sito implicano l'accettazione piena delle presenti Condizioni d'uso. Se non accetti queste condizioni, sei invitato a non utilizzare il servizio.
+
+1. Oggetto del servizio
+TerraCoast permette agli utenti di:
+- Creare un account per accedere ai quiz di geografia.
+- Partecipare alle classifiche e ottenere punteggi.
+- Utilizzare un sistema di chat privata per comunicare con altri utenti.
+
+2. Creazione dell'account e dati raccolti
+Durante la registrazione vengono raccolti i seguenti dati:
+- Nome utente
+- Indirizzo email
+- Password
+Gli utenti si impegnano a fornire informazioni corrette e ad aggiornarle in caso di modifica.
+
+3. Protezione e conservazione dei dati
+- I dati personali sono ospitati esclusivamente in Europa.
+- Le informazioni di accesso sono protette e le password sono cifrate.
+- I messaggi scambiati tramite chat sono privati e cifrati in modo da non essere leggibili da terzi.
+Nessun dato verrà venduto o trasmesso a terzi senza consenso, salvo obbligo di legge.
+
+4. Utilizzo del sito e comportamento degli utenti
+L'utente si impegna a:
+- Non tentare di accedere agli account di altri utenti.
+- Non diffondere contenuti offensivi, discriminatori, violenti, illegali o inappropriati.
+- Rispettare gli altri membri e lo spirito educativo del sito.
+Il mancato rispetto di queste regole può comportare la sospensione o la cancellazione definitiva dell'account.
+
+5. Responsabilità
+- TerraCoast fa tutto il possibile per garantire un servizio stabile e sicuro, ma non può garantire una disponibilità permanente del sito.
+- TerraCoast non è responsabile per perdite di dati, problemi di rete o comportamenti degli utenti nella chat.
+
+6. Proprietà intellettuale
+I contenuti del sito (testi, elementi visivi, quiz, logo, nome TerraCoast, ecc.) sono protetti dal diritto di proprietà intellettuale. Qualsiasi riproduzione, rappresentazione o diffusione senza autorizzazione è vietata.
+
+7. Cancellazione dell'account e diritto all'oblio
+Gli utenti possono richiedere la cancellazione del proprio account e dei propri dati in qualsiasi momento al seguente indirizzo:
+helpdesk@terracoast.ch
+
+8. Modifica delle condizioni
+TerraCoast si riserva il diritto di modificare le presenti Condizioni d'uso in qualsiasi momento. Gli utenti saranno informati in caso di cambiamento importante.
+
+9. Contatto
+Per qualsiasi domanda relativa all'utilizzo del servizio o ai dati personali:
+helpdesk@terracoast.ch`,
     "legal.privacy.dataCollection": "Raccolta dei dati",
     "legal.privacy.dataCollectionText": "TerraCoast raccoglie solo i dati necessari per il funzionamento del servizio: indirizzo email, nome utente e statistiche di gioco.",
     "legal.privacy.dataUse": "Utilizzo dei dati",
@@ -3406,6 +3867,64 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.privacy.cookiesText": "Il sito utilizza cookie essenziali per garantire il suo corretto funzionamento e la tua autenticazione.",
     "legal.privacy.rights": "I tuoi diritti",
     "legal.privacy.rightsText": "Hai il diritto di accedere, rettificare ed eliminare i tuoi dati personali.",
+    "legal.privacy.lastUpdated": "Data di aggiornamento: 15 novembre 2025",
+    "legal.privacy.fullText": `La presente Informativa sulla Privacy ha lo scopo di informare gli utenti del sito TerraCoast (di seguito “il Sito”) su come i loro dati personali vengono raccolti, utilizzati, protetti e, se necessario, condivisi.
+
+TerraCoast attribuisce grande importanza al rispetto della privacy e si impegna ad adottare tutte le misure necessarie per garantire la protezione dei dati personali degli utenti.
+
+1. Dati raccolti
+Durante la registrazione e l'utilizzo del Sito, TerraCoast raccoglie solo i dati necessari al corretto funzionamento della piattaforma:
+- Nome utente: identificazione nel gioco e nella chat (obbligatorio)
+- Indirizzo email: gestione account e recupero password (obbligatorio)
+- Password: accesso sicuro all'account (obbligatorio)
+- Messaggi della chat: comunicazione privata tra utenti (facoltativo)
+Non vengono raccolti dati sensibili.
+
+2. Utilizzo dei dati
+I dati raccolti vengono utilizzati per:
+- Creazione, gestione e sicurezza dell'account utente
+- Accesso ai quiz e alle funzionalità del Sito
+- Utilizzo della chat privata tra utenti
+- Contatto con gli utenti in caso di necessità (assistenza, notifiche, sicurezza)
+Nessun dato viene venduto, noleggiato o condiviso per finalità commerciali.
+
+3. Localizzazione e conformità dello storage
+Tutti i dati raccolti sono ospitati e trattati in Europa, in paesi che seguono le convenzioni dell'Unione Europea in materia di protezione dei dati e offrono un livello di protezione adeguato.
+
+4. Sicurezza dei dati
+TerraCoast adotta misure tecniche e organizzative per proteggere i dati contro:
+- Accesso non autorizzato
+- Perdita o distruzione accidentale
+- Modifica o divulgazione illecita
+Le conversazioni in chat sono cifrate e strettamente private.
+Le password sono archiviate in forma cifrata e mai in chiaro.
+
+5. Durata della conservazione
+- I dati vengono conservati finché l'account è attivo.
+- In caso di cancellazione dell'account, tutti i dati vengono eliminati entro un massimo di 30 giorni.
+
+6. Diritti degli utenti
+Secondo la normativa applicabile, ogni utente dispone dei seguenti diritti:
+- Accesso
+- Rettifica
+- Cancellazione
+- Limitazione del trattamento
+- Opposizione
+- Portabilità dei dati
+Ogni richiesta può essere inviata a: helpdesk@terracoast.ch
+Una risposta sarà fornita entro un massimo di 30 giorni.
+
+7. Cookie
+TerraCoast utilizza esclusivamente cookie tecnici necessari al funzionamento del Sito (accesso, mantenimento sessione).
+Non vengono utilizzati cookie pubblicitari o di tracciamento esterno.
+
+8. Modifica dell'Informativa sulla Privacy
+TerraCoast si riserva il diritto di modificare la presente Informativa sulla Privacy in qualsiasi momento.
+In caso di modifiche importanti, gli utenti saranno informati tramite notifica o email.
+
+9. Contatto
+Per qualsiasi domanda relativa alla protezione dei dati personali:
+helpdesk@terracoast.ch`,
     "forceUsername.title": "Cambio Nome Utente Richiesto",
     "forceUsername.subtitle": "Devi scegliere un nuovo nome utente per continuare",
     "forceUsername.flaggedTitle": "Il tuo nome utente attuale è stato segnalato",
@@ -3423,7 +3942,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "forceUsername.errorTaken": "Questo nome utente è già in uso",
     "forceUsername.errorUpdate": "Errore durante l'aggiornamento del nome utente",
     "forceUsername.errorGeneric": "Si è verificato un errore",
-    "settings.twoFactorConfirmActivation": "Connetti"
+    "settings.twoFactorConfirmActivation": "Connetti",
   },
   pt: {
     "app.title": "TerraCoast",
@@ -4061,6 +4580,52 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.terms.userContentText": "Ao criar quizzes, você concede ao TerraCoast o direito de publicá-los na plataforma. Você continua sendo o proprietário do seu conteúdo.",
     "legal.terms.behavior": "Comportamento",
     "legal.terms.behaviorText": "Qualquer comportamento inadequado (spam, assédio, conteúdo ilegal) resultará na suspensão ou exclusão da sua conta.",
+    "legal.terms.lastUpdated": "Última atualização: 17 de novembro de 2025",
+    "legal.terms.fullText": `Bem-vindo ao TerraCoast, um site de quizzes dedicado à geografia. O acesso e o uso do site implicam a aceitação plena destes Termos de Uso. Se você não aceitar estes termos, não utilize o serviço.
+
+1. Objeto do serviço
+O TerraCoast permite aos usuários:
+- Criar uma conta para acessar os quizzes de geografia.
+- Participar de classificações e obter pontuações.
+- Utilizar um sistema de chat privado para trocar mensagens com outros usuários.
+
+2. Criação de conta e dados coletados
+Durante o cadastro, os seguintes dados são coletados:
+- Nome de usuário
+- Endereço de email
+- Senha
+Os usuários se comprometem a fornecer informações corretas e a atualizá-las em caso de alteração.
+
+3. Proteção e armazenamento dos dados
+- Os dados pessoais são hospedados exclusivamente na Europa.
+- As informações de login são protegidas e as senhas são criptografadas.
+- As mensagens trocadas no chat são privadas e criptografadas para não serem lidas por terceiros.
+Nenhum dado será vendido ou transmitido a terceiros sem consentimento, salvo obrigação legal.
+
+4. Uso do site e comportamento dos usuários
+O usuário se compromete a:
+- Não tentar acessar contas de outros usuários.
+- Não divulgar conteúdo ofensivo, discriminatório, violento, ilegal ou inadequado.
+- Respeitar os demais membros e o espírito educativo do site.
+O descumprimento dessas regras pode resultar na suspensão ou exclusão definitiva da conta.
+
+5. Responsabilidades
+- O TerraCoast faz todo o possível para garantir um serviço estável e seguro, mas não pode garantir disponibilidade permanente do site.
+- O TerraCoast não é responsável por perdas de dados, problemas de rede ou comportamentos de usuários no chat.
+
+6. Propriedade intelectual
+Os conteúdos do site (textos, visuais, quizzes, logotipo, nome TerraCoast etc.) são protegidos pela legislação de propriedade intelectual. Qualquer reprodução, representação ou difusão sem autorização é proibida.
+
+7. Exclusão da conta e direito ao apagamento
+Os usuários podem solicitar a exclusão de sua conta e de seus dados a qualquer momento pelo endereço:
+helpdesk@terracoast.ch
+
+8. Modificação dos termos
+O TerraCoast se reserva o direito de modificar estes Termos de Uso a qualquer momento. Os usuários serão informados em caso de mudança importante.
+
+9. Contato
+Para qualquer questão sobre o uso do serviço ou dados pessoais:
+helpdesk@terracoast.ch`,
     "legal.privacy.dataCollection": "Coleta de dados",
     "legal.privacy.dataCollectionText": "O TerraCoast coleta apenas os dados necessários para o funcionamento do serviço: endereço de email, nome de usuário e estatísticas de jogo.",
     "legal.privacy.dataUse": "Uso de dados",
@@ -4069,6 +4634,64 @@ export const translations: Record<Language, Record<string, string>> = {
     "legal.privacy.cookiesText": "O site usa cookies essenciais para garantir seu funcionamento adequado e sua autenticação.",
     "legal.privacy.rights": "Seus direitos",
     "legal.privacy.rightsText": "Você tem o direito de acessar, retificar e excluir seus dados pessoais.",
+    "legal.privacy.lastUpdated": "Data de atualização: 15 de novembro de 2025",
+    "legal.privacy.fullText": `Esta Política de Privacidade tem como objetivo informar os usuários do site TerraCoast (doravante “o Site”) sobre como seus dados pessoais são coletados, utilizados, protegidos e, quando aplicável, compartilhados.
+
+O TerraCoast atribui grande importância ao respeito à privacidade e se compromete a adotar todas as medidas necessárias para garantir a proteção dos dados pessoais dos usuários.
+
+1. Dados coletados
+Durante o cadastro e o uso do Site, o TerraCoast coleta apenas os dados necessários para o bom funcionamento da plataforma:
+- Nome de usuário: identificação no jogo e no chat (obrigatório)
+- Endereço de email: gestão da conta e recuperação de senha (obrigatório)
+- Senha: acesso seguro à conta (obrigatório)
+- Mensagens do chat: comunicação privada entre usuários (opcional)
+Nenhum dado sensível é coletado.
+
+2. Uso dos dados
+Os dados coletados são utilizados para:
+- Criação, gestão e segurança da conta do usuário
+- Acesso aos quizzes e funcionalidades do Site
+- Uso do chat privado entre usuários
+- Contato com usuários em caso de necessidade (suporte, notificações, segurança)
+Nenhum dado é vendido, alugado ou compartilhado para fins comerciais.
+
+3. Localização e conformidade do armazenamento
+Todos os dados coletados são hospedados e tratados na Europa, em países que seguem as convenções da União Europeia sobre proteção de dados e oferecem nível adequado de proteção.
+
+4. Segurança dos dados
+O TerraCoast adota medidas técnicas e organizacionais para proteger os dados contra:
+- Acesso não autorizado
+- Perda ou destruição acidental
+- Modificação ou divulgação ilícita
+As conversas do chat são criptografadas e estritamente privadas.
+As senhas são armazenadas de forma criptografada e nunca em texto puro.
+
+5. Prazo de conservação
+- Os dados são conservados enquanto a conta estiver ativa.
+- Em caso de exclusão da conta, todos os dados são apagados em até 30 dias.
+
+6. Direitos dos usuários
+De acordo com a legislação aplicável, cada usuário possui os seguintes direitos:
+- Acesso
+- Retificação
+- Exclusão
+- Limitação do tratamento
+- Oposição
+- Portabilidade dos dados
+Qualquer solicitação pode ser enviada para: helpdesk@terracoast.ch
+Uma resposta será fornecida em até 30 dias.
+
+7. Cookies
+O TerraCoast utiliza apenas cookies técnicos necessários ao funcionamento do Site (login, manutenção de sessão).
+Nenhum cookie publicitário ou de rastreamento externo é utilizado.
+
+8. Alteração da Política de Privacidade
+O TerraCoast se reserva o direito de alterar esta Política de Privacidade a qualquer momento.
+Em caso de mudança importante, os usuários serão informados por notificação ou email.
+
+9. Contato
+Para qualquer questão relacionada à proteção de dados pessoais:
+helpdesk@terracoast.ch`,
     "forceUsername.title": "Alteração de Nome de Usuário Necessária",
     "forceUsername.subtitle": "Você deve escolher um novo nome de usuário para continuar",
     "forceUsername.flaggedTitle": "Seu nome de usuário atual foi sinalizado",
@@ -4086,7 +4709,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "forceUsername.errorTaken": "Este nome de usuário já está em uso",
     "forceUsername.errorUpdate": "Erro ao atualizar o nome de usuário",
     "forceUsername.errorGeneric": "Ocorreu um erro",
-    "settings.twoFactorConfirmActivation": "Conectar"
+    "settings.twoFactorConfirmActivation": "Conectar",
   },
 };
 

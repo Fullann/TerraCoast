@@ -46,28 +46,8 @@ function TermsContent() {
   return (
     <>
       <section>
-        <h2 className="text-lg font-bold text-gray-900 mt-6 first:mt-0">
-          {t("legal.terms.acceptance")}
-        </h2>
-        <p>{t("legal.terms.acceptanceText")}</p>
-      </section>
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mt-6">
-          {t("legal.terms.useOfService")}
-        </h2>
-        <p>{t("legal.terms.useOfServiceText")}</p>
-      </section>
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mt-6">
-          {t("legal.terms.userContent")}
-        </h2>
-        <p>{t("legal.terms.userContentText")}</p>
-      </section>
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mt-6">
-          {t("legal.terms.behavior")}
-        </h2>
-        <p>{t("legal.terms.behaviorText")}</p>
+        <p className="text-sm text-gray-500 mb-4">{t("legal.terms.lastUpdated")}</p>
+        <p className="whitespace-pre-line">{t("legal.terms.fullText")}</p>
       </section>
     </>
   );
@@ -78,28 +58,8 @@ function PrivacyContent() {
   return (
     <>
       <section>
-        <h2 className="text-lg font-bold text-gray-900 mt-6 first:mt-0">
-          {t("legal.privacy.dataCollection")}
-        </h2>
-        <p>{t("legal.privacy.dataCollectionText")}</p>
-      </section>
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mt-6">
-          {t("legal.privacy.dataUse")}
-        </h2>
-        <p>{t("legal.privacy.dataUseText")}</p>
-      </section>
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mt-6">
-          {t("legal.privacy.cookies")}
-        </h2>
-        <p>{t("legal.privacy.cookiesText")}</p>
-      </section>
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mt-6">
-          {t("legal.privacy.rights")}
-        </h2>
-        <p>{t("legal.privacy.rightsText")}</p>
+        <p className="text-sm text-gray-500 mb-4">{t("legal.privacy.lastUpdated")}</p>
+        <p className="whitespace-pre-line">{t("legal.privacy.fullText")}</p>
       </section>
     </>
   );
