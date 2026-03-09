@@ -495,6 +495,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.emailUpdateError": "Erreur lors de la mise à jour de l'email",
     "settings.emailConfirmationSent":
       "Un email de confirmation a été envoyé à ta nouvelle adresse",
+    "settings.supabaseChangeRequiresEmailConfirmation":
+      "Pour certains changements sensibles (email, sécurité), Supabase envoie un email de confirmation.",
     "settings.allFieldsRequired": "Tous les champs sont requis",
     "settings.passwordsMismatch": "Les mots de passe ne correspondent pas",
     "settings.passwordTooShort":
@@ -1075,6 +1077,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.emailUpdateError": "Error updating email",
     "settings.emailConfirmationSent":
       "A confirmation email has been sent to your new address",
+    "settings.supabaseChangeRequiresEmailConfirmation":
+      "For some sensitive changes (email, security), Supabase sends a confirmation email.",
     "settings.allFieldsRequired": "All fields are required",
     "settings.passwordsMismatch": "Passwords do not match",
     "settings.passwordTooShort": "Password must be at least 6 characters",
@@ -1710,6 +1714,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.emailUpdateError": "Error al actualizar correo electrónico",
     "settings.emailConfirmationSent":
       "Se ha enviado un correo de confirmación a tu nueva dirección",
+    "settings.supabaseChangeRequiresEmailConfirmation":
+      "Para algunos cambios sensibles (correo, seguridad), Supabase envía un correo de confirmación.",
     "settings.allFieldsRequired": "Todos los campos son obligatorios",
     "settings.passwordsMismatch": "Las contraseñas no coinciden",
     "settings.passwordTooShort":
@@ -2376,6 +2382,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.emailUpdateError": "Fehler beim Aktualisieren der E-Mail",
     "settings.emailConfirmationSent":
       "Eine Bestätigungs-E-Mail wurde an deine neue Adresse gesendet",
+    "settings.supabaseChangeRequiresEmailConfirmation":
+      "Für bestimmte sensible Änderungen (E-Mail, Sicherheit) sendet Supabase eine Bestätigungs-E-Mail.",
     "settings.allFieldsRequired": "Alle Felder sind erforderlich",
     "settings.passwordsMismatch": "Passwörter stimmen nicht überein",
     "settings.passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein",
@@ -3042,6 +3050,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.emailUpdateError": "Errore nell'aggiornamento dell'email",
     "settings.emailConfirmationSent":
       "Un'email di conferma è stata inviata al tuo nuovo indirizzo",
+    "settings.supabaseChangeRequiresEmailConfirmation":
+      "Per alcune modifiche sensibili (email, sicurezza), Supabase invia un'email di conferma.",
     "settings.allFieldsRequired": "Tutti i campi sono obbligatori",
     "settings.passwordsMismatch": "Le password non corrispondono",
     "settings.passwordTooShort":
@@ -3702,6 +3712,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.emailUpdateError": "Erro ao atualizar email",
     "settings.emailConfirmationSent":
       "Um email de confirmação foi enviado para seu novo endereço",
+    "settings.supabaseChangeRequiresEmailConfirmation":
+      "Para algumas alterações sensíveis (email, segurança), o Supabase envia um email de confirmação.",
     "settings.allFieldsRequired": "Todos os campos são obrigatórios",
     "settings.passwordsMismatch": "As senhas não coincidem",
     "settings.passwordTooShort": "A senha deve ter pelo menos 6 caracteres",

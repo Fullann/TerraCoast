@@ -40,10 +40,120 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
   const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [mfaDisablePassword, setMfaDisablePassword] = useState("");
+  const [emailPendingTarget, setEmailPendingTarget] = useState<string | null>(
+    null
+  );
+  const [emailCooldownUntil, setEmailCooldownUntil] = useState(0);
+  const EMAIL_UPDATE_COOLDOWN_MS = 60_000;
+
+  const isMfaStepUpError = (message?: string) => {
+    const msg = (message || "").toLowerCase();
+    return (
+      msg.includes("mfa") ||
+      msg.includes("factor") ||
+      msg.includes("aal2") ||
+      msg.includes("challenge")
+    );
+  };
+
+  const ensureValidAuthSession = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentSession = sessionData?.session;
+
+    if (!currentSession) {
+      throw new Error(
+        t("settings.logoutError") || "Session invalide, reconnecte-toi."
+      );
+    }
+
+    const expiresSoon =
+      !!currentSession.expires_at &&
+      currentSession.expires_at * 1000 < Date.now() + 60_000;
+
+    if (expiresSoon) {
+      const { data: refreshed, error: refreshError } =
+        await supabase.auth.refreshSession();
+      if (refreshError || !refreshed?.session) {
+        throw new Error(
+          t("settings.logoutError") || "Session expirée, reconnecte-toi."
+        );
+      }
+    }
+  };
+
+  const ensureAalForSensitiveUpdate = async () => {
+    const { data: aalData, error: aalError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    if (aalError) {
+      throw new Error("Impossible de vérifier le niveau de sécurité MFA.");
+    }
+
+    const needsStepUp =
+      aalData?.nextLevel === "aal2" && aalData?.currentLevel !== "aal2";
+
+    if (!needsStepUp) return;
+
+    const { data: factorsData, error: factorsError } =
+      await supabase.auth.mfa.listFactors();
+    if (factorsError) {
+      throw new Error("Impossible de charger les facteurs MFA.");
+    }
+
+    const activeTotpFactor = (factorsData?.totp || []).find(
+      (factor: any) => factor.status === "verified"
+    );
+    if (!activeTotpFactor?.id) {
+      throw new Error("Aucun facteur MFA vérifié trouvé.");
+    }
+
+    const code = window.prompt(t("settings.twoFactorCodeLabel"));
+    if (!code || code.trim().length < 6) {
+      throw new Error(t("settings.twoFactorCodeRequired"));
+    }
+
+    const { data: challengeData, error: challengeError } =
+      await supabase.auth.mfa.challenge({
+        factorId: activeTotpFactor.id,
+      });
+    if (challengeError || !challengeData?.id) {
+      throw new Error(t("settings.twoFactorChallengeError"));
+    }
+
+    const { error: verifyError } = await supabase.auth.mfa.verify({
+      factorId: activeTotpFactor.id,
+      challengeId: challengeData.id,
+      code: code.trim(),
+    });
+    if (verifyError) {
+      throw new Error(t("settings.twoFactorInvalidCode"));
+    }
+  };
 
   useEffect(() => {
     loadMfaStatus();
   }, [user?.id]);
+
+  useEffect(() => {
+    setEmail(user?.email || "");
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const storageKey = `pending-email-change:${user.id}`;
+    const storedPending = localStorage.getItem(storageKey);
+    if (storedPending) {
+      // Si l'email de session a finalement changé, la confirmation est terminée.
+      if (storedPending === user.email) {
+        localStorage.removeItem(storageKey);
+        setEmailPendingTarget(null);
+      } else {
+        setEmailPendingTarget(storedPending);
+      }
+    } else {
+      setEmailPendingTarget(null);
+    }
+  }, [user?.id, user?.email]);
 
   const loadMfaStatus = async () => {
     try {
@@ -218,8 +328,19 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
   };
 
   const updateEmail = async () => {
-    if (!email.trim() || !currentPassword.trim()) {
-      setError(t("settings.emailPasswordRequired"));
+    if (!email.trim()) {
+      setError(t("settings.allFieldsRequired"));
+      return;
+    }
+    if (email.trim() === (user?.email || "")) {
+      setError(t("settings.emailUpdateError"));
+      return;
+    }
+    if (Date.now() < emailCooldownUntil) {
+      const secondsLeft = Math.ceil((emailCooldownUntil - Date.now()) / 1000);
+      setError(
+        `Trop de tentatives. Merci d'attendre ${secondsLeft}s avant de réessayer.`
+      );
       return;
     }
 
@@ -227,13 +348,11 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     setError("");
     setMessage("");
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: user?.email || "",
-      password: currentPassword,
-    });
-
-    if (authError) {
-      setError(t("settings.incorrectPassword"));
+    try {
+      await ensureValidAuthSession();
+      await ensureAalForSensitiveUpdate();
+    } catch (sessionError: any) {
+      setError(sessionError.message || "Session invalide, reconnecte-toi.");
       setLoading(false);
       return;
     }
@@ -243,10 +362,33 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     });
 
     if (updateError) {
-      setError(t("settings.emailUpdateError"));
+      if (
+        updateError.status === 429 ||
+        updateError.message?.toLowerCase().includes("rate") ||
+        updateError.message?.toLowerCase().includes("too many requests")
+      ) {
+        setEmailCooldownUntil(Date.now() + EMAIL_UPDATE_COOLDOWN_MS);
+        setError(
+          "Trop de tentatives de changement d'email. Réessaie dans 1 minute."
+        );
+      } else if (
+        updateError.message?.toLowerCase().includes("unauthorized") ||
+        updateError.status === 401
+      ) {
+        setError("Session invalide ou expirée. Merci de te reconnecter.");
+      } else {
+        setError(t("settings.emailUpdateError"));
+      }
     } else {
       setMessage(t("settings.emailConfirmationSent"));
       setCurrentPassword("");
+      const pending = email.trim();
+      setEmailPendingTarget(pending);
+      if (user?.id) {
+        localStorage.setItem(`pending-email-change:${user.id}`, pending);
+      }
+      // Évite les clics répétés qui déclenchent un 429.
+      setEmailCooldownUntil(Date.now() + EMAIL_UPDATE_COOLDOWN_MS);
     }
 
     setLoading(false);
@@ -254,7 +396,6 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
   const updatePassword = async () => {
     if (
-      !currentPassword.trim() ||
       !newPassword.trim() ||
       !confirmPassword.trim()
     ) {
@@ -276,13 +417,11 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     setError("");
     setMessage("");
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: user?.email || "",
-      password: currentPassword,
-    });
-
-    if (authError) {
-      setError(t("settings.currentPasswordIncorrect"));
+    try {
+      await ensureValidAuthSession();
+      await ensureAalForSensitiveUpdate();
+    } catch (sessionError: any) {
+      setError(sessionError.message || "Session invalide, reconnecte-toi.");
       setLoading(false);
       return;
     }
@@ -292,7 +431,14 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     });
 
     if (updateError) {
-      setError(t("settings.passwordUpdateError"));
+      if (
+        updateError.message?.toLowerCase().includes("unauthorized") ||
+        updateError.status === 401
+      ) {
+        setError("Session invalide ou expirée. Merci de te reconnecter.");
+      } else {
+        setError(t("settings.passwordUpdateError"));
+      }
     } else {
       setMessage(t("settings.passwordUpdateSuccess"));
       setCurrentPassword("");
@@ -507,24 +653,24 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                   placeholder={t("settings.newEmailPlaceholder")}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t("settings.currentPassword")}
-                </label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                  placeholder="••••••••"
-                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Email actuel: {user?.email || "-"}
+                </p>
+                {emailPendingTarget && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    Changement en attente de confirmation: {emailPendingTarget}
+                  </p>
+                )}
               </div>
 
               <button
                 onClick={updateEmail}
-                disabled={loading || !email.trim() || !currentPassword.trim()}
+                disabled={
+                  loading ||
+                  !email.trim() ||
+                  email.trim() === (user?.email || "") ||
+                  Date.now() < emailCooldownUntil
+                }
                 className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
               >
                 <Save className="w-4 h-4" />
@@ -588,7 +734,6 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                 onClick={updatePassword}
                 disabled={
                   loading ||
-                  !currentPassword.trim() ||
                   !newPassword.trim() ||
                   !confirmPassword.trim()
                 }
