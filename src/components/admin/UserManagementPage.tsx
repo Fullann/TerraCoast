@@ -302,74 +302,20 @@ export function UserManagementPage({ onNavigate }: UserManagementPageProps) {
     }
 
     try {
-     
-
-      // Supprimer toutes les données associées à l'utilisateur
-     
-      await supabase.from("user_badges").delete().eq("user_id", userId);
-
-      
-      await supabase.from("user_titles").delete().eq("user_id", userId);
-
-    
-      await supabase.from("game_sessions").delete().eq("player_id", userId);
-
-     
-      await supabase
-        .from("quiz_shares")
-        .delete()
-        .eq("shared_with_user_id", userId);
-
-     
-      await supabase
-        .from("friendships")
-        .delete()
-        .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
-
-     
-      await supabase
-        .from("warnings")
-        .delete()
-        .or(`reported_user_id.eq.${userId},reporter_user_id.eq.${userId}`);
-
-      
+      // Nettoyage des tables non critiques avant suppression du profil.
+      // Les tables avec FK ON DELETE CASCADE seront automatiquement nettoyées
+      // lors de la suppression de `profiles`.
       await supabase.from("notifications").delete().eq("user_id", userId);
-
-      
       await supabase
         .from("chat_messages")
         .delete()
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
-
-      
+        .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`);
       await supabase
         .from("monthly_rankings_history")
         .delete()
         .eq("user_id", userId);
 
-      // Supprimer les quiz créés par l'utilisateur
-     
-      const { data: userQuizzes, error: quizzesError } = await supabase
-        .from("quizzes")
-        .select("id")
-        .eq("creator_id", userId);
-
-      if (quizzesError) {
-        console.error("Erreur récupération quiz:", quizzesError);
-      }
-
-      if (userQuizzes && userQuizzes.length > 0) {
-     
-        for (const quiz of userQuizzes) {
-          // Supprimer les questions du quiz
-          await supabase.from("questions").delete().eq("quiz_id", quiz.id);
-          // Supprimer le quiz
-          await supabase.from("quizzes").delete().eq("id", quiz.id);
-        }
-      }
-
-      // Supprimer le profil
-      console.log("Suppression du profil...");
+      // Suppression principale du profil (source de vérité)
       const { error: profileError } = await supabase
         .from("profiles")
         .delete()
@@ -377,11 +323,17 @@ export function UserManagementPage({ onNavigate }: UserManagementPageProps) {
 
       if (profileError) {
         console.error("Erreur suppression profil:", profileError);
-        alert(`Erreur: ${profileError.message}`);
+        alert(
+          `Suppression impossible: ${profileError.message}\n\n` +
+            "Vérifie que la migration de policy DELETE admin a bien été appliquée."
+        );
         return;
       }
 
-      console.log("Suppression complétée avec succès");
+      // Mise à jour instantanée de l'UI
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      setSearchResults((prev) => prev.filter((u) => u.id !== userId));
+
       alert(`Compte de ${userName} supprimé avec succès !`);
       loadUsers();
     } catch (error: any) {

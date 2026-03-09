@@ -31,16 +31,27 @@ import { LandingPage } from "./components/landing/LandingPage";
 import { BannedPage } from "./components/auth/BannedPage";
 import { ForceUsernamePage } from "./components/auth/ForceUsernamePage";
 import { AccountDetailsPage } from "./components/profile/AccountDetailsPage";
+import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 import { useNotifications } from "./contexts/NotificationContext";
 
 function AppContent() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile, mfaRequired } = useAuth();
   const { setNavigationCallback } = useNotifications();
-  const [authView, setAuthView] = useState<"login" | "register" | "landing">(
-    "landing"
-  );
+  const [authView, setAuthView] = useState<
+    "login" | "register" | "landing" | "terms" | "privacy"
+  >("landing");
+  const [authViewBeforeLegal, setAuthViewBeforeLegal] = useState<
+    "login" | "register" | "landing"
+  >("landing");
   const [currentView, setCurrentView] = useState<string>("home");
   const [viewData, setViewData] = useState<any>(null);
+
+  const openLegal = (view: "terms" | "privacy") => {
+    if (authView !== "terms" && authView !== "privacy") {
+      setAuthViewBeforeLegal(authView);
+    }
+    setAuthView(view);
+  };
 
   const handleNavigate = (view: string, data?: any) => {
     setCurrentView(view);
@@ -49,6 +60,13 @@ function AppContent() {
   useEffect(() => {
     setNavigationCallback(handleNavigate);
   }, []);
+
+  // Si on a un user mais pas de profil (ex. délai après inscription), réessayer de charger le profil
+  useEffect(() => {
+    if (!user || profile) return;
+    const t = setTimeout(() => refreshProfile(), 500);
+    return () => clearTimeout(t);
+  }, [user, profile, refreshProfile]);
   const hideNavbarViews = ["play-quiz", "play-training", "play-duel"];
   const shouldShowNavbar = !hideNavbarViews.includes(currentView);
 
@@ -58,6 +76,27 @@ function AppContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
           <p className="text-gray-700 text-lg font-medium">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && mfaRequired) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+        <div className="w-full">
+          <div className="max-w-md mx-auto mb-4">
+            <button
+              onClick={() => setAuthView("landing")}
+              className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
+            >
+              ← Retour à l'accueil
+            </button>
+          </div>
+          <LoginForm
+            onSwitchToRegister={() => setAuthView("register")}
+            forceMfa={true}
+          />
         </div>
       </div>
     );
@@ -78,11 +117,38 @@ function AppContent() {
     }
   }
 
+  // Utilisateur connecté mais profil pas encore chargé (ex. juste après inscription)
+  if (user && !profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-700 text-lg font-medium">Préparation de votre compte...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     if (authView === "landing") {
       return (
         <LandingPage
-          onNavigate={(view) => setAuthView(view as "login" | "register")}
+          onNavigate={(view) => {
+            if (view === "terms" || view === "privacy") openLegal(view);
+            else
+              setAuthView(
+                view as "login" | "register" | "landing" | "terms" | "privacy"
+              );
+          }}
+        />
+      );
+    }
+
+    if (authView === "terms" || authView === "privacy") {
+      return (
+        <LegalDocumentPage
+          type={authView}
+          onBack={() => setAuthView(authViewBeforeLegal)}
         />
       );
     }
@@ -101,7 +167,11 @@ function AppContent() {
           {authView === "login" ? (
             <LoginForm onSwitchToRegister={() => setAuthView("register")} />
           ) : (
-            <RegisterForm onSwitchToLogin={() => setAuthView("login")} />
+            <RegisterForm
+              onSwitchToLogin={() => setAuthView("login")}
+              onShowTerms={() => openLegal("terms")}
+              onShowPrivacy={() => openLegal("privacy")}
+            />
           )}
         </div>
       </div>

@@ -6,6 +6,7 @@ import type { Database } from '../../lib/database.types';
 
 type Quiz = Database['public']['Tables']['quizzes']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
+type QuestionRow = Database['public']['Tables']['questions']['Row'];
 
 interface QuizWithAuthor extends Quiz {
   author?: Profile;
@@ -18,6 +19,8 @@ export function QuizValidationPage() {
   const [loading, setLoading] = useState(true);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizWithAuthor | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [quizQuestions, setQuizQuestions] = useState<Record<string, QuestionRow[]>>({});
+  const [loadingQuestionsFor, setLoadingQuestionsFor] = useState<string | null>(null);
 
   useEffect(() => {
     loadPendingQuizzes();
@@ -36,14 +39,15 @@ export function QuizValidationPage() {
     if (quizzes) {
       const quizzesWithCounts = await Promise.all(
         quizzes.map(async (quiz: any) => {
-          const { count } = await supabase
+          const { count, error: countError } = await supabase
             .from('questions')
             .select('*', { count: 'exact', head: true })
             .eq('quiz_id', quiz.id);
 
           return {
             ...quiz,
-            question_count: count || 0,
+            // Si RLS bloque le count, on évite d'afficher un faux 0.
+            question_count: countError ? undefined : (count || 0),
           };
         })
       );
@@ -51,6 +55,22 @@ export function QuizValidationPage() {
       setPendingQuizzes(quizzesWithCounts);
     }
     setLoading(false);
+  };
+
+  const loadQuizQuestions = async (quizId: string) => {
+    setLoadingQuestionsFor(quizId);
+    const { data, error } = await supabase
+      .from('questions')
+      .select('*')
+      .eq('quiz_id', quizId)
+      .order('order_index', { ascending: true });
+
+    if (!error && data) {
+      setQuizQuestions((prev) => ({ ...prev, [quizId]: data as QuestionRow[] }));
+    } else {
+      setQuizQuestions((prev) => ({ ...prev, [quizId]: [] }));
+    }
+    setLoadingQuestionsFor(null);
   };
 
   const approveQuiz = async (quizId: string) => {
@@ -168,7 +188,7 @@ export function QuizValidationPage() {
 
                   <div className="flex flex-wrap gap-3 mb-4">
                     <span className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                      {quiz.question_count} questions
+                      {quiz.question_count ?? '?'} questions
                     </span>
                     <span className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
                       {quiz.category}
@@ -187,6 +207,38 @@ export function QuizValidationPage() {
 
               {selectedQuiz?.id === quiz.id ? (
                 <div className="border-t pt-4 mt-4">
+                  <div className="mb-4">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                      Questions du quiz
+                    </h4>
+                    {loadingQuestionsFor === quiz.id ? (
+                      <p className="text-sm text-gray-500">Chargement des questions...</p>
+                    ) : (quizQuestions[quiz.id]?.length || 0) === 0 ? (
+                      <p className="text-sm text-red-600">
+                        Aucune question accessible pour ce quiz.
+                      </p>
+                    ) : (
+                      <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                        {quizQuestions[quiz.id].map((question, index) => (
+                          <div key={question.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-sm font-semibold text-gray-700">
+                                Question {index + 1}
+                              </p>
+                              <span className="text-xs bg-white border border-gray-300 rounded-full px-2 py-0.5 text-gray-600">
+                                {question.question_type}
+                              </span>
+                            </div>
+                            <p className="text-gray-800">{question.question_text}</p>
+                            <p className="text-sm text-emerald-700 mt-1">
+                              Réponse attendue: <span className="font-medium">{question.correct_answer}</span>
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Raison du rejet (optionnel pour approbation)
@@ -228,7 +280,12 @@ export function QuizValidationPage() {
                 </div>
               ) : (
                 <button
-                  onClick={() => setSelectedQuiz(quiz)}
+                  onClick={async () => {
+                    setSelectedQuiz(quiz);
+                    if (!quizQuestions[quiz.id]) {
+                      await loadQuizQuestions(quiz.id);
+                    }
+                  }}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
                 >
                   <Eye className="w-5 h-5 mr-2" />

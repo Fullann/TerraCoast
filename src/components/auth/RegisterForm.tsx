@@ -5,13 +5,21 @@ import { detectUserLanguage } from '../../i18n/translations';
 import { supabase } from '../../lib/supabase';
 import { UserPlus } from 'lucide-react';
 
-export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
+interface RegisterFormProps {
+  onSwitchToLogin: () => void;
+  onShowTerms?: () => void;
+  onShowPrivacy?: () => void;
+}
+
+export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: RegisterFormProps) {
   const { signUp } = useAuth();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pseudo, setPseudo] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -34,11 +42,16 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
       return;
     }
 
+    if (!acceptTerms || !acceptPrivacy) {
+      setError(t('auth.mustAcceptTerms'));
+      return;
+    }
+
     setLoading(true);
 
     try {
       const detectedLang = detectUserLanguage();
-      await signUp(email, password, pseudo);
+      await signUp(email, password, pseudo, { acceptTerms: true, acceptPrivacy: true });
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -136,6 +149,49 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
             placeholder={t('auth.passwordPlaceholder')}
           />
+        </div>
+
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptTerms}
+              onChange={(e) => setAcceptTerms(e.target.checked)}
+              className="mt-1 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <span className="text-sm text-gray-700">
+              {t('auth.acceptTerms')}{' '}
+              {onShowTerms && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); onShowTerms(); }}
+                  className="text-emerald-600 hover:text-emerald-700 underline font-medium"
+                >
+                  {t('auth.readTerms')}
+                </button>
+              )}
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptPrivacy}
+              onChange={(e) => setAcceptPrivacy(e.target.checked)}
+              className="mt-1 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <span className="text-sm text-gray-700">
+              {t('auth.acceptPrivacy')}{' '}
+              {onShowPrivacy && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); onShowPrivacy(); }}
+                  className="text-emerald-600 hover:text-emerald-700 underline font-medium"
+                >
+                  {t('auth.readPrivacy')}
+                </button>
+              )}
+            </span>
+          </label>
         </div>
 
         <button

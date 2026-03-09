@@ -687,14 +687,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 <option value="single_answer">
                   {getQuestionTypeLabel("single_answer")}
                 </option>
-                <option value="text_free">
-                  {getQuestionTypeLabel("text_free")}
-                </option>
                 <option value="true_false">
                   {t("createQuiz.trueFalse.type")}
-                </option>
-                <option value="map_click">
-                  {getQuestionTypeLabel("map_click")}
                 </option>
               </select>
             </div>

@@ -51,6 +51,11 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
     title: string;
   } | null>(null);
 
+  const getGamesText = (count: number) => {
+    // Règle demandée: 0 ou 1 => "partie", sinon "parties"
+    return count <= 1 ? "partie" : t("quizzes.games");
+  };
+
   useEffect(() => {
     loadQuizzes();
     loadQuizTypes();
@@ -545,7 +550,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             <div
               key={quiz.id}
               onClick={() => onNavigate("play-quiz", { quizId: quiz.id })}
-              className="bg-white cursor-pointer rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden"
+              className="bg-white cursor-pointer rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden flex flex-col h-full"
             >
               {quiz.cover_image_url ? (
                 <img
@@ -558,7 +563,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                   <BookOpen className="w-20 h-20 text-white opacity-50" />
                 </div>
               )}
-              <div className="p-6">
+              <div className="p-6 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-xl font-bold text-gray-800 flex-1">
                     {quiz.title}
@@ -598,95 +603,97 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span>
-                    {quiz.total_plays} {t("quizzes.games")}
-                  </span>
-                  {quiz.average_score > 0 && (
+                <div className="mt-auto space-y-3">
+                  <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>
-                      {t("quizzes.average")}: {Math.round(quiz.average_score)}
+                      {quiz.total_plays} {getGamesText(quiz.total_plays)}
                     </span>
-                  )}
-                </div>
+                    {quiz.average_score > 0 && (
+                      <span>
+                        {t("quizzes.average")}: {Math.round(quiz.average_score)}
+                      </span>
+                    )}
+                  </div>
 
-                <div className="flex space-x-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNavigate("play-quiz", { quizId: quiz.id });
-                    }}
-                    className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    {t("quiz.play")}
-                  </button>
-
-                  {activeTab === "my" && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onNavigate("edit-quiz", { quizId: quiz.id });
-                        }}
-                        className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                        title={t("quiz.edit")}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      {!quiz.is_public && (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShareQuiz({ id: quiz.id, title: quiz.title });
-                            }}
-                            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            title={t("quizzes.shareWithFriends")}
-                          >
-                            <Share2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              profile?.role === "admin"
-                                ? publishQuizDirectly(quiz.id)
-                                : requestPublish(quiz.id, quiz.title);
-                            }}
-                            className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                            title={
-                              profile?.role === "admin"
-                                ? t("quizzes.publishDirectly")
-                                : t("quizzes.requestPublish")
-                            }
-                          >
-                            <Globe className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteQuiz(quiz.id, quiz.title);
-                            }}
-                            className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                            title={t("quizzes.deleteQuiz")}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </>
-                  )}
-                  {activeTab === "shared" && (
+                  <div className="flex space-x-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeSharedQuiz(quiz.id);
+                        onNavigate("play-quiz", { quizId: quiz.id });
                       }}
-                      className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                      title={t("quizzes.removeFromList")}
+                      className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Play className="w-4 h-4 mr-2" />
+                      {t("quiz.play")}
                     </button>
-                  )}
+
+                    {activeTab === "my" && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate("edit-quiz", { quizId: quiz.id });
+                          }}
+                          className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                          title={t("quiz.edit")}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        {!quiz.is_public && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShareQuiz({ id: quiz.id, title: quiz.title });
+                              }}
+                              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              title={t("quizzes.shareWithFriends")}
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                profile?.role === "admin"
+                                  ? publishQuizDirectly(quiz.id)
+                                  : requestPublish(quiz.id, quiz.title);
+                              }}
+                              className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                              title={
+                                profile?.role === "admin"
+                                  ? t("quizzes.publishDirectly")
+                                  : t("quizzes.requestPublish")
+                              }
+                            >
+                              <Globe className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteQuiz(quiz.id, quiz.title);
+                              }}
+                              className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                              title={t("quizzes.deleteQuiz")}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+                    {activeTab === "shared" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSharedQuiz(quiz.id);
+                        }}
+                        className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        title={t("quizzes.removeFromList")}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -20,6 +20,14 @@ export interface Database {
           published_quiz_count: number
           created_at: string
           updated_at: string
+          terms_accepted_at: string | null
+          privacy_accepted_at: string | null
+          language?: string | null
+          show_all_languages?: boolean | null
+          is_banned?: boolean | null
+          ban_until?: string | null
+          ban_reason?: string | null
+          force_username_change?: boolean | null
         }
         Insert: {
           id: string
@@ -31,6 +39,8 @@ export interface Database {
           published_quiz_count?: number
           created_at?: string
           updated_at?: string
+          terms_accepted_at?: string | null
+          privacy_accepted_at?: string | null
         }
         Update: {
           id?: string
@@ -42,6 +52,8 @@ export interface Database {
           published_quiz_count?: number
           created_at?: string
           updated_at?: string
+          terms_accepted_at?: string | null
+          privacy_accepted_at?: string | null
         }
       }
       badges: {

@@ -23,8 +23,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
 
   const offers = [
     t("landing.about.offer1"),
@@ -238,7 +236,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           {/* Badges sociaux */}
           <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
             <a
-              href="https://discord.gg/VOTRE_INVITE_CODE"
+              href="https://discord.gg/KUU9WeDuPj"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
@@ -250,12 +248,23 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </a>
 
             <a
-              href="https://www.patreon.com/VOTRE_PAGE"
+              href="https://fr.tipeee.com/terracoast/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md hover:shadow-lg font-medium"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              <span className="hidden sm:inline">Tipeee</span>
+            </a>
+            <a
+              href="https://www.patreon.com/cw/TerraCoast?utm_source=search&vanity=TerraCoast"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF424D] text-white rounded-lg hover:bg-[#E13D47] transition-all shadow-md hover:shadow-lg font-medium"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d="M15.386.524c-4.764 0-8.64 3.876-8.64 8.64 0 4.75 3.876 8.613 8.64 8.613 4.75 0 8.614-3.864 8.614-8.613C24 4.4 20.136.524 15.386.524M.003 23.537h4.22V.524H.003" />
               </svg>
               <span className="hidden sm:inline">Patreon</span>
@@ -476,7 +485,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 </li>
                 <li>
                   <button
-                    onClick={() => setShowPrivacy(true)}
+                    onClick={() => onNavigate("privacy")}
                     className="text-gray-400 hover:text-white transition-colors text-sm"
                   >
                     {t("landing.footer.privacy")}
@@ -484,7 +493,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 </li>
                 <li>
                   <button
-                    onClick={() => setShowTerms(true)}
+                    onClick={() => onNavigate("terms")}
                     className="text-gray-400 hover:text-white transition-colors text-sm"
                   >
                     {t("landing.footer.terms")}
@@ -498,7 +507,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               <h4 className="font-bold text-lg mb-4">{t("landing.footer.social")}</h4>
               <div className="flex flex-col space-y-3">
                 <a
-                  href="https://discord.gg/VOTRE_INVITE_CODE"
+                  href="https://discord.gg/KUU9WeDuPj"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
@@ -513,7 +522,18 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   Discord
                 </a>
                 <a
-                  href="https://www.patreon.com/VOTRE_PAGE"
+                  href="https://fr.tipeee.com/terracoast/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                  </svg>
+                  Tipeee
+                </a>
+                <a
+                  href="https://www.patreon.com/cw/TerraCoast?utm_source=search&vanity=TerraCoast"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
@@ -522,6 +542,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                     className="w-5 h-5"
                     viewBox="0 0 24 24"
                     fill="currentColor"
+                    aria-hidden
                   >
                     <path d="M15.386.524c-4.764 0-8.64 3.876-8.64 8.64 0 4.75 3.876 8.613 8.64 8.613 4.75 0 8.614-3.864 8.614-8.613C24 4.4 20.136.524 15.386.524M.003 23.537h4.22V.524H.003" />
                   </svg>
@@ -573,96 +594,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       )}
 
-      {showPrivacy && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
-                {t("landing.footer.privacy")}
-              </h3>
-              <button
-                onClick={() => setShowPrivacy(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="prose prose-sm max-w-none text-gray-700">
-              <h4 className="font-bold">Collecte des données</h4>
-              <p>
-                TerraCoast collecte uniquement les données nécessaires au
-                fonctionnement du service : adresse email, pseudo, et
-                statistiques de jeu.
-              </p>
-
-              <h4 className="font-bold mt-6">Utilisation des données</h4>
-              <p>
-                Vos données sont utilisées uniquement pour améliorer votre
-                expérience sur la plateforme. Nous ne vendons ni ne partageons
-                vos données avec des tiers.
-              </p>
-
-              <h4 className="font-bold mt-6">Cookies</h4>
-              <p>
-                Le site utilise des cookies essentiels pour assurer son bon
-                fonctionnement et votre authentification.
-              </p>
-
-              <h4 className="font-bold mt-6">Vos droits</h4>
-              <p>
-                Vous disposez d'un droit d'accès, de rectification et de
-                suppression de vos données personnelles.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showTerms && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
-                {t("landing.footer.terms")}
-              </h3>
-              <button
-                onClick={() => setShowTerms(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="prose prose-sm max-w-none text-gray-700">
-              <h4 className="font-bold">Acceptation des conditions</h4>
-              <p>
-                En utilisant TerraCoast, vous acceptez les présentes conditions
-                d'utilisation.
-              </p>
-
-              <h4 className="font-bold mt-6">Utilisation du service</h4>
-              <p>
-                TerraCoast est une plateforme gratuite d'apprentissage de la
-                géographie. Vous vous engagez à utiliser le service de manière
-                responsable.
-              </p>
-
-              <h4 className="font-bold mt-6">Contenu utilisateur</h4>
-              <p>
-                En créant des quiz, vous accordez à TerraCoast le droit de les
-                diffuser sur la plateforme. Vous restez propriétaire de votre
-                contenu.
-              </p>
-
-              <h4 className="font-bold mt-6">Comportement</h4>
-              <p>
-                Tout comportement inapproprié (spam, harcèlement, contenu
-                illégal) entraînera la suspension ou la suppression de votre
-                compte.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
