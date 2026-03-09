@@ -171,9 +171,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                     <div
                       className="cursor-pointer flex-1"
                       onClick={() => {
-                        if (duelNotification.onNavigate) {
-                          duelNotification.onNavigate();
-                        }
+                        onNavigate("duels", { tab: "invitations" });
                         clearDuelNotification();
                       }}
                     >
@@ -205,9 +203,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                     <div
                       className="cursor-pointer flex-1"
                       onClick={() => {
-                        if (duelNotification.onNavigate) {
-                          duelNotification.onNavigate();
-                        }
+                        onNavigate("duels", { tab: "history" });
                         clearDuelNotification();
                       }}
                     >
@@ -220,12 +216,20 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 )}
                 <button
                   onClick={() => {
-                    onNavigate("duels");
+                    if (duelNotification.type === "completed") {
+                      onNavigate("duels", { tab: "history" });
+                    } else if (duelNotification.type === "accepted") {
+                      onNavigate("duels", { tab: "active" });
+                    } else {
+                      onNavigate("duels", { tab: "invitations" });
+                    }
                     clearDuelNotification();
                   }}
                   className="mt-3 w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
                 >
-                  {t("notifications.viewDuels")}
+                  {duelNotification.type === "completed"
+                    ? t("duels.viewResults")
+                    : t("notifications.viewDuels")}
                 </button>
               </div>
               <button
