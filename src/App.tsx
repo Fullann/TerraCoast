@@ -35,7 +35,7 @@ import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 import { useNotifications } from "./contexts/NotificationContext";
 
 function AppContent() {
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, loading, refreshProfile, mfaRequired } = useAuth();
   const { setNavigationCallback } = useNotifications();
   const [authView, setAuthView] = useState<
     "login" | "register" | "landing" | "terms" | "privacy"
@@ -76,6 +76,27 @@ function AppContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
           <p className="text-gray-700 text-lg font-medium">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && mfaRequired) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+        <div className="w-full">
+          <div className="max-w-md mx-auto mb-4">
+            <button
+              onClick={() => setAuthView("landing")}
+              className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
+            >
+              ← Retour à l'accueil
+            </button>
+          </div>
+          <LoginForm
+            onSwitchToRegister={() => setAuthView("register")}
+            forceMfa={true}
+          />
         </div>
       </div>
     );

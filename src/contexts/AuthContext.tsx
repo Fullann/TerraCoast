@@ -17,13 +17,15 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
+  mfaRequired: boolean;
   signUp: (
     email: string,
     password: string,
     pseudo: string,
     options?: { acceptTerms?: boolean; acceptPrivacy?: boolean }
   ) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ requiresMfa: boolean }>;
+  verifyMfa: (code: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -35,6 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -57,6 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshMfaStatus = async () => {
+    try {
+      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (error) return;
+      setMfaRequired(
+        data?.nextLevel === "aal2" && data?.currentLevel !== "aal2"
+      );
+    } catch {
+      // no-op
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       (async () => {
@@ -69,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(profileData);
         }
 
+        await refreshMfaStatus();
         setLoading(false);
       })();
     });
@@ -86,7 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(profileData);
         } else {
           setProfile(null);
+          setMfaRequired(false);
+          setMfaFactorId(null);
+          setMfaChallengeId(null);
         }
+        await refreshMfaStatus();
       })();
     });
 
@@ -133,6 +155,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) throw error;
+
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const requiresMfa =
+      aalData?.nextLevel === "aal2" && aalData?.currentLevel !== "aal2";
+
+    if (!requiresMfa) {
+      setMfaRequired(false);
+      setMfaFactorId(null);
+      setMfaChallengeId(null);
+      return { requiresMfa: false };
+    }
+
+    const { data: factorsData, error: factorsError } =
+      await supabase.auth.mfa.listFactors();
+    if (factorsError) throw factorsError;
+
+    const activeTotpFactor = (factorsData?.totp || []).find(
+      (factor: any) => factor.status === "verified"
+    );
+    if (!activeTotpFactor?.id) {
+      throw new Error("Aucun facteur MFA vérifié trouvé.");
+    }
+
+    const { data: challengeData, error: challengeError } =
+      await supabase.auth.mfa.challenge({
+        factorId: activeTotpFactor.id,
+      });
+    if (challengeError || !challengeData?.id) {
+      throw challengeError || new Error("Impossible de créer le challenge MFA.");
+    }
+
+    setMfaRequired(true);
+    setMfaFactorId(activeTotpFactor.id);
+    setMfaChallengeId(challengeData.id);
+    return { requiresMfa: true };
+  };
+
+  const verifyMfa = async (code: string) => {
+    if (!mfaFactorId || !mfaChallengeId) {
+      throw new Error("Session MFA invalide. Reconnecte-toi.");
+    }
+
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: mfaFactorId,
+      challengeId: mfaChallengeId,
+      code: code.trim(),
+    });
+    if (error) throw error;
+
+    setMfaRequired(false);
+    setMfaFactorId(null);
+    setMfaChallengeId(null);
   };
 
   const signOut = async () => {
@@ -147,8 +221,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         session,
         loading,
+        mfaRequired,
         signUp,
         signIn,
+        verifyMfa,
         signOut,
         refreshProfile,
       }}

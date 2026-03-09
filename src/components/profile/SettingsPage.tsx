@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -32,6 +32,165 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaDisablePassword, setMfaDisablePassword] = useState("");
+
+  useEffect(() => {
+    loadMfaStatus();
+  }, [user?.id]);
+
+  const loadMfaStatus = async () => {
+    try {
+      const { data, error: listError } = await supabase.auth.mfa.listFactors();
+      if (listError) return;
+      const activeTotp = (data?.totp || []).find(
+        (factor: any) => factor.status === "verified"
+      );
+      setMfaEnabled(!!activeTotp);
+      if (activeTotp?.id) {
+        setMfaFactorId(activeTotp.id);
+      }
+    } catch {
+      // no-op: status remains unchanged
+    }
+  };
+
+  const startMfaEnrollment = async () => {
+    setMfaLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const { data, error: enrollError } = await supabase.auth.mfa.enroll({
+        factorType: "totp",
+        friendlyName: "TerraCoast",
+      });
+
+      if (enrollError || !data) {
+        setError(t("settings.twoFactorStartError"));
+        return;
+      }
+
+      setMfaFactorId((data as any).id || null);
+      setMfaQrCode((data as any).totp?.qr_code || null);
+      setMfaSecret((data as any).totp?.secret || null);
+      setMfaChallengeId(null);
+      setMfaCode("");
+      setMessage(t("settings.twoFactorScanInstructions"));
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const verifyMfaEnrollment = async () => {
+    if (!mfaFactorId || !mfaCode.trim()) {
+      setError(t("settings.twoFactorCodeRequired"));
+      return;
+    }
+
+    setMfaLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      let challengeId = mfaChallengeId;
+      if (!challengeId) {
+        const { data: challengeData, error: challengeError } =
+          await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+
+        if (challengeError || !challengeData?.id) {
+          setError(t("settings.twoFactorChallengeError"));
+          return;
+        }
+        challengeId = challengeData.id;
+        setMfaChallengeId(challengeId);
+      }
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId,
+        code: mfaCode.trim(),
+      });
+
+      if (verifyError) {
+        setError(t("settings.twoFactorInvalidCode"));
+        return;
+      }
+
+      setMfaEnabled(true);
+      setMfaQrCode(null);
+      setMfaSecret(null);
+      setMfaCode("");
+      setMfaChallengeId(null);
+      setMessage(t("settings.twoFactorEnabledSuccess"));
+      await loadMfaStatus();
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const disableMfa = async () => {
+    if (!mfaFactorId) {
+      await loadMfaStatus();
+    }
+
+    if (!mfaFactorId) {
+      setError(t("settings.twoFactorNoActiveFactor"));
+      return;
+    }
+
+    if (!mfaDisablePassword.trim()) {
+      setError(t("settings.currentPasswordRequired"));
+      return;
+    }
+
+    const confirmDisable = window.confirm(
+      t("settings.twoFactorDisableConfirm")
+    );
+    if (!confirmDisable) return;
+
+    setMfaLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: mfaDisablePassword,
+      });
+
+      if (authError) {
+        setError(t("settings.currentPasswordIncorrect"));
+        return;
+      }
+
+      const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+        factorId: mfaFactorId,
+      });
+
+      if (unenrollError) {
+        setError(t("settings.twoFactorDisableError"));
+        return;
+      }
+
+      setMfaEnabled(false);
+      setMfaFactorId(null);
+      setMfaQrCode(null);
+      setMfaSecret(null);
+      setMfaCode("");
+      setMfaChallengeId(null);
+      setMfaDisablePassword("");
+      setMessage(t("settings.twoFactorDisabledSuccess"));
+    } finally {
+      setMfaLoading(false);
+    }
+  };
 
   const updatePseudo = async () => {
     if (!pseudo.trim()) {
@@ -438,6 +597,122 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                 <Shield className="w-4 h-4" />
                 {t("settings.updatePassword")}
               </button>
+            </div>
+          </div>
+
+          {/* CARTE DOUBLE AUTHENTIFICATION */}
+          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <Shield className="w-6 h-6 text-indigo-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 ml-3">
+                {t("settings.twoFactorTitle")}
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                {t("settings.twoFactorStatus")}:{" "}
+                <span
+                  className={`font-semibold ${
+                    mfaEnabled ? "text-green-600" : "text-gray-700"
+                  }`}
+                >
+                  {mfaEnabled
+                    ? t("settings.twoFactorEnabled")
+                    : t("settings.twoFactorDisabled")}
+                </span>
+              </p>
+
+              {!mfaEnabled && !mfaQrCode && (
+                <button
+                  onClick={startMfaEnrollment}
+                  disabled={mfaLoading}
+                  className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {t("settings.twoFactorStart")}
+                </button>
+              )}
+
+              {!mfaEnabled && mfaQrCode && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-700">
+                    {t("settings.twoFactorScanInstructions")}
+                  </p>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 inline-block">
+                    <img
+                      src={mfaQrCode}
+                      alt="QR code 2FA"
+                      className="w-44 h-44"
+                    />
+                  </div>
+                  {mfaSecret && (
+                    <p className="text-xs text-gray-500 break-all">
+                      {t("settings.twoFactorBackupKey")}: {mfaSecret}
+                    </p>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t("settings.twoFactorCodeLabel")}
+                    </label>
+                    <input
+                      type="text"
+                      value={mfaCode}
+                      onChange={(e) =>
+                        setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      placeholder={t("settings.twoFactorCodePlaceholder")}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={verifyMfaEnrollment}
+                      disabled={mfaLoading || mfaCode.length !== 6}
+                      className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {t("settings.twoFactorConfirmActivation")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMfaQrCode(null);
+                        setMfaSecret(null);
+                        setMfaCode("");
+                        setMfaChallengeId(null);
+                      }}
+                      disabled={mfaLoading}
+                      className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {mfaEnabled && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t("settings.twoFactorDisablePassword")}
+                    </label>
+                    <input
+                      type="password"
+                      value={mfaDisablePassword}
+                      onChange={(e) => setMfaDisablePassword(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <button
+                    onClick={disableMfa}
+                    disabled={mfaLoading || !mfaDisablePassword.trim()}
+                    className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    {t("settings.twoFactorDisableButton")}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

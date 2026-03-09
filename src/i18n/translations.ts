@@ -529,6 +529,37 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.deleteWarning":
       "Supprimer ton compte est une action irréversible. Toutes tes données seront perdues.",
     "settings.deleteAccount": "Supprimer mon compte",
+    "settings.currentPasswordRequired": "Le mot de passe actuel est requis",
+    "settings.twoFactorTitle": "Double authentification (2FA)",
+    "settings.twoFactorStatus": "Statut",
+    "settings.twoFactorEnabled": "Activée",
+    "settings.twoFactorDisabled": "Désactivée",
+    "settings.twoFactorStart": "Activer la 2FA",
+    "settings.twoFactorStartError":
+      "Impossible de démarrer la double authentification.",
+    "settings.twoFactorScanInstructions":
+      "Scanne le QR code avec ton application d'authentification puis saisis le code.",
+    "settings.twoFactorBackupKey": "Clé de secours",
+    "settings.twoFactorCodeLabel": "Code de vérification (6 chiffres)",
+    "settings.twoFactorCodePlaceholder": "123456",
+    "settings.twoFactorCodeRequired":
+      "Entre le code de vérification à 6 chiffres.",
+    "settings.twoFactorChallengeError":
+      "Impossible de générer le challenge MFA.",
+    "settings.twoFactorInvalidCode":
+      "Code invalide. Vérifie le code généré et réessaie.",
+    "settings.twoFactorEnabledSuccess":
+      "Double authentification activée avec succès.",
+    "settings.twoFactorDisablePassword":
+      "Confirme avec ton mot de passe actuel",
+    "settings.twoFactorDisableConfirm":
+      "Désactiver la double authentification ?",
+    "settings.twoFactorDisableButton": "Désactiver la 2FA",
+    "settings.twoFactorDisableError":
+      "Impossible de désactiver la double authentification.",
+    "settings.twoFactorDisabledSuccess":
+      "Double authentification désactivée.",
+    "settings.twoFactorNoActiveFactor": "Aucun facteur MFA actif trouvé.",
     "settings.logout": "Se déconnecter",
     "settings.logoutConfirmation": "Es-tu sûr de vouloir te déconnecter ?",
 
@@ -1075,6 +1106,34 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.deleteWarning":
       "Deleting your account is irreversible. All your data will be lost.",
     "settings.deleteAccount": "Delete my account",
+    "settings.currentPasswordRequired": "Current password is required",
+    "settings.twoFactorTitle": "Two-factor authentication (2FA)",
+    "settings.twoFactorStatus": "Status",
+    "settings.twoFactorEnabled": "Enabled",
+    "settings.twoFactorDisabled": "Disabled",
+    "settings.twoFactorStart": "Enable 2FA",
+    "settings.twoFactorStartError": "Unable to start two-factor authentication.",
+    "settings.twoFactorScanInstructions":
+      "Scan the QR code with your authenticator app, then enter the code.",
+    "settings.twoFactorBackupKey": "Backup key",
+    "settings.twoFactorCodeLabel": "Verification code (6 digits)",
+    "settings.twoFactorCodePlaceholder": "123456",
+    "settings.twoFactorCodeRequired":
+      "Enter the 6-digit verification code.",
+    "settings.twoFactorChallengeError": "Unable to create MFA challenge.",
+    "settings.twoFactorInvalidCode":
+      "Invalid code. Check your app and try again.",
+    "settings.twoFactorEnabledSuccess":
+      "Two-factor authentication enabled successfully.",
+    "settings.twoFactorDisablePassword":
+      "Confirm with your current password",
+    "settings.twoFactorDisableConfirm": "Disable two-factor authentication?",
+    "settings.twoFactorDisableButton": "Disable 2FA",
+    "settings.twoFactorDisableError":
+      "Unable to disable two-factor authentication.",
+    "settings.twoFactorDisabledSuccess":
+      "Two-factor authentication disabled.",
+    "settings.twoFactorNoActiveFactor": "No active MFA factor found.",
     "imageDropzone.invalidType": "Please select an image (JPG, PNG, GIF, WebP)",
     "imageDropzone.fileTooLarge": "Image must not exceed 5 MB",
     "imageDropzone.uploadError": "Upload error",
@@ -1551,6 +1610,37 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.deleteWarning":
       "Eliminar tu cuenta es irreversible. Todos tus datos se perderán.",
     "settings.deleteAccount": "Eliminar mi cuenta",
+    "settings.currentPasswordRequired": "La contraseña actual es obligatoria",
+    "settings.twoFactorTitle": "Autenticación de dos factores (2FA)",
+    "settings.twoFactorStatus": "Estado",
+    "settings.twoFactorEnabled": "Activada",
+    "settings.twoFactorDisabled": "Desactivada",
+    "settings.twoFactorStart": "Activar 2FA",
+    "settings.twoFactorStartError":
+      "No se puede iniciar la autenticación de dos factores.",
+    "settings.twoFactorScanInstructions":
+      "Escanea el código QR con tu aplicación autenticadora y luego introduce el código.",
+    "settings.twoFactorBackupKey": "Clave de respaldo",
+    "settings.twoFactorCodeLabel": "Código de verificación (6 dígitos)",
+    "settings.twoFactorCodePlaceholder": "123456",
+    "settings.twoFactorCodeRequired":
+      "Introduce el código de verificación de 6 dígitos.",
+    "settings.twoFactorChallengeError":
+      "No se puede generar el desafío MFA.",
+    "settings.twoFactorInvalidCode":
+      "Código inválido. Verifica el código generado e inténtalo de nuevo.",
+    "settings.twoFactorEnabledSuccess":
+      "Autenticación de dos factores activada correctamente.",
+    "settings.twoFactorDisablePassword":
+      "Confirma con tu contraseña actual",
+    "settings.twoFactorDisableConfirm":
+      "¿Desactivar la autenticación de dos factores?",
+    "settings.twoFactorDisableButton": "Desactivar 2FA",
+    "settings.twoFactorDisableError":
+      "No se puede desactivar la autenticación de dos factores.",
+    "settings.twoFactorDisabledSuccess":
+      "Autenticación de dos factores desactivada.",
+    "settings.twoFactorNoActiveFactor": "No se encontró un factor MFA activo.",
     "imageDropzone.invalidType":
       "Por favor selecciona una imagen (JPG, PNG, GIF, WebP)",
     "imageDropzone.fileTooLarge": "La imagen no debe superar 5 MB",
@@ -2031,6 +2121,38 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.deleteWarning":
       "Das Löschen deines Kontos ist unwiderruflich. Alle deine Daten gehen verloren.",
     "settings.deleteAccount": "Mein Konto löschen",
+    "settings.currentPasswordRequired": "Aktuelles Passwort ist erforderlich",
+    "settings.twoFactorTitle": "Zwei-Faktor-Authentifizierung (2FA)",
+    "settings.twoFactorStatus": "Status",
+    "settings.twoFactorEnabled": "Aktiviert",
+    "settings.twoFactorDisabled": "Deaktiviert",
+    "settings.twoFactorStart": "2FA aktivieren",
+    "settings.twoFactorStartError":
+      "Zwei-Faktor-Authentifizierung konnte nicht gestartet werden.",
+    "settings.twoFactorScanInstructions":
+      "Scanne den QR-Code mit deiner Authenticator-App und gib dann den Code ein.",
+    "settings.twoFactorBackupKey": "Sicherungsschlüssel",
+    "settings.twoFactorCodeLabel": "Bestätigungscode (6 Ziffern)",
+    "settings.twoFactorCodePlaceholder": "123456",
+    "settings.twoFactorCodeRequired":
+      "Gib den 6-stelligen Bestätigungscode ein.",
+    "settings.twoFactorChallengeError":
+      "MFA-Challenge konnte nicht erstellt werden.",
+    "settings.twoFactorInvalidCode":
+      "Ungültiger Code. Prüfe den generierten Code und versuche es erneut.",
+    "settings.twoFactorEnabledSuccess":
+      "Zwei-Faktor-Authentifizierung erfolgreich aktiviert.",
+    "settings.twoFactorDisablePassword":
+      "Mit aktuellem Passwort bestätigen",
+    "settings.twoFactorDisableConfirm":
+      "Zwei-Faktor-Authentifizierung deaktivieren?",
+    "settings.twoFactorDisableButton": "2FA deaktivieren",
+    "settings.twoFactorDisableError":
+      "Zwei-Faktor-Authentifizierung konnte nicht deaktiviert werden.",
+    "settings.twoFactorDisabledSuccess":
+      "Zwei-Faktor-Authentifizierung deaktiviert.",
+    "settings.twoFactorNoActiveFactor":
+      "Kein aktiver MFA-Faktor gefunden.",
     "imageDropzone.invalidType": "Bitte wähle ein Bild (JPG, PNG, GIF, WebP)",
     "imageDropzone.fileTooLarge": "Bild darf nicht größer als 5 MB sein",
     "imageDropzone.uploadError": "Upload-Fehler",
@@ -2511,6 +2633,38 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.deleteWarning":
       "Eliminare il tuo account è irreversibile. Tutti i tuoi dati andranno persi.",
     "settings.deleteAccount": "Elimina il mio account",
+    "settings.currentPasswordRequired": "La password attuale è obbligatoria",
+    "settings.twoFactorTitle": "Autenticazione a due fattori (2FA)",
+    "settings.twoFactorStatus": "Stato",
+    "settings.twoFactorEnabled": "Attivata",
+    "settings.twoFactorDisabled": "Disattivata",
+    "settings.twoFactorStart": "Attiva 2FA",
+    "settings.twoFactorStartError":
+      "Impossibile avviare l'autenticazione a due fattori.",
+    "settings.twoFactorScanInstructions":
+      "Scansiona il QR code con la tua app di autenticazione, poi inserisci il codice.",
+    "settings.twoFactorBackupKey": "Chiave di backup",
+    "settings.twoFactorCodeLabel": "Codice di verifica (6 cifre)",
+    "settings.twoFactorCodePlaceholder": "123456",
+    "settings.twoFactorCodeRequired":
+      "Inserisci il codice di verifica a 6 cifre.",
+    "settings.twoFactorChallengeError":
+      "Impossibile generare la challenge MFA.",
+    "settings.twoFactorInvalidCode":
+      "Codice non valido. Verifica il codice generato e riprova.",
+    "settings.twoFactorEnabledSuccess":
+      "Autenticazione a due fattori attivata con successo.",
+    "settings.twoFactorDisablePassword":
+      "Conferma con la password attuale",
+    "settings.twoFactorDisableConfirm":
+      "Disattivare l'autenticazione a due fattori?",
+    "settings.twoFactorDisableButton": "Disattiva 2FA",
+    "settings.twoFactorDisableError":
+      "Impossibile disattivare l'autenticazione a due fattori.",
+    "settings.twoFactorDisabledSuccess":
+      "Autenticazione a due fattori disattivata.",
+    "settings.twoFactorNoActiveFactor":
+      "Nessun fattore MFA attivo trovato.",
     "imageDropzone.invalidType": "Seleziona un'immagine (JPG, PNG, GIF, WebP)",
     "imageDropzone.fileTooLarge": "L'immagine non deve superare 5 MB",
     "imageDropzone.uploadError": "Errore durante il caricamento",
@@ -2984,6 +3138,38 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.deleteWarning":
       "Excluir sua conta é irreversível. Todos os seus dados serão perdidos.",
     "settings.deleteAccount": "Excluir minha conta",
+    "settings.currentPasswordRequired": "A senha atual é obrigatória",
+    "settings.twoFactorTitle": "Autenticação de dois fatores (2FA)",
+    "settings.twoFactorStatus": "Status",
+    "settings.twoFactorEnabled": "Ativada",
+    "settings.twoFactorDisabled": "Desativada",
+    "settings.twoFactorStart": "Ativar 2FA",
+    "settings.twoFactorStartError":
+      "Não foi possível iniciar a autenticação de dois fatores.",
+    "settings.twoFactorScanInstructions":
+      "Escaneie o QR code com seu app autenticador e depois digite o código.",
+    "settings.twoFactorBackupKey": "Chave de backup",
+    "settings.twoFactorCodeLabel": "Código de verificação (6 dígitos)",
+    "settings.twoFactorCodePlaceholder": "123456",
+    "settings.twoFactorCodeRequired":
+      "Digite o código de verificação de 6 dígitos.",
+    "settings.twoFactorChallengeError":
+      "Não foi possível gerar o desafio MFA.",
+    "settings.twoFactorInvalidCode":
+      "Código inválido. Verifique o código gerado e tente novamente.",
+    "settings.twoFactorEnabledSuccess":
+      "Autenticação de dois fatores ativada com sucesso.",
+    "settings.twoFactorDisablePassword":
+      "Confirme com sua senha atual",
+    "settings.twoFactorDisableConfirm":
+      "Desativar a autenticação de dois fatores?",
+    "settings.twoFactorDisableButton": "Desativar 2FA",
+    "settings.twoFactorDisableError":
+      "Não foi possível desativar a autenticação de dois fatores.",
+    "settings.twoFactorDisabledSuccess":
+      "Autenticação de dois fatores desativada.",
+    "settings.twoFactorNoActiveFactor":
+      "Nenhum fator MFA ativo encontrado.",
     "imageDropzone.invalidType":
       "Por favor selecione uma imagem (JPG, PNG, GIF, WebP)",
     "imageDropzone.fileTooLarge": "A imagem não deve exceder 5 MB",
