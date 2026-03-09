@@ -193,13 +193,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const verifyMfa = async (code: string) => {
-    if (!mfaFactorId || !mfaChallengeId) {
-      throw new Error("Session MFA invalide. Reconnecte-toi.");
+    let factorId = mfaFactorId;
+    let challengeId = mfaChallengeId;
+
+    // Robustesse: si l'utilisateur arrive sur l'étape MFA sans être passé
+    // par signIn (ex. session restaurée après refresh), on reconstruit le challenge.
+    if (!factorId) {
+      const { data: factorsData, error: factorsError } =
+        await supabase.auth.mfa.listFactors();
+      if (factorsError) throw factorsError;
+      const activeTotpFactor = (factorsData?.totp || []).find(
+        (factor: any) => factor.status === "verified"
+      );
+      if (!activeTotpFactor?.id) {
+        throw new Error("Aucun facteur MFA vérifié trouvé.");
+      }
+      factorId = activeTotpFactor.id;
+      setMfaFactorId(factorId);
+    }
+
+    if (!challengeId) {
+      const { data: challengeData, error: challengeError } =
+        await supabase.auth.mfa.challenge({ factorId });
+      if (challengeError || !challengeData?.id) {
+        throw challengeError || new Error("Impossible de créer le challenge MFA.");
+      }
+      challengeId = challengeData.id;
+      setMfaChallengeId(challengeId);
     }
 
     const { error } = await supabase.auth.mfa.verify({
-      factorId: mfaFactorId,
-      challengeId: mfaChallengeId,
+      factorId,
+      challengeId,
       code: code.trim(),
     });
     if (error) throw error;
