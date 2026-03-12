@@ -339,7 +339,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     setError("");
 
     try {
-      await supabase
+      const { error: quizUpdateError } = await supabase
         .from("quizzes")
         .update({
           title,
@@ -356,6 +356,10 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         })
         .eq("id", quizId);
 
+      if (quizUpdateError) {
+        throw quizUpdateError;
+      }
+
       const { data: existingQuestions } = await supabase
         .from("questions")
         .select("id")
@@ -371,14 +375,21 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           .map((eq) => eq.id);
 
         if (questionsToDelete.length > 0) {
-          await supabase.from("questions").delete().in("id", questionsToDelete);
+          const { error: deleteQuestionsError } = await supabase
+            .from("questions")
+            .delete()
+            .in("id", questionsToDelete);
+
+          if (deleteQuestionsError) {
+            throw deleteQuestionsError;
+          }
         }
       }
 
       for (const question of questions) {
         if (question.isNew) {
           const { id, isNew, ...questionData } = question;
-          await supabase.from("questions").insert({
+          const { error: insertQuestionError } = await supabase.from("questions").insert({
             ...questionData,
             options:
               question.question_type === "mcq"
@@ -399,9 +410,13 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   : []
                 : null,
           });
+
+          if (insertQuestionError) {
+            throw insertQuestionError;
+          }
         } else {
           const { isNew, ...questionData } = question;
-          await supabase
+          const { error: updateQuestionError } = await supabase
             .from("questions")
             .update({
               question_text: questionData.question_text,
@@ -436,6 +451,10 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
               complement_if_wrong: questionData.complement_if_wrong || null,
             })
             .eq("id", question.id);
+
+          if (updateQuestionError) {
+            throw updateQuestionError;
+          }
         }
       }
 

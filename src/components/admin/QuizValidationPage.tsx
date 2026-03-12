@@ -13,6 +13,36 @@ interface QuizWithAuthor extends Quiz {
   question_count?: number;
 }
 
+function extractQuestionOptions(rawOptions: QuestionRow['options']): string[] {
+  if (!rawOptions) return [];
+
+  const toCleanStrings = (values: unknown[]): string[] =>
+    values
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .filter((value) => value.length > 0);
+
+  if (Array.isArray(rawOptions)) {
+    return toCleanStrings(rawOptions);
+  }
+
+  if (typeof rawOptions === 'object') {
+    const record = rawOptions as Record<string, unknown>;
+    const candidates = ['options', 'choices', 'answers', 'propositions'];
+
+    for (const key of candidates) {
+      const value = record[key];
+      if (Array.isArray(value)) {
+        const parsed = toCleanStrings(value);
+        if (parsed.length > 0) return parsed;
+      }
+    }
+
+    return toCleanStrings(Object.values(record));
+  }
+
+  return [];
+}
+
 export function QuizValidationPage() {
   const { profile } = useAuth();
   const [pendingQuizzes, setPendingQuizzes] = useState<QuizWithAuthor[]>([]);
@@ -230,6 +260,45 @@ export function QuizValidationPage() {
                               </span>
                             </div>
                             <p className="text-gray-800">{question.question_text}</p>
+                            {(() => {
+                              const options = extractQuestionOptions(question.options);
+                              const normalizedCorrectAnswer = (question.correct_answer || '')
+                                .trim()
+                                .toLowerCase();
+
+                              if (options.length === 0) return null;
+
+                              return (
+                                <div className="mt-2">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                                    Propositions
+                                  </p>
+                                  <ul className="space-y-1">
+                                    {options.map((option, optionIndex) => {
+                                      const isCorrect =
+                                        option.trim().toLowerCase() === normalizedCorrectAnswer;
+                                      return (
+                                        <li
+                                          key={`${question.id}-option-${optionIndex}`}
+                                          className={`text-sm px-2 py-1 rounded ${
+                                            isCorrect
+                                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                              : 'bg-white text-gray-700 border border-gray-200'
+                                          }`}
+                                        >
+                                          {option}
+                                          {isCorrect && (
+                                            <span className="ml-2 text-xs font-semibold">
+                                              (bonne réponse)
+                                            </span>
+                                          )}
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
+                              );
+                            })()}
                             <p className="text-sm text-emerald-700 mt-1">
                               Réponse attendue: <span className="font-medium">{question.correct_answer}</span>
                             </p>
