@@ -156,7 +156,13 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
       .select("*, titles(*)")
       .eq("user_id", targetUserId);
 
-    if (titlesData) setTitles(titlesData);
+    if (titlesData) {
+      setTitles(
+        [...titlesData].sort(
+          (a, b) => Number(Boolean(b.is_active)) - Number(Boolean(a.is_active))
+        )
+      );
+    }
 
     const { data: sessionsData } = await supabase
       .from("game_sessions")
@@ -346,6 +352,35 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   });
 
   const levelProgress = getLevelProgress();
+  const activeTitle = titles.find((title) => title.is_active);
+
+  const setActiveTitle = async (userTitleId: string) => {
+    if (!isOwnProfile || !currentUserProfile) return;
+
+    const { error: resetError } = await supabase
+      .from("user_titles")
+      .update({ is_active: false })
+      .eq("user_id", currentUserProfile.id);
+    if (resetError) return;
+
+    const { error: activateError } = await supabase
+      .from("user_titles")
+      .update({ is_active: true })
+      .eq("id", userTitleId)
+      .eq("user_id", currentUserProfile.id);
+    if (activateError) return;
+
+    setTitles((prev) =>
+      prev
+        .map((title) => ({
+          ...title,
+          is_active: title.id === userTitleId,
+        }))
+        .sort(
+          (a, b) => Number(Boolean(b.is_active)) - Number(Boolean(a.is_active))
+        )
+    );
+  };
 
   if (!profile) {
     return (
@@ -373,6 +408,12 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
                 {profile.pseudo}
               </h1>
+              {activeTitle && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold mb-2">
+                  <Star className="w-4 h-4" />
+                  {activeTitle.titles.name}
+                </div>
+              )}
 
               {/* ✅ BARRE DE PROGRESSION DU NIVEAU */}
               <div className="bg-gray-100 rounded-full p-1 mb-4">
@@ -666,7 +707,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           )}
         </div>
 
-        {/* ✅ TITRES - Suppression du bouton Activer */}
+        {/* TITRES */}
         <div className="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-xl p-6 border border-purple-200">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
             <Star className="w-7 h-7 mr-3 text-purple-500" />
@@ -677,8 +718,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             {titles.map((userTitle) => (
               <div
                 key={userTitle.id}
-                className={`group relative rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 border-2 bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300"
-                `}
+                className={`group relative rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 border-2 ${
+                  userTitle.is_active
+                    ? "bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-400"
+                    : "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300"
+                }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -691,6 +735,22 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                     <p className="text-xs text-gray-500">
                       {new Date(userTitle.earned_at).toLocaleDateString()}
                     </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      {userTitle.is_active && (
+                        <span className="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">
+                          {t("profile.active")}
+                        </span>
+                      )}
+                      {isOwnProfile && !userTitle.is_active && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTitle(userTitle.id)}
+                          className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium transition-colors"
+                        >
+                          {t("profile.activateTitle")}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

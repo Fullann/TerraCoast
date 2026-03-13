@@ -174,6 +174,14 @@ export interface Database {
           published_at: string | null
           is_reported: boolean
           report_count: number
+          cover_image_url: string | null
+          validation_status: 'pending' | 'approved' | 'rejected' | null
+          pending_validation: boolean | null
+          randomize_questions: boolean | null
+          randomize_answers: boolean | null
+          language: string | null
+          quiz_type_id: string | null
+          tags: string[] | null
         }
         Insert: {
           id?: string
@@ -191,6 +199,14 @@ export interface Database {
           published_at?: string | null
           is_reported?: boolean
           report_count?: number
+          cover_image_url?: string | null
+          validation_status?: 'pending' | 'approved' | 'rejected' | null
+          pending_validation?: boolean | null
+          randomize_questions?: boolean | null
+          randomize_answers?: boolean | null
+          language?: string | null
+          quiz_type_id?: string | null
+          tags?: string[] | null
         }
         Update: {
           id?: string
@@ -208,6 +224,14 @@ export interface Database {
           published_at?: string | null
           is_reported?: boolean
           report_count?: number
+          cover_image_url?: string | null
+          validation_status?: 'pending' | 'approved' | 'rejected' | null
+          pending_validation?: boolean | null
+          randomize_questions?: boolean | null
+          randomize_answers?: boolean | null
+          language?: string | null
+          quiz_type_id?: string | null
+          tags?: string[] | null
         }
       }
       questions: {
@@ -215,37 +239,156 @@ export interface Database {
           id: string
           quiz_id: string
           question_text: string
-          question_type: 'mcq' | 'single_answer' | 'map_click' | 'text_free'
+          question_type:
+            | 'mcq'
+            | 'single_answer'
+            | 'map_click'
+            | 'text_free'
+            | 'true_false'
+            | 'puzzle_map'
+            | 'top10_order'
           correct_answer: string
+          correct_answers: string[] | null
           options: Json | null
           map_data: Json | null
+          image_url: string | null
+          option_images: Json | null
+          randomize_options: boolean | null
           points: number
           order_index: number
           created_at: string
-          complement_if_wrong?: string;
+          complement_if_wrong: string | null
         }
         Insert: {
           id?: string
           quiz_id: string
           question_text: string
-          question_type: 'mcq' | 'single_answer' | 'map_click' | 'text_free'
+          question_type:
+            | 'mcq'
+            | 'single_answer'
+            | 'map_click'
+            | 'text_free'
+            | 'true_false'
+            | 'puzzle_map'
+            | 'top10_order'
           correct_answer: string
+          correct_answers?: string[] | null
           options?: Json | null
           map_data?: Json | null
+          image_url?: string | null
+          option_images?: Json | null
+          randomize_options?: boolean | null
           points?: number
           order_index: number
           created_at?: string
+          complement_if_wrong?: string | null
         }
         Update: {
           id?: string
           quiz_id?: string
           question_text?: string
-          question_type?: 'mcq' | 'single_answer' | 'map_click' | 'text_free'
+          question_type?:
+            | 'mcq'
+            | 'single_answer'
+            | 'map_click'
+            | 'text_free'
+            | 'true_false'
+            | 'puzzle_map'
+            | 'top10_order'
           correct_answer?: string
+          correct_answers?: string[] | null
           options?: Json | null
           map_data?: Json | null
+          image_url?: string | null
+          option_images?: Json | null
+          randomize_options?: boolean | null
           points?: number
           order_index?: number
+          created_at?: string
+          complement_if_wrong?: string | null
+        }
+      }
+      quiz_types: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          color: string
+          created_at: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          color?: string
+          created_at?: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          created_at?: string
+          is_active?: boolean
+        }
+      }
+      countries_reference: {
+        Row: {
+          iso3: string
+          name: string
+          continent: string
+          lat: number | null
+          lng: number | null
+          population: number | null
+          area_km2: number | null
+          created_at: string
+        }
+        Insert: {
+          iso3: string
+          name: string
+          continent: string
+          lat?: number | null
+          lng?: number | null
+          population?: number | null
+          area_km2?: number | null
+          created_at?: string
+        }
+        Update: {
+          iso3?: string
+          name?: string
+          continent?: string
+          lat?: number | null
+          lng?: number | null
+          population?: number | null
+          area_km2?: number | null
+          created_at?: string
+        }
+      }
+      top10_rules: {
+        Row: {
+          id: string
+          code: string
+          label: string
+          metric: 'population' | 'area_km2'
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          label: string
+          metric: 'population' | 'area_km2'
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          label?: string
+          metric?: 'population' | 'area_km2'
+          is_active?: boolean
           created_at?: string
         }
       }

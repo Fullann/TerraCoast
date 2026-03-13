@@ -6,6 +6,7 @@ import {
   BookOpen,
   Search,
   Play,
+  Dumbbell,
   Filter,
   Plus,
   Share2,
@@ -545,7 +546,28 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <>
+          <div className="mb-4 p-4 rounded-xl border border-purple-200 bg-purple-50">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-purple-900">
+                  {t("quizzes.trainingBannerTitle")}
+                </p>
+                <p className="text-sm text-purple-700">
+                  {t("quizzes.trainingBannerDesc")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate("training-mode")}
+                className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                {t("home.trainingMode")}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredQuizzes.map((quiz) => (
             <div
               key={quiz.id}
@@ -626,6 +648,16 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                       <Play className="w-4 h-4 mr-2" />
                       {t("quiz.play")}
                     </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigate("play-training", { quizId: quiz.id, questionCount: 10 });
+                      }}
+                      className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-medium flex items-center justify-center"
+                      title={t("quizzes.trainNow")}
+                    >
+                      <Dumbbell className="w-4 h-4" />
+                    </button>
 
                     {activeTab === "my" && (
                       <>
@@ -698,7 +730,8 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
 
       {shareQuiz && (

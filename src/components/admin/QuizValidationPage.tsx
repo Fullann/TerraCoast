@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
@@ -13,8 +14,97 @@ interface QuizWithAuthor extends Quiz {
   question_count?: number;
 }
 
+function extractQuestionOptions(rawOptions: QuestionRow['options']): string[] {
+  if (!rawOptions) return [];
+
+  const toCleanStrings = (values: unknown[]): string[] =>
+    values
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .filter((value) => value.length > 0);
+
+  if (Array.isArray(rawOptions)) {
+    return toCleanStrings(rawOptions);
+  }
+
+  if (typeof rawOptions === 'object') {
+    const record = rawOptions as Record<string, unknown>;
+    const candidates = ['options', 'choices', 'answers', 'propositions'];
+
+    for (const key of candidates) {
+      const value = record[key];
+      if (Array.isArray(value)) {
+        const parsed = toCleanStrings(value);
+        if (parsed.length > 0) return parsed;
+      }
+    }
+
+    return toCleanStrings(Object.values(record));
+  }
+
+  return [];
+}
+
+function renderQuestionConfig(question: QuestionRow, t: (key: string) => string) {
+  const mapData = (question.map_data || {}) as Record<string, any>;
+  const selectedCountries = Array.isArray(mapData.selectedCountries)
+    ? mapData.selectedCountries
+    : [];
+  const top10ExpectedOrder = Array.isArray(question.options)
+    ? (question.options as unknown[])
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter((item) => item.length > 0)
+    : [];
+
+  if (question.question_type === "puzzle_map") {
+    return (
+      <div className="mt-2 text-xs text-sky-800 bg-sky-50 border border-sky-200 rounded p-2">
+        {t('admin.quizValidation.puzzle.modeLabel')}{" "}
+        {selectedCountries.length > 0
+          ? `${selectedCountries.length} ${t('admin.quizValidation.puzzle.selectedCountries')}`
+          : `${t('admin.quizValidation.puzzle.zone')} ${mapData.continent || "world"}`}
+        {mapData.showTargetList === false
+          ? ` • ${t('admin.quizValidation.puzzle.hiddenList')}`
+          : ` • ${t('admin.quizValidation.puzzle.visibleList')}`}
+      </div>
+    );
+  }
+
+  if (question.question_type === "top10_order") {
+    return (
+      <div className="mt-2 text-xs text-orange-800 bg-orange-50 border border-orange-200 rounded p-2 space-y-2">
+        <p>
+          {t('admin.quizValidation.top10.modeLabel')}{" "}
+          {top10ExpectedOrder.length > 0
+            ? t('admin.quizValidation.top10.customList')
+            : `${t('admin.quizValidation.top10.metric')} ${mapData.metric || "population"}`}
+          {selectedCountries.length > 0
+            ? ` • ${selectedCountries.length} ${t('admin.quizValidation.puzzle.selectedCountries')}`
+            : top10ExpectedOrder.length > 0
+            ? ""
+            : ` • ${t('admin.quizValidation.puzzle.zone')} ${mapData.continent || "world"}`}
+        </p>
+        {top10ExpectedOrder.length > 0 && (
+          <div className="bg-white border border-orange-200 rounded p-2">
+            <p className="font-semibold text-orange-900 mb-1">
+              {t('admin.quizValidation.top10.expectedOrder')}:
+            </p>
+            <ol className="list-decimal list-inside space-y-0.5 text-orange-900">
+              {top10ExpectedOrder.map((item, index) => (
+                <li key={`top10-expected-${index}`}>{item}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export function QuizValidationPage() {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [pendingQuizzes, setPendingQuizzes] = useState<QuizWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizWithAuthor | null>(null);
@@ -230,6 +320,46 @@ export function QuizValidationPage() {
                               </span>
                             </div>
                             <p className="text-gray-800">{question.question_text}</p>
+                            {renderQuestionConfig(question, t)}
+                            {(() => {
+                              const options = extractQuestionOptions(question.options);
+                              const normalizedCorrectAnswer = (question.correct_answer || '')
+                                .trim()
+                                .toLowerCase();
+
+                              if (options.length === 0) return null;
+
+                              return (
+                                <div className="mt-2">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                                    Propositions
+                                  </p>
+                                  <ul className="space-y-1">
+                                    {options.map((option, optionIndex) => {
+                                      const isCorrect =
+                                        option.trim().toLowerCase() === normalizedCorrectAnswer;
+                                      return (
+                                        <li
+                                          key={`${question.id}-option-${optionIndex}`}
+                                          className={`text-sm px-2 py-1 rounded ${
+                                            isCorrect
+                                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                              : 'bg-white text-gray-700 border border-gray-200'
+                                          }`}
+                                        >
+                                          {option}
+                                          {isCorrect && (
+                                            <span className="ml-2 text-xs font-semibold">
+                                              (bonne réponse)
+                                            </span>
+                                          )}
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
+                              );
+                            })()}
                             <p className="text-sm text-emerald-700 mt-1">
                               Réponse attendue: <span className="font-medium">{question.correct_answer}</span>
                             </p>
