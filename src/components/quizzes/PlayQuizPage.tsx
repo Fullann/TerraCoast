@@ -590,62 +590,29 @@ export function PlayQuizPage({
       Math.round((totalScore / (questions.length * 150)) * 100)
     );
 
-    const { error } = await supabase
-      .from("game_sessions")
-      .update({
-        score: normalizedScore,
-        accuracy_percentage: accuracy,
-        time_taken_seconds: totalTime,
-        completed: true,
-        completed_at: new Date().toISOString(),
-        correct_answers: correctAnswers,
-        total_questions: questions.length,
-      })
-      .eq("id", sessionId);
+    const { data: serverProgressData, error: serverProgressError } = await supabase.rpc(
+      "complete_game_session_and_progress",
+      {
+        p_session_id: sessionId,
+        p_score: normalizedScore,
+        p_accuracy: accuracy,
+        p_time_taken_seconds: totalTime,
+        p_correct_answers: correctAnswers,
+        p_total_questions: questions.length,
+      }
+    );
+
+    if (serverProgressError) {
+      console.error("[progression-rpc] failed:", serverProgressError);
+      return;
+    }
 
     if (mode === "duel" && duelId) {
       await updateDuel();
     }
 
-    const shouldGiveXP = (quiz?.is_public || quiz?.is_global) && !trainingMode;
-    let earnedXP = 0;
-
-    if (shouldGiveXP) {
-      earnedXP = Math.round(normalizedScore / 10);
-      setXpGained(earnedXP);
-      const newXP = profile.experience_points + earnedXP;
-      const newLevel = Math.floor(newXP / 100) + 1;
-
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const needsReset = profile.last_reset_month !== currentMonth;
-
-      await supabase
-        .from("profiles")
-        .update({
-          experience_points: newXP,
-          level: newLevel,
-          monthly_score: needsReset
-            ? normalizedScore
-            : (profile.monthly_score || 0) + normalizedScore,
-          monthly_games_played: needsReset
-            ? 1
-            : (profile.monthly_games_played || 0) + 1,
-          last_reset_month: currentMonth,
-        })
-        .eq("id", profile.id);
-
-      if (needsReset && profile.last_reset_month) {
-        await recordMonthlyRanking(profile.last_reset_month);
-      }
-    } else {
-      setXpGained(0);
-    }
-
-    // Quiz stats are updated server-side by DB trigger when session becomes completed.
-
-    if (shouldGiveXP) {
-      await checkAndAwardBadges(profile.level);
-    }
+    const payload = (serverProgressData || {}) as { earned_xp?: number };
+    setXpGained(Number(payload.earned_xp || 0));
     await refreshProfile();
   };
 
@@ -696,62 +663,6 @@ export function PlayQuizPage({
     }
 
     await supabase.from("duels").update(updates).eq("id", duelId);
-  };
-
-  const recordMonthlyRanking = async (lastMonth: string) => {
-    const { data: topPlayers } = await supabase
-      .from("profiles")
-      .select("id, pseudo, monthly_score, top_10_count")
-      .order("monthly_score", { ascending: false })
-      .limit(10);
-
-    if (topPlayers && topPlayers.length > 0) {
-      for (let i = 0; i < topPlayers.length; i++) {
-        const player = topPlayers[i];
-
-        await supabase.from("monthly_rankings_history").upsert({
-          user_id: player.id,
-          month: lastMonth,
-          final_rank: i + 1,
-          final_score: player.monthly_score || 0,
-        });
-
-        await supabase
-          .from("profiles")
-          .update({
-            top_10_count: (player.top_10_count || 0) + 1,
-          })
-          .eq("id", player.id);
-      }
-    }
-  };
-
-  const checkAndAwardBadges = async (level: number) => {
-    if (!profile) return;
-
-    const { data: badges } = await supabase
-      .from("badges")
-      .select("*")
-      .eq("requirement_type", "level")
-      .lte("requirement_value", level);
-
-    if (badges) {
-      for (const badge of badges) {
-        const { data: existing } = await supabase
-          .from("user_badges")
-          .select("id")
-          .eq("user_id", profile.id)
-          .eq("badge_id", badge.id)
-          .maybeSingle();
-
-        if (!existing) {
-          await supabase.from("user_badges").insert({
-            user_id: profile.id,
-            badge_id: badge.id,
-          });
-        }
-      }
-    }
   };
 
   if (!quiz || questions.length === 0) {
