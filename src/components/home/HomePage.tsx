@@ -319,6 +319,25 @@ export function HomePage({
             {t("home.quickActions")}
           </h2>
 
+          <div className="mb-4 p-4 rounded-xl border border-purple-200 bg-purple-50">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-semibold text-purple-900">
+                  {t("home.trainingSpotlightTitle")}
+                </p>
+                <p className="text-sm text-purple-700 mt-1">
+                  {t("home.trainingSpotlightDesc")}
+                </p>
+              </div>
+              <button
+                onClick={() => onNavigate("training-mode")}
+                className="shrink-0 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                {t("home.trainingSpotlightCta")}
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={() => onNavigate("quizzes")}
             className="w-full flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group mb-4"

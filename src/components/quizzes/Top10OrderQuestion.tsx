@@ -13,8 +13,9 @@ export function Top10OrderQuestion({
   const { t } = useLanguage();
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [tapSelectedIndex, setTapSelectedIndex] = useState<number | null>(null);
 
-  const handleDrop = (fromIndex: number, toIndex: number) => {
+  const moveItem = (fromIndex: number, toIndex: number) => {
     if (fromIndex === toIndex) return;
     const clone = [...order];
     const [moved] = clone.splice(fromIndex, 1);
@@ -30,6 +31,9 @@ export function Top10OrderQuestion({
         </p>
         <p className="text-xs text-orange-700 mt-2">
           {t("playQuiz.top10.dropPreview")}
+        </p>
+        <p className="text-xs text-orange-700 mt-1">
+          {t("playQuiz.top10.mobileHint")}
         </p>
       </div>
 
@@ -55,13 +59,28 @@ export function Top10OrderQuestion({
             onDrop={(event) => {
               const fromIndex = Number(event.dataTransfer.getData("text/plain"));
               if (Number.isNaN(fromIndex)) return;
-              handleDrop(fromIndex, index);
+              moveItem(fromIndex, index);
               setDragIndex(null);
               setDropIndex(null);
+            }}
+            onClick={() => {
+              if (dragIndex !== null) return;
+              if (tapSelectedIndex === null) {
+                setTapSelectedIndex(index);
+                return;
+              }
+              if (tapSelectedIndex === index) {
+                setTapSelectedIndex(null);
+                return;
+              }
+              moveItem(tapSelectedIndex, index);
+              setTapSelectedIndex(null);
             }}
             className={`flex items-center gap-3 rounded-lg border bg-white p-3 transition-all ${
               dragIndex === index
                 ? "border-orange-300 opacity-80"
+                : tapSelectedIndex === index
+                ? "border-orange-400 ring-2 ring-orange-200"
                 : "border-gray-200"
             }`}
           >
