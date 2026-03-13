@@ -20,6 +20,7 @@ export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalPro
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     loadFriends();
@@ -50,7 +51,11 @@ export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalPro
       ...(friendshipsAsReceiver?.map((f: any) => f.user_profile).filter(Boolean) || []),
     ];
 
-    setFriends(allFriends);
+    const uniqueFriends = Array.from(
+      new Map(allFriends.map((friend) => [friend.id, friend])).values()
+    ).sort((a, b) => a.pseudo.localeCompare(b.pseudo));
+
+    setFriends(uniqueFriends);
   };
 
   const toggleFriend = (friendId: string) => {
@@ -65,6 +70,7 @@ export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalPro
     if (!profile || selectedFriends.length === 0) return;
 
     setLoading(true);
+    setErrorMessage("");
 
     try {
       const shares = selectedFriends.map(friendId => ({
@@ -73,7 +79,15 @@ export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalPro
         shared_with_user_id: friendId,
       }));
 
-      await supabase.from('quiz_shares').insert(shares);
+      const { error } = await supabase
+        .from('quiz_shares')
+        .upsert(shares, { onConflict: 'quiz_id,shared_with_user_id', ignoreDuplicates: true });
+
+      if (error) {
+        setErrorMessage(t("share.error"));
+        return;
+      }
+
       setSuccess(true);
 
       setTimeout(() => {
@@ -120,6 +134,11 @@ export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalPro
               </div>
             ) : (
               <>
+                {errorMessage && (
+                  <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {errorMessage}
+                  </div>
+                )}
                 <div className="max-h-64 overflow-y-auto mb-6 space-y-2">
                   {friends.map((friend) => (
                     <button
