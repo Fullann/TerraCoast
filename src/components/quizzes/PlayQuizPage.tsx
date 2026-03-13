@@ -4,6 +4,17 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { Clock, CheckCircle, XCircle, Trophy, ArrowLeft } from "lucide-react";
 import type { Database } from "../../lib/database.types";
+import {
+  CountryMetric,
+  CountryGameEntry,
+  getAllCountries,
+  getCountriesByIso3,
+  getTop10CountriesByMetric,
+  pickCountries,
+  shuffleSeeded,
+} from "../../lib/countryGameData";
+import { PuzzleMapQuestion } from "./PuzzleMapQuestion";
+import { Top10OrderQuestion } from "./Top10OrderQuestion";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type Question = Database["public"]["Tables"]["questions"]["Row"];
@@ -49,10 +60,27 @@ export function PlayQuizPage({
   const [gameComplete, setGameComplete] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
   const [xpGained, setXpGained] = useState(0);
+  const [puzzleStates, setPuzzleStates] = useState<
+    Record<
+      string,
+      {
+        countries: CountryGameEntry[];
+        assignments: Record<string, string>;
+        pickedIso3s: string[];
+      }
+    >
+  >({});
+  const [top10States, setTop10States] = useState<
+    Record<string, { metric: CountryMetric; expected: string[]; order: string[] }>
+  >({});
   const isCompletingRef = useRef(false);
   const isCreatingSessionRef = useRef(false);
   const hasTimedOutRef = useRef(false);
   const textInputRef = useRef<HTMLInputElement>(null);
+  const allCountries = getAllCountries();
+  const countryNameByIso = Object.fromEntries(
+    allCountries.map((country) => [country.iso3, country.name])
+  ) as Record<string, string>;
 
   useEffect(() => {
     isCompletingRef.current = false;
@@ -117,67 +145,11 @@ export function PlayQuizPage({
     if (isAnswered || gameComplete || hasTimedOutRef.current) return;
 
     hasTimedOutRef.current = true;
-
-    const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
-    const currentQuestion = questions[currentQuestionIndex];
-
-    if (!currentQuestion) return;
-
-    const finalAnswer =
-      currentQuestion.question_type === "mcq" ||
-      currentQuestion.question_type === "true_false"
-        ? selectedOption
-        : userAnswer;
-
-    const correctAnswers =
-      currentQuestion.correct_answers &&
-      currentQuestion.correct_answers.length > 0
-        ? [currentQuestion.correct_answer, ...currentQuestion.correct_answers]
-        : [currentQuestion.correct_answer];
-
-    const isCorrect =
-      finalAnswer &&
-      correctAnswers.some(
-        (ca) => normalizeAnswer(finalAnswer) === normalizeAnswer(ca)
-      );
-
-    const pointsEarned = isCorrect
-      ? calculatePoints(timeTaken, currentQuestion.points)
-      : 0;
-
-    const answerData = {
-      question_id: currentQuestion.id,
-      user_answer: finalAnswer || "",
-      is_correct: isCorrect || false,
-      time_taken: timeTaken,
-      points_earned: pointsEarned,
-    };
-
-    setAnswers((prev) => [...prev, answerData]);
-    setTotalScore((prev) => prev + pointsEarned);
-    setIsAnswered(true);
-    setShowResult(true);
-
-    saveAnswer(answerData);
-
-    // En mode normal, passer automatiquement
-    if (!trainingMode) {
-      setTimeout(() => {
-        hasTimedOutRef.current = false;
-        moveToNextQuestion();
-      }, 1500);
-    }
+    handleSubmitAnswer(undefined, { fromTimeout: true });
   }, [
     isAnswered,
     gameComplete,
-    questionStartTime,
-    questions,
-    currentQuestionIndex,
-    sessionId,
-    selectedOption,
-    userAnswer,
-    totalScore,
-    trainingMode,
+    handleSubmitAnswer,
   ]);
 
   const normalizeAnswer = (answer: string): string => {
@@ -190,6 +162,9 @@ export function PlayQuizPage({
       .replace(/\s+/g, " ")
       .trim();
   };
+
+  const arraysEqual = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((value, index) => value === b[index]);
 
   useEffect(() => {
     if (gameComplete || isAnswered || trainingMode) return;
@@ -263,7 +238,85 @@ export function PlayQuizPage({
           }));
         }
 
+        const nextPuzzleStates: Record<
+          string,
+          {
+            countries: CountryGameEntry[];
+            assignments: Record<string, string>;
+            pickedIso3s: string[];
+          }
+        > = {};
+        const nextTop10States: Record<
+          string,
+          { metric: CountryMetric; expected: string[]; order: string[] }
+        > = {};
+
+        for (const question of processedQuestions) {
+          if (question.question_type === "puzzle_map") {
+            const mapData = (question.map_data || {}) as {
+              continent?: string;
+              selectedCountries?: string[];
+              showTargetList?: boolean;
+            };
+            const selectedPool = getCountriesByIso3(mapData.selectedCountries || []);
+            const countries =
+              selectedPool.length > 0
+                ? shuffleSeeded(selectedPool, `${quizId}:${question.id}:puzzle`)
+                : pickCountries(
+                    12,
+                    `${quizId}:${question.id}:puzzle`,
+                    mapData.continent || "world"
+                  );
+            nextPuzzleStates[question.id] = {
+              countries,
+              assignments: Object.fromEntries(
+                countries.map((country) => [country.iso3, ""])
+              ),
+              pickedIso3s: [],
+            };
+          }
+
+          if (question.question_type === "top10_order") {
+            const mapData = (question.map_data || {}) as {
+              metric?: CountryMetric;
+              continent?: string;
+              selectedCountries?: string[];
+            };
+            const customItems = (Array.isArray(question.options)
+              ? question.options
+              : []
+            )
+              .map((item) => String(item).trim())
+              .filter(Boolean)
+              .slice(0, 10);
+
+            const metric: CountryMetric =
+              mapData.metric === "area_km2" ? "area_km2" : "population";
+            const selectedPool = getCountriesByIso3(mapData.selectedCountries || []);
+            const expected =
+              customItems.length > 0
+                ? customItems
+                : (
+                    selectedPool.length > 0
+                      ? [...selectedPool]
+                          .sort((a, b) => (b[metric] || 0) - (a[metric] || 0))
+                          .slice(0, 10)
+                      : getTop10CountriesByMetric(
+                          metric,
+                          mapData.continent || "world"
+                        )
+                  ).map((country) => country.name);
+            let order = shuffleSeeded(expected, `${quizId}:${question.id}:top10`);
+            if (arraysEqual(order, expected)) {
+              order = [...order].reverse();
+            }
+            nextTop10States[question.id] = { metric, expected, order };
+          }
+        }
+
         setQuestions(processedQuestions);
+        setPuzzleStates(nextPuzzleStates);
+        setTop10States(nextTop10States);
       }
     }
   };
@@ -313,17 +366,168 @@ export function PlayQuizPage({
     }
   };
 
-  const handleSubmitAnswer = (forcedAnswer?: string) => {
+  function handleSubmitAnswer(
+    forcedAnswer?: string,
+    options?: { fromTimeout?: boolean }
+  ) {
     if (isAnswered || gameComplete) return;
 
     const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
     const currentQuestion = questions[currentQuestionIndex];
+    if (!currentQuestion) return;
+    const currentPuzzleState = puzzleStates[currentQuestion.id];
+    const currentTop10State = top10States[currentQuestion.id];
+    const fromTimeout = options?.fromTimeout === true;
     const answer =
       forcedAnswer ||
       (currentQuestion.question_type === "mcq" ||
       currentQuestion.question_type === "true_false"
         ? selectedOption
         : userAnswer);
+
+    if (currentQuestion.question_type === "puzzle_map") {
+      if (!currentPuzzleState) return;
+      const mapData = (currentQuestion.map_data || {}) as {
+        showTargetList?: boolean;
+      };
+      const showTargetList = mapData.showTargetList !== false;
+      const totalSlots = currentPuzzleState.countries.length;
+
+      if (showTargetList) {
+        const filledSlots = Object.values(currentPuzzleState.assignments).filter(
+          (value) => value
+        ).length;
+        if (!fromTimeout && filledSlots < totalSlots) {
+          alert(t("playQuiz.puzzle.completeBeforeValidate"));
+          return;
+        }
+
+        const exactMatches = currentPuzzleState.countries.filter(
+          (country) => currentPuzzleState.assignments[country.iso3] === country.iso3
+        ).length;
+        const ratio = totalSlots > 0 ? exactMatches / totalSlots : 0;
+        const pointsEarned = Math.round(
+          calculatePoints(timeTaken, currentQuestion.points) * ratio
+        );
+        const isCorrect = exactMatches === totalSlots;
+
+        const answerData = {
+          question_id: currentQuestion.id,
+          user_answer: JSON.stringify({
+            type: "puzzle_map",
+            assignments: currentPuzzleState.assignments,
+            exactMatches,
+            totalSlots,
+          }),
+          is_correct: isCorrect,
+          time_taken: timeTaken,
+          points_earned: pointsEarned,
+        };
+
+        setAnswers((prev) => [...prev, answerData]);
+        setTotalScore((prev) => prev + pointsEarned);
+        setShowResult(true);
+        setIsAnswered(true);
+        saveAnswer(answerData);
+
+        if (!trainingMode) {
+          setTimeout(() => {
+            hasTimedOutRef.current = false;
+            moveToNextQuestion();
+          }, 1500);
+        }
+        return;
+      }
+
+      const pickedIso3s = Array.from(new Set(currentPuzzleState.pickedIso3s));
+      if (!fromTimeout && pickedIso3s.length === 0) {
+        alert(t("playQuiz.selectAnswer"));
+        return;
+      }
+      const targetSet = new Set(currentPuzzleState.countries.map((country) => country.iso3));
+      const exactMatches = pickedIso3s.filter((iso3) => targetSet.has(iso3)).length;
+      const wrongIso3s = pickedIso3s.filter((iso3) => !targetSet.has(iso3));
+      const denominator = Math.max(totalSlots, pickedIso3s.length || 0);
+      const ratio = denominator > 0 ? exactMatches / denominator : 0;
+      const pointsEarned = Math.round(
+        calculatePoints(timeTaken, currentQuestion.points) * ratio
+      );
+      const isCorrect = exactMatches === totalSlots && wrongIso3s.length === 0;
+
+      const answerData = {
+        question_id: currentQuestion.id,
+        user_answer: JSON.stringify({
+          type: "puzzle_map",
+          pickedIso3s,
+          exactMatches,
+          totalSlots,
+          wrongIso3s,
+        }),
+        is_correct: isCorrect,
+        time_taken: timeTaken,
+        points_earned: pointsEarned,
+      };
+
+      setAnswers((prev) => [...prev, answerData]);
+      setTotalScore((prev) => prev + pointsEarned);
+      setShowResult(true);
+      setIsAnswered(true);
+      saveAnswer(answerData);
+
+      if (!trainingMode) {
+        setTimeout(() => {
+          hasTimedOutRef.current = false;
+          moveToNextQuestion();
+        }, 1500);
+      }
+      return;
+    }
+
+    if (currentQuestion.question_type === "top10_order") {
+      if (!currentTop10State) return;
+      if (currentTop10State.order.length !== currentTop10State.expected.length) {
+        alert(t("playQuiz.top10.invalidOrder"));
+        return;
+      }
+
+      const exactMatches = currentTop10State.order.filter(
+        (country, index) => country === currentTop10State.expected[index]
+      ).length;
+      const total = currentTop10State.expected.length;
+      const ratio = total > 0 ? exactMatches / total : 0;
+      const pointsEarned = Math.round(
+        calculatePoints(timeTaken, currentQuestion.points) * ratio
+      );
+      const isCorrect = exactMatches === total;
+
+      const answerData = {
+        question_id: currentQuestion.id,
+        user_answer: JSON.stringify({
+          type: "top10_order",
+          order: currentTop10State.order,
+          expected: currentTop10State.expected,
+          exactMatches,
+          total,
+        }),
+        is_correct: isCorrect,
+        time_taken: timeTaken,
+        points_earned: pointsEarned,
+      };
+
+      setAnswers((prev) => [...prev, answerData]);
+      setTotalScore((prev) => prev + pointsEarned);
+      setShowResult(true);
+      setIsAnswered(true);
+      saveAnswer(answerData);
+
+      if (!trainingMode) {
+        setTimeout(() => {
+          hasTimedOutRef.current = false;
+          moveToNextQuestion();
+        }, 1500);
+      }
+      return;
+    }
 
     if (!answer.trim()) {
       alert(t("playQuiz.selectAnswer"));
@@ -351,8 +555,8 @@ export function PlayQuizPage({
       time_taken: timeTaken,
       points_earned: pointsEarned,
     };
-    setAnswers([...answers, answerData]);
-    setTotalScore(totalScore + pointsEarned);
+    setAnswers((prev) => [...prev, answerData]);
+    setTotalScore((prev) => prev + pointsEarned);
     setShowResult(true);
     setIsAnswered(true);
 
@@ -360,10 +564,11 @@ export function PlayQuizPage({
 
     if (!trainingMode) {
       setTimeout(() => {
+        hasTimedOutRef.current = false;
         moveToNextQuestion();
       }, 1500);
     }
-  };
+  }
 
   const completeGame = async () => {
     if (gameComplete || isCompletingRef.current) {
@@ -436,16 +641,7 @@ export function PlayQuizPage({
       setXpGained(0);
     }
 
-    await supabase
-      .from("quizzes")
-      .update({
-        total_plays: (quiz?.total_plays || 0) + 1,
-        average_score:
-          ((quiz?.average_score || 0) * (quiz?.total_plays || 0) +
-            normalizedScore) /
-          ((quiz?.total_plays || 0) + 1),
-      })
-      .eq("id", quizId);
+    // Quiz stats are updated server-side by DB trigger when session becomes completed.
 
     if (shouldGiveXP) {
       await checkAndAwardBadges(profile.level);
@@ -648,6 +844,42 @@ export function PlayQuizPage({
                 <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                   {questions.map((question, index) => {
                     const answer = answers[index];
+                    const puzzleState = puzzleStates[question.id];
+                    let parsedPuzzle: {
+                      assignments?: Record<string, string>;
+                      pickedIso3s?: string[];
+                      wrongIso3s?: string[];
+                      exactMatches?: number;
+                      totalSlots?: number;
+                    } | null = null;
+                    let parsedTop10: {
+                      order?: string[];
+                      expected?: string[];
+                      exactMatches?: number;
+                      total?: number;
+                    } | null = null;
+                    if (
+                      question.question_type === "puzzle_map" &&
+                      answer?.user_answer &&
+                      answer.user_answer.trim().startsWith("{")
+                    ) {
+                      try {
+                        parsedPuzzle = JSON.parse(answer.user_answer);
+                      } catch {
+                        parsedPuzzle = null;
+                      }
+                    }
+                    if (
+                      question.question_type === "top10_order" &&
+                      answer?.user_answer &&
+                      answer.user_answer.trim().startsWith("{")
+                    ) {
+                      try {
+                        parsedTop10 = JSON.parse(answer.user_answer);
+                      } catch {
+                        parsedTop10 = null;
+                      }
+                    }
 
                     const isCorrectAnswer =
                       answer?.is_correct ||
@@ -679,15 +911,133 @@ export function PlayQuizPage({
                             <p className="text-sm text-gray-600">
                               {t("playQuiz.yourAnswer")}:{" "}
                               <span className="font-medium">
-                                {answer?.user_answer || t("playQuiz.noAnswer")}
+                                {question.question_type === "puzzle_map"
+                                  ? parsedPuzzle?.totalSlots
+                                    ? `${parsedPuzzle.exactMatches || 0}/${
+                                        parsedPuzzle.totalSlots
+                                      } ${t("playQuiz.puzzle.correctlyPlaced")}`
+                                    : t("playQuiz.noAnswer")
+                                  : question.question_type === "top10_order"
+                                  ? parsedTop10?.order?.length
+                                    ? `${parsedTop10.order.length} ${t(
+                                        "playQuiz.top10.itemsRanked"
+                                      )}`
+                                    : t("playQuiz.noAnswer")
+                                  : answer?.user_answer || t("playQuiz.noAnswer")}
                               </span>
                             </p>
                             <p className="text-sm text-gray-600">
                               {t("playQuiz.correctAnswer")}:{" "}
                               <span className="font-medium text-emerald-600">
-                                {question.correct_answer}
+                                {question.question_type === "puzzle_map"
+                                  ? t("playQuiz.puzzle.expectedCountries")
+                                  : question.question_type === "top10_order"
+                                  ? t("playQuiz.top10.exactOrder")
+                                  : question.correct_answer}
                               </span>
                             </p>
+                            {question.question_type === "puzzle_map" && puzzleState && (
+                              <div className="mt-2 bg-white border border-emerald-200 rounded p-2">
+                                <p className="text-xs font-semibold text-emerald-700 mb-1">
+                                  {t("playQuiz.puzzle.expectedCountries")}
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {puzzleState.countries.map((country) => (
+                                    <span
+                                      key={`expected-country-${question.id}-${country.iso3}`}
+                                      className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    >
+                                      {country.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {question.question_type === "top10_order" &&
+                              parsedTop10?.order &&
+                              parsedTop10?.expected && (
+                                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div className="bg-white border border-gray-200 rounded p-2">
+                                    <p className="text-xs font-semibold text-gray-700 mb-1">
+                                      {t("playQuiz.top10.yourOrder")}
+                                    </p>
+                                    <ol className="list-decimal list-inside text-xs text-gray-700 space-y-0.5">
+                                      {parsedTop10.order.map((item, itemIndex) => (
+                                        <li key={`user-order-${itemIndex}`}>{item}</li>
+                                      ))}
+                                    </ol>
+                                  </div>
+                                  <div className="bg-white border border-emerald-200 rounded p-2">
+                                    <p className="text-xs font-semibold text-emerald-700 mb-1">
+                                      {t("playQuiz.top10.expectedOrder")}
+                                    </p>
+                                    <ol className="list-decimal list-inside text-xs text-emerald-700 space-y-0.5">
+                                      {parsedTop10.expected.map((item, itemIndex) => (
+                                        <li key={`expected-order-${itemIndex}`}>{item}</li>
+                                      ))}
+                                    </ol>
+                                  </div>
+                                </div>
+                              )}
+                            {question.question_type === "puzzle_map" &&
+                              parsedPuzzle?.assignments &&
+                              puzzleState && (
+                                <div className="mt-3 bg-white border border-gray-200 rounded p-2">
+                                  <p className="text-xs font-semibold text-gray-700 mb-2">
+                                    {t("playQuiz.puzzle.placementsByCountry")}
+                                  </p>
+                                  <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                                    {puzzleState.countries.map((country) => {
+                                      const placedIso =
+                                        parsedPuzzle?.assignments?.[country.iso3] || "";
+                                      const placedName =
+                                        puzzleState.countries.find(
+                                          (entry) => entry.iso3 === placedIso
+                                        )?.name || t("playQuiz.puzzle.notPlaced");
+                                      const isCorrect = placedIso === country.iso3;
+                                      return (
+                                        <div
+                                          key={`puzzle-summary-${question.id}-${country.iso3}`}
+                                          className={`text-xs rounded px-2 py-1 ${
+                                            isCorrect
+                                              ? "bg-emerald-50 text-emerald-700"
+                                              : "bg-red-50 text-red-700"
+                                          }`}
+                                        >
+                                          {country.name} {"->"} {placedName}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            {question.question_type === "puzzle_map" &&
+                              parsedPuzzle?.pickedIso3s &&
+                              parsedPuzzle.pickedIso3s.length > 0 && (
+                                <div className="mt-3 bg-white border border-gray-200 rounded p-2">
+                                  <p className="text-xs font-semibold text-gray-700 mb-2">
+                                    {t("playQuiz.puzzle.selectedCountries")}
+                                  </p>
+                                  <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                                    {parsedPuzzle.pickedIso3s.map((iso3) => {
+                                      const isWrong =
+                                        parsedPuzzle?.wrongIso3s?.includes(iso3) || false;
+                                      return (
+                                        <div
+                                          key={`picked-summary-${question.id}-${iso3}`}
+                                          className={`text-xs rounded px-2 py-1 ${
+                                            isWrong
+                                              ? "bg-red-50 text-red-700"
+                                              : "bg-emerald-50 text-emerald-700"
+                                          }`}
+                                        >
+                                          {countryNameByIso[iso3] || iso3}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                           </div>
                           <div className="ml-4">
                             {isCorrectAnswer ? (
@@ -753,6 +1103,12 @@ export function PlayQuizPage({
   }
 
   const currentQuestion = questions[currentQuestionIndex];
+  const currentPuzzleState = currentQuestion
+    ? puzzleStates[currentQuestion.id]
+    : undefined;
+  const currentTop10State = currentQuestion
+    ? top10States[currentQuestion.id]
+    : undefined;
 
   if (!currentQuestion) {
     return null;
@@ -849,6 +1205,14 @@ export function PlayQuizPage({
             <h3 className="text-xl md:text-2xl font-bold text-gray-800">
               {currentQuestion.question_text}
             </h3>
+            {(currentQuestion.question_type === "puzzle_map" ||
+              currentQuestion.question_type === "top10_order") && (
+              <p className="mt-2 text-sm text-gray-600 bg-gray-100 border border-gray-200 rounded px-3 py-2">
+                {currentQuestion.question_type === "puzzle_map"
+                  ? "Objectif: place chaque élément au bon endroit, puis valide."
+                  : "Objectif: réorganise les éléments dans le bon ordre avec le drag-and-drop, puis valide."}
+              </p>
+            )}
           </div>
 
           {currentQuestion.question_type === "mcq" &&
@@ -993,6 +1357,51 @@ export function PlayQuizPage({
             />
           )}
 
+          {currentQuestion.question_type === "puzzle_map" && currentPuzzleState && (
+            <PuzzleMapQuestion
+              countries={currentPuzzleState.countries}
+              showTargetList={
+                ((currentQuestion.map_data as any)?.showTargetList ?? true) !== false
+              }
+              revealResult={showResult || isAnswered}
+              assignments={currentPuzzleState.assignments}
+              pickedIso3s={currentPuzzleState.pickedIso3s}
+              onAssignmentsChange={(nextAssignments) =>
+                setPuzzleStates((prev) => ({
+                  ...prev,
+                  [currentQuestion.id]: {
+                    ...currentPuzzleState,
+                    assignments: nextAssignments,
+                  },
+                }))
+              }
+              onPickedIso3sChange={(nextPickedIso3s) =>
+                setPuzzleStates((prev) => ({
+                  ...prev,
+                  [currentQuestion.id]: {
+                    ...currentPuzzleState,
+                    pickedIso3s: nextPickedIso3s,
+                  },
+                }))
+              }
+            />
+          )}
+
+          {currentQuestion.question_type === "top10_order" && currentTop10State && (
+            <Top10OrderQuestion
+              order={currentTop10State.order}
+              onOrderChange={(nextOrder) =>
+                setTop10States((prev) => ({
+                  ...prev,
+                  [currentQuestion.id]: {
+                    ...currentTop10State,
+                    order: nextOrder,
+                  },
+                }))
+              }
+            />
+          )}
+
           {/* MAP CLICK */}
           {currentQuestion.question_type === "map_click" && (
             <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
@@ -1061,8 +1470,14 @@ export function PlayQuizPage({
                       </p>
                       <p className="text-sm text-red-700">
                         {t("playQuiz.correctAnswerWas")}:{" "}
-                        {currentQuestion.correct_answer}
-                        {currentQuestion.correct_answers &&
+                        {currentQuestion.question_type === "puzzle_map"
+                          ? t("playQuiz.puzzle.expectedCountries")
+                          : currentQuestion.question_type === "top10_order"
+                          ? t("playQuiz.top10.exactOrder")
+                          : currentQuestion.correct_answer}
+                        {currentQuestion.question_type !== "puzzle_map" &&
+                          currentQuestion.question_type !== "top10_order" &&
+                          currentQuestion.correct_answers &&
                           currentQuestion.correct_answers.length > 0 && (
                             <span className="block text-xs mt-1">
                               ({t("playQuiz.variants")}:{" "}
@@ -1089,6 +1504,19 @@ export function PlayQuizPage({
                 currentQuestion.question_type === "mcq" ||
                 currentQuestion.question_type === "true_false"
                   ? !selectedOption
+                  : currentQuestion.question_type === "puzzle_map"
+                  ? !currentPuzzleState ||
+                    (((currentQuestion.map_data as any)?.showTargetList ?? true) !==
+                    false
+                      ? Object.values(currentPuzzleState.assignments).some(
+                          (value) => !value
+                        )
+                      : currentPuzzleState.pickedIso3s.length === 0)
+                  : currentQuestion.question_type === "top10_order"
+                  ? !currentTop10State ||
+                    currentTop10State.order.length !==
+                      currentTop10State.expected.length ||
+                    currentTop10State.expected.length < 2
                   : !userAnswer.trim()
               }
               className="w-full py-3 md:py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-lg"

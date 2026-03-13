@@ -6,13 +6,16 @@ import { languageNames, Language } from "../../i18n/translations";
 import { Plus, Trash2, ArrowLeft, CreditCard as Edit, X } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
+import { CountryMultiSelect } from "./CountryMultiSelect";
 
 type QuestionType =
   | "mcq"
   | "single_answer"
   | "map_click"
   | "text_free"
-  | "true_false";
+  | "true_false"
+  | "puzzle_map"
+  | "top10_order";
 type QuizCategory = string;
 type Difficulty = "easy" | "medium" | "hard";
 
@@ -46,6 +49,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     (Question & { isNew?: boolean })[]
   >([]);
   const [editingQuestion, setEditingQuestion] = useState<any>(null);
+  const [top10EditDragIndex, setTop10EditDragIndex] = useState<number | null>(
+    null
+  );
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -205,6 +211,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       correct_answer: "",
       correct_answers: [],
       options: ["", "", "", ""],
+      map_data: null,
       image_url: null,
       points: 100,
       order_index: questions.length,
@@ -260,6 +267,19 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     setEditingQuestion({
       ...editingQuestion,
       correct_answers: [...currentVariants, ""],
+    });
+  };
+
+  const reorderTop10EditingQuestion = (fromIndex: number, toIndex: number) => {
+    if (!editingQuestion || fromIndex === toIndex) return;
+    const current = Array.isArray(editingQuestion.options)
+      ? [...editingQuestion.options]
+      : [];
+    const [moved] = current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, moved);
+    setEditingQuestion({
+      ...editingQuestion,
+      options: current,
     });
   };
 
@@ -335,6 +355,30 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       return;
     }
 
+    const hasInvalidTop10 = questions.some((q: any) => {
+      if (q.question_type !== "top10_order") return false;
+      const items = (Array.isArray(q.options) ? q.options : [])
+        .map((item: string) => item.trim())
+        .filter(Boolean);
+      return items.length < 2 || items.length > 10;
+    });
+    if (hasInvalidTop10) {
+      setError(t("editQuiz.errors.top10Range"));
+      return;
+    }
+
+    const hasInvalidPuzzleMap = questions.some((q: any) => {
+      if (q.question_type !== "puzzle_map") return false;
+      const selected = Array.isArray(q.map_data?.selectedCountries)
+        ? q.map_data.selectedCountries.filter((iso: string) => String(iso).trim())
+        : [];
+      return selected.length < 1;
+    });
+    if (hasInvalidPuzzleMap) {
+      setError(t("editQuiz.errors.puzzleMinCountries"));
+      return;
+    }
+
     setSaving(true);
     setError("");
 
@@ -392,7 +436,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           const { error: insertQuestionError } = await supabase.from("questions").insert({
             ...questionData,
             options:
-              question.question_type === "mcq"
+              question.question_type === "mcq" ||
+              question.question_type === "top10_order"
                 ? (Array.isArray(question.options)
                     ? question.options
                     : []
@@ -438,12 +483,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                     : []
                   : null,
               options:
-                questionData.question_type === "mcq"
+                questionData.question_type === "mcq" ||
+                questionData.question_type === "top10_order"
                   ? (Array.isArray(questionData.options)
                       ? questionData.options
                       : []
                     ).filter((opt: string) => opt.trim())
                   : null,
+              map_data: questionData.map_data || null,
               image_url: questionData.image_url,
               option_images: questionData.option_images || null,
               points: questionData.points,
@@ -476,6 +523,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   };
 
   const getQuestionTypeLabel = (type: string) => {
+    if (type === "puzzle_map") return t("editQuiz.questionType.puzzle_map");
+    if (type === "top10_order") return t("editQuiz.questionType.top10_order");
     return t(`editQuiz.questionType.${type}` as any);
   };
 
@@ -853,12 +902,47 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                           </label>
                           <select
                             value={editingQuestion.question_type}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const nextType = e.target.value as QuestionType;
+                              if (nextType === "puzzle_map") {
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  question_type: nextType,
+                                  options: [],
+                                  correct_answer: "__AUTO__",
+                                  correct_answers: [],
+                                  map_data: {
+                                    mode: "puzzle_map",
+                                    selectedCountries:
+                                      editingQuestion.map_data
+                                        ?.selectedCountries || [],
+                                    showTargetList:
+                                      editingQuestion.map_data?.showTargetList !==
+                                      false,
+                                  },
+                                });
+                                return;
+                              }
+                              if (nextType === "top10_order") {
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  question_type: nextType,
+                                  options: ["", ""],
+                                  correct_answer: "__ORDER__",
+                                  correct_answers: [],
+                                  map_data: {
+                                    mode: "top10_order",
+                                    selectedCountries: [],
+                                  },
+                                });
+                                return;
+                              }
                               setEditingQuestion({
                                 ...editingQuestion,
-                                question_type: e.target.value as QuestionType,
-                              })
-                            }
+                                question_type: nextType,
+                                map_data: null,
+                              });
+                            }}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                           >
                             <option value="mcq">
@@ -869,6 +953,12 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                             </option>
                             <option value="single_answer">
                               {getQuestionTypeLabel("single_answer")}
+                            </option>
+                            <option value="puzzle_map">
+                              {t("editQuiz.questionType.puzzle_map")}
+                            </option>
+                            <option value="top10_order">
+                              {t("editQuiz.questionType.top10_order")}
                             </option>
                           </select>
                         </div>
@@ -987,11 +1077,160 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                         </div>
                       )}
 
+                      {editingQuestion.question_type === "puzzle_map" && (
+                        <div className="space-y-4 p-4 rounded-lg bg-sky-50 border border-sky-200">
+                          <CountryMultiSelect
+                            label={t("createQuiz.puzzle.targetCountriesLabel")}
+                            selectedIso3={
+                              editingQuestion.map_data?.selectedCountries || []
+                            }
+                            onChange={(next) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                map_data: {
+                                  ...(editingQuestion.map_data || {}),
+                                  mode: "puzzle_map",
+                                  selectedCountries: next,
+                                },
+                              })
+                            }
+                          />
+                          <label className="flex items-center gap-2 text-sm text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={
+                                editingQuestion.map_data?.showTargetList !== false
+                              }
+                              onChange={(e) =>
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  map_data: {
+                                    ...(editingQuestion.map_data || {}),
+                                    mode: "puzzle_map",
+                                    showTargetList: e.target.checked,
+                                  },
+                                })
+                              }
+                              className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            {t("createQuiz.puzzle.showTargetList")}
+                          </label>
+                        </div>
+                      )}
+
+                      {editingQuestion.question_type === "top10_order" && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-orange-50 border border-orange-200">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              {t("createQuiz.top10.itemsLabel")}
+                            </label>
+                            <div className="space-y-2">
+                              {(Array.isArray(editingQuestion.options)
+                                ? editingQuestion.options
+                                : []
+                              ).map((item: string, index: number) => (
+                                <div
+                                  key={index}
+                                  draggable
+                                  onDragStart={() => setTop10EditDragIndex(index)}
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onDrop={() => {
+                                    if (top10EditDragIndex === null) return;
+                                    reorderTop10EditingQuestion(
+                                      top10EditDragIndex,
+                                      index
+                                    );
+                                    setTop10EditDragIndex(null);
+                                  }}
+                                  onDragEnd={() => setTop10EditDragIndex(null)}
+                                  className="flex items-center gap-2"
+                                >
+                                  <span className="text-xs text-gray-500 w-8">
+                                    #{index + 1}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={item}
+                                    onChange={(e) => {
+                                      const next = [
+                                        ...(Array.isArray(editingQuestion.options)
+                                          ? editingQuestion.options
+                                          : []),
+                                      ];
+                                      next[index] = e.target.value;
+                                      setEditingQuestion({
+                                        ...editingQuestion,
+                                        options: next,
+                                      });
+                                    }}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                                    placeholder={`${
+                                      t("createQuiz.top10.itemPlaceholder")
+                                    } ${index + 1}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const next = (
+                                        Array.isArray(editingQuestion.options)
+                                          ? editingQuestion.options
+                                          : []
+                                      ).filter((_: string, i: number) => i !== index);
+                                      setEditingQuestion({
+                                        ...editingQuestion,
+                                        options: next.length > 0 ? next : [""],
+                                      });
+                                    }}
+                                    className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                                  >
+                                    ×
+                                  </button>
+                                  <span className="text-xs text-gray-400">
+                                    {t("playQuiz.top10.drag")}
+                                  </span>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const current = Array.isArray(editingQuestion.options)
+                                    ? editingQuestion.options
+                                    : [];
+                                  if (current.length >= 10) return;
+                                  setEditingQuestion({
+                                    ...editingQuestion,
+                                    options: [...current, ""],
+                                  });
+                                }}
+                                className="text-sm px-3 py-1 border border-orange-300 text-orange-700 rounded hover:bg-orange-100"
+                              >
+                                {t("createQuiz.top10.addItem")}
+                              </button>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {t("createQuiz.top10.reorderHint")}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-orange-700 bg-white border border-orange-200 rounded-lg p-3">
+                              {t("createQuiz.top10.customHint")}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           {t("editQuiz.correctAnswer")} *
                         </label>
-                        {editingQuestion.question_type === "mcq" ? (
+                        {editingQuestion.question_type === "puzzle_map" ||
+                        editingQuestion.question_type === "top10_order" ? (
+                          <div className="p-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg">
+                            {editingQuestion.question_type === "top10_order"
+                              ? t("createQuiz.top10.expectedOrderInfo")
+                              : t("createQuiz.puzzle.autoAnswerInfo")}
+                          </div>
+                        ) : editingQuestion.question_type === "mcq" ? (
                           <div className="space-y-2">
                             <div className="space-y-2">
                               {(Array.isArray(editingQuestion.options)

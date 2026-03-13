@@ -6,13 +6,16 @@ import { languageNames, Language } from "../../i18n/translations";
 import { Plus, Trash2, Save, ArrowLeft, Image, Edit, X } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
+import { CountryMultiSelect } from "./CountryMultiSelect";
 
 type QuestionType =
   | "mcq"
   | "single_answer"
   | "map_click"
   | "text_free"
-  | "true_false";
+  | "true_false"
+  | "puzzle_map"
+  | "top10_order";
 type QuizCategory =
   | "flags"
   | "capitals"
@@ -29,6 +32,13 @@ interface Question {
   correct_answer: string;
   correct_answers?: string[];
   options: string[];
+  map_data?: {
+    mode?: "puzzle_map" | "top10_order";
+    continent?: string;
+    metric?: "population" | "area_km2";
+    selectedCountries?: string[];
+    showTargetList?: boolean;
+  } | null;
   image_url?: string;
   option_images?: Record<string, string>;
   points: number;
@@ -102,6 +112,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     correct_answer: "",
     correct_answers: [],
     options: ["", "", "", ""],
+    map_data: null,
     image_url: "",
     option_images: {},
     points: 100,
@@ -110,6 +121,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [top10DragIndex, setTop10DragIndex] = useState<number | null>(null);
 
   const getTrueFalseLabels = () => {
     return {
@@ -135,9 +147,36 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       return;
     }
 
-    if (!currentQuestion.correct_answer.trim()) {
+    if (
+      !currentQuestion.correct_answer.trim() &&
+      currentQuestion.question_type !== "puzzle_map" &&
+      currentQuestion.question_type !== "top10_order"
+    ) {
       setError(t("createQuiz.errors.answerEmpty"));
       return;
+    }
+
+    if (currentQuestion.question_type === "puzzle_map") {
+      const selectedCount =
+        currentQuestion.map_data?.selectedCountries?.length || 0;
+      if (selectedCount < 1) {
+        setError(t("createQuiz.errors.puzzleMinCountries"));
+        return;
+      }
+    }
+
+    if (currentQuestion.question_type === "top10_order") {
+      const items = currentQuestion.options
+        .map((item) => item.trim())
+        .filter(Boolean);
+      if (items.length < 2) {
+        setError(t("createQuiz.errors.top10MinItems"));
+        return;
+      }
+      if (items.length > 10) {
+        setError(t("createQuiz.errors.top10MaxItems"));
+        return;
+      }
     }
 
     if (currentQuestion.question_type === "mcq") {
@@ -152,10 +191,29 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       }
     }
 
+    const normalizedQuestion =
+      currentQuestion.question_type === "puzzle_map" ||
+      currentQuestion.question_type === "top10_order"
+        ? {
+            ...currentQuestion,
+            correct_answer:
+              currentQuestion.question_type === "top10_order"
+                ? "__ORDER__"
+                : "__AUTO__",
+            correct_answers: [],
+            options:
+              currentQuestion.question_type === "top10_order"
+                ? currentQuestion.options
+                    .map((item) => item.trim())
+                    .filter(Boolean)
+                : [],
+          }
+        : currentQuestion;
+
     if (editingIndex !== null) {
       const updatedQuestions = [...questions];
       updatedQuestions[editingIndex] = {
-        ...currentQuestion,
+        ...normalizedQuestion,
         order_index: editingIndex,
       };
       setQuestions(updatedQuestions);
@@ -163,7 +221,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     } else {
       setQuestions([
         ...questions,
-        { ...currentQuestion, order_index: questions.length },
+        { ...normalizedQuestion, order_index: questions.length },
       ]);
     }
 
@@ -173,6 +231,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       correct_answer: "",
       correct_answers: [],
       options: ["", "", "", ""],
+      map_data: null,
       image_url: "",
       option_images: {},
       points: 100,
@@ -194,6 +253,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       correct_answer: "",
       correct_answers: [],
       options: ["", "", "", ""],
+      map_data: null,
       image_url: "",
       option_images: {},
       points: 100,
@@ -221,6 +281,17 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       delete newOptionImages[optionText];
     }
     setCurrentQuestion({ ...currentQuestion, option_images: newOptionImages });
+  };
+
+  const reorderTop10CurrentQuestion = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const next = [...currentQuestion.options];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    setCurrentQuestion({
+      ...currentQuestion,
+      options: next,
+    });
   };
 
   const saveQuiz = async () => {
@@ -309,6 +380,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           q.question_type === "mcq"
             ? q.options.filter((opt) => opt.trim())
             : null,
+        map_data: q.map_data || null,
         image_url: q.image_url || null,
         option_images:
           q.option_images && Object.keys(q.option_images).length > 0
@@ -342,6 +414,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   };
 
   const getQuestionTypeLabel = (type: string) => {
+    if (type === "puzzle_map") return t("editQuiz.questionType.puzzle_map");
+    if (type === "top10_order") return t("editQuiz.questionType.top10_order");
     return t(`editQuiz.questionType.${type}` as any);
   };
 
@@ -674,10 +748,37 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       options: [trueFalseLabels.true, trueFalseLabels.false],
                       correct_answer: trueFalseLabels.true,
                     });
+                  } else if (newType === "puzzle_map") {
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      question_type: newType,
+                      options: [],
+                      correct_answer: "__AUTO__",
+                      correct_answers: [],
+                      map_data: {
+                        mode: "puzzle_map",
+                        continent: "world",
+                        selectedCountries: [],
+                        showTargetList: true,
+                      },
+                    });
+                  } else if (newType === "top10_order") {
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      question_type: newType,
+                      options: ["", ""],
+                      correct_answer: "__ORDER__",
+                      correct_answers: [],
+                      map_data: {
+                        mode: "top10_order",
+                        selectedCountries: [],
+                      },
+                    });
                   } else {
                     setCurrentQuestion({
                       ...currentQuestion,
                       question_type: newType,
+                      map_data: null,
                     });
                   }
                 }}
@@ -689,6 +790,12 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 </option>
                 <option value="true_false">
                   {t("createQuiz.trueFalse.type")}
+                </option>
+                <option value="puzzle_map">
+                  {t("editQuiz.questionType.puzzle_map")}
+                </option>
+                <option value="top10_order">
+                  {t("editQuiz.questionType.top10_order")}
                 </option>
               </select>
             </div>
@@ -765,11 +872,141 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             </div>
           )}
 
+          {currentQuestion.question_type === "puzzle_map" && (
+            <div className="space-y-4 p-4 rounded-lg bg-sky-50 border border-sky-200">
+              <CountryMultiSelect
+                label={t("createQuiz.puzzle.targetCountriesLabel")}
+                selectedIso3={currentQuestion.map_data?.selectedCountries || []}
+                onChange={(next) =>
+                  setCurrentQuestion({
+                    ...currentQuestion,
+                    map_data: {
+                      ...(currentQuestion.map_data || {}),
+                      mode: "puzzle_map",
+                      selectedCountries: next,
+                    },
+                  })
+                }
+              />
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={currentQuestion.map_data?.showTargetList !== false}
+                  onChange={(e) =>
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      map_data: {
+                        ...(currentQuestion.map_data || {}),
+                        mode: "puzzle_map",
+                        showTargetList: e.target.checked,
+                      },
+                    })
+                  }
+                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                {t("createQuiz.puzzle.showTargetList")}
+              </label>
+            </div>
+          )}
+
+          {currentQuestion.question_type === "top10_order" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-orange-50 border border-orange-200">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("createQuiz.top10.itemsLabel")}
+                </label>
+                <div className="space-y-2">
+                  {currentQuestion.options.map((item, index) => (
+                    <div
+                      key={index}
+                      draggable
+                      onDragStart={() => setTop10DragIndex(index)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (top10DragIndex === null) return;
+                        reorderTop10CurrentQuestion(top10DragIndex, index);
+                        setTop10DragIndex(null);
+                      }}
+                      onDragEnd={() => setTop10DragIndex(null)}
+                      className="flex items-center gap-2"
+                    >
+                      <span className="text-xs text-gray-500 w-8">
+                        #{index + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={item}
+                        onChange={(e) => {
+                          const next = [...currentQuestion.options];
+                          next[index] = e.target.value;
+                          setCurrentQuestion({
+                            ...currentQuestion,
+                            options: next,
+                          });
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                        placeholder={`${t("createQuiz.top10.itemPlaceholder")} ${
+                          index + 1
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = currentQuestion.options.filter(
+                            (_, i) => i !== index
+                          );
+                          setCurrentQuestion({
+                            ...currentQuestion,
+                            options: next.length > 0 ? next : [""],
+                          });
+                        }}
+                        className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                      >
+                        ×
+                      </button>
+                      <span className="text-xs text-gray-400">
+                        {t("playQuiz.top10.drag")}
+                      </span>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentQuestion.options.length >= 10) return;
+                      setCurrentQuestion({
+                        ...currentQuestion,
+                        options: [...currentQuestion.options, ""],
+                      });
+                    }}
+                    className="text-sm px-3 py-1 border border-orange-300 text-orange-700 rounded hover:bg-orange-100"
+                  >
+                    {t("createQuiz.top10.addItem")}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {t("createQuiz.top10.reorderHint")}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-orange-700 bg-white border border-orange-200 rounded-lg p-3">
+                  {t("createQuiz.top10.customHint")}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t("editQuiz.correctAnswer")} *
             </label>
-            {currentQuestion.question_type === "true_false" ? (
+            {currentQuestion.question_type === "puzzle_map" ||
+            currentQuestion.question_type === "top10_order" ? (
+              <div className="p-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg">
+                {currentQuestion.question_type === "top10_order"
+                  ? t("createQuiz.top10.expectedOrderInfo")
+                  : t("createQuiz.puzzle.autoAnswerInfo")}
+              </div>
+            ) : currentQuestion.question_type === "true_false" ? (
               <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
@@ -1029,7 +1266,11 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       </span>
                     </div>
                     <p className="text-sm text-emerald-700 mt-2">
-                      {t("createQuiz.answer")}: {q.correct_answer}
+                      {q.question_type === "puzzle_map"
+                        ? t("createQuiz.puzzle.autoAnswerInfo")
+                        : q.question_type === "top10_order"
+                        ? t("createQuiz.top10.autoExpectedOrderInfo")
+                        : `${t("createQuiz.answer")}: ${q.correct_answer}`}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">

@@ -200,6 +200,28 @@ export const translations: Record<Language, Record<string, string>> = {
     "createQuiz.errors.maxQuizReached":
       "Tu as atteint la limite de 10 quiz publics",
     "createQuiz.errors.createError": "Erreur lors de la création du quiz",
+    "createQuiz.errors.puzzleMinCountries":
+      "Sélectionne au moins un pays à trouver pour le mode puzzle.",
+    "createQuiz.errors.top10MinItems":
+      "Le mode Top 10 nécessite au moins 2 éléments.",
+    "createQuiz.errors.top10MaxItems":
+      "Le mode Top 10 accepte maximum 10 éléments.",
+    "createQuiz.puzzle.targetCountriesLabel": "Pays à trouver",
+    "createQuiz.puzzle.showTargetList":
+      "Afficher la liste des pays à trouver pendant la partie",
+    "createQuiz.top10.expectedOrderInfo":
+      "La liste ci-dessus représente l'ordre attendu.",
+    "createQuiz.puzzle.autoAnswerInfo":
+      "Réponse générée automatiquement selon la configuration du mode.",
+    "createQuiz.top10.autoExpectedOrderInfo":
+      "Mode Top 10: ordre attendu généré automatiquement",
+    "createQuiz.top10.itemsLabel": "Éléments du classement (ordre attendu)",
+    "createQuiz.top10.itemPlaceholder": "Élément",
+    "createQuiz.top10.addItem": "+ Ajouter un élément",
+    "createQuiz.top10.reorderHint":
+      "Tu peux aussi réorganiser en glissant-déposant les lignes.",
+    "createQuiz.top10.customHint":
+      "Tu peux définir n'importe quels éléments (pays, villes, joueurs, événements, etc.). En jeu, ils seront mélangés et le joueur les remettra dans le bon ordre en glisser-déposer.",
     "createQuiz.searchTags": "Tags de recherche (Europe, Asie ...)",
     "createQuiz.addTagPlaceholder": "Ajoute un tag et appuie sur Entrée...",
     "createQuiz.maxTags": "Maximum 10 tags",
@@ -239,6 +261,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "editQuiz.questionType.text_free": "Texte libre",
     "editQuiz.questionType.map_click": "Clic sur carte",
     "editQuiz.questionType.true_false": "Vrai/Faux",
+    "editQuiz.questionType.puzzle_map": "Puzzle (carte)",
+    "editQuiz.questionType.top10_order": "Top 10 (ordre)",
     "editQuiz.points": "Points",
     "editQuiz.options": "Options",
     "editQuiz.option": "Option",
@@ -251,9 +275,55 @@ export const translations: Record<Language, Record<string, string>> = {
     "editQuiz.deleteQuestionSuccess": "Question supprimée avec succès !",
     "editQuiz.deleteQuestionError":
       "Erreur lors de la suppression de la question",
+    "editQuiz.errors.top10Range":
+      "Chaque question Top 10 doit contenir entre 2 et 10 éléments.",
+    "editQuiz.errors.puzzleMinCountries":
+      "Chaque question puzzle doit contenir au moins un pays sélectionné.",
 
     // Play Quiz
     "playQuiz.selectAnswer": "Merci de sélectionner ou d'entrer une réponse",
+    "playQuiz.puzzle.instructions":
+      "Glisse chaque pays sur sa position (coordonnées approximatives).",
+    "playQuiz.puzzle.instructions.withList":
+      "Choisis un pays puis clique sa zone sur la carte (ou glisser-deposer).",
+    "playQuiz.puzzle.instructions.withoutList":
+      "Clique directement les pays sur la carte pour les valider.",
+    "playQuiz.puzzle.zoomHint": "Utilise + / - pour zoomer.",
+    "playQuiz.puzzle.worldMap": "Carte du monde",
+    "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.slot": "Slot",
+    "playQuiz.puzzle.dropHere": "Dépose un pays ici",
+    "playQuiz.puzzle.pool": "Pays à placer",
+    "playQuiz.puzzle.remove": "retirer",
+    "playQuiz.puzzle.selectedCountries": "Pays sélectionnés",
+    "playQuiz.puzzle.selectionHint":
+      "Clique directement les pays sur la carte, puis valide la question.",
+    "playQuiz.puzzle.correctlyPlaced": "bien placés",
+    "playQuiz.puzzle.expectedCountries": "Pays attendus",
+    "playQuiz.puzzle.placementsByCountry": "Placements par pays",
+    "playQuiz.puzzle.notPlaced": "Non placé",
+    "playQuiz.puzzle.completeBeforeValidate":
+      "Place tous les pays avant de valider.",
+    "playQuiz.top10.instructions":
+      "Replace les pays dans le bon ordre (1 = plus grand).",
+    "playQuiz.top10.invalidOrder":
+      "Impossible de valider cet ordre pour le moment.",
+    "playQuiz.top10.itemsRanked": "éléments classés",
+    "playQuiz.top10.exactOrder": "Ordre exact du Top 10",
+    "playQuiz.top10.yourOrder": "Ton ordre",
+    "playQuiz.top10.expectedOrder": "Ordre attendu",
+    "playQuiz.top10.drag": "Glisser",
+    "playQuiz.top10.dropPreview":
+      "La ligne orange montre où la box sera déposée.",
+    "admin.quizValidation.puzzle.modeLabel": "Mode Puzzle:",
+    "admin.quizValidation.puzzle.selectedCountries": "pays sélectionnés",
+    "admin.quizValidation.puzzle.zone": "zone",
+    "admin.quizValidation.puzzle.hiddenList": "liste masquée en jeu",
+    "admin.quizValidation.puzzle.visibleList": "liste visible en jeu",
+    "admin.quizValidation.top10.modeLabel": "Mode Top 10:",
+    "admin.quizValidation.top10.customList": "liste personnalisée",
+    "admin.quizValidation.top10.metric": "critère",
+    "admin.quizValidation.top10.expectedOrder": "Ordre attendu",
     "playQuiz.loadingQuiz": "Chargement du quiz...",
     "playQuiz.trainingComplete": "Entraînement terminé !",
     "playQuiz.quizComplete": "Quiz terminé !",
@@ -1386,6 +1456,8 @@ helpdesk@terracoast.ch`,
     "editQuiz.questionType.text_free": "Free Text",
     "editQuiz.questionType.map_click": "Map Click",
     "editQuiz.questionType.true_false": "True/False",
+    "editQuiz.questionType.puzzle_map": "Puzzle (map)",
+    "editQuiz.questionType.top10_order": "Top 10 (order)",
     "editQuiz.points": "Points",
     "editQuiz.options": "Options",
     "editQuiz.option": "Option",
@@ -1397,6 +1469,10 @@ helpdesk@terracoast.ch`,
     "editQuiz.saveChanges": "Save Changes",
     "editQuiz.deleteQuestionSuccess": "Question deleted successfully!",
     "editQuiz.deleteQuestionError": "Error deleting question",
+    "editQuiz.errors.top10Range":
+      "Each Top 10 question must contain between 2 and 10 items.",
+    "editQuiz.errors.puzzleMinCountries":
+      "Each puzzle question must contain at least one selected country.",
     "createQuiz.title": "Create Quiz",
     "createQuiz.subtitle": "Create your own geography quiz",
     "createQuiz.quizType": "Quiz Type",
@@ -1442,7 +1518,71 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.maxQuizReached":
       "You have reached the limit of 10 public quizzes",
     "createQuiz.errors.createError": "Error creating quiz",
+    "createQuiz.errors.puzzleMinCountries":
+      "Select at least one target country for puzzle mode.",
+    "createQuiz.errors.top10MinItems":
+      "Top 10 mode requires at least 2 items.",
+    "createQuiz.errors.top10MaxItems":
+      "Top 10 mode accepts a maximum of 10 items.",
+    "createQuiz.puzzle.targetCountriesLabel": "Target countries",
+    "createQuiz.puzzle.showTargetList":
+      "Show the list of countries to find during the game",
+    "createQuiz.top10.expectedOrderInfo":
+      "The list above represents the expected order.",
+    "createQuiz.puzzle.autoAnswerInfo":
+      "Answer is generated automatically based on mode configuration.",
+    "createQuiz.top10.autoExpectedOrderInfo":
+      "Top 10 mode: expected order generated automatically",
+    "createQuiz.top10.itemsLabel": "Ranking items (expected order)",
+    "createQuiz.top10.itemPlaceholder": "Item",
+    "createQuiz.top10.addItem": "+ Add item",
+    "createQuiz.top10.reorderHint":
+      "You can also reorder rows by drag and drop.",
+    "createQuiz.top10.customHint":
+      "You can define any items (countries, cities, players, events, etc.). In game, they are shuffled and the player must reorder them with drag and drop.",
     "playQuiz.selectAnswer": "Please select or enter an answer",
+    "playQuiz.puzzle.instructions":
+      "Drag each country to its position (approximate coordinates).",
+    "playQuiz.puzzle.instructions.withList":
+      "Choose a country then click its area on the map (or drag and drop).",
+    "playQuiz.puzzle.instructions.withoutList":
+      "Click countries directly on the map to validate them.",
+    "playQuiz.puzzle.zoomHint": "Use + / - to zoom.",
+    "playQuiz.puzzle.worldMap": "World map",
+    "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.slot": "Slot",
+    "playQuiz.puzzle.dropHere": "Drop a country here",
+    "playQuiz.puzzle.pool": "Countries to place",
+    "playQuiz.puzzle.remove": "remove",
+    "playQuiz.puzzle.selectedCountries": "Selected countries",
+    "playQuiz.puzzle.selectionHint":
+      "Click countries directly on the map, then validate the question.",
+    "playQuiz.puzzle.correctlyPlaced": "correctly placed",
+    "playQuiz.puzzle.expectedCountries": "Expected countries",
+    "playQuiz.puzzle.placementsByCountry": "Placements by country",
+    "playQuiz.puzzle.notPlaced": "Not placed",
+    "playQuiz.puzzle.completeBeforeValidate":
+      "Place all countries before validating.",
+    "playQuiz.top10.instructions":
+      "Reorder countries in the correct order (1 = biggest).",
+    "playQuiz.top10.invalidOrder":
+      "This order cannot be validated right now.",
+    "playQuiz.top10.itemsRanked": "ranked items",
+    "playQuiz.top10.exactOrder": "Exact Top 10 order",
+    "playQuiz.top10.yourOrder": "Your order",
+    "playQuiz.top10.expectedOrder": "Expected order",
+    "playQuiz.top10.drag": "Drag",
+    "playQuiz.top10.dropPreview":
+      "The orange line shows where the box will be dropped.",
+    "admin.quizValidation.puzzle.modeLabel": "Puzzle mode:",
+    "admin.quizValidation.puzzle.selectedCountries": "selected countries",
+    "admin.quizValidation.puzzle.zone": "zone",
+    "admin.quizValidation.puzzle.hiddenList": "list hidden in game",
+    "admin.quizValidation.puzzle.visibleList": "list visible in game",
+    "admin.quizValidation.top10.modeLabel": "Top 10 mode:",
+    "admin.quizValidation.top10.customList": "custom list",
+    "admin.quizValidation.top10.metric": "metric",
+    "admin.quizValidation.top10.expectedOrder": "Expected order",
     "playQuiz.loadingQuiz": "Loading quiz...",
     "playQuiz.trainingComplete": "Training complete!",
     "playQuiz.quizComplete": "Quiz complete!",
@@ -2037,8 +2177,14 @@ helpdesk@terracoast.ch`,
     "editQuiz.saving": "Guardando...",
     "editQuiz.saveChanges": "Guardar cambios",
     "editQuiz.questionType.true_false": "Verdadero/Falso",
+    "editQuiz.questionType.puzzle_map": "Puzzle (mapa)",
+    "editQuiz.questionType.top10_order": "Top 10 (orden)",
     "editQuiz.deleteQuestionSuccess": "¡Pregunta eliminada con éxito!",
     "editQuiz.deleteQuestionError": "Error al eliminar pregunta",
+    "editQuiz.errors.top10Range":
+      "Cada pregunta Top 10 debe contener entre 2 y 10 elementos.",
+    "editQuiz.errors.puzzleMinCountries":
+      "Cada pregunta puzzle debe contener al menos un país seleccionado.",
     "createQuiz.title": "Crear cuestionario",
     "createQuiz.subtitle": "Crea tu propio cuestionario de geografía",
     "createQuiz.quizType": "Tipo de cuestionario",
@@ -2087,7 +2233,71 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.maxQuizReached":
       "Has alcanzado el límite de 10 cuestionarios públicos",
     "createQuiz.errors.createError": "Error al crear cuestionario",
+    "createQuiz.errors.puzzleMinCountries":
+      "Selecciona al menos un país objetivo para el modo puzzle.",
+    "createQuiz.errors.top10MinItems":
+      "El modo Top 10 requiere al menos 2 elementos.",
+    "createQuiz.errors.top10MaxItems":
+      "El modo Top 10 acepta un máximo de 10 elementos.",
+    "createQuiz.puzzle.targetCountriesLabel": "Países a encontrar",
+    "createQuiz.puzzle.showTargetList":
+      "Mostrar la lista de países a encontrar durante la partida",
+    "createQuiz.top10.expectedOrderInfo":
+      "La lista de arriba representa el orden esperado.",
+    "createQuiz.puzzle.autoAnswerInfo":
+      "La respuesta se genera automáticamente según la configuración.",
+    "createQuiz.top10.autoExpectedOrderInfo":
+      "Modo Top 10: orden esperado generado automáticamente",
+    "createQuiz.top10.itemsLabel": "Elementos del ranking (orden esperado)",
+    "createQuiz.top10.itemPlaceholder": "Elemento",
+    "createQuiz.top10.addItem": "+ Añadir elemento",
+    "createQuiz.top10.reorderHint":
+      "También puedes reordenar las filas arrastrando y soltando.",
+    "createQuiz.top10.customHint":
+      "Puedes definir cualquier elemento (países, ciudades, jugadores, eventos, etc.). En juego se mezclarán y el jugador deberá ordenarlos correctamente con arrastrar y soltar.",
     "playQuiz.selectAnswer": "Por favor selecciona o introduce una respuesta",
+    "playQuiz.puzzle.instructions":
+      "Arrastra cada país a su posición (coordenadas aproximadas).",
+    "playQuiz.puzzle.instructions.withList":
+      "Elige un país y haz clic en su zona en el mapa (o arrastra y suelta).",
+    "playQuiz.puzzle.instructions.withoutList":
+      "Haz clic directamente en los países del mapa para validarlos.",
+    "playQuiz.puzzle.zoomHint": "Usa + / - para acercar.",
+    "playQuiz.puzzle.worldMap": "Mapa del mundo",
+    "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.slot": "Posición",
+    "playQuiz.puzzle.dropHere": "Suelta un país aquí",
+    "playQuiz.puzzle.pool": "Países por colocar",
+    "playQuiz.puzzle.remove": "quitar",
+    "playQuiz.puzzle.selectedCountries": "Países seleccionados",
+    "playQuiz.puzzle.selectionHint":
+      "Haz clic en los países del mapa y luego valida la pregunta.",
+    "playQuiz.puzzle.correctlyPlaced": "bien colocados",
+    "playQuiz.puzzle.expectedCountries": "Países esperados",
+    "playQuiz.puzzle.placementsByCountry": "Colocaciones por país",
+    "playQuiz.puzzle.notPlaced": "No colocado",
+    "playQuiz.puzzle.completeBeforeValidate":
+      "Coloca todos los países antes de validar.",
+    "playQuiz.top10.instructions":
+      "Reordena los países en el orden correcto (1 = el mayor).",
+    "playQuiz.top10.invalidOrder":
+      "No se puede validar este orden por ahora.",
+    "playQuiz.top10.itemsRanked": "elementos clasificados",
+    "playQuiz.top10.exactOrder": "Orden exacto del Top 10",
+    "playQuiz.top10.yourOrder": "Tu orden",
+    "playQuiz.top10.expectedOrder": "Orden esperado",
+    "playQuiz.top10.drag": "Arrastrar",
+    "playQuiz.top10.dropPreview":
+      "La línea naranja muestra dónde se soltará la caja.",
+    "admin.quizValidation.puzzle.modeLabel": "Modo Puzzle:",
+    "admin.quizValidation.puzzle.selectedCountries": "países seleccionados",
+    "admin.quizValidation.puzzle.zone": "zona",
+    "admin.quizValidation.puzzle.hiddenList": "lista oculta en juego",
+    "admin.quizValidation.puzzle.visibleList": "lista visible en juego",
+    "admin.quizValidation.top10.modeLabel": "Modo Top 10:",
+    "admin.quizValidation.top10.customList": "lista personalizada",
+    "admin.quizValidation.top10.metric": "criterio",
+    "admin.quizValidation.top10.expectedOrder": "Orden esperado",
     "playQuiz.loadingQuiz": "Cargando cuestionario...",
     "playQuiz.trainingComplete": "¡Entrenamiento completado!",
     "playQuiz.quizComplete": "¡Cuestionario completado!",
@@ -2808,8 +3018,14 @@ helpdesk@terracoast.ch`,
     "editQuiz.saving": "Speichern...",
     "editQuiz.saveChanges": "Änderungen speichern",
     "editQuiz.questionType.true_false": "Wahr/Falsch",
+    "editQuiz.questionType.puzzle_map": "Puzzle (Karte)",
+    "editQuiz.questionType.top10_order": "Top 10 (Reihenfolge)",
     "editQuiz.deleteQuestionSuccess": "Frage erfolgreich gelöscht!",
     "editQuiz.deleteQuestionError": "Fehler beim Löschen der Frage",
+    "editQuiz.errors.top10Range":
+      "Jede Top-10-Frage muss zwischen 2 und 10 Einträge enthalten.",
+    "editQuiz.errors.puzzleMinCountries":
+      "Jede Puzzle-Frage muss mindestens ein ausgewähltes Land enthalten.",
     "createQuiz.title": "Quiz erstellen",
     "createQuiz.subtitle": "Erstelle dein eigenes Geografie-Quiz",
     "createQuiz.quizType": "Quiz-Typ",
@@ -2858,7 +3074,71 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.maxQuizReached":
       "Du hast das Limit von 10 öffentlichen Quiz erreicht",
     "createQuiz.errors.createError": "Fehler beim Erstellen des Quiz",
+    "createQuiz.errors.puzzleMinCountries":
+      "Wähle mindestens ein Zielland für den Puzzle-Modus aus.",
+    "createQuiz.errors.top10MinItems":
+      "Top-10-Modus benötigt mindestens 2 Einträge.",
+    "createQuiz.errors.top10MaxItems":
+      "Top-10-Modus erlaubt maximal 10 Einträge.",
+    "createQuiz.puzzle.targetCountriesLabel": "Zu findende Länder",
+    "createQuiz.puzzle.showTargetList":
+      "Liste der zu findenden Länder während des Spiels anzeigen",
+    "createQuiz.top10.expectedOrderInfo":
+      "Die Liste oben stellt die erwartete Reihenfolge dar.",
+    "createQuiz.puzzle.autoAnswerInfo":
+      "Antwort wird automatisch anhand der Modus-Konfiguration generiert.",
+    "createQuiz.top10.autoExpectedOrderInfo":
+      "Top-10-Modus: erwartete Reihenfolge automatisch erzeugt",
+    "createQuiz.top10.itemsLabel": "Ranglisten-Einträge (erwartete Reihenfolge)",
+    "createQuiz.top10.itemPlaceholder": "Eintrag",
+    "createQuiz.top10.addItem": "+ Eintrag hinzufügen",
+    "createQuiz.top10.reorderHint":
+      "Du kannst die Zeilen auch per Drag-and-drop neu anordnen.",
+    "createQuiz.top10.customHint":
+      "Du kannst beliebige Einträge definieren (Länder, Städte, Spieler, Ereignisse usw.). Im Spiel werden sie gemischt und der Spieler muss sie per Drag-and-drop in die richtige Reihenfolge bringen.",
     "playQuiz.selectAnswer": "Bitte wähle oder gib eine Antwort ein",
+    "playQuiz.puzzle.instructions":
+      "Ziehe jedes Land an seine Position (ungefähre Koordinaten).",
+    "playQuiz.puzzle.instructions.withList":
+      "Wähle ein Land und klicke dann seine Zone auf der Karte (oder Drag-and-drop).",
+    "playQuiz.puzzle.instructions.withoutList":
+      "Klicke Länder direkt auf der Karte an, um sie zu markieren.",
+    "playQuiz.puzzle.zoomHint": "Nutze + / - zum Zoomen.",
+    "playQuiz.puzzle.worldMap": "Weltkarte",
+    "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.slot": "Slot",
+    "playQuiz.puzzle.dropHere": "Land hier ablegen",
+    "playQuiz.puzzle.pool": "Zu platzierende Länder",
+    "playQuiz.puzzle.remove": "entfernen",
+    "playQuiz.puzzle.selectedCountries": "Ausgewählte Länder",
+    "playQuiz.puzzle.selectionHint":
+      "Klicke Länder auf der Karte und bestätige dann die Frage.",
+    "playQuiz.puzzle.correctlyPlaced": "richtig platziert",
+    "playQuiz.puzzle.expectedCountries": "Erwartete Länder",
+    "playQuiz.puzzle.placementsByCountry": "Platzierungen nach Land",
+    "playQuiz.puzzle.notPlaced": "Nicht platziert",
+    "playQuiz.puzzle.completeBeforeValidate":
+      "Platziere alle Länder vor dem Bestätigen.",
+    "playQuiz.top10.instructions":
+      "Ordne die Länder in die richtige Reihenfolge (1 = größtes).",
+    "playQuiz.top10.invalidOrder":
+      "Diese Reihenfolge kann derzeit nicht bestätigt werden.",
+    "playQuiz.top10.itemsRanked": "einsortierte Einträge",
+    "playQuiz.top10.exactOrder": "Exakte Top-10-Reihenfolge",
+    "playQuiz.top10.yourOrder": "Deine Reihenfolge",
+    "playQuiz.top10.expectedOrder": "Erwartete Reihenfolge",
+    "playQuiz.top10.drag": "Ziehen",
+    "playQuiz.top10.dropPreview":
+      "Die orange Linie zeigt, wo die Box abgelegt wird.",
+    "admin.quizValidation.puzzle.modeLabel": "Puzzle-Modus:",
+    "admin.quizValidation.puzzle.selectedCountries": "ausgewählte Länder",
+    "admin.quizValidation.puzzle.zone": "Zone",
+    "admin.quizValidation.puzzle.hiddenList": "Liste im Spiel ausgeblendet",
+    "admin.quizValidation.puzzle.visibleList": "Liste im Spiel sichtbar",
+    "admin.quizValidation.top10.modeLabel": "Top-10-Modus:",
+    "admin.quizValidation.top10.customList": "benutzerdefinierte Liste",
+    "admin.quizValidation.top10.metric": "Kriterium",
+    "admin.quizValidation.top10.expectedOrder": "Erwartete Reihenfolge",
     "playQuiz.loadingQuiz": "Lade Quiz...",
     "playQuiz.trainingComplete": "Training abgeschlossen!",
     "playQuiz.quizComplete": "Quiz abgeschlossen!",
@@ -3579,8 +3859,14 @@ helpdesk@terracoast.ch`,
     "editQuiz.saving": "Salvataggio...",
     "editQuiz.saveChanges": "Salva modifiche",
     "editQuiz.questionType.true_false": "Vero/Falso",
+    "editQuiz.questionType.puzzle_map": "Puzzle (mappa)",
+    "editQuiz.questionType.top10_order": "Top 10 (ordine)",
     "editQuiz.deleteQuestionSuccess": "Domanda eliminata con successo!",
     "editQuiz.deleteQuestionError": "Errore nell'eliminazione della domanda",
+    "editQuiz.errors.top10Range":
+      "Ogni domanda Top 10 deve contenere tra 2 e 10 elementi.",
+    "editQuiz.errors.puzzleMinCountries":
+      "Ogni domanda puzzle deve contenere almeno un paese selezionato.",
     "createQuiz.title": "Crea quiz",
     "createQuiz.subtitle": "Crea il tuo quiz di geografia",
     "createQuiz.quizType": "Tipo di quiz",
@@ -3628,7 +3914,71 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.maxQuizReached":
       "Hai raggiunto il limite di 10 quiz pubblici",
     "createQuiz.errors.createError": "Errore nella creazione del quiz",
+    "createQuiz.errors.puzzleMinCountries":
+      "Seleziona almeno un paese obiettivo per la modalità puzzle.",
+    "createQuiz.errors.top10MinItems":
+      "La modalità Top 10 richiede almeno 2 elementi.",
+    "createQuiz.errors.top10MaxItems":
+      "La modalità Top 10 accetta massimo 10 elementi.",
+    "createQuiz.puzzle.targetCountriesLabel": "Paesi da trovare",
+    "createQuiz.puzzle.showTargetList":
+      "Mostra la lista dei paesi da trovare durante la partita",
+    "createQuiz.top10.expectedOrderInfo":
+      "La lista sopra rappresenta l'ordine previsto.",
+    "createQuiz.puzzle.autoAnswerInfo":
+      "Risposta generata automaticamente in base alla configurazione.",
+    "createQuiz.top10.autoExpectedOrderInfo":
+      "Modalità Top 10: ordine previsto generato automaticamente",
+    "createQuiz.top10.itemsLabel": "Elementi classifica (ordine previsto)",
+    "createQuiz.top10.itemPlaceholder": "Elemento",
+    "createQuiz.top10.addItem": "+ Aggiungi elemento",
+    "createQuiz.top10.reorderHint":
+      "Puoi anche riordinare le righe con il drag-and-drop.",
+    "createQuiz.top10.customHint":
+      "Puoi definire qualsiasi elemento (paesi, città, giocatori, eventi, ecc.). In gioco saranno mescolati e il giocatore dovrà rimetterli nell'ordine corretto con drag-and-drop.",
     "playQuiz.selectAnswer": "Seleziona o inserisci una risposta",
+    "playQuiz.puzzle.instructions":
+      "Trascina ogni paese nella sua posizione (coordinate approssimative).",
+    "playQuiz.puzzle.instructions.withList":
+      "Scegli un paese e clicca la sua zona sulla mappa (o trascina e rilascia).",
+    "playQuiz.puzzle.instructions.withoutList":
+      "Clicca direttamente i paesi sulla mappa per convalidarli.",
+    "playQuiz.puzzle.zoomHint": "Usa + / - per zoomare.",
+    "playQuiz.puzzle.worldMap": "Mappa del mondo",
+    "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.slot": "Slot",
+    "playQuiz.puzzle.dropHere": "Trascina qui un paese",
+    "playQuiz.puzzle.pool": "Paesi da posizionare",
+    "playQuiz.puzzle.remove": "rimuovi",
+    "playQuiz.puzzle.selectedCountries": "Paesi selezionati",
+    "playQuiz.puzzle.selectionHint":
+      "Clicca i paesi sulla mappa, poi convalida la domanda.",
+    "playQuiz.puzzle.correctlyPlaced": "posizionati correttamente",
+    "playQuiz.puzzle.expectedCountries": "Paesi attesi",
+    "playQuiz.puzzle.placementsByCountry": "Posizionamenti per paese",
+    "playQuiz.puzzle.notPlaced": "Non posizionato",
+    "playQuiz.puzzle.completeBeforeValidate":
+      "Posiziona tutti i paesi prima di convalidare.",
+    "playQuiz.top10.instructions":
+      "Riordina i paesi nell'ordine corretto (1 = più grande).",
+    "playQuiz.top10.invalidOrder":
+      "Impossibile convalidare questo ordine al momento.",
+    "playQuiz.top10.itemsRanked": "elementi ordinati",
+    "playQuiz.top10.exactOrder": "Ordine esatto Top 10",
+    "playQuiz.top10.yourOrder": "Il tuo ordine",
+    "playQuiz.top10.expectedOrder": "Ordine previsto",
+    "playQuiz.top10.drag": "Trascina",
+    "playQuiz.top10.dropPreview":
+      "La linea arancione mostra dove verrà inserita la box.",
+    "admin.quizValidation.puzzle.modeLabel": "Modalità Puzzle:",
+    "admin.quizValidation.puzzle.selectedCountries": "paesi selezionati",
+    "admin.quizValidation.puzzle.zone": "zona",
+    "admin.quizValidation.puzzle.hiddenList": "lista nascosta in gioco",
+    "admin.quizValidation.puzzle.visibleList": "lista visibile in gioco",
+    "admin.quizValidation.top10.modeLabel": "Modalità Top 10:",
+    "admin.quizValidation.top10.customList": "lista personalizzata",
+    "admin.quizValidation.top10.metric": "criterio",
+    "admin.quizValidation.top10.expectedOrder": "Ordine previsto",
     "playQuiz.loadingQuiz": "Caricamento quiz...",
     "playQuiz.trainingComplete": "Allenamento completato!",
     "playQuiz.quizComplete": "Quiz completato!",
@@ -4345,8 +4695,14 @@ helpdesk@terracoast.ch`,
     "editQuiz.saving": "Guardando...",
     "editQuiz.saveChanges": "Guardar alterações",
     "editQuiz.questionType.true_false": "Verdadeiro/Falso",
+    "editQuiz.questionType.puzzle_map": "Puzzle (mapa)",
+    "editQuiz.questionType.top10_order": "Top 10 (ordem)",
     "editQuiz.deleteQuestionSuccess": "Pergunta excluída com sucesso!",
     "editQuiz.deleteQuestionError": "Erro ao excluir pergunta",
+    "editQuiz.errors.top10Range":
+      "Cada pergunta Top 10 deve conter entre 2 e 10 itens.",
+    "editQuiz.errors.puzzleMinCountries":
+      "Cada pergunta puzzle deve conter pelo menos um país selecionado.",
     "createQuiz.title": "Criar questionário",
     "createQuiz.subtitle": "Crie seu próprio questionário de geografia",
     "createQuiz.quizType": "Tipo de questionário",
@@ -4394,7 +4750,71 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.maxQuizReached":
       "Você atingiu o limite de 10 questionários públicos",
     "createQuiz.errors.createError": "Erro ao criar questionário",
+    "createQuiz.errors.puzzleMinCountries":
+      "Selecione pelo menos um país alvo para o modo puzzle.",
+    "createQuiz.errors.top10MinItems":
+      "O modo Top 10 exige pelo menos 2 itens.",
+    "createQuiz.errors.top10MaxItems":
+      "O modo Top 10 aceita no máximo 10 itens.",
+    "createQuiz.puzzle.targetCountriesLabel": "Países para encontrar",
+    "createQuiz.puzzle.showTargetList":
+      "Mostrar a lista de países para encontrar durante a partida",
+    "createQuiz.top10.expectedOrderInfo":
+      "A lista acima representa a ordem esperada.",
+    "createQuiz.puzzle.autoAnswerInfo":
+      "Resposta gerada automaticamente conforme a configuração do modo.",
+    "createQuiz.top10.autoExpectedOrderInfo":
+      "Modo Top 10: ordem esperada gerada automaticamente",
+    "createQuiz.top10.itemsLabel": "Itens do ranking (ordem esperada)",
+    "createQuiz.top10.itemPlaceholder": "Item",
+    "createQuiz.top10.addItem": "+ Adicionar item",
+    "createQuiz.top10.reorderHint":
+      "Você também pode reordenar as linhas arrastando e soltando.",
+    "createQuiz.top10.customHint":
+      "Você pode definir quaisquer itens (países, cidades, jogadores, eventos etc.). No jogo, eles serão embaralhados e o jogador deverá colocá-los na ordem correta com arrastar e soltar.",
     "playQuiz.selectAnswer": "Por favor selecione ou digite uma resposta",
+    "playQuiz.puzzle.instructions":
+      "Arraste cada país para sua posição (coordenadas aproximadas).",
+    "playQuiz.puzzle.instructions.withList":
+      "Escolha um país e clique na sua área no mapa (ou arraste e solte).",
+    "playQuiz.puzzle.instructions.withoutList":
+      "Clique diretamente nos países do mapa para validá-los.",
+    "playQuiz.puzzle.zoomHint": "Use + / - para zoom.",
+    "playQuiz.puzzle.worldMap": "Mapa-múndi",
+    "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.slot": "Posição",
+    "playQuiz.puzzle.dropHere": "Solte um país aqui",
+    "playQuiz.puzzle.pool": "Países para posicionar",
+    "playQuiz.puzzle.remove": "remover",
+    "playQuiz.puzzle.selectedCountries": "Países selecionados",
+    "playQuiz.puzzle.selectionHint":
+      "Clique nos países no mapa e depois valide a pergunta.",
+    "playQuiz.puzzle.correctlyPlaced": "bem posicionados",
+    "playQuiz.puzzle.expectedCountries": "Países esperados",
+    "playQuiz.puzzle.placementsByCountry": "Posições por país",
+    "playQuiz.puzzle.notPlaced": "Não posicionado",
+    "playQuiz.puzzle.completeBeforeValidate":
+      "Posicione todos os países antes de validar.",
+    "playQuiz.top10.instructions":
+      "Reordene os países na ordem correta (1 = maior).",
+    "playQuiz.top10.invalidOrder":
+      "Não é possível validar esta ordem agora.",
+    "playQuiz.top10.itemsRanked": "itens classificados",
+    "playQuiz.top10.exactOrder": "Ordem exata do Top 10",
+    "playQuiz.top10.yourOrder": "Sua ordem",
+    "playQuiz.top10.expectedOrder": "Ordem esperada",
+    "playQuiz.top10.drag": "Arrastar",
+    "playQuiz.top10.dropPreview":
+      "A linha laranja mostra onde a caixa será inserida.",
+    "admin.quizValidation.puzzle.modeLabel": "Modo Puzzle:",
+    "admin.quizValidation.puzzle.selectedCountries": "países selecionados",
+    "admin.quizValidation.puzzle.zone": "zona",
+    "admin.quizValidation.puzzle.hiddenList": "lista oculta no jogo",
+    "admin.quizValidation.puzzle.visibleList": "lista visível no jogo",
+    "admin.quizValidation.top10.modeLabel": "Modo Top 10:",
+    "admin.quizValidation.top10.customList": "lista personalizada",
+    "admin.quizValidation.top10.metric": "critério",
+    "admin.quizValidation.top10.expectedOrder": "Ordem esperada",
     "playQuiz.loadingQuiz": "Carregando questionário...",
     "playQuiz.trainingComplete": "Treino concluído!",
     "playQuiz.quizComplete": "Questionário concluído!",
