@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -14,6 +14,7 @@ import {
   Award,
   TrendingUp,
   Crown,
+  ChevronRight,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 
@@ -21,6 +22,11 @@ type Duel = Database["public"]["Tables"]["duels"]["Row"];
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type DuelInvitation = Database["public"]["Tables"]["duel_invitations"]["Row"];
+type DuelMatchmakingQueue =
+  Database["public"]["Tables"]["duel_matchmaking_queue"]["Row"];
+type DuelFeatureFlag =
+  Database["public"]["Tables"]["duel_feature_flags"]["Row"];
+type Difficulty = "easy" | "medium" | "hard";
 
 interface DuelWithDetails extends Duel {
   quizzes: Quiz;
@@ -62,14 +68,53 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
     InvitationWithDetails[]
   >([]);
   const [activeTab, setActiveTab] = useState<
-    "invitations" | "active" | "history"
-  >((initialTab as "invitations" | "active" | "history") || "invitations");
+    "invitations" | "active" | "completed" | "matchmaking"
+  >(() => {
+    if (initialTab === "history") return "completed";
+    if (
+      initialTab === "invitations" ||
+      initialTab === "active" ||
+      initialTab === "completed" ||
+      initialTab === "matchmaking"
+    ) {
+      return initialTab;
+    }
+    return "invitations";
+  });
   const [showCreateInvitation, setShowCreateInvitation] = useState(false);
   const [viewedDuels, setViewedDuels] = useState<Set<string>>(new Set());
+  const [matchmakingQueueEntry, setMatchmakingQueueEntry] =
+    useState<DuelMatchmakingQueue | null>(null);
+  const [matchmakingLoading, setMatchmakingLoading] = useState(false);
+  const [rankedOnlyHistory, setRankedOnlyHistory] = useState(false);
+  const [matchmakingQuizzes, setMatchmakingQuizzes] = useState<Quiz[]>([]);
+  const [preferredQuizIds, setPreferredQuizIds] = useState<string[]>([]);
+  const [preferredDifficulty, setPreferredDifficulty] = useState<
+    Difficulty | ""
+  >("");
+  const [queueMode, setQueueMode] = useState<"targeted" | "random_bonus">(
+    "targeted"
+  );
+  const [duelFeatureFlags, setDuelFeatureFlags] = useState({
+    anti_repeat: true,
+    progressive_expand: true,
+    show_opponent_mmr: true,
+  });
+  const matchmakingAttemptInFlightRef = useRef(false);
+  const [matchedPreview, setMatchedPreview] = useState<{
+    duelId: string;
+    quizId: string;
+    opponentPseudo: string;
+    opponentMmr: number;
+    matchType: "ranked" | "casual";
+  } | null>(null);
 
   useEffect(() => {
     loadDuels();
     loadInvitations();
+    loadMatchmakingStatus();
+    loadMatchmakingOptions();
+    loadDuelFeatureFlags();
 
     const subscription = supabase
       .channel("duel_updates")
@@ -85,6 +130,13 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
         { event: "*", schema: "public", table: "duel_invitations" },
         () => {
           loadInvitations();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "duel_matchmaking_queue" },
+        () => {
+          loadMatchmakingStatus();
         }
       )
       .subscribe();
@@ -183,6 +235,50 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
       setCompletedDuels(enrichedDuels as DuelWithDetails[]);
     }
   };
+  const loadMatchmakingStatus = async () => {
+    if (!profile) return;
+
+    const { data } = await supabase
+      .from("duel_matchmaking_queue")
+      .select("*")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+
+    setMatchmakingQueueEntry(data || null);
+  };
+  const loadMatchmakingOptions = async () => {
+    const { data } = await supabase
+      .from("quizzes")
+      .select("*")
+      .or("is_public.eq.true,is_global.eq.true")
+      .order("total_plays", { ascending: false })
+      .limit(50);
+
+    if (data) setMatchmakingQuizzes(data);
+  };
+  const loadDuelFeatureFlags = async () => {
+    const { data } = await supabase
+      .from("duel_feature_flags")
+      .select("*")
+      .in("feature_key", [
+        "anti_repeat",
+        "progressive_expand",
+        "show_opponent_mmr",
+      ]);
+
+    if (!data) return;
+    const typed = data as DuelFeatureFlag[];
+    setDuelFeatureFlags({
+      anti_repeat:
+        typed.find((f) => f.feature_key === "anti_repeat")?.enabled ?? true,
+      progressive_expand:
+        typed.find((f) => f.feature_key === "progressive_expand")?.enabled ??
+        true,
+      show_opponent_mmr:
+        typed.find((f) => f.feature_key === "show_opponent_mmr")?.enabled ??
+        true,
+    });
+  };
   const newResultsCount = completedDuels.filter((duel) => {
     // Vérifier si le duel a été terminé dans les dernières 24h
     const completedAt = duel.completed_at ? new Date(duel.completed_at) : null;
@@ -239,6 +335,7 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
         player1_id: invitation.from_user_id,
         player2_id: invitation.to_user_id,
         status: "in_progress",
+        match_type: "casual",
       })
       .select()
       .single();
@@ -275,6 +372,128 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
     onNavigate("play-duel", { duelId: duel.id, quizId: duel.quiz_id });
   };
 
+  const runMatchmakingAttempt = async (
+    matchType: "ranked" | "casual",
+    prefQuizIds: string[] | null,
+    prefDifficulty: Difficulty | null,
+    prefQueueMode: "targeted" | "random_bonus",
+    options?: { withLoading?: boolean }
+  ) => {
+    if (matchmakingAttemptInFlightRef.current) return;
+    matchmakingAttemptInFlightRef.current = true;
+    if (options?.withLoading) setMatchmakingLoading(true);
+
+    const { data, error } = await supabase.rpc("create_or_match_random_duel", {
+      p_match_type: matchType,
+      p_preferred_quiz_id: null,
+      p_preferred_difficulty: prefDifficulty,
+      p_preferred_quiz_ids: prefQuizIds,
+      p_queue_mode: prefQueueMode,
+    });
+
+    if (options?.withLoading) setMatchmakingLoading(false);
+    matchmakingAttemptInFlightRef.current = false;
+
+    if (error) {
+      console.error("Error matchmaking:", error);
+      return;
+    }
+
+    const payload = (Array.isArray(data) ? data[0] : data) as
+      | {
+          duel_id?: string | null;
+          quiz_id?: string | null;
+          matched?: boolean;
+          waiting?: boolean;
+          opponent_id?: string | null;
+        }
+      | null;
+
+    if (payload?.matched && payload?.duel_id && payload?.quiz_id) {
+      await loadDuels();
+      await loadMatchmakingStatus();
+      if (!duelFeatureFlags.show_opponent_mmr) {
+        onNavigate("play-duel", {
+          duelId: payload.duel_id,
+          quizId: payload.quiz_id,
+        });
+        return;
+      }
+
+      const { data: opponentData } = payload.opponent_id
+        ? await supabase
+            .from("profiles")
+            .select("pseudo, duel_rating")
+            .eq("id", payload.opponent_id)
+            .maybeSingle()
+        : { data: null };
+
+      setMatchedPreview({
+        duelId: payload.duel_id,
+        quizId: payload.quiz_id,
+        opponentPseudo: opponentData?.pseudo || t("duels.unknownOpponent"),
+        opponentMmr: opponentData?.duel_rating ?? 1000,
+        matchType: matchType,
+      });
+      setActiveTab("matchmaking");
+      return;
+    }
+
+    await loadMatchmakingStatus();
+  };
+
+  const startRandomMatchmaking = async (matchType: "ranked" | "casual") => {
+    await runMatchmakingAttempt(
+      matchType,
+      preferredQuizIds.length > 0 ? preferredQuizIds : null,
+      (preferredDifficulty || null) as Difficulty | null,
+      queueMode,
+      { withLoading: true }
+    );
+    setActiveTab("matchmaking");
+  };
+
+  const cancelRandomMatchmaking = async () => {
+    setMatchmakingLoading(true);
+    const { error } = await supabase.rpc("cancel_random_duel_search");
+    if (error) {
+      console.error("Error cancelling matchmaking:", error);
+    }
+    setMatchmakingLoading(false);
+    await loadMatchmakingStatus();
+  };
+  const launchMatchedDuel = () => {
+    if (!matchedPreview) return;
+    onNavigate("play-duel", {
+      duelId: matchedPreview.duelId,
+      quizId: matchedPreview.quizId,
+    });
+    setMatchedPreview(null);
+  };
+  useEffect(() => {
+    if (!matchmakingQueueEntry || matchedPreview) return;
+    const hasJoinableActiveDuel = activeDuels.some((duel) => {
+      const isPlayer1 = duel.player1_id === profile?.id;
+      const hasPlayed = isPlayer1
+        ? !!duel.player1_session_id
+        : !!duel.player2_session_id;
+      return !hasPlayed;
+    });
+    if (hasJoinableActiveDuel) return;
+
+    const interval = setInterval(() => {
+      runMatchmakingAttempt(
+        matchmakingQueueEntry.match_type as "ranked" | "casual",
+        (matchmakingQueueEntry.preferred_quiz_ids as string[] | null) || null,
+        (matchmakingQueueEntry.preferred_difficulty as Difficulty | null) || null,
+        (matchmakingQueueEntry.queue_mode as "targeted" | "random_bonus") ||
+          "targeted"
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [matchmakingQueueEntry, matchedPreview, activeDuels, profile?.id]);
+
   const getDuelStatus = (duel: DuelWithDetails) => {
     if (duel.status === "completed") {
       if (!duel.winner_id) return t("duels.draw");
@@ -287,6 +506,18 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
 
   const getOpponent = (duel: DuelWithDetails) => {
     return duel.player1_id === profile?.id ? duel.player2 : duel.player1;
+  };
+  const filteredCompletedDuels = rankedOnlyHistory
+    ? completedDuels.filter((duel) => duel.match_type === "ranked")
+    : completedDuels;
+  const togglePreferredQuiz = (quizId: string) => {
+    setPreferredQuizIds((prev) => {
+      if (prev.includes(quizId)) {
+        return prev.filter((id) => id !== quizId);
+      }
+      if (prev.length >= 10) return prev;
+      return [...prev, quizId];
+    });
   };
 
   return (
@@ -311,11 +542,47 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
             {t("duels.createDuel")}
           </button>
         </div>
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+          <button
+            onClick={() => setActiveTab("active")}
+            className="text-left p-3 rounded-lg border border-emerald-100 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+          >
+            <p className="text-xs text-emerald-700">{t("duels.activeDuels")}</p>
+            <p className="text-xl font-bold text-emerald-800">{activeDuels.length}</p>
+          </button>
+          <button
+            onClick={() => setActiveTab("invitations")}
+            className="text-left p-3 rounded-lg border border-amber-100 bg-amber-50 hover:bg-amber-100 transition-colors"
+          >
+            <p className="text-xs text-amber-700">{t("duels.invitations")}</p>
+            <p className="text-xl font-bold text-amber-800">
+              {pendingInvitations.length}
+            </p>
+          </button>
+          <button
+            onClick={() => setActiveTab("matchmaking")}
+            className="text-left p-3 rounded-lg border border-purple-100 bg-purple-50 hover:bg-purple-100 transition-colors"
+          >
+            <p className="text-xs text-purple-700">{t("duels.matchmaking")}</p>
+            <p className="text-xl font-bold text-purple-800">
+              {matchmakingQueueEntry ? "1" : "0"}
+            </p>
+          </button>
+          <button
+            onClick={() => setActiveTab("completed")}
+            className="text-left p-3 rounded-lg border border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors"
+          >
+            <p className="text-xs text-blue-700">{t("duels.history")}</p>
+            <p className="text-xl font-bold text-blue-800">
+              {completedDuels.length}
+            </p>
+          </button>
+        </div>
       </div>
 
-      {/* Onglets en grille 3 colonnes */}
+      {/* Onglets */}
       <div className="bg-white rounded-xl shadow-md p-3 sm:p-6 mb-6 sm:mb-8">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <button
             onClick={() => setActiveTab("active")}
             className={`relative flex flex-col items-center justify-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
@@ -352,6 +619,24 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
               {t("duels.invitations")}
             </span>
             <span className="text-xs">({pendingInvitations.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("matchmaking")}
+            className={`relative flex flex-col items-center justify-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
+              activeTab === "matchmaking"
+                ? "bg-emerald-600 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            <Zap className="w-5 h-5 mb-1" />
+            <span className="text-xs sm:text-base">{t("duels.matchmaking")}</span>
+            <span className="text-xs">{matchmakingQueueEntry ? "1" : "0"}</span>
+            {matchmakingQueueEntry && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab("completed")}
@@ -407,6 +692,19 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                   <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
                     {duel.quizzes.title}
                   </h3>
+                  <div className="mb-2">
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                        duel.match_type === "ranked"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {duel.match_type === "ranked"
+                        ? t("duels.rankedTag")
+                        : t("duels.casualTag")}
+                    </span>
+                  </div>
                   <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm text-gray-600 mb-3">
                     <span className="flex items-center">
                       <Users className="w-4 h-4 mr-1" />
@@ -468,6 +766,210 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                 </div>
               );
             })
+          )}
+        </div>
+      )}
+
+      {activeTab === "matchmaking" && (
+        <div className="space-y-4">
+          {!matchmakingQueueEntry && !matchedPreview && (
+            <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">
+                  {t("duels.matchmaking")}
+                </h3>
+                <button
+                  onClick={() => {
+                    setQueueMode("targeted");
+                    setPreferredDifficulty("");
+                    setPreferredQuizIds([]);
+                  }}
+                  disabled={matchmakingLoading}
+                  className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  Reset
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setQueueMode("targeted")}
+                  disabled={matchmakingLoading}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    queueMode === "targeted"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {t("duels.queueModeTargeted")}
+                </button>
+                <button
+                  onClick={() => setQueueMode("random_bonus")}
+                  disabled={matchmakingLoading}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    queueMode === "random_bonus"
+                      ? "bg-orange-600 text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {t("duels.queueModeRandomBonus")}
+                </button>
+                <select
+                  value={preferredDifficulty}
+                  onChange={(e) =>
+                    setPreferredDifficulty(
+                      (e.target.value as Difficulty | "") || ""
+                    )
+                  }
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  disabled={matchmakingLoading}
+                >
+                  <option value="">{t("duels.anyDifficulty")}</option>
+                  <option value="easy">{t("quiz.difficulty.easy")}</option>
+                  <option value="medium">{t("quiz.difficulty.medium")}</option>
+                  <option value="hard">{t("quiz.difficulty.hard")}</option>
+                </select>
+              </div>
+
+              {queueMode === "targeted" ? (
+                <div className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="text-xs text-gray-600 mb-2">
+                    {t("duels.quizSelectionCount")} {preferredQuizIds.length}/10
+                  </p>
+                  <div className="max-h-44 overflow-y-auto space-y-1">
+                    {matchmakingQuizzes.map((quiz) => (
+                      <label
+                        key={quiz.id}
+                        className="flex items-center gap-2 text-xs text-gray-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={preferredQuizIds.includes(quiz.id)}
+                          onChange={() => togglePreferredQuiz(quiz.id)}
+                          disabled={
+                            matchmakingLoading ||
+                            (!preferredQuizIds.includes(quiz.id) &&
+                              preferredQuizIds.length >= 10)
+                          }
+                        />
+                        <span className="truncate">{quiz.title}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="px-3 py-2 rounded-lg text-xs bg-orange-50 text-orange-700 border border-orange-200">
+                  {t("duels.randomBonusHint")}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  onClick={() => startRandomMatchmaking("ranked")}
+                  disabled={matchmakingLoading}
+                  className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center"
+                >
+                  {t("duels.startRankedSearch")}
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </button>
+                <button
+                  onClick={() => startRandomMatchmaking("casual")}
+                  disabled={matchmakingLoading}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center"
+                >
+                  {t("duels.startCasualSearch")}
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {matchedPreview && (
+            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-emerald-800 mb-2">
+                {t("duels.matchFound")}
+              </h3>
+              <p className="text-sm text-emerald-700 mb-1">
+                {t("duels.opponentLabel")} {matchedPreview.opponentPseudo}
+              </p>
+              <p className="text-sm text-emerald-700 mb-3">
+                {t("duels.opponentMmrLabel")} {matchedPreview.opponentMmr}
+              </p>
+              <button
+                onClick={launchMatchedDuel}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                {t("duels.startDuelNow")}
+              </button>
+            </div>
+          )}
+          {matchmakingQueueEntry ? (
+            <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-purple-800 mb-2">
+                {t("duels.searchingOpponent")}
+              </h3>
+              <p className="text-sm text-purple-700 mb-1">
+                {matchmakingQueueEntry.match_type === "ranked"
+                  ? t("duels.matchTypeRanked")
+                  : t("duels.matchTypeCasual")}
+              </p>
+              <p className="text-xs text-purple-600 mb-1">
+                {(matchmakingQueueEntry.queue_mode as string) === "random_bonus"
+                  ? t("duels.queueModeRandomBonus")
+                  : t("duels.queueModeTargeted")}
+              </p>
+              {matchmakingQueueEntry.preferred_difficulty && (
+                <p className="text-xs text-purple-600 mb-1">
+                  {t("duels.preferredDifficultyLabel")}{" "}
+                  {t(
+                    `quiz.difficulty.${matchmakingQueueEntry.preferred_difficulty}`
+                  )}
+                </p>
+              )}
+              {matchmakingQueueEntry.preferred_quiz_id && (
+                <p className="text-xs text-purple-600 mb-1">
+                  {t("duels.preferredQuizLabel")}{" "}
+                  {matchmakingQuizzes.find(
+                    (quiz) => quiz.id === matchmakingQueueEntry.preferred_quiz_id
+                  )?.title || t("duels.preferredQuizUnknown")}
+                </p>
+              )}
+              {(matchmakingQueueEntry.preferred_quiz_ids as string[] | null)
+                ?.length ? (
+                <p className="text-xs text-purple-600 mb-1">
+                  {t("duels.preferredQuizListLabel")}{" "}
+                  {
+                    (
+                      matchmakingQueueEntry.preferred_quiz_ids as string[] | null
+                    )?.length
+                  }
+                </p>
+              ) : null}
+              {(matchmakingQueueEntry.queue_mode as string) ===
+                "random_bonus" && (
+                <p className="text-xs text-orange-700 mb-1">
+                  {t("duels.randomBonusReward")}
+                </p>
+              )}
+              <p className="text-xs text-purple-600 mb-4">
+                {t("duels.inQueueSince")}{" "}
+                {new Date(matchmakingQueueEntry.created_at).toLocaleTimeString()}
+              </p>
+              <button
+                onClick={cancelRandomMatchmaking}
+                disabled={matchmakingLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {t("duels.cancelSearch")}
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-md p-10 text-center">
+              <Zap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                {t("duels.noQueue")}
+              </h3>
+              <p className="text-sm text-gray-500">{t("duels.createOrAccept")}</p>
+            </div>
           )}
         </div>
       )}
@@ -570,7 +1072,18 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
       {/* Completed Duels */}
       {activeTab === "completed" && (
         <div className="space-y-4">
-          {completedDuels.length === 0 ? (
+          <div className="flex items-center justify-end">
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={rankedOnlyHistory}
+                onChange={(e) => setRankedOnlyHistory(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              {t("duels.rankedOnlyHistory")}
+            </label>
+          </div>
+          {filteredCompletedDuels.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md p-8 sm:p-12 text-center">
               <Trophy className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
@@ -581,7 +1094,7 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
               </p>
             </div>
           ) : (
-            completedDuels.map((duel) => {
+            filteredCompletedDuels.map((duel) => {
               const opponent = getOpponent(duel);
               const status = getDuelStatus(duel);
               const isPlayer1 = duel.player1_id === profile?.id;
@@ -616,6 +1129,17 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                           <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
                             {duel.quizzes.title}
                           </h3>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              duel.match_type === "ranked"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {duel.match_type === "ranked"
+                              ? t("duels.rankedTag")
+                              : t("duels.casualTag")}
+                          </span>
                           {status === t("duels.victory") && (
                             <Crown className="w-6 h-6 text-yellow-500" />
                           )}
@@ -709,6 +1233,31 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                                 %
                               </span>
                             </div>
+                            {duel.match_type === "ranked" && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-600">
+                                  {t("leaderboard.duelRating")}
+                                </span>
+                                <span
+                                  className={`text-sm font-semibold ${
+                                    (duel.player1_id === profile?.id
+                                      ? duel.player1_rating_delta
+                                      : duel.player2_rating_delta) >= 0
+                                      ? "text-green-700"
+                                      : "text-red-700"
+                                  }`}
+                                >
+                                  {(duel.player1_id === profile?.id
+                                    ? duel.player1_rating_delta
+                                    : duel.player2_rating_delta) >= 0
+                                    ? "+"
+                                    : ""}
+                                  {duel.player1_id === profile?.id
+                                    ? duel.player1_rating_delta
+                                    : duel.player2_rating_delta}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

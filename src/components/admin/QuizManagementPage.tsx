@@ -15,14 +15,38 @@ import {
   RotateCcw,
   User,
   Flag,
+  BarChart3,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Question = Database["public"]["Tables"]["questions"]["Row"];
 
 interface QuizWithCreator extends Quiz {
   creator?: Profile;
+}
+
+interface QuestionPerformance {
+  questionId: string;
+  questionText: string;
+  orderIndex: number;
+  attempts: number;
+  correct: number;
+  successRate: number;
+  averageTimeSeconds: number;
+}
+
+interface QuizPerformanceSummary {
+  quiz: QuizWithCreator;
+  totalSessions: number;
+  totalAnswers: number;
+  overallSuccessRate: number;
+  averageScore: number;
+  averageAccuracy: number;
+  questionPerformances: QuestionPerformance[];
 }
 
 interface QuizManagementPageProps {
@@ -48,6 +72,10 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
+  const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
+  const [performanceSummary, setPerformanceSummary] =
+    useState<QuizPerformanceSummary | null>(null);
 
   useEffect(() => {
     loadQuizzes();
@@ -297,6 +325,111 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     } catch (error: any) {
       alert("Erreur lors de la suppression : " + error.message);
     }
+  };
+
+  const loadQuizPerformance = async (quiz: QuizWithCreator) => {
+    setPerformanceLoading(true);
+    setPerformanceSummary(null);
+    setShowPerformanceModal(true);
+
+    const { data: sessionsData } = await supabase
+      .from("game_sessions")
+      .select("id, score, accuracy_percentage")
+      .eq("quiz_id", quiz.id)
+      .eq("completed", true);
+
+    const { data: questionsData } = await supabase
+      .from("questions")
+      .select("id, question_text, order_index")
+      .eq("quiz_id", quiz.id)
+      .order("order_index", { ascending: true });
+
+    const typedQuestions =
+      (questionsData as Pick<Question, "id" | "question_text" | "order_index">[]) ||
+      [];
+    const questionIds = typedQuestions.map((q) => q.id);
+
+    let answersData:
+      | {
+          question_id: string;
+          is_correct: boolean;
+          time_taken_seconds: number;
+        }[]
+      | null = null;
+
+    if (questionIds.length > 0) {
+      const { data } = await supabase
+        .from("game_answers")
+        .select("question_id, is_correct, time_taken_seconds")
+        .in("question_id", questionIds);
+      answersData = data;
+    }
+
+    const typedAnswers = answersData || [];
+    const typedSessions = sessionsData || [];
+
+    const byQuestion = new Map<
+      string,
+      { attempts: number; correct: number; totalTime: number }
+    >();
+
+    typedAnswers.forEach((a) => {
+      const current = byQuestion.get(a.question_id) || {
+        attempts: 0,
+        correct: 0,
+        totalTime: 0,
+      };
+      current.attempts += 1;
+      current.correct += a.is_correct ? 1 : 0;
+      current.totalTime += a.time_taken_seconds || 0;
+      byQuestion.set(a.question_id, current);
+    });
+
+    const questionPerformances: QuestionPerformance[] = typedQuestions.map((q) => {
+      const agg = byQuestion.get(q.id) || { attempts: 0, correct: 0, totalTime: 0 };
+      const successRate =
+        agg.attempts > 0 ? (agg.correct / agg.attempts) * 100 : 0;
+      const averageTimeSeconds =
+        agg.attempts > 0 ? agg.totalTime / agg.attempts : 0;
+      return {
+        questionId: q.id,
+        questionText: q.question_text,
+        orderIndex: q.order_index,
+        attempts: agg.attempts,
+        correct: agg.correct,
+        successRate,
+        averageTimeSeconds,
+      };
+    });
+
+    questionPerformances.sort((a, b) => a.successRate - b.successRate);
+
+    const totalAnswers = typedAnswers.length;
+    const totalCorrect = typedAnswers.filter((a) => a.is_correct).length;
+    const overallSuccessRate =
+      totalAnswers > 0 ? (totalCorrect / totalAnswers) * 100 : 0;
+
+    const averageScore =
+      typedSessions.length > 0
+        ? typedSessions.reduce((sum, s) => sum + (s.score || 0), 0) /
+          typedSessions.length
+        : 0;
+    const averageAccuracy =
+      typedSessions.length > 0
+        ? typedSessions.reduce((sum, s) => sum + (s.accuracy_percentage || 0), 0) /
+          typedSessions.length
+        : 0;
+
+    setPerformanceSummary({
+      quiz,
+      totalSessions: typedSessions.length,
+      totalAnswers,
+      overallSuccessRate,
+      averageScore,
+      averageAccuracy,
+      questionPerformances,
+    });
+    setPerformanceLoading(false);
   };
 
   if (profile?.role !== "admin") {
@@ -557,6 +690,15 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                           <Copy className="w-4 h-4" />
                         </button>
 
+                        {/* Bouton Stats réponses */}
+                        <button
+                          onClick={() => loadQuizPerformance(quiz)}
+                          className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Analyser les réponses"
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                        </button>
+
                         {/* Bouton Visibilité */}
                         <button
                           onClick={() =>
@@ -685,6 +827,144 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
               >
                 Supprimer
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Performance Quiz */}
+      {showPerformanceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-800">
+                Performance des réponses -{" "}
+                {performanceSummary?.quiz.title || "Quiz"}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPerformanceModal(false);
+                  setPerformanceSummary(null);
+                }}
+                className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
+              >
+                Fermer
+              </button>
+            </div>
+
+            <div className="p-5 overflow-auto">
+              {performanceLoading || !performanceSummary ? (
+                <p className="text-gray-500">Chargement des statistiques...</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+                    <div className="rounded-lg border p-3 bg-blue-50">
+                      <p className="text-xs text-blue-700">Parties terminées</p>
+                      <p className="text-2xl font-bold text-blue-800">
+                        {performanceSummary.totalSessions}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-3 bg-emerald-50">
+                      <p className="text-xs text-emerald-700">Réponses total</p>
+                      <p className="text-2xl font-bold text-emerald-800">
+                        {performanceSummary.totalAnswers}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-3 bg-purple-50">
+                      <p className="text-xs text-purple-700">Réussite globale</p>
+                      <p className="text-2xl font-bold text-purple-800">
+                        {performanceSummary.overallSuccessRate.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-3 bg-amber-50">
+                      <p className="text-xs text-amber-700">Score moyen</p>
+                      <p className="text-2xl font-bold text-amber-800">
+                        {performanceSummary.averageScore.toFixed(1)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-3 bg-rose-50">
+                      <p className="text-xs text-rose-700">Précision moyenne</p>
+                      <p className="text-2xl font-bold text-rose-800">
+                        {performanceSummary.averageAccuracy.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
+                            Q#
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
+                            Question
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
+                            Tentatives
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
+                            Correctes
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
+                            Taux réussite
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
+                            Temps moyen
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
+                            État
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {performanceSummary.questionPerformances.map((q) => {
+                          const isGood = q.successRate >= 70;
+                          const isBad = q.successRate < 40;
+                          return (
+                            <tr key={q.questionId} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 text-sm text-gray-700">
+                                {q.orderIndex + 1}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-800">
+                                {q.questionText}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-700">
+                                {q.attempts}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-700">
+                                {q.correct}
+                              </td>
+                              <td className="px-3 py-2 text-sm font-semibold text-gray-800">
+                                {q.successRate.toFixed(1)}%
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-700">
+                                {q.averageTimeSeconds.toFixed(1)}s
+                              </td>
+                              <td className="px-3 py-2 text-sm">
+                                {isGood ? (
+                                  <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Fonctionne bien
+                                  </span>
+                                ) : isBad ? (
+                                  <span className="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-1 rounded-full">
+                                    <XCircle className="w-3 h-3" />A améliorer
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                                    Moyen
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

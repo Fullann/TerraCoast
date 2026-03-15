@@ -28,6 +28,15 @@ export interface Database {
           ban_until?: string | null
           ban_reason?: string | null
           force_username_change?: boolean | null
+          duel_rating?: number
+          duel_ranked_games?: number
+          duel_ranked_wins?: number
+          monthly_score?: number | null
+          monthly_games_played?: number | null
+          top_10_count?: number | null
+          last_reset_month?: string | null
+          current_streak?: number | null
+          longest_streak?: number | null
         }
         Insert: {
           id: string
@@ -41,6 +50,15 @@ export interface Database {
           updated_at?: string
           terms_accepted_at?: string | null
           privacy_accepted_at?: string | null
+          duel_rating?: number
+          duel_ranked_games?: number
+          duel_ranked_wins?: number
+          monthly_score?: number | null
+          monthly_games_played?: number | null
+          top_10_count?: number | null
+          last_reset_month?: string | null
+          current_streak?: number | null
+          longest_streak?: number | null
         }
         Update: {
           id?: string
@@ -54,6 +72,15 @@ export interface Database {
           updated_at?: string
           terms_accepted_at?: string | null
           privacy_accepted_at?: string | null
+          duel_rating?: number
+          duel_ranked_games?: number
+          duel_ranked_wins?: number
+          monthly_score?: number | null
+          monthly_games_played?: number | null
+          top_10_count?: number | null
+          last_reset_month?: string | null
+          current_streak?: number | null
+          longest_streak?: number | null
         }
       }
       badges: {
@@ -472,6 +499,14 @@ export interface Database {
           player2_session_id: string | null
           winner_id: string | null
           status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+          match_type?: 'casual' | 'ranked'
+          ranking_processed?: boolean
+          player1_rating_delta?: number
+          player2_rating_delta?: number
+          queue_mode?: 'targeted' | 'random_bonus'
+          random_bonus_enabled?: boolean
+          bonus_xp?: number
+          bonus_awarded?: boolean
           created_at: string
           started_at: string | null
           completed_at: string | null
@@ -485,6 +520,14 @@ export interface Database {
           player2_session_id?: string | null
           winner_id?: string | null
           status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+          match_type?: 'casual' | 'ranked'
+          ranking_processed?: boolean
+          player1_rating_delta?: number
+          player2_rating_delta?: number
+          queue_mode?: 'targeted' | 'random_bonus'
+          random_bonus_enabled?: boolean
+          bonus_xp?: number
+          bonus_awarded?: boolean
           created_at?: string
           started_at?: string | null
           completed_at?: string | null
@@ -498,9 +541,95 @@ export interface Database {
           player2_session_id?: string | null
           winner_id?: string | null
           status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+          match_type?: 'casual' | 'ranked'
+          ranking_processed?: boolean
+          player1_rating_delta?: number
+          player2_rating_delta?: number
+          queue_mode?: 'targeted' | 'random_bonus'
+          random_bonus_enabled?: boolean
+          bonus_xp?: number
+          bonus_awarded?: boolean
           created_at?: string
           started_at?: string | null
           completed_at?: string | null
+        }
+      }
+      duel_matchmaking_queue: {
+        Row: {
+          id: string
+          user_id: string
+          preferred_quiz_id: string | null
+          preferred_quiz_ids: string[] | null
+          preferred_difficulty: 'easy' | 'medium' | 'hard' | null
+          match_type: 'casual' | 'ranked'
+          queue_mode: 'targeted' | 'random_bonus'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          preferred_quiz_id?: string | null
+          preferred_quiz_ids?: string[] | null
+          preferred_difficulty?: 'easy' | 'medium' | 'hard' | null
+          match_type?: 'casual' | 'ranked'
+          queue_mode?: 'targeted' | 'random_bonus'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          preferred_quiz_id?: string | null
+          preferred_quiz_ids?: string[] | null
+          preferred_difficulty?: 'easy' | 'medium' | 'hard' | null
+          match_type?: 'casual' | 'ranked'
+          queue_mode?: 'targeted' | 'random_bonus'
+          created_at?: string
+        }
+      }
+      duel_feature_flags: {
+        Row: {
+          feature_key: string
+          enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          feature_key: string
+          enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          feature_key?: string
+          enabled?: boolean
+          updated_at?: string
+        }
+      }
+      admin_activity_logs: {
+        Row: {
+          id: string
+          actor_id: string
+          action: string
+          entity_type: string | null
+          entity_id: string | null
+          details: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_id: string
+          action: string
+          entity_type?: string | null
+          entity_id?: string | null
+          details?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_id?: string
+          action?: string
+          entity_type?: string | null
+          entity_id?: string | null
+          details?: Json
+          created_at?: string
         }
       }
       friendships: {

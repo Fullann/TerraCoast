@@ -38,6 +38,11 @@ interface Question {
     metric?: "population" | "area_km2";
     selectedCountries?: string[];
     showTargetList?: boolean;
+    initialView?: {
+      centerLat?: number;
+      centerLng?: number;
+      zoom?: number;
+    };
   } | null;
   image_url?: string;
   option_images?: Record<string, string>;
@@ -122,6 +127,17 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [top10DragIndex, setTop10DragIndex] = useState<number | null>(null);
+  const mapViewPresets: Record<
+    string,
+    { centerLat: number; centerLng: number; zoom: number }
+  > = {
+    world: { centerLat: 20, centerLng: 0, zoom: 1 },
+    europe: { centerLat: 54, centerLng: 15, zoom: 2.8 },
+    africa: { centerLat: 5, centerLng: 20, zoom: 2.4 },
+    asia: { centerLat: 30, centerLng: 95, zoom: 2.3 },
+    americas: { centerLat: 10, centerLng: -75, zoom: 2.1 },
+    oceania: { centerLat: -22, centerLng: 140, zoom: 2.7 },
+  };
 
   const getTrueFalseLabels = () => {
     return {
@@ -760,6 +776,11 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                         continent: "world",
                         selectedCountries: [],
                         showTargetList: true,
+                        initialView: {
+                          centerLat: 20,
+                          centerLng: 0,
+                          zoom: 1,
+                        },
                       },
                     });
                   } else if (newType === "top10_order") {
@@ -906,6 +927,130 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 />
                 {t("createQuiz.puzzle.showTargetList")}
               </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="md:col-span-3">
+                  <label className="block text-xs text-gray-700 mb-1">
+                    Preset continent
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      const preset = mapViewPresets[e.target.value];
+                      if (!preset) return;
+                      setCurrentQuestion({
+                        ...currentQuestion,
+                        map_data: {
+                          ...(currentQuestion.map_data || {}),
+                          mode: "puzzle_map",
+                          initialView: {
+                            centerLat: preset.centerLat,
+                            centerLng: preset.centerLng,
+                            zoom: preset.zoom,
+                          },
+                        },
+                      });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Choisir un preset
+                    </option>
+                    <option value="world">Monde</option>
+                    <option value="europe">Europe</option>
+                    <option value="africa">Afrique</option>
+                    <option value="asia">Asie</option>
+                    <option value="americas">Amériques</option>
+                    <option value="oceania">Océanie</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-700 mb-1">
+                    Centre latitude
+                  </label>
+                  <input
+                    type="number"
+                    min={-90}
+                    max={90}
+                    step={0.1}
+                    value={currentQuestion.map_data?.initialView?.centerLat ?? 20}
+                    onChange={(e) =>
+                      setCurrentQuestion({
+                        ...currentQuestion,
+                        map_data: {
+                          ...(currentQuestion.map_data || {}),
+                          mode: "puzzle_map",
+                          initialView: {
+                            ...(currentQuestion.map_data?.initialView || {}),
+                            centerLat: Math.max(
+                              -90,
+                              Math.min(90, Number(e.target.value || 20))
+                            ),
+                          },
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-700 mb-1">
+                    Centre longitude
+                  </label>
+                  <input
+                    type="number"
+                    min={-180}
+                    max={180}
+                    step={0.1}
+                    value={currentQuestion.map_data?.initialView?.centerLng ?? 0}
+                    onChange={(e) =>
+                      setCurrentQuestion({
+                        ...currentQuestion,
+                        map_data: {
+                          ...(currentQuestion.map_data || {}),
+                          mode: "puzzle_map",
+                          initialView: {
+                            ...(currentQuestion.map_data?.initialView || {}),
+                            centerLng: Math.max(
+                              -180,
+                              Math.min(180, Number(e.target.value || 0))
+                            ),
+                          },
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-700 mb-1">
+                    Zoom initial
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={8}
+                    step={0.1}
+                    value={currentQuestion.map_data?.initialView?.zoom ?? 1}
+                    onChange={(e) =>
+                      setCurrentQuestion({
+                        ...currentQuestion,
+                        map_data: {
+                          ...(currentQuestion.map_data || {}),
+                          mode: "puzzle_map",
+                          initialView: {
+                            ...(currentQuestion.map_data?.initialView || {}),
+                            zoom: Math.max(
+                              1,
+                              Math.min(8, Number(e.target.value || 1))
+                            ),
+                          },
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  />
+                </div>
+              </div>
             </div>
           )}
 

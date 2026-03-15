@@ -27,6 +27,7 @@ export function TitleManagementPage() {
     is_special: false,
   });
   const [loading, setLoading] = useState(true);
+  const [recomputingAll, setRecomputingAll] = useState(false);
 
   useEffect(() => {
     if (profile?.role === "admin") {
@@ -157,22 +158,42 @@ export function TitleManagementPage() {
             onClick={async () => {
               if (
                 !confirm(
-                  "Attribuer tous les titres mérités à tous les utilisateurs ? Cela peut prendre du temps."
+                  "Recalculer tous les badges et titres mérités pour tous les utilisateurs ? Cela peut prendre du temps."
                 )
-              )
+              ) {
                 return;
-              const { error } = await supabase.rpc(
-                "assign_titles_to_all_users"
+              }
+              setRecomputingAll(true);
+              const { data, error } = await supabase.rpc(
+                "assign_badges_and_titles_to_all_users" as any
               );
+              setRecomputingAll(false);
               if (error) {
                 alert("Erreur: " + error.message);
-              } else {
-                alert("Titres attribués avec succès !");
+                return;
               }
+              const rows = (Array.isArray(data) ? data : []) as Array<{
+                badges_assigned?: number;
+                titles_assigned?: number;
+              }>;
+              const totalBadges = rows.reduce(
+                (sum, row) => sum + Number(row.badges_assigned || 0),
+                0
+              );
+              const totalTitles = rows.reduce(
+                (sum, row) => sum + Number(row.titles_assigned || 0),
+                0
+              );
+              alert(
+                `Recalcul terminé. Badges ajoutés: ${totalBadges}. Titres ajoutés: ${totalTitles}.`
+              );
             }}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium"
+            disabled={recomputingAll}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Attribuer les titres à tous
+            {recomputingAll
+              ? "Recalcul en cours..."
+              : "Recalculer badges + titres (tous)"}
           </button>
         </div>
       </div>
@@ -242,7 +263,9 @@ export function TitleManagementPage() {
                   <option value="account_age_days">
                     Âge du compte (jours)
                   </option>
-                  <option value="wins">Victoires</option>
+                  <option value="wins">Victoires (legacy)</option>
+                  <option value="duel_wins">Victoires en duel</option>
+                  <option value="duel_rating">ELO / MMR duel</option>
                   <option value="quizzes_completed">Quiz complétés</option>
                   <option value="perfect_scores">Scores parfaits</option>
                   <option value="published_quizzes">Quiz publiés</option>
@@ -378,7 +401,11 @@ export function TitleManagementPage() {
                   {title.requirement_type === "account_age_days" &&
                     `Compte de ${title.requirement_value} jour(s)`}
                   {title.requirement_type === "wins" &&
-                    `${title.requirement_value} victoire(s)`}
+                    `${title.requirement_value} victoire(s) (legacy)`}
+                  {title.requirement_type === "duel_wins" &&
+                    `${title.requirement_value} victoire(s) en duel`}
+                  {title.requirement_type === "duel_rating" &&
+                    `Atteindre ${title.requirement_value} ELO/MMR`}
                   {title.requirement_type === "quizzes_completed" &&
                     `${title.requirement_value} quiz complété(s)`}
                   {title.requirement_type === "perfect_scores" &&

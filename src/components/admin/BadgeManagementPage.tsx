@@ -217,7 +217,9 @@ export function BadgeManagementPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                 >
                   <option value="level">Niveau</option>
-                  <option value="wins">Victoires</option>
+                  <option value="wins">Victoires (legacy)</option>
+                  <option value="duel_wins">Victoires en duel</option>
+                  <option value="duel_rating">ELO / MMR duel</option>
                   <option value="quizzes_completed">Quiz complétés</option>
                   <option value="perfect_scores">Scores parfaits</option>
                   <option value="streak">Série de victoires</option>
@@ -301,7 +303,9 @@ export function BadgeManagementPage() {
                 <p className="text-xs text-gray-600 font-medium mb-1">Condition</p>
                 <p className="text-sm text-gray-800">
                   {badge.requirement_type === 'level' && `Niveau ${badge.requirement_value}`}
-                  {badge.requirement_type === 'wins' && `${badge.requirement_value} victoires`}
+                  {badge.requirement_type === 'wins' && `${badge.requirement_value} victoires (legacy)`}
+                  {badge.requirement_type === 'duel_wins' && `${badge.requirement_value} victoires en duel`}
+                  {badge.requirement_type === 'duel_rating' && `Atteindre ${badge.requirement_value} ELO/MMR`}
                   {badge.requirement_type === 'quizzes_completed' && `${badge.requirement_value} quiz complétés`}
                   {badge.requirement_type === 'perfect_scores' && `${badge.requirement_value} scores parfaits`}
                   {badge.requirement_type === 'streak' && `Série de ${badge.requirement_value}`}

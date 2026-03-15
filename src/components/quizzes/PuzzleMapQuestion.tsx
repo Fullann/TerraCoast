@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getIso3ByNumericCode,
   type CountryGameEntry,
@@ -16,6 +16,11 @@ interface PuzzleMapQuestionProps {
   countries: CountryGameEntry[];
   showTargetList: boolean;
   revealResult: boolean;
+  initialView?: {
+    centerLat?: number;
+    centerLng?: number;
+    zoom?: number;
+  } | null;
   assignments: Record<string, string>;
   pickedIso3s: string[];
   onAssignmentsChange: (next: Record<string, string>) => void;
@@ -26,6 +31,7 @@ export function PuzzleMapQuestion({
   countries,
   showTargetList,
   revealResult,
+  initialView,
   assignments,
   pickedIso3s,
   onAssignmentsChange,
@@ -33,9 +39,20 @@ export function PuzzleMapQuestion({
 }: PuzzleMapQuestionProps) {
   const { t } = useLanguage();
   const [activeCountryIso3, setActiveCountryIso3] = useState<string>("");
-  const [mapCenter, setMapCenter] = useState<[number, number]>([0, 20]);
-  const [mapZoom, setMapZoom] = useState(1);
+  const getInitialCenter = (): [number, number] => [
+    Number(initialView?.centerLng ?? 0),
+    Number(initialView?.centerLat ?? 20),
+  ];
+  const getInitialZoom = (): number =>
+    Math.max(1, Math.min(8, Number(initialView?.zoom ?? 1)));
+  const [mapCenter, setMapCenter] = useState<[number, number]>(getInitialCenter);
+  const [mapZoom, setMapZoom] = useState(getInitialZoom);
   const geoUrl = worldMapData as any;
+
+  useEffect(() => {
+    setMapCenter(getInitialCenter());
+    setMapZoom(getInitialZoom());
+  }, [initialView?.centerLat, initialView?.centerLng, initialView?.zoom]);
 
   const countryByIso = useMemo(
     () =>
@@ -124,8 +141,8 @@ export function PuzzleMapQuestion({
   const zoomIn = () => setMapZoom((prev) => Math.min(8, prev + 0.5));
   const zoomOut = () => setMapZoom((prev) => Math.max(1, prev - 0.5));
   const resetView = () => {
-    setMapCenter([0, 20]);
-    setMapZoom(1);
+    setMapCenter(getInitialCenter());
+    setMapZoom(getInitialZoom());
   };
 
   return (

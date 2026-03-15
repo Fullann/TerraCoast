@@ -322,7 +322,14 @@ export function PlayQuizPage({
   };
 
   const createSession = async () => {
-    if (!profile || trainingMode) {
+    if (trainingMode) {
+      isCreatingSessionRef.current = false;
+      return;
+    }
+
+    const currentUserId =
+      profile?.id || (await supabase.auth.getUser()).data.user?.id || null;
+    if (!currentUserId) {
       isCreatingSessionRef.current = false;
       return;
     }
@@ -331,7 +338,7 @@ export function PlayQuizPage({
       .from("game_sessions")
       .insert({
         quiz_id: quizId,
-        player_id: profile.id,
+        player_id: currentUserId,
         mode,
       })
       .select()
@@ -575,11 +582,18 @@ export function PlayQuizPage({
       return;
     }
 
+    if (trainingMode) return;
+    if (!sessionId) {
+      // Session can be created asynchronously just after the quiz starts.
+      // Retry shortly instead of marking game complete too early.
+      setTimeout(() => {
+        completeGame();
+      }, 300);
+      return;
+    }
+
     isCompletingRef.current = true;
     setGameComplete(true);
-
-    if (trainingMode) return;
-    if (!sessionId || !profile) return;
 
     const correctAnswers = answers.filter((a) => a.is_correct).length;
     const accuracy = (correctAnswers / questions.length) * 100;
@@ -604,6 +618,8 @@ export function PlayQuizPage({
 
     if (serverProgressError) {
       console.error("[progression-rpc] failed:", serverProgressError);
+      isCompletingRef.current = false;
+      setGameComplete(false);
       return;
     }
 
@@ -614,55 +630,18 @@ export function PlayQuizPage({
     const payload = (serverProgressData || {}) as { earned_xp?: number };
     setXpGained(Number(payload.earned_xp || 0));
     await refreshProfile();
+    isCompletingRef.current = false;
   };
 
   const updateDuel = async () => {
-    if (!duelId || !sessionId || !profile) return;
-
-    const { data: duel } = await supabase
-      .from("duels")
-      .select("*")
-      .eq("id", duelId)
-      .single();
-
-    if (!duel) return;
-
-    const isPlayer1 = duel.player1_id === profile.id;
-    const updateField = isPlayer1 ? "player1_session_id" : "player2_session_id";
-    const otherPlayerSessionField = isPlayer1
-      ? "player2_session_id"
-      : "player1_session_id";
-
-    const updates: any = { [updateField]: sessionId };
-
-    if (duel[otherPlayerSessionField]) {
-      const { data: otherSession } = await supabase
-        .from("game_sessions")
-        .select("score")
-        .eq("id", duel[otherPlayerSessionField])
-        .single();
-
-      const { data: mySession } = await supabase
-        .from("game_sessions")
-        .select("score")
-        .eq("id", sessionId)
-        .single();
-
-      if (otherSession && mySession) {
-        let winnerId = null;
-        if (mySession.score > otherSession.score) {
-          winnerId = profile.id;
-        } else if (otherSession.score > mySession.score) {
-          winnerId = isPlayer1 ? duel.player2_id : duel.player1_id;
-        }
-
-        updates.status = "completed";
-        updates.winner_id = winnerId;
-        updates.completed_at = new Date().toISOString();
-      }
+    if (!duelId || !sessionId) return;
+    const { error } = await supabase.rpc("link_duel_session_and_finalize", {
+      p_duel_id: duelId,
+      p_session_id: sessionId,
+    });
+    if (error) {
+      console.error("Error linking duel session atomically:", error);
     }
-
-    await supabase.from("duels").update(updates).eq("id", duelId);
   };
 
   if (!quiz || questions.length === 0) {
@@ -1275,6 +1254,7 @@ export function PlayQuizPage({
                 ((currentQuestion.map_data as any)?.showTargetList ?? true) !== false
               }
               revealResult={showResult || isAnswered}
+              initialView={(currentQuestion.map_data as any)?.initialView || null}
               assignments={currentPuzzleState.assignments}
               pickedIso3s={currentPuzzleState.pickedIso3s}
               onAssignmentsChange={(nextAssignments) =>
