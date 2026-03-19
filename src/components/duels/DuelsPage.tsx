@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -16,57 +16,27 @@ import {
   Crown,
   ChevronRight,
 } from "lucide-react";
-import type { Database } from "../../lib/database.types";
-
-type Duel = Database["public"]["Tables"]["duels"]["Row"];
-type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type DuelInvitation = Database["public"]["Tables"]["duel_invitations"]["Row"];
-type DuelMatchmakingQueue =
-  Database["public"]["Tables"]["duel_matchmaking_queue"]["Row"];
-type DuelFeatureFlag =
-  Database["public"]["Tables"]["duel_feature_flags"]["Row"];
-type Difficulty = "easy" | "medium" | "hard";
-
-interface DuelWithDetails extends Duel {
-  quizzes: Quiz;
-  player1: Profile;
-  player2: Profile;
-  player1_session?: {
-    score: number;
-    correct_answers: number;
-    total_questions: number;
-  };
-  player2_session?: {
-    score: number;
-    correct_answers: number;
-    total_questions: number;
-  };
-}
-
-interface InvitationWithDetails extends DuelInvitation {
-  from_user: Profile;
-  to_user: Profile;
-  quizzes: Quiz;
-}
+import { useDuelsData } from "./hooks/useDuelsData";
+import { useMatchmaking } from "./hooks/useMatchmaking";
+import { useDuelNotifications } from "./hooks/useDuelNotifications";
+import type {
+  DuelWithDetails,
+  InvitationWithDetails,
+  Difficulty,
+  NavigateFn,
+  Profile,
+  Quiz,
+} from "./types";
 
 interface DuelsPageProps {
-  onNavigate: (view: string, data?: any) => void;
+  onNavigate: NavigateFn;
   initialTab?: string;
 }
 
 export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
   const { profile } = useAuth();
   const { t } = useLanguage();
-  const { refreshNotifications } = useNotifications();
-  const [activeDuels, setActiveDuels] = useState<DuelWithDetails[]>([]);
-  const [completedDuels, setCompletedDuels] = useState<DuelWithDetails[]>([]);
-  const [pendingInvitations, setPendingInvitations] = useState<
-    InvitationWithDetails[]
-  >([]);
-  const [sentInvitations, setSentInvitations] = useState<
-    InvitationWithDetails[]
-  >([]);
+  const { refreshNotifications, showDuelNotification } = useNotifications();
   const [activeTab, setActiveTab] = useState<
     "invitations" | "active" | "completed" | "matchmaking"
   >(() => {
@@ -82,247 +52,56 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
     return "invitations";
   });
   const [showCreateInvitation, setShowCreateInvitation] = useState(false);
-  const [viewedDuels, setViewedDuels] = useState<Set<string>>(new Set());
-  const [matchmakingQueueEntry, setMatchmakingQueueEntry] =
-    useState<DuelMatchmakingQueue | null>(null);
-  const [matchmakingLoading, setMatchmakingLoading] = useState(false);
   const [rankedOnlyHistory, setRankedOnlyHistory] = useState(false);
-  const [matchmakingQuizzes, setMatchmakingQuizzes] = useState<Quiz[]>([]);
-  const [preferredQuizIds, setPreferredQuizIds] = useState<string[]>([]);
-  const [preferredDifficulty, setPreferredDifficulty] = useState<
-    Difficulty | ""
-  >("");
-  const [queueMode, setQueueMode] = useState<"targeted" | "random_bonus">(
-    "targeted"
-  );
-  const [duelFeatureFlags, setDuelFeatureFlags] = useState({
-    anti_repeat: true,
-    progressive_expand: true,
-    show_opponent_mmr: true,
+  const {
+    activeDuels,
+    completedDuels,
+    pendingInvitations,
+    sentInvitations,
+    pendingDuelsCount,
+    newResultsCount,
+    filteredCompletedDuels,
+    matchmakingQueueEntry,
+    matchmakingQuizzes,
+    duelFeatureFlags,
+    loadDuels,
+    loadInvitations,
+    loadMatchmakingStatus,
+  } = useDuelsData({
+    profile,
+    activeTab,
+    rankedOnlyHistory,
   });
-  const matchmakingAttemptInFlightRef = useRef(false);
-  const [matchedPreview, setMatchedPreview] = useState<{
-    duelId: string;
-    quizId: string;
-    opponentPseudo: string;
-    opponentMmr: number;
-    matchType: "ranked" | "casual";
-  } | null>(null);
 
-  useEffect(() => {
-    loadDuels();
-    loadInvitations();
-    loadMatchmakingStatus();
-    loadMatchmakingOptions();
-    loadDuelFeatureFlags();
+  const { notifyMatchFound } = useDuelNotifications({
+    showDuelNotification,
+  });
 
-    const subscription = supabase
-      .channel("duel_updates")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "duels" },
-        () => {
-          loadDuels();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "duel_invitations" },
-        () => {
-          loadInvitations();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "duel_matchmaking_queue" },
-        () => {
-          loadMatchmakingStatus();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [profile]);
-  useEffect(() => {
-    if (activeTab === "completed" && completedDuels.length > 0) {
-      // Marquer tous les duels complétés comme consultés
-      const newViewedDuels = new Set(viewedDuels);
-      completedDuels.forEach((duel) => newViewedDuels.add(duel.id));
-      setViewedDuels(newViewedDuels);
-
-      // Sauvegarder dans le localStorage pour persister
-      localStorage.setItem("viewedDuels", JSON.stringify([...newViewedDuels]));
-    }
-  }, [activeTab, completedDuels]);
-  useEffect(() => {
-    // Charger les duels consultés depuis localStorage
-    const stored = localStorage.getItem("viewedDuels");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setViewedDuels(new Set(parsed));
-      } catch (e) {
-        console.error("Error loading viewed duels:", e);
-      }
-    }
-  }, []);
-  const pendingDuelsCount = activeDuels.filter((duel) => {
-    const isPlayer1 = duel.player1_id === profile?.id;
-    const hasPlayed = isPlayer1
-      ? !!duel.player1_session_id
-      : !!duel.player2_session_id;
-    return !hasPlayed; // Compter les duels où on n'a pas joué
-  }).length;
-  const loadDuels = async () => {
-    if (!profile) return;
-
-    const { data: active } = await supabase
-      .from("duels")
-      .select(
-        "*, quizzes(*), player1:profiles!duels_player1_id_fkey(*), player2:profiles!duels_player2_id_fkey(*)"
-      )
-      .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
-      .in("status", ["pending", "in_progress"])
-      .order("created_at", { ascending: false });
-
-    const filteredActive = active?.filter(
-      (duel: any) => !duel.player1?.is_banned && !duel.player2?.is_banned
-    );
-
-    if (filteredActive) setActiveDuels(filteredActive as DuelWithDetails[]);
-
-    const { data: completed } = await supabase
-      .from("duels")
-      .select(
-        "*, quizzes(*), player1:profiles!duels_player1_id_fkey(*), player2:profiles!duels_player2_id_fkey(*)"
-      )
-      .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
-      .eq("status", "completed")
-      .order("completed_at", { ascending: false })
-      .limit(10);
-
-    if (completed) {
-      const filteredCompleted = completed.filter(
-        (duel: any) =>
-          !duel.player1?.is_banned &&
-          !duel.player2?.is_banned &&
-          duel.quizzes !== null
-      );
-
-      const enrichedDuels = await Promise.all(
-        filteredCompleted.map(async (duel) => {
-          const { data: p1Session } = await supabase
-            .from("game_sessions")
-            .select("score, correct_answers, total_questions")
-            .eq("id", duel.player1_session_id)
-            .maybeSingle();
-
-          const { data: p2Session } = await supabase
-            .from("game_sessions")
-            .select("score, correct_answers, total_questions")
-            .eq("id", duel.player2_session_id)
-            .maybeSingle();
-
-          return {
-            ...duel,
-            player1_session: p1Session || undefined,
-            player2_session: p2Session || undefined,
-          };
-        })
-      );
-      setCompletedDuels(enrichedDuels as DuelWithDetails[]);
-    }
-  };
-  const loadMatchmakingStatus = async () => {
-    if (!profile) return;
-
-    const { data } = await supabase
-      .from("duel_matchmaking_queue")
-      .select("*")
-      .eq("user_id", profile.id)
-      .maybeSingle();
-
-    setMatchmakingQueueEntry(data || null);
-  };
-  const loadMatchmakingOptions = async () => {
-    const { data } = await supabase
-      .from("quizzes")
-      .select("*")
-      .or("is_public.eq.true,is_global.eq.true")
-      .order("total_plays", { ascending: false })
-      .limit(50);
-
-    if (data) setMatchmakingQuizzes(data);
-  };
-  const loadDuelFeatureFlags = async () => {
-    const { data } = await supabase
-      .from("duel_feature_flags")
-      .select("*")
-      .in("feature_key", [
-        "anti_repeat",
-        "progressive_expand",
-        "show_opponent_mmr",
-      ]);
-
-    if (!data) return;
-    const typed = data as DuelFeatureFlag[];
-    setDuelFeatureFlags({
-      anti_repeat:
-        typed.find((f) => f.feature_key === "anti_repeat")?.enabled ?? true,
-      progressive_expand:
-        typed.find((f) => f.feature_key === "progressive_expand")?.enabled ??
-        true,
-      show_opponent_mmr:
-        typed.find((f) => f.feature_key === "show_opponent_mmr")?.enabled ??
-        true,
-    });
-  };
-  const newResultsCount = completedDuels.filter((duel) => {
-    // Vérifier si le duel a été terminé dans les dernières 24h
-    const completedAt = duel.completed_at ? new Date(duel.completed_at) : null;
-    const isRecent =
-      completedAt && Date.now() - completedAt.getTime() < 24 * 60 * 60 * 1000;
-
-    // Et qu'il n'a pas encore été consulté
-    return isRecent && !viewedDuels.has(duel.id);
-  }).length;
-  const loadInvitations = async () => {
-    if (!profile) return;
-
-    const { data: pending } = await supabase
-      .from("duel_invitations")
-      .select(
-        "*, from_user:profiles!duel_invitations_from_user_id_fkey(*), to_user:profiles!duel_invitations_to_user_id_fkey(*), quizzes(*)"
-      )
-      .eq("to_user_id", profile.id)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-
-    const filteredPending = pending?.filter(
-      (inv: any) => !inv.from_user?.is_banned && !inv.to_user?.is_banned
-    );
-
-    if (filteredPending)
-      setPendingInvitations(filteredPending as InvitationWithDetails[]);
-
-    const { data: sent } = await supabase
-      .from("duel_invitations")
-      .select(
-        "*, from_user:profiles!duel_invitations_from_user_id_fkey(*), to_user:profiles!duel_invitations_to_user_id_fkey(*), quizzes(*)"
-      )
-      .eq("from_user_id", profile.id)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-
-    const filteredSent = sent?.filter(
-      (inv: any) => !inv.from_user?.is_banned && !inv.to_user?.is_banned
-    );
-
-    if (filteredSent)
-      setSentInvitations(filteredSent as InvitationWithDetails[]);
-  };
+  const {
+    matchmakingLoading,
+    preferredQuizIds,
+    preferredDifficulty,
+    queueMode,
+    matchedPreview,
+    setPreferredDifficulty,
+    setQueueMode,
+    setPreferredQuizIds,
+    togglePreferredQuiz,
+    startRandomMatchmaking,
+    cancelRandomMatchmaking,
+    launchMatchedDuel,
+  } = useMatchmaking({
+    profileId: profile?.id,
+    matchmakingQueueEntry,
+    activeDuels,
+    matchmakingQuizzes,
+    duelFeatureFlags,
+    loadDuels,
+    loadMatchmakingStatus,
+    notifyMatchFound,
+    onNavigate,
+    t,
+  });
 
   const acceptInvitation = async (invitation: InvitationWithDetails) => {
     refreshNotifications();
@@ -372,127 +151,10 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
     onNavigate("play-duel", { duelId: duel.id, quizId: duel.quiz_id });
   };
 
-  const runMatchmakingAttempt = async (
-    matchType: "ranked" | "casual",
-    prefQuizIds: string[] | null,
-    prefDifficulty: Difficulty | null,
-    prefQueueMode: "targeted" | "random_bonus",
-    options?: { withLoading?: boolean }
-  ) => {
-    if (matchmakingAttemptInFlightRef.current) return;
-    matchmakingAttemptInFlightRef.current = true;
-    if (options?.withLoading) setMatchmakingLoading(true);
-
-    const { data, error } = await supabase.rpc("create_or_match_random_duel", {
-      p_match_type: matchType,
-      p_preferred_quiz_id: null,
-      p_preferred_difficulty: prefDifficulty,
-      p_preferred_quiz_ids: prefQuizIds,
-      p_queue_mode: prefQueueMode,
-    });
-
-    if (options?.withLoading) setMatchmakingLoading(false);
-    matchmakingAttemptInFlightRef.current = false;
-
-    if (error) {
-      console.error("Error matchmaking:", error);
-      return;
-    }
-
-    const payload = (Array.isArray(data) ? data[0] : data) as
-      | {
-          duel_id?: string | null;
-          quiz_id?: string | null;
-          matched?: boolean;
-          waiting?: boolean;
-          opponent_id?: string | null;
-        }
-      | null;
-
-    if (payload?.matched && payload?.duel_id && payload?.quiz_id) {
-      await loadDuels();
-      await loadMatchmakingStatus();
-      if (!duelFeatureFlags.show_opponent_mmr) {
-        onNavigate("play-duel", {
-          duelId: payload.duel_id,
-          quizId: payload.quiz_id,
-        });
-        return;
-      }
-
-      const { data: opponentData } = payload.opponent_id
-        ? await supabase
-            .from("profiles")
-            .select("pseudo, duel_rating")
-            .eq("id", payload.opponent_id)
-            .maybeSingle()
-        : { data: null };
-
-      setMatchedPreview({
-        duelId: payload.duel_id,
-        quizId: payload.quiz_id,
-        opponentPseudo: opponentData?.pseudo || t("duels.unknownOpponent"),
-        opponentMmr: opponentData?.duel_rating ?? 1000,
-        matchType: matchType,
-      });
-      setActiveTab("matchmaking");
-      return;
-    }
-
-    await loadMatchmakingStatus();
-  };
-
-  const startRandomMatchmaking = async (matchType: "ranked" | "casual") => {
-    await runMatchmakingAttempt(
-      matchType,
-      preferredQuizIds.length > 0 ? preferredQuizIds : null,
-      (preferredDifficulty || null) as Difficulty | null,
-      queueMode,
-      { withLoading: true }
-    );
+  const handleStartRandomMatchmaking = async (matchType: "ranked" | "casual") => {
+    await startRandomMatchmaking(matchType);
     setActiveTab("matchmaking");
   };
-
-  const cancelRandomMatchmaking = async () => {
-    setMatchmakingLoading(true);
-    const { error } = await supabase.rpc("cancel_random_duel_search");
-    if (error) {
-      console.error("Error cancelling matchmaking:", error);
-    }
-    setMatchmakingLoading(false);
-    await loadMatchmakingStatus();
-  };
-  const launchMatchedDuel = () => {
-    if (!matchedPreview) return;
-    onNavigate("play-duel", {
-      duelId: matchedPreview.duelId,
-      quizId: matchedPreview.quizId,
-    });
-    setMatchedPreview(null);
-  };
-  useEffect(() => {
-    if (!matchmakingQueueEntry || matchedPreview) return;
-    const hasJoinableActiveDuel = activeDuels.some((duel) => {
-      const isPlayer1 = duel.player1_id === profile?.id;
-      const hasPlayed = isPlayer1
-        ? !!duel.player1_session_id
-        : !!duel.player2_session_id;
-      return !hasPlayed;
-    });
-    if (hasJoinableActiveDuel) return;
-
-    const interval = setInterval(() => {
-      runMatchmakingAttempt(
-        matchmakingQueueEntry.match_type as "ranked" | "casual",
-        (matchmakingQueueEntry.preferred_quiz_ids as string[] | null) || null,
-        (matchmakingQueueEntry.preferred_difficulty as Difficulty | null) || null,
-        (matchmakingQueueEntry.queue_mode as "targeted" | "random_bonus") ||
-          "targeted"
-      );
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [matchmakingQueueEntry, matchedPreview, activeDuels, profile?.id]);
 
   const getDuelStatus = (duel: DuelWithDetails) => {
     if (duel.status === "completed") {
@@ -506,18 +168,6 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
 
   const getOpponent = (duel: DuelWithDetails) => {
     return duel.player1_id === profile?.id ? duel.player2 : duel.player1;
-  };
-  const filteredCompletedDuels = rankedOnlyHistory
-    ? completedDuels.filter((duel) => duel.match_type === "ranked")
-    : completedDuels;
-  const togglePreferredQuiz = (quizId: string) => {
-    setPreferredQuizIds((prev) => {
-      if (prev.includes(quizId)) {
-        return prev.filter((id) => id !== quizId);
-      }
-      if (prev.length >= 10) return prev;
-      return [...prev, quizId];
-    });
   };
 
   return (
@@ -787,7 +437,7 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                   disabled={matchmakingLoading}
                   className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
                 >
-                  Reset
+                  {t("duels.resetFilters")}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -864,7 +514,7 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
-                  onClick={() => startRandomMatchmaking("ranked")}
+                  onClick={() => handleStartRandomMatchmaking("ranked")}
                   disabled={matchmakingLoading}
                   className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center"
                 >
@@ -872,7 +522,7 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
                 <button
-                  onClick={() => startRandomMatchmaking("casual")}
+                  onClick={() => handleStartRandomMatchmaking("casual")}
                   disabled={matchmakingLoading}
                   className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center"
                 >
@@ -1403,10 +1053,19 @@ function CreateDuelInvitation({
       .eq("friend_id", profile.id)
       .eq("status", "accepted");
 
+    type SenderFriendshipRow = { friend_profile: Profile | null };
+    type ReceiverFriendshipRow = { user_profile: Profile | null };
+    const senderRows = (friendshipsAsSender ?? []) as SenderFriendshipRow[];
+    const receiverRows = (friendshipsAsReceiver ?? []) as ReceiverFriendshipRow[];
+
     const allFriends: Profile[] = [
-      ...(friendshipsAsSender?.map((f: any) => f.friend_profile) || []),
-      ...(friendshipsAsReceiver?.map((f: any) => f.user_profile) || []),
-    ].filter((friend) => friend && !friend.is_banned);
+      ...senderRows
+        .map((row) => row.friend_profile)
+        .filter((friend): friend is Profile => friend !== null),
+      ...receiverRows
+        .map((row) => row.user_profile)
+        .filter((friend): friend is Profile => friend !== null),
+    ].filter((friend) => !friend.is_banned);
 
     setFriends(allFriends);
 

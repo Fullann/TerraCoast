@@ -3,10 +3,24 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { languageNames, Language } from "../../i18n/translations";
-import { Plus, Trash2, Save, ArrowLeft, Image, Edit, X } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Save,
+  ArrowLeft,
+  Image,
+  Edit,
+  X,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
 import { CountryMultiSelect } from "./CountryMultiSelect";
+import {
+  getSubdivisions,
+  type SubdivisionScope,
+} from "../../lib/subdivisionGameData";
 
 type QuestionType =
   | "mcq"
@@ -38,6 +52,8 @@ interface Question {
     metric?: "population" | "area_km2";
     selectedCountries?: string[];
     showTargetList?: boolean;
+    mapLevel?: "countries" | "subdivisions";
+    subdivisionScope?: SubdivisionScope;
     initialView?: {
       centerLat?: number;
       centerLng?: number;
@@ -137,7 +153,13 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     asia: { centerLat: 30, centerLng: 95, zoom: 2.3 },
     americas: { centerLat: 10, centerLng: -75, zoom: 2.1 },
     oceania: { centerLat: -22, centerLng: 140, zoom: 2.7 },
+    switzerland: { centerLat: 46.8, centerLng: 8.2, zoom: 5.2 },
+    france: { centerLat: 46.6, centerLng: 2.3, zoom: 4.6 },
+    usa: { centerLat: 39.8, centerLng: -98.5, zoom: 2.7 },
   };
+  const currentSubdivisionScope =
+    currentQuestion.map_data?.subdivisionScope || "ch_cantons";
+  const subdivisionEntries = getSubdivisions(currentSubdivisionScope);
 
   const getTrueFalseLabels = () => {
     return {
@@ -156,6 +178,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
+
+  const normalizeQuestionsOrder = (list: Question[]) =>
+    list.map((question, index) => ({ ...question, order_index: index }));
 
   const addQuestion = () => {
     if (!currentQuestion.question_text.trim()) {
@@ -232,13 +257,15 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         ...normalizedQuestion,
         order_index: editingIndex,
       };
-      setQuestions(updatedQuestions);
+      setQuestions(normalizeQuestionsOrder(updatedQuestions));
       setEditingIndex(null);
     } else {
-      setQuestions([
-        ...questions,
-        { ...normalizedQuestion, order_index: questions.length },
-      ]);
+      setQuestions(
+        normalizeQuestionsOrder([
+          ...questions,
+          { ...normalizedQuestion, order_index: questions.length },
+        ])
+      );
     }
 
     setCurrentQuestion({
@@ -280,7 +307,30 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   };
 
   const removeQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index));
+    setQuestions((prev) => normalizeQuestionsOrder(prev.filter((_, i) => i !== index)));
+    if (editingIndex !== null) {
+      if (editingIndex === index) {
+        cancelEdit();
+      } else if (editingIndex > index) {
+        setEditingIndex(editingIndex - 1);
+      }
+    }
+  };
+
+  const moveQuestion = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= questions.length || fromIndex === toIndex) return;
+    const reordered = [...questions];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    setQuestions(normalizeQuestionsOrder(reordered));
+
+    if (editingIndex !== null) {
+      if (editingIndex === fromIndex) setEditingIndex(toIndex);
+      else if (fromIndex < editingIndex && editingIndex <= toIndex)
+        setEditingIndex(editingIndex - 1);
+      else if (toIndex <= editingIndex && editingIndex < fromIndex)
+        setEditingIndex(editingIndex + 1);
+    }
   };
 
   const updateOption = (index: number, value: string) => {
@@ -383,7 +433,12 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
       if (quizError) throw quizError;
 
-      const questionsToInsert = questions.map((q) => ({
+      const orderedQuestions = questions.map((q, index) => ({
+        ...q,
+        order_index: index,
+      }));
+
+      const questionsToInsert = orderedQuestions.map((q) => ({
         quiz_id: quiz.id,
         question_text: q.question_text,
         question_type: q.question_type,
@@ -393,7 +448,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             ? q.correct_answers
             : null,
         options:
-          q.question_type === "mcq"
+          q.question_type === "mcq" || q.question_type === "top10_order"
             ? q.options.filter((opt) => opt.trim())
             : null,
         map_data: q.map_data || null,
@@ -774,6 +829,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       map_data: {
                         mode: "puzzle_map",
                         continent: "world",
+                        mapLevel: "countries",
                         selectedCountries: [],
                         showTargetList: true,
                         initialView: {
@@ -895,20 +951,139 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
           {currentQuestion.question_type === "puzzle_map" && (
             <div className="space-y-4 p-4 rounded-lg bg-sky-50 border border-sky-200">
-              <CountryMultiSelect
-                label={t("createQuiz.puzzle.targetCountriesLabel")}
-                selectedIso3={currentQuestion.map_data?.selectedCountries || []}
-                onChange={(next) =>
-                  setCurrentQuestion({
-                    ...currentQuestion,
-                    map_data: {
-                      ...(currentQuestion.map_data || {}),
-                      mode: "puzzle_map",
-                      selectedCountries: next,
-                    },
-                  })
-                }
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Niveau de carte
+                </label>
+                <select
+                  value={currentQuestion.map_data?.mapLevel || "countries"}
+                  onChange={(e) => {
+                    const nextLevel = e.target.value as "countries" | "subdivisions";
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      map_data: {
+                        ...(currentQuestion.map_data || {}),
+                        mode: "puzzle_map",
+                        mapLevel: nextLevel,
+                        subdivisionScope:
+                          nextLevel === "subdivisions" ? "ch_cantons" : undefined,
+                        selectedCountries:
+                          nextLevel === "subdivisions"
+                            ? []
+                            : currentQuestion.map_data?.selectedCountries || [],
+                        initialView:
+                          nextLevel === "subdivisions"
+                            ? { centerLat: 46.8, centerLng: 8.2, zoom: 1.1 }
+                            : currentQuestion.map_data?.initialView || {
+                                centerLat: 20,
+                                centerLng: 0,
+                                zoom: 1,
+                              },
+                      },
+                    });
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                >
+                  <option value="countries">Pays</option>
+                  <option value="subdivisions">Sous-divisions</option>
+                </select>
+              </div>
+
+              {(currentQuestion.map_data?.mapLevel || "countries") ===
+              "subdivisions" ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Scope
+                    </label>
+                    <select
+                      value={currentQuestion.map_data?.subdivisionScope || "ch_cantons"}
+                      onChange={(e) =>
+                        setCurrentQuestion({
+                          ...currentQuestion,
+                          map_data: {
+                            ...(currentQuestion.map_data || {}),
+                            mode: "puzzle_map",
+                            mapLevel: "subdivisions",
+                            subdivisionScope: e.target.value as SubdivisionScope,
+                            selectedCountries: [],
+                            initialView:
+                              e.target.value === "fr_departements"
+                                ? { centerLat: 46.6, centerLng: 2.3, zoom: 1.1 }
+                                : e.target.value === "us_states"
+                                ? { centerLat: 39.8, centerLng: -98.5, zoom: 1 }
+                                : { centerLat: 46.8, centerLng: 8.2, zoom: 1.1 },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                    >
+                      <option value="ch_cantons">Cantons suisses</option>
+                      <option value="fr_departements">Departements francais</option>
+                      <option value="us_states">Etats americains</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sous-divisions cibles
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto p-2 border border-gray-200 rounded-lg bg-white">
+                      {subdivisionEntries.map((entry) => {
+                        const checked =
+                          currentQuestion.map_data?.selectedCountries?.includes(
+                            entry.iso3
+                          ) || false;
+                        return (
+                          <label
+                            key={entry.iso3}
+                            className="flex items-center gap-2 text-sm text-gray-700"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                const previous =
+                                  currentQuestion.map_data?.selectedCountries || [];
+                                const next = e.target.checked
+                                  ? [...new Set([...previous, entry.iso3])]
+                                  : previous.filter((id) => id !== entry.iso3);
+                                setCurrentQuestion({
+                                  ...currentQuestion,
+                                  map_data: {
+                                    ...(currentQuestion.map_data || {}),
+                                    mode: "puzzle_map",
+                                    mapLevel: "subdivisions",
+                                    subdivisionScope: currentSubdivisionScope,
+                                    selectedCountries: next,
+                                  },
+                                });
+                              }}
+                              className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            {entry.name}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <CountryMultiSelect
+                  label={t("createQuiz.puzzle.targetCountriesLabel")}
+                  selectedIso3={currentQuestion.map_data?.selectedCountries || []}
+                  onChange={(next) =>
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      map_data: {
+                        ...(currentQuestion.map_data || {}),
+                        mode: "puzzle_map",
+                        mapLevel: "countries",
+                        selectedCountries: next,
+                      },
+                    })
+                  }
+                />
+              )}
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input
                   type="checkbox"
@@ -961,6 +1136,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     <option value="asia">Asie</option>
                     <option value="americas">Amériques</option>
                     <option value="oceania">Océanie</option>
+                    <option value="switzerland">Suisse</option>
+                    <option value="france">France</option>
+                    <option value="usa">USA</option>
                   </select>
                 </div>
                 <div>
@@ -1419,6 +1597,22 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     </p>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
+                    <button
+                      onClick={() => moveQuestion(index, index - 1)}
+                      disabled={index === 0}
+                      className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Monter"
+                    >
+                      <ArrowUp className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => moveQuestion(index, index + 1)}
+                      disabled={index === questions.length - 1}
+                      className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Descendre"
+                    >
+                      <ArrowDown className="w-5 h-5" />
+                    </button>
                     <button
                       onClick={() => editQuestion(index)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

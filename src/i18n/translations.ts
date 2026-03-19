@@ -299,6 +299,10 @@ export const translations: Record<Language, Record<string, string>> = {
     "playQuiz.puzzle.zoomHint": "Utilise + / - pour zoomer.",
     "playQuiz.puzzle.worldMap": "Carte du monde",
     "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.mapTitleSwissCantons": "Carte des cantons suisses",
+    "playQuiz.puzzle.mapTitleFrenchDepartments":
+      "Carte des departements francais",
+    "playQuiz.puzzle.mapTitleUsStates": "Carte des etats des USA",
     "playQuiz.puzzle.slot": "Slot",
     "playQuiz.puzzle.dropHere": "Dépose un pays ici",
     "playQuiz.puzzle.pool": "Pays à placer",
@@ -314,6 +318,10 @@ export const translations: Record<Language, Record<string, string>> = {
       "Place tous les pays avant de valider.",
     "playQuiz.top10.instructions":
       "Replace les pays dans le bon ordre (1 = plus grand).",
+    "playQuiz.objective.puzzleMap":
+      "Objectif: place chaque element au bon endroit, puis valide.",
+    "playQuiz.objective.top10Order":
+      "Objectif: reorganise les elements dans le bon ordre avec le drag-and-drop, puis valide.",
     "playQuiz.top10.invalidOrder":
       "Impossible de valider cet ordre pour le moment.",
     "playQuiz.top10.itemsRanked": "éléments classés",
@@ -601,6 +609,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "duels.randomBonusHint":
       "Mode aléatoire total: un quiz public aléatoire sera choisi pour le duel.",
     "duels.randomBonusReward": "Victoire: bonus XP supplémentaire activé.",
+    "duels.resetFilters": "Reinitialiser",
     "duels.viewResults": "Voir les résultats",
 
     // Chat
@@ -1353,6 +1362,7 @@ helpdesk@terracoast.ch`,
     "duels.receivedInvitations": "Received Invitations",
     "duels.challengesYou": "challenges you!",
     "duels.sentInvitations": "Sent Invitations",
+    "duels.resetFilters": "Reset",
     "duels.viewResults": "View Results",
     "duels.invitationTo": "Invitation to",
     "duels.noInvitations": "No invitations",
@@ -1680,6 +1690,9 @@ helpdesk@terracoast.ch`,
     "playQuiz.puzzle.zoomHint": "Use + / - to zoom.",
     "playQuiz.puzzle.worldMap": "World map",
     "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.mapTitleSwissCantons": "Swiss cantons map",
+    "playQuiz.puzzle.mapTitleFrenchDepartments": "French departments map",
+    "playQuiz.puzzle.mapTitleUsStates": "US states map",
     "playQuiz.puzzle.slot": "Slot",
     "playQuiz.puzzle.dropHere": "Drop a country here",
     "playQuiz.puzzle.pool": "Countries to place",
@@ -1695,6 +1708,10 @@ helpdesk@terracoast.ch`,
       "Place all countries before validating.",
     "playQuiz.top10.instructions":
       "Reorder countries in the correct order (1 = biggest).",
+    "playQuiz.objective.puzzleMap":
+      "Goal: place each item in the right location, then validate.",
+    "playQuiz.objective.top10Order":
+      "Goal: reorder the items into the correct order with drag and drop, then validate.",
     "playQuiz.top10.invalidOrder":
       "This order cannot be validated right now.",
     "playQuiz.top10.itemsRanked": "ranked items",
@@ -2141,6 +2158,7 @@ helpdesk@terracoast.ch`,
     "duels.defeat": "Derrota",
     "duels.draw": "Empate",
     "duels.inProgress": "En curso",
+    "duels.resetFilters": "Restablecer",
     "duels.viewResults": "Ver resultados",
     "duels.winner": "Ganador",
     "duels.you": "Tú",
@@ -2469,6 +2487,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.puzzle.zoomHint": "Usa + / - para acercar.",
     "playQuiz.puzzle.worldMap": "Mapa del mundo",
     "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.mapTitleSwissCantons": "Mapa de cantones suizos",
+    "playQuiz.puzzle.mapTitleFrenchDepartments":
+      "Mapa de departamentos franceses",
+    "playQuiz.puzzle.mapTitleUsStates": "Mapa de estados de EE. UU.",
     "playQuiz.puzzle.slot": "Posición",
     "playQuiz.puzzle.dropHere": "Suelta un país aquí",
     "playQuiz.puzzle.pool": "Países por colocar",
@@ -2484,6 +2506,10 @@ helpdesk@terracoast.ch`,
       "Coloca todos los países antes de validar.",
     "playQuiz.top10.instructions":
       "Reordena los países en el orden correcto (1 = el mayor).",
+    "playQuiz.objective.puzzleMap":
+      "Objetivo: coloca cada elemento en el lugar correcto y luego valida.",
+    "playQuiz.objective.top10Order":
+      "Objetivo: reordena los elementos en el orden correcto con arrastrar y soltar, y luego valida.",
     "playQuiz.top10.invalidOrder":
       "No se puede validar este orden por ahora.",
     "playQuiz.top10.itemsRanked": "elementos clasificados",
@@ -3071,6 +3097,7 @@ helpdesk@terracoast.ch`,
     "duels.selectFriend": "Wähle einen Freund aus",
     "duels.chooseQuiz": "Wähle ein Quiz",
     "duels.selectQuiz": "Wähle ein Quiz aus",
+    "duels.resetFilters": "Zurucksetzen",
     "duels.viewResults": "Ergebnisse anzeigen",
     "duels.sending": "Senden...",
     "duels.matchmaking": "Matchmaking",
@@ -3387,6 +3414,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.puzzle.zoomHint": "Nutze + / - zum Zoomen.",
     "playQuiz.puzzle.worldMap": "Weltkarte",
     "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.mapTitleSwissCantons": "Karte der Schweizer Kantone",
+    "playQuiz.puzzle.mapTitleFrenchDepartments":
+      "Karte der franzosischen Departements",
+    "playQuiz.puzzle.mapTitleUsStates": "Karte der US-Bundesstaaten",
     "playQuiz.puzzle.slot": "Slot",
     "playQuiz.puzzle.dropHere": "Land hier ablegen",
     "playQuiz.puzzle.pool": "Zu platzierende Länder",
@@ -3402,6 +3433,10 @@ helpdesk@terracoast.ch`,
       "Platziere alle Länder vor dem Bestätigen.",
     "playQuiz.top10.instructions":
       "Ordne die Länder in die richtige Reihenfolge (1 = größtes).",
+    "playQuiz.objective.puzzleMap":
+      "Ziel: Platziere jedes Element am richtigen Ort und bestatige dann.",
+    "playQuiz.objective.top10Order":
+      "Ziel: Ordne die Elemente per Drag-and-drop in die richtige Reihenfolge und bestatige dann.",
     "playQuiz.top10.invalidOrder":
       "Diese Reihenfolge kann derzeit nicht bestätigt werden.",
     "playQuiz.top10.itemsRanked": "einsortierte Einträge",
@@ -3982,6 +4017,7 @@ helpdesk@terracoast.ch`,
     "duels.opponent": "Avversario",
     "duels.score": "Punteggio",
     "duels.accuracy": "Precisione",
+    "duels.resetFilters": "Reimposta",
     "duels.viewResults": "Visualizza risultati",
     "duels.rate": "Tasso",
     "duels.gap": "Divario",
@@ -4304,6 +4340,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.puzzle.zoomHint": "Usa + / - per zoomare.",
     "playQuiz.puzzle.worldMap": "Mappa del mondo",
     "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.mapTitleSwissCantons": "Mappa dei cantoni svizzeri",
+    "playQuiz.puzzle.mapTitleFrenchDepartments":
+      "Mappa dei dipartimenti francesi",
+    "playQuiz.puzzle.mapTitleUsStates": "Mappa degli stati USA",
     "playQuiz.puzzle.slot": "Slot",
     "playQuiz.puzzle.dropHere": "Trascina qui un paese",
     "playQuiz.puzzle.pool": "Paesi da posizionare",
@@ -4319,6 +4359,10 @@ helpdesk@terracoast.ch`,
       "Posiziona tutti i paesi prima di convalidare.",
     "playQuiz.top10.instructions":
       "Riordina i paesi nell'ordine corretto (1 = più grande).",
+    "playQuiz.objective.puzzleMap":
+      "Obiettivo: posiziona ogni elemento nel punto giusto, poi convalida.",
+    "playQuiz.objective.top10Order":
+      "Obiettivo: riordina gli elementi nell'ordine corretto con drag-and-drop, poi convalida.",
     "playQuiz.top10.invalidOrder":
       "Impossibile convalidare questo ordine al momento.",
     "playQuiz.top10.itemsRanked": "elementi ordinati",
@@ -5217,6 +5261,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.puzzle.zoomHint": "Use + / - para zoom.",
     "playQuiz.puzzle.worldMap": "Mapa-múndi",
     "playQuiz.puzzle.resetView": "Reset",
+    "playQuiz.puzzle.mapTitleSwissCantons": "Mapa dos cantões suíços",
+    "playQuiz.puzzle.mapTitleFrenchDepartments":
+      "Mapa dos departamentos franceses",
+    "playQuiz.puzzle.mapTitleUsStates": "Mapa dos estados dos EUA",
     "playQuiz.puzzle.slot": "Posição",
     "playQuiz.puzzle.dropHere": "Solte um país aqui",
     "playQuiz.puzzle.pool": "Países para posicionar",
@@ -5232,6 +5280,10 @@ helpdesk@terracoast.ch`,
       "Posicione todos os países antes de validar.",
     "playQuiz.top10.instructions":
       "Reordene os países na ordem correta (1 = maior).",
+    "playQuiz.objective.puzzleMap":
+      "Objetivo: posicione cada elemento no local correto e depois valide.",
+    "playQuiz.objective.top10Order":
+      "Objetivo: reorganize os elementos na ordem correta com arrastar e soltar e depois valide.",
     "playQuiz.top10.invalidOrder":
       "Não é possível validar esta ordem agora.",
     "playQuiz.top10.itemsRanked": "itens classificados",
@@ -5363,6 +5415,7 @@ helpdesk@terracoast.ch`,
     "profile.sendWarning": "Enviar aviso",
     "profile.status": "Status",
     "profile.close": "Fechar",
+    "duels.resetFilters": "Redefinir",
     "duels.viewResults": "Ver os resultados",
     "settings.logout": "Sair",
     "settings.logoutConfirmation": "Tem certeza de que deseja sair?",
