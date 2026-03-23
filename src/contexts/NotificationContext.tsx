@@ -6,14 +6,15 @@ import {
   ReactNode,
 } from "react";
 import { supabase } from "../lib/supabase";
+import type { Database } from "../lib/database.types";
 import { useAuth } from "./AuthContext";
 
 interface DuelNotification {
-  type: "invitation" | "accepted" | "completed";
+  type: "invitation" | "accepted" | "completed" | "found";
   from: string;
   quizTitle: string;
   result?: "won" | "lost" | "draw";
-    onNavigate?: () => void;
+  onNavigate?: () => void;
 }
 
 interface MessageNotification {
@@ -35,10 +36,13 @@ interface NotificationContextType {
   messageNotification: MessageNotification | null;
   friendRequestNotification: FriendRequestNotification | null;
   clearDuelNotification: () => void;
+  showDuelNotification: (notification: DuelNotification) => void;
   clearMessageNotification: () => void;
   clearFriendRequestNotification: () => void;
   refreshNotifications: () => Promise<void>;
-   setNavigationCallback: (callback: (view: string, params?: any) => void) => void;
+  setNavigationCallback: (
+    callback: (view: string, params?: Record<string, unknown>) => void
+  ) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
@@ -58,7 +62,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     useState<FriendRequestNotification | null>(null);
   const [pendingDuelsToPlay, setPendingDuelsToPlay] = useState(0);
   const [newDuelResults, setNewDuelResults] = useState(0);
-   const [navigationCallback, setNavigationCallback] = useState<((view: string, params?: any) => void) | null>(null);
+  const [navigationCallback, setNavigationCallback] = useState<
+    ((view: string, params?: Record<string, unknown>) => void) | null
+  >(null);
 
   const refreshNotifications = async () => {
     if (!profile) return;
@@ -95,7 +101,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       .in("status", ["pending", "in_progress"]);
 
     if (activeDuels) {
-      const toPlay = activeDuels.filter((duel: any) => {
+      const typedActiveDuels =
+        activeDuels as Database["public"]["Tables"]["duels"]["Row"][];
+      const toPlay = typedActiveDuels.filter((duel) => {
         const isPlayer1 = duel.player1_id === profile.id;
         const hasPlayed = isPlayer1
           ? !!duel.player1_session_id
@@ -116,8 +124,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (completedDuels) {
       const stored = localStorage.getItem("viewedDuels");
       const viewedDuels = stored ? new Set(JSON.parse(stored)) : new Set();
+      const typedCompletedDuels =
+        completedDuels as Database["public"]["Tables"]["duels"]["Row"][];
 
-      const newResults = completedDuels.filter((duel: any) => {
+      const newResults = typedCompletedDuels.filter((duel) => {
         const completedAt = duel.completed_at
           ? new Date(duel.completed_at)
           : null;
@@ -132,6 +142,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   };
 
   const clearDuelNotification = () => setDuelNotification(null);
+  const showDuelNotification = (notification: DuelNotification) =>
+    setDuelNotification(notification);
   const clearMessageNotification = () => setMessageNotification(null);
   const clearFriendRequestNotification = () =>
     setFriendRequestNotification(null);
@@ -154,13 +166,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `to_user_id=eq.${profile.id}`,
         },
         async (payload) => {
-          const newMessage = payload.new as any;
+          const newMessage =
+            payload.new as Database["public"]["Tables"]["chat_messages"]["Row"];
 
-          const { data: fromUser } = await supabase
+          const { data: fromUserRaw } = await supabase
             .from("profiles")
             .select("pseudo")
             .eq("id", newMessage.from_user_id)
             .single();
+          const fromUser = fromUserRaw as { pseudo: string } | null;
 
           if (fromUser) {
             setMessageNotification({
@@ -185,13 +199,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `friend_id=eq.${profile.id}`,
         },
         async (payload) => {
-          const newRequest = payload.new as any;
+          const newRequest =
+            payload.new as Database["public"]["Tables"]["friendships"]["Row"];
 
-          const { data: fromUser } = await supabase
+          const { data: fromUserRaw } = await supabase
             .from("profiles")
             .select("pseudo")
             .eq("id", newRequest.user_id)
             .single();
+          const fromUser = fromUserRaw as { pseudo: string } | null;
 
           if (fromUser) {
             setFriendRequestNotification({
@@ -215,19 +231,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `to_user_id=eq.${profile.id}`,
         },
         async (payload) => {
-          const newInvitation = payload.new as any;
+          const newInvitation =
+            payload.new as Database["public"]["Tables"]["duel_invitations"]["Row"];
 
-          const { data: fromUser } = await supabase
+          const { data: fromUserRaw } = await supabase
             .from("profiles")
             .select("pseudo")
             .eq("id", newInvitation.from_user_id)
             .single();
+          const fromUser = fromUserRaw as { pseudo: string } | null;
 
-          const { data: quiz } = await supabase
+          const { data: quizRaw } = await supabase
             .from("quizzes")
             .select("title")
             .eq("id", newInvitation.quiz_id)
             .single();
+          const quiz = quizRaw as { title: string } | null;
 
           if (fromUser && quiz) {
             setDuelNotification({
@@ -254,20 +273,23 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `from_user_id=eq.${profile.id}`,
         },
         async (payload) => {
-          const updatedInvitation = payload.new as any;
+          const updatedInvitation =
+            payload.new as Database["public"]["Tables"]["duel_invitations"]["Row"];
 
           if (updatedInvitation.status === "accepted") {
-            const { data: toUser } = await supabase
+            const { data: toUserRaw } = await supabase
               .from("profiles")
               .select("pseudo")
               .eq("id", updatedInvitation.to_user_id)
               .single();
+            const toUser = toUserRaw as { pseudo: string } | null;
 
-            const { data: quiz } = await supabase
+            const { data: quizRaw } = await supabase
               .from("quizzes")
               .select("title")
               .eq("id", updatedInvitation.quiz_id)
               .single();
+            const quiz = quizRaw as { title: string } | null;
 
             if (toUser && quiz) {
               setDuelNotification({
@@ -292,7 +314,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `status=eq.completed`,
         },
         async (payload) => {
-          const completedDuel = payload.new as any;
+          const completedDuel =
+            payload.new as Database["public"]["Tables"]["duels"]["Row"];
 
           if (
             completedDuel.player1_id !== profile.id &&
@@ -306,17 +329,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               ? completedDuel.player2_id
               : completedDuel.player1_id;
 
-          const { data: opponent } = await supabase
+          const { data: opponentRaw } = await supabase
             .from("profiles")
             .select("pseudo")
             .eq("id", opponentId)
             .single();
+          const opponent = opponentRaw as { pseudo: string } | null;
 
-          const { data: quiz } = await supabase
+          const { data: quizRaw } = await supabase
             .from("quizzes")
             .select("title")
             .eq("id", completedDuel.quiz_id)
             .single();
+          const quiz = quizRaw as { title: string } | null;
 
           if (opponent && quiz) {
             let result: "won" | "lost" | "draw" = "draw";
@@ -360,6 +385,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         messageNotification,
         friendRequestNotification,
         clearDuelNotification,
+        showDuelNotification,
         clearMessageNotification,
         clearFriendRequestNotification,
         refreshNotifications,

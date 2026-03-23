@@ -13,6 +13,12 @@ import {
   pickCountries,
   shuffleSeeded,
 } from "../../lib/countryGameData";
+import {
+  getSubdivisions,
+  getSubdivisionsByIds,
+  type SubdivisionGameEntry,
+  type SubdivisionScope,
+} from "../../lib/subdivisionGameData";
 import { PuzzleMapQuestion } from "./PuzzleMapQuestion";
 import { Top10OrderQuestion } from "./Top10OrderQuestion";
 
@@ -25,7 +31,7 @@ interface PlayQuizPageProps {
   duelId?: string;
   trainingMode?: boolean;
   questionCount?: number;
-  onNavigate: (view: string) => void;
+  onNavigate: (view: string, data?: Record<string, unknown>) => void;
 }
 
 export function PlayQuizPage({
@@ -78,8 +84,26 @@ export function PlayQuizPage({
   const hasTimedOutRef = useRef(false);
   const textInputRef = useRef<HTMLInputElement>(null);
   const allCountries = getAllCountries();
+  const toCountryEntry = (entry: SubdivisionGameEntry): CountryGameEntry => ({
+    iso3: entry.iso3,
+    name: entry.name,
+    lat: entry.lat ?? 0,
+    lng: entry.lng ?? 0,
+    numericCode: 0,
+    continent: "world",
+    population: 0,
+    area_km2: 0,
+  });
+  const allSubdivisions = [
+    ...getSubdivisions("ch_cantons"),
+    ...getSubdivisions("fr_departements"),
+    ...getSubdivisions("us_states"),
+  ].map(toCountryEntry);
   const countryNameByIso = Object.fromEntries(
-    allCountries.map((country) => [country.iso3, country.name])
+    [...allCountries, ...allSubdivisions].map((country) => [
+      country.iso3,
+      country.name,
+    ])
   ) as Record<string, string>;
 
   useEffect(() => {
@@ -257,12 +281,31 @@ export function PlayQuizPage({
               continent?: string;
               selectedCountries?: string[];
               showTargetList?: boolean;
+              mapLevel?: "countries" | "subdivisions";
+              subdivisionScope?: SubdivisionScope;
             };
-            const selectedPool = getCountriesByIso3(mapData.selectedCountries || []);
+            const subdivisionScope =
+              mapData.mapLevel === "subdivisions" && mapData.subdivisionScope
+                ? mapData.subdivisionScope
+                : null;
+            const selectedPool = subdivisionScope
+              ? getSubdivisionsByIds(
+                  subdivisionScope,
+                  mapData.selectedCountries || []
+                ).map(toCountryEntry)
+              : getCountriesByIso3(mapData.selectedCountries || []);
+            const subdivisionFallback = subdivisionScope
+              ? getSubdivisions(subdivisionScope).map(toCountryEntry)
+              : [];
             const countries =
               selectedPool.length > 0
                 ? shuffleSeeded(selectedPool, `${quizId}:${question.id}:puzzle`)
-                : pickCountries(
+                : subdivisionScope
+                  ? shuffleSeeded(
+                      subdivisionFallback,
+                      `${quizId}:${question.id}:puzzle`
+                    ).slice(0, 12)
+                  : pickCountries(
                     12,
                     `${quizId}:${question.id}:puzzle`,
                     mapData.continent || "world"
@@ -322,7 +365,14 @@ export function PlayQuizPage({
   };
 
   const createSession = async () => {
-    if (!profile || trainingMode) {
+    if (trainingMode) {
+      isCreatingSessionRef.current = false;
+      return;
+    }
+
+    const currentUserId =
+      profile?.id || (await supabase.auth.getUser()).data.user?.id || null;
+    if (!currentUserId) {
       isCreatingSessionRef.current = false;
       return;
     }
@@ -331,7 +381,7 @@ export function PlayQuizPage({
       .from("game_sessions")
       .insert({
         quiz_id: quizId,
-        player_id: profile.id,
+        player_id: currentUserId,
         mode,
       })
       .select()
@@ -405,11 +455,16 @@ export function PlayQuizPage({
         const exactMatches = currentPuzzleState.countries.filter(
           (country) => currentPuzzleState.assignments[country.iso3] === country.iso3
         ).length;
-        const ratio = totalSlots > 0 ? exactMatches / totalSlots : 0;
+        const targetSet = new Set(currentPuzzleState.countries.map((country) => country.iso3));
+        const wrongIso3s = Array.from(new Set(currentPuzzleState.pickedIso3s)).filter(
+          (iso3) => !targetSet.has(iso3)
+        );
+        const denominator = totalSlots + wrongIso3s.length;
+        const ratio = denominator > 0 ? exactMatches / denominator : 0;
         const pointsEarned = Math.round(
           calculatePoints(timeTaken, currentQuestion.points) * ratio
         );
-        const isCorrect = exactMatches === totalSlots;
+        const isCorrect = exactMatches === totalSlots && wrongIso3s.length === 0;
 
         const answerData = {
           question_id: currentQuestion.id,
@@ -418,6 +473,7 @@ export function PlayQuizPage({
             assignments: currentPuzzleState.assignments,
             exactMatches,
             totalSlots,
+            wrongIso3s,
           }),
           is_correct: isCorrect,
           time_taken: timeTaken,
@@ -575,11 +631,18 @@ export function PlayQuizPage({
       return;
     }
 
+    if (trainingMode) return;
+    if (!sessionId) {
+      // Session can be created asynchronously just after the quiz starts.
+      // Retry shortly instead of marking game complete too early.
+      setTimeout(() => {
+        completeGame();
+      }, 300);
+      return;
+    }
+
     isCompletingRef.current = true;
     setGameComplete(true);
-
-    if (trainingMode) return;
-    if (!sessionId || !profile) return;
 
     const correctAnswers = answers.filter((a) => a.is_correct).length;
     const accuracy = (correctAnswers / questions.length) * 100;
@@ -604,6 +667,8 @@ export function PlayQuizPage({
 
     if (serverProgressError) {
       console.error("[progression-rpc] failed:", serverProgressError);
+      isCompletingRef.current = false;
+      setGameComplete(false);
       return;
     }
 
@@ -614,55 +679,18 @@ export function PlayQuizPage({
     const payload = (serverProgressData || {}) as { earned_xp?: number };
     setXpGained(Number(payload.earned_xp || 0));
     await refreshProfile();
+    isCompletingRef.current = false;
   };
 
   const updateDuel = async () => {
-    if (!duelId || !sessionId || !profile) return;
-
-    const { data: duel } = await supabase
-      .from("duels")
-      .select("*")
-      .eq("id", duelId)
-      .single();
-
-    if (!duel) return;
-
-    const isPlayer1 = duel.player1_id === profile.id;
-    const updateField = isPlayer1 ? "player1_session_id" : "player2_session_id";
-    const otherPlayerSessionField = isPlayer1
-      ? "player2_session_id"
-      : "player1_session_id";
-
-    const updates: any = { [updateField]: sessionId };
-
-    if (duel[otherPlayerSessionField]) {
-      const { data: otherSession } = await supabase
-        .from("game_sessions")
-        .select("score")
-        .eq("id", duel[otherPlayerSessionField])
-        .single();
-
-      const { data: mySession } = await supabase
-        .from("game_sessions")
-        .select("score")
-        .eq("id", sessionId)
-        .single();
-
-      if (otherSession && mySession) {
-        let winnerId = null;
-        if (mySession.score > otherSession.score) {
-          winnerId = profile.id;
-        } else if (otherSession.score > mySession.score) {
-          winnerId = isPlayer1 ? duel.player2_id : duel.player1_id;
-        }
-
-        updates.status = "completed";
-        updates.winner_id = winnerId;
-        updates.completed_at = new Date().toISOString();
-      }
+    if (!duelId || !sessionId) return;
+    const { error } = await supabase.rpc("link_duel_session_and_finalize", {
+      p_duel_id: duelId,
+      p_session_id: sessionId,
+    });
+    if (error) {
+      console.error("Error linking duel session atomically:", error);
     }
-
-    await supabase.from("duels").update(updates).eq("id", duelId);
   };
 
   if (!quiz || questions.length === 0) {
@@ -1026,6 +1054,20 @@ export function PlayQuizPage({
   }
 
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const handleQuit = () => {
+    const confirmed =
+      typeof window === "undefined" ? true : window.confirm(t("playQuiz.confirmQuit"));
+    if (!confirmed) return;
+    if (mode === "duel") {
+      onNavigate("duels");
+      return;
+    }
+    if (trainingMode) {
+      onNavigate("training-mode");
+      return;
+    }
+    onNavigate("quizzes");
+  };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
@@ -1034,11 +1076,7 @@ export function PlayQuizPage({
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <button
-              onClick={() => {
-                if (confirm(t("playQuiz.confirmQuit"))) {
-                  onNavigate("quizzes");
-                }
-              }}
+              onClick={handleQuit}
               className="flex items-center text-gray-600 hover:text-gray-800"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
@@ -1120,8 +1158,8 @@ export function PlayQuizPage({
               currentQuestion.question_type === "top10_order") && (
               <p className="mt-2 text-sm text-gray-600 bg-gray-100 border border-gray-200 rounded px-3 py-2">
                 {currentQuestion.question_type === "puzzle_map"
-                  ? "Objectif: place chaque élément au bon endroit, puis valide."
-                  : "Objectif: réorganise les éléments dans le bon ordre avec le drag-and-drop, puis valide."}
+                  ? t("playQuiz.objective.puzzleMap")
+                  : t("playQuiz.objective.top10Order")}
               </p>
             )}
           </div>
@@ -1271,10 +1309,17 @@ export function PlayQuizPage({
           {currentQuestion.question_type === "puzzle_map" && currentPuzzleState && (
             <PuzzleMapQuestion
               countries={currentPuzzleState.countries}
+              geographySource={
+                (currentQuestion.map_data as any)?.mapLevel === "subdivisions" &&
+                (currentQuestion.map_data as any)?.subdivisionScope
+                  ? ((currentQuestion.map_data as any)?.subdivisionScope as any)
+                  : "world"
+              }
               showTargetList={
                 ((currentQuestion.map_data as any)?.showTargetList ?? true) !== false
               }
               revealResult={showResult || isAnswered}
+              initialView={(currentQuestion.map_data as any)?.initialView || null}
               assignments={currentPuzzleState.assignments}
               pickedIso3s={currentPuzzleState.pickedIso3s}
               onAssignmentsChange={(nextAssignments) =>

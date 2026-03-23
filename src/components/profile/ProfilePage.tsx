@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { supabase } from "../../lib/supabase";
@@ -125,11 +125,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     };
   };
 
-  useEffect(() => {
-    loadProfileData();
-  }, [targetUserId]);
-
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     if (!targetUserId) return;
 
     const { data: profileData } = await supabase
@@ -147,14 +143,16 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     const { data: badgesData } = await supabase
       .from("user_badges")
       .select("*, badges(*)")
-      .eq("user_id", targetUserId);
+      .eq("user_id", targetUserId)
+      .order("earned_at", { ascending: false });
 
     if (badgesData) setBadges(badgesData);
 
     const { data: titlesData } = await supabase
       .from("user_titles")
       .select("*, titles(*)")
-      .eq("user_id", targetUserId);
+      .eq("user_id", targetUserId)
+      .order("earned_at", { ascending: false });
 
     if (titlesData) {
       setTitles(
@@ -176,7 +174,83 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
     await loadStats();
     await loadDailyStats();
-  };
+  }, [targetUserId, isOwnProfile, currentUserProfile]);
+
+  useEffect(() => {
+    loadProfileData();
+  }, [loadProfileData]);
+
+  useEffect(() => {
+    if (!targetUserId) return;
+
+    const channel = supabase
+      .channel(`profile-awards-${targetUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_badges",
+          filter: `user_id=eq.${targetUserId}`,
+        },
+        loadProfileData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_titles",
+          filter: `user_id=eq.${targetUserId}`,
+        },
+        loadProfileData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${targetUserId}`,
+        },
+        loadProfileData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "game_sessions",
+          filter: `player_id=eq.${targetUserId}`,
+        },
+        loadProfileData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "duels",
+          filter: `player1_id=eq.${targetUserId}`,
+        },
+        loadProfileData
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "duels",
+          filter: `player2_id=eq.${targetUserId}`,
+        },
+        loadProfileData
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [targetUserId, loadProfileData]);
 
   const loadFriendshipStatus = async () => {
     if (!currentUserProfile || !targetUserId) return;
@@ -444,7 +518,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <div className="text-center">
                   <p className="text-2xl md:text-3xl font-bold text-emerald-600">
                     {profile.level}
@@ -467,6 +541,17 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                   </p>
                   <p className="text-xs md:text-sm text-gray-600">
                     {t("profile.games")}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl md:text-3xl font-bold text-purple-600">
+                    {profile.duel_rating ?? 1000}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600">
+                    {t("profile.mmr")}
+                  </p>
+                  <p className="text-[11px] text-gray-500">
+                    {profile.duel_ranked_games ?? 0} {t("profile.rankedDuels")}
                   </p>
                 </div>
               </div>

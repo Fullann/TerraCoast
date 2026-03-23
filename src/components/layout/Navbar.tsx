@@ -163,6 +163,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 {duelNotification.type === "completed" && (
                   <Trophy className="w-6 h-6 text-yellow-600" />
                 )}
+                {duelNotification.type === "found" && (
+                  <Swords className="w-6 h-6 text-purple-600" />
+                )}
               </div>
               <div className="flex-1">
                 {duelNotification.type === "invitation" && (
@@ -214,10 +217,28 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                     </div>
                   </>
                 )}
+                {duelNotification.type === "found" && (
+                  <>
+                    <Swords className="w-6 h-6 text-purple-600 flex-shrink-0" />
+                    <div
+                      className="cursor-pointer flex-1"
+                      onClick={() => {
+                        onNavigate("duels", { tab: "matchmaking" });
+                        clearDuelNotification();
+                      }}
+                    >
+                      <strong>{t("duels.matchFound")}</strong> -{" "}
+                      <strong>{duelNotification.from}</strong>{" "}
+                      {t("notifications.on")} <strong>{duelNotification.quizTitle}</strong>
+                    </div>
+                  </>
+                )}
                 <button
                   onClick={() => {
                     if (duelNotification.type === "completed") {
                       onNavigate("duels", { tab: "history" });
+                    } else if (duelNotification.type === "found") {
+                      onNavigate("duels", { tab: "matchmaking" });
                     } else if (duelNotification.type === "accepted") {
                       onNavigate("duels", { tab: "active" });
                     } else {

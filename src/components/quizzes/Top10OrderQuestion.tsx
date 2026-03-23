@@ -16,11 +16,21 @@ export function Top10OrderQuestion({
   const [tapSelectedIndex, setTapSelectedIndex] = useState<number | null>(null);
 
   const moveItem = (fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex) return;
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
     const clone = [...order];
     const [moved] = clone.splice(fromIndex, 1);
     clone.splice(toIndex, 0, moved);
     onOrderChange(clone);
+  };
+
+  const moveItemToDropZone = (fromIndex: number, zoneIndex: number) => {
+    // zoneIndex is insertion position in [0..order.length]
+    const boundedZone = Math.max(0, Math.min(order.length, zoneIndex));
+    let targetIndex = boundedZone;
+    if (fromIndex < targetIndex) {
+      targetIndex -= 1;
+    }
+    moveItem(fromIndex, targetIndex);
   };
 
   return (
@@ -39,27 +49,32 @@ export function Top10OrderQuestion({
 
       {order.map((item, index) => (
         <div key={`${item}-${index}`}>
-          {dragIndex !== null && dropIndex === index && (
-            <div className="h-1.5 rounded-full bg-orange-400 mb-2" />
-          )}
+          <div
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDropIndex(index);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+              if (Number.isNaN(fromIndex)) return;
+              moveItemToDropZone(fromIndex, index);
+              setDragIndex(null);
+              setDropIndex(null);
+            }}
+            className={`mb-2 h-2 rounded-full transition-colors ${
+              dragIndex !== null && dropIndex === index
+                ? "bg-orange-400"
+                : "bg-transparent"
+            }`}
+          />
           <div
             draggable
             onDragStart={(event) => {
               setDragIndex(index);
               event.dataTransfer.setData("text/plain", String(index));
             }}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDropIndex(index);
-            }}
             onDragEnd={() => {
-              setDragIndex(null);
-              setDropIndex(null);
-            }}
-            onDrop={(event) => {
-              const fromIndex = Number(event.dataTransfer.getData("text/plain"));
-              if (Number.isNaN(fromIndex)) return;
-              moveItem(fromIndex, index);
               setDragIndex(null);
               setDropIndex(null);
             }}
@@ -92,6 +107,25 @@ export function Top10OrderQuestion({
           </div>
         </div>
       ))}
+      <div
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDropIndex(order.length);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+          if (Number.isNaN(fromIndex)) return;
+          moveItemToDropZone(fromIndex, order.length);
+          setDragIndex(null);
+          setDropIndex(null);
+        }}
+        className={`h-2 rounded-full transition-colors ${
+          dragIndex !== null && dropIndex === order.length
+            ? "bg-orange-400"
+            : "bg-transparent"
+        }`}
+      />
     </div>
   );
 }

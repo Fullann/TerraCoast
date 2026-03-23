@@ -3,10 +3,22 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { languageNames, Language } from "../../i18n/translations";
-import { Plus, Trash2, ArrowLeft, CreditCard as Edit, X } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  ArrowLeft,
+  CreditCard as Edit,
+  X,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
 import { CountryMultiSelect } from "./CountryMultiSelect";
+import {
+  getSubdivisions,
+  type SubdivisionScope,
+} from "../../lib/subdivisionGameData";
 
 type QuestionType =
   | "mcq"
@@ -60,6 +72,20 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [difficulties, setDifficulties] = useState<
     { id: string; name: string; level: number }[]
   >([]);
+  const mapViewPresets: Record<
+    string,
+    { centerLat: number; centerLng: number; zoom: number }
+  > = {
+    world: { centerLat: 20, centerLng: 0, zoom: 1 },
+    europe: { centerLat: 54, centerLng: 15, zoom: 2.8 },
+    africa: { centerLat: 5, centerLng: 20, zoom: 2.4 },
+    asia: { centerLat: 30, centerLng: 95, zoom: 2.3 },
+    americas: { centerLat: 10, centerLng: -75, zoom: 2.1 },
+    oceania: { centerLat: -22, centerLng: 140, zoom: 2.7 },
+    switzerland: { centerLat: 46.8, centerLng: 8.2, zoom: 5.2 },
+    france: { centerLat: 46.6, centerLng: 2.3, zoom: 4.6 },
+    usa: { centerLat: 39.8, centerLng: -98.5, zoom: 2.7 },
+  };
   const [categories, setCategories] = useState<
     { id: string; name: string; label: string }[]
   >([]);
@@ -183,6 +209,10 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
+
+  const normalizeQuestionsOrder = (list: (Question & { isNew?: boolean })[]) =>
+    list.map((question, index) => ({ ...question, order_index: index }));
+
   const saveQuestion = () => {
     if (!editingQuestion) return;
 
@@ -191,12 +221,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     if (index >= 0) {
       const newQuestions = [...questions];
       newQuestions[index] = editingQuestion;
-      setQuestions(newQuestions);
+      setQuestions(normalizeQuestionsOrder(newQuestions));
     } else {
-      setQuestions([
-        ...questions,
-        { ...editingQuestion, order_index: questions.length },
-      ]);
+      setQuestions(
+        normalizeQuestionsOrder([
+          ...questions,
+          { ...editingQuestion, order_index: questions.length },
+        ])
+      );
     }
 
     setEditingQuestion(null);
@@ -220,17 +252,21 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       complement_if_wrong: "",
     };
 
-    setQuestions([...questions, newQuestion]);
+    setQuestions(normalizeQuestionsOrder([...questions, newQuestion]));
     setEditingQuestion(newQuestion);
   };
 
   const deleteQuestion = async (questionId: string) => {
     if (!confirm(t("editQuiz.confirmDeleteQuestion"))) return;
 
-    if (questionId.startsWith("temp_")) {
-      setQuestions(questions.filter((q) => q.id !== questionId));
-      return;
+    setQuestions((prev) =>
+      normalizeQuestionsOrder(prev.filter((q) => q.id !== questionId))
+    );
+    if (editingQuestion?.id === questionId) {
+      setEditingQuestion(null);
     }
+
+    if (questionId.startsWith("temp_")) return;
 
     const { error } = await supabase
       .from("questions")
@@ -238,12 +274,19 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       .eq("id", questionId);
 
     if (error) {
+      loadQuiz();
       alert(t("editQuiz.deleteQuestionError"));
       return;
     }
-
-    setQuestions(questions.filter((q) => q.id !== questionId));
     alert(t("editQuiz.deleteQuestionSuccess"));
+  };
+
+  const moveQuestion = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= questions.length || fromIndex === toIndex) return;
+    const reordered = [...questions];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    setQuestions(normalizeQuestionsOrder(reordered));
   };
 
   const updateOption = (index: number, value: string) => {
@@ -409,8 +452,13 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         .select("id")
         .eq("quiz_id", quizId);
 
+      const orderedQuestions = questions.map((question, index) => ({
+        ...question,
+        order_index: index,
+      }));
+
       if (existingQuestions) {
-        const currentQuestionIds = questions
+        const currentQuestionIds = orderedQuestions
           .filter((q) => !q.isNew)
           .map((q) => q.id);
 
@@ -430,7 +478,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         }
       }
 
-      for (const question of questions) {
+      for (const question of orderedQuestions) {
         if (question.isNew) {
           const { id, isNew, ...questionData } = question;
           const { error: insertQuestionError } = await supabase.from("questions").insert({
@@ -538,6 +586,15 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       </div>
     );
   }
+
+  const editingSubdivisionScope: SubdivisionScope =
+    (editingQuestion?.map_data?.subdivisionScope as SubdivisionScope) ||
+    "ch_cantons";
+  const editingSubdivisionEntries =
+    editingQuestion?.question_type === "puzzle_map" &&
+    (editingQuestion?.map_data?.mapLevel || "countries") === "subdivisions"
+      ? getSubdivisions(editingSubdivisionScope)
+      : [];
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -913,12 +970,31 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                   correct_answers: [],
                                   map_data: {
                                     mode: "puzzle_map",
+                                    mapLevel:
+                                      editingQuestion.map_data?.mapLevel || "countries",
+                                    subdivisionScope:
+                                      editingQuestion.map_data?.subdivisionScope,
                                     selectedCountries:
                                       editingQuestion.map_data
                                         ?.selectedCountries || [],
                                     showTargetList:
                                       editingQuestion.map_data?.showTargetList !==
                                       false,
+                                    initialView: {
+                                      centerLat:
+                                        editingQuestion.map_data?.initialView
+                                          ?.centerLat ?? 20,
+                                      centerLng:
+                                        editingQuestion.map_data?.initialView
+                                          ?.centerLng ?? 0,
+                                      zoom:
+                                        editingQuestion.map_data?.initialView
+                                          ?.zoom ??
+                                        (editingQuestion.map_data?.mapLevel ===
+                                        "subdivisions"
+                                          ? 5.2
+                                          : 1),
+                                    },
                                   },
                                 });
                                 return;
@@ -1079,22 +1155,168 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
                       {editingQuestion.question_type === "puzzle_map" && (
                         <div className="space-y-4 p-4 rounded-lg bg-sky-50 border border-sky-200">
-                          <CountryMultiSelect
-                            label={t("createQuiz.puzzle.targetCountriesLabel")}
-                            selectedIso3={
-                              editingQuestion.map_data?.selectedCountries || []
-                            }
-                            onChange={(next) =>
-                              setEditingQuestion({
-                                ...editingQuestion,
-                                map_data: {
-                                  ...(editingQuestion.map_data || {}),
-                                  mode: "puzzle_map",
-                                  selectedCountries: next,
-                                },
-                              })
-                            }
-                          />
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Niveau de carte
+                            </label>
+                            <select
+                              value={editingQuestion.map_data?.mapLevel || "countries"}
+                              onChange={(e) => {
+                                const nextLevel = e.target.value as
+                                  | "countries"
+                                  | "subdivisions";
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  map_data: {
+                                    ...(editingQuestion.map_data || {}),
+                                    mode: "puzzle_map",
+                                    mapLevel: nextLevel,
+                                    subdivisionScope:
+                                      nextLevel === "subdivisions"
+                                        ? "ch_cantons"
+                                        : undefined,
+                                    selectedCountries: [],
+                                    initialView:
+                                      nextLevel === "subdivisions"
+                                        ? {
+                                            centerLat: 46.8,
+                                            centerLng: 8.2,
+                                            zoom: 1.1,
+                                          }
+                                        : editingQuestion.map_data?.initialView || {
+                                            centerLat: 20,
+                                            centerLng: 0,
+                                            zoom: 1,
+                                          },
+                                  },
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                            >
+                              <option value="countries">Pays</option>
+                              <option value="subdivisions">Sous-divisions</option>
+                            </select>
+                          </div>
+
+                          {(editingQuestion.map_data?.mapLevel || "countries") ===
+                          "subdivisions" ? (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Scope
+                                </label>
+                                <select
+                                  value={
+                                    editingQuestion.map_data?.subdivisionScope ||
+                                    "ch_cantons"
+                                  }
+                                  onChange={(e) =>
+                                    setEditingQuestion({
+                                      ...editingQuestion,
+                                      map_data: {
+                                        ...(editingQuestion.map_data || {}),
+                                        mode: "puzzle_map",
+                                        mapLevel: "subdivisions",
+                                        subdivisionScope:
+                                          e.target.value as SubdivisionScope,
+                                        selectedCountries: [],
+                                        initialView:
+                                          e.target.value === "fr_departements"
+                                            ? {
+                                                centerLat: 46.6,
+                                                centerLng: 2.3,
+                                                zoom: 1.1,
+                                              }
+                                            : e.target.value === "us_states"
+                                            ? {
+                                                centerLat: 39.8,
+                                                centerLng: -98.5,
+                                                zoom: 1,
+                                              }
+                                            : {
+                                                centerLat: 46.8,
+                                                centerLng: 8.2,
+                                                zoom: 1.1,
+                                              },
+                                      },
+                                    })
+                                  }
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                                >
+                                  <option value="ch_cantons">Cantons suisses</option>
+                                  <option value="fr_departements">
+                                    Departements francais
+                                  </option>
+                                  <option value="us_states">Etats americains</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Sous-divisions cibles
+                                </label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto p-2 border border-gray-200 rounded-lg bg-white">
+                                  {editingSubdivisionEntries.map((entry) => {
+                                    const checked =
+                                      editingQuestion.map_data?.selectedCountries?.includes(
+                                        entry.iso3
+                                      ) || false;
+                                    return (
+                                      <label
+                                        key={entry.iso3}
+                                        className="flex items-center gap-2 text-sm text-gray-700"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={(e) => {
+                                            const previous =
+                                              editingQuestion.map_data
+                                                ?.selectedCountries || [];
+                                            const next = e.target.checked
+                                              ? [...new Set([...previous, entry.iso3])]
+                                              : previous.filter(
+                                                  (id: string) => id !== entry.iso3
+                                                );
+                                            setEditingQuestion({
+                                              ...editingQuestion,
+                                              map_data: {
+                                                ...(editingQuestion.map_data || {}),
+                                                mode: "puzzle_map",
+                                                mapLevel: "subdivisions",
+                                                subdivisionScope: editingSubdivisionScope,
+                                                selectedCountries: next,
+                                              },
+                                            });
+                                          }}
+                                          className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                        />
+                                        {entry.name}
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <CountryMultiSelect
+                              label={t("createQuiz.puzzle.targetCountriesLabel")}
+                              selectedIso3={
+                                editingQuestion.map_data?.selectedCountries || []
+                              }
+                              onChange={(next) =>
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  map_data: {
+                                    ...(editingQuestion.map_data || {}),
+                                    mode: "puzzle_map",
+                                    mapLevel: "countries",
+                                    selectedCountries: next,
+                                  },
+                                })
+                              }
+                            />
+                          )}
                           <label className="flex items-center gap-2 text-sm text-gray-700">
                             <input
                               type="checkbox"
@@ -1115,6 +1337,142 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                             />
                             {t("createQuiz.puzzle.showTargetList")}
                           </label>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="md:col-span-3">
+                              <label className="block text-xs text-gray-700 mb-1">
+                                Preset continent
+                              </label>
+                              <select
+                                onChange={(e) => {
+                                  const preset = mapViewPresets[e.target.value];
+                                  if (!preset) return;
+                                  setEditingQuestion({
+                                    ...editingQuestion,
+                                    map_data: {
+                                      ...(editingQuestion.map_data || {}),
+                                      mode: "puzzle_map",
+                                      initialView: {
+                                        centerLat: preset.centerLat,
+                                        centerLng: preset.centerLng,
+                                        zoom: preset.zoom,
+                                      },
+                                    },
+                                  });
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                                defaultValue=""
+                              >
+                                <option value="" disabled>
+                                  Choisir un preset
+                                </option>
+                                <option value="world">Monde</option>
+                                <option value="europe">Europe</option>
+                                <option value="africa">Afrique</option>
+                                <option value="asia">Asie</option>
+                                <option value="americas">Amériques</option>
+                                <option value="oceania">Océanie</option>
+                                <option value="switzerland">Suisse</option>
+                                <option value="france">France</option>
+                                <option value="usa">USA</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-700 mb-1">
+                                Centre latitude
+                              </label>
+                              <input
+                                type="number"
+                                min={-90}
+                                max={90}
+                                step={0.1}
+                                value={
+                                  editingQuestion.map_data?.initialView?.centerLat ??
+                                  20
+                                }
+                                onChange={(e) =>
+                                  setEditingQuestion({
+                                    ...editingQuestion,
+                                    map_data: {
+                                      ...(editingQuestion.map_data || {}),
+                                      mode: "puzzle_map",
+                                      initialView: {
+                                        ...(editingQuestion.map_data?.initialView ||
+                                          {}),
+                                        centerLat: Math.max(
+                                          -90,
+                                          Math.min(90, Number(e.target.value || 20))
+                                        ),
+                                      },
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-700 mb-1">
+                                Centre longitude
+                              </label>
+                              <input
+                                type="number"
+                                min={-180}
+                                max={180}
+                                step={0.1}
+                                value={
+                                  editingQuestion.map_data?.initialView?.centerLng ??
+                                  0
+                                }
+                                onChange={(e) =>
+                                  setEditingQuestion({
+                                    ...editingQuestion,
+                                    map_data: {
+                                      ...(editingQuestion.map_data || {}),
+                                      mode: "puzzle_map",
+                                      initialView: {
+                                        ...(editingQuestion.map_data?.initialView ||
+                                          {}),
+                                        centerLng: Math.max(
+                                          -180,
+                                          Math.min(180, Number(e.target.value || 0))
+                                        ),
+                                      },
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-700 mb-1">
+                                Zoom initial
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={8}
+                                step={0.1}
+                                value={editingQuestion.map_data?.initialView?.zoom ?? 1}
+                                onChange={(e) =>
+                                  setEditingQuestion({
+                                    ...editingQuestion,
+                                    map_data: {
+                                      ...(editingQuestion.map_data || {}),
+                                      mode: "puzzle_map",
+                                      initialView: {
+                                        ...(editingQuestion.map_data?.initialView ||
+                                          {}),
+                                        zoom: Math.max(
+                                          1,
+                                          Math.min(8, Number(e.target.value || 1))
+                                        ),
+                                      },
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                              />
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -1412,6 +1770,22 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                         </div>
                       </div>
                       <div className="flex space-x-2">
+                        <button
+                          onClick={() => moveQuestion(index, index - 1)}
+                          disabled={index === 0}
+                          className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Monter"
+                        >
+                          <ArrowUp className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => moveQuestion(index, index + 1)}
+                          disabled={index === questions.length - 1}
+                          className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Descendre"
+                        >
+                          <ArrowDown className="w-5 h-5" />
+                        </button>
                         <button
                           onClick={() => startEditingQuestion(question)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

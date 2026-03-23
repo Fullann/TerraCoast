@@ -18,6 +18,7 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 interface LeaderboardEntry extends Profile {
   total_score: number;
   games_played: number;
+  wins: number;
   rank?: number;
 }
 
@@ -32,10 +33,11 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"global" | "friends">("global");
   const [period, setPeriod] = useState<"monthly" | "alltime">("monthly");
+  const [mode, setMode] = useState<"xp" | "duel_ranked">("xp");
 
   useEffect(() => {
     loadLeaderboard();
-  }, [view, period]);
+  }, [view, period, mode]);
 
   const loadLeaderboard = async () => {
     setLoading(true);
@@ -45,7 +47,11 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
 
     if (view === "global") {
       const orderBy =
-        period === "monthly" ? "monthly_score" : "experience_points";
+        mode === "duel_ranked"
+          ? "duel_rating"
+          : period === "monthly"
+          ? "monthly_score"
+          : "experience_points";
       let query = supabase
         .from("profiles")
         .select("*")
@@ -55,7 +61,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
 
       // En mode mensuel : ne garder que les joueurs ayant joué ce mois-ci
       // (last_reset_month = mois en cours quand ils ont joué au moins une partie)
-      if (period === "monthly") {
+      if (mode === "xp" && period === "monthly") {
         query = query.eq("last_reset_month", currentMonth);
       }
 
@@ -96,7 +102,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
       profiles = [profile, ...uniqueFriends];
 
       // En mode mensuel : ne garder que les amis (et soi) ayant joué ce mois-ci
-      if (period === "monthly") {
+      if (mode === "xp" && period === "monthly") {
         profiles = profiles.filter(
           (p) => (p as Profile & { last_reset_month?: string | null }).last_reset_month === currentMonth
         );
@@ -105,11 +111,20 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
 
     if (profiles.length > 0) {
       const enrichedData: LeaderboardEntry[] = profiles.map((p) => {
+        if (mode === "duel_ranked") {
+          return {
+            ...p,
+            total_score: p.duel_rating || 1000,
+            games_played: p.duel_ranked_games || 0,
+            wins: p.duel_ranked_wins || 0,
+          };
+        }
         if (period === "monthly") {
           return {
             ...p,
             total_score: p.monthly_score || 0,
             games_played: p.monthly_games_played || 0,
+            wins: 0,
           };
         } else {
           // Pour "all time", utiliser experience_points comme score total
@@ -117,6 +132,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
             ...p,
             total_score: p.experience_points || 0,
             games_played: 0, // Pas de compteur de parties pour all-time
+            wins: 0,
           };
         }
       });
@@ -183,7 +199,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
           ? "border-amber-500 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 shadow-2xl"
           : "border-amber-400 bg-gradient-to-br from-amber-50 to-orange-100 shadow-lg"
       }`;
-    if (index < 10 && period === "monthly")
+    if (index < 10 && period === "monthly" && mode === "xp")
       return `border-2 ${
         isCurrentUser
           ? "border-emerald-500 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 shadow-xl"
@@ -200,6 +216,10 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
   const getGameText = (count: number) => {
     return count <= 1 ? t("leaderboard.game") : t("leaderboard.games");
   };
+  const getWinRate = (entry: LeaderboardEntry) => {
+    if (!entry.games_played) return 0;
+    return Math.round((entry.wins / entry.games_played) * 100);
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -214,6 +234,33 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
 
       {/* Sélecteur Global/Amis */}
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl shadow-md p-4 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <button
+            onClick={() => setMode("xp")}
+            className={`flex items-center justify-center px-6 py-3 rounded-xl font-bold transition-all ${
+              mode === "xp"
+                ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105"
+                : "bg-white text-gray-600 hover:bg-gray-50 shadow"
+            }`}
+          >
+            <TrendingUp className="w-5 h-5 mr-2" />
+            {t("leaderboard.modeXp")}
+          </button>
+          <button
+            onClick={() => {
+              setMode("duel_ranked");
+              setPeriod("alltime");
+            }}
+            className={`flex items-center justify-center px-6 py-3 rounded-xl font-bold transition-all ${
+              mode === "duel_ranked"
+                ? "bg-gradient-to-r from-purple-500 to-purple-700 text-white shadow-lg scale-105"
+                : "bg-white text-gray-600 hover:bg-gray-50 shadow"
+            }`}
+          >
+            <Trophy className="w-5 h-5 mr-2" />
+            {t("leaderboard.modeDuelRanked")}
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setView("global")}
@@ -240,8 +287,9 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
         </div>
       </div>
 
-      {/* Sélecteur Mensuel/Tout temps avec styles différents */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-md p-4 mb-6">
+      {/* Sélecteur Mensuel/Tout temps */}
+      {mode === "xp" && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-md p-4 mb-6">
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setPeriod("monthly")}
@@ -272,6 +320,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
           </p>
         )}
       </div>
+      )}
 
       {/* Liste du classement */}
       {loading ? (
@@ -320,12 +369,18 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
                         <TrendingUp className="w-3 h-3 mr-1" />
                         {t("profile.level")} {entry.level}
                       </span>
-                      {period === "monthly" && entry.games_played > 0 && (
+                      {mode === "xp" && period === "monthly" && entry.games_played > 0 && (
                         <span className="text-sm text-gray-500">
                           {entry.games_played} {getGameText(entry.games_played)}
                         </span>
                       )}
-                      {entry.top10_count > 0 && index < 10 && (
+                      {mode === "duel_ranked" && entry.games_played > 0 && (
+                        <span className="text-sm text-gray-500">
+                          {entry.games_played} {t("leaderboard.rankedGames")} -{" "}
+                          {getWinRate(entry)}%
+                        </span>
+                      )}
+                      {mode === "xp" && entry.top10_count > 0 && index < 10 && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow">
                           <Crown className="w-3 h-3 mr-1" />
                           {entry.top10_count}x {t("leaderboard.top10")}
@@ -341,7 +396,9 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
                     {entry.total_score.toLocaleString()}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {period === "monthly"
+                    {mode === "duel_ranked"
+                      ? t("leaderboard.duelRating")
+                      : period === "monthly"
                       ? t("leaderboard.monthlyPoints")
                       : t("leaderboard.totalXP")}
                   </p>

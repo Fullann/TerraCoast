@@ -25,6 +25,7 @@ import { WarningsManagementPage } from "./components/admin/WarningsManagementPag
 import { QuizTypeManagementPage } from "./components/admin/QuizTypeManagementPage";
 import { UserManagementPage } from "./components/admin/UserManagementPage";
 import { QuizManagementPage } from "./components/admin/QuizManagementPage";
+import { DuelFeaturesPage } from "./components/admin/DuelFeaturesPage";
 import { DuelsPage } from "./components/duels/DuelsPage";
 import { ChatPage } from "./components/chat/ChatPage";
 import { LandingPage } from "./components/landing/LandingPage";
@@ -279,6 +280,7 @@ function AppContent() {
         {currentView === "quiz-management" && (
           <QuizManagementPage onNavigate={handleNavigate} />
         )}
+        {currentView === "duel-features" && <DuelFeaturesPage />}
       </main>
     </div>
   );
