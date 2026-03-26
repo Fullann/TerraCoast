@@ -12,26 +12,33 @@ import {
   Dumbbell,
   AlertTriangle,
   Ban,
-  TrendingUp,
   X,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
+import { getCountriesByIso3 } from "../../lib/countryGameData";
+import { QuizGlobe, type QuizGlobePoint } from "./QuizGlobe";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"];
-type Warning = Database["public"]["Tables"]["warnings"]["Row"];
+type Warning = {
+  id: string;
+  reason: string;
+  admin_notes?: string | null;
+  created_at: string;
+};
 
 export function HomePage({
   onNavigate,
 }: {
-  onNavigate: (view: string) => void;
+  onNavigate: (view: string, data?: Record<string, unknown>) => void;
 }) {
   const { profile } = useAuth();
   const { t } = useLanguage();
-  const [recentQuizzes, setRecentQuizzes] = useState<Quiz[]>([]);
-  const [recentSessions, setRecentSessions] = useState<GameSession[]>([]);
+  const [, setRecentQuizzes] = useState<Quiz[]>([]);
+  const [, setRecentSessions] = useState<GameSession[]>([]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [showStreakModal, setShowStreakModal] = useState(false);
+  const [globePoints, setGlobePoints] = useState<QuizGlobePoint[]>([]);
   const [stats, setStats] = useState({
     totalPlays: 0,
     averageScore: 0,
@@ -55,7 +62,7 @@ export function HomePage({
 
     const loadData = async () => {
       try {
-        const { data: freshProfile } = await supabase
+        await supabase
           .from("profiles")
           .select("*")
           .eq("id", profile.id)
@@ -81,7 +88,7 @@ export function HomePage({
           const now = Date.now();
           const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
-          const trendingQuizzes = allQuizzes
+          const relevantQuizzes = allQuizzes
             .map((quiz: any) => {
               const quizAge = now - new Date(quiz.created_at).getTime();
               const recencyScore = Math.max(0, 1 - quizAge / thirtyDaysMs);
@@ -89,13 +96,75 @@ export function HomePage({
                 1,
                 (quiz.total_plays || 0) / 100
               );
-              const trendScore = popularityScore * 0.7 + recencyScore * 0.3;
-              return { ...quiz, trendScore };
+              const qualityScore = Math.min(1, (quiz.average_score || 0) / 100);
+              const relevanceScore =
+                popularityScore * 0.55 + recencyScore * 0.3 + qualityScore * 0.15;
+              return { ...quiz, relevanceScore };
             })
-            .sort((a: any, b: any) => b.trendScore - a.trendScore)
-            .slice(0, 4);
+            .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
+            .slice(0, 20);
 
-          setRecentQuizzes(trendingQuizzes);
+          setRecentQuizzes(relevantQuizzes);
+
+          const quizIds = relevantQuizzes.map((q: Quiz) => q.id);
+          const { data: quizQuestions } = await supabase
+            .from("questions")
+            .select("quiz_id, map_data")
+            .in("quiz_id", quizIds)
+            .in("question_type", ["puzzle_map", "map_click", "country_multi"]);
+
+          const points = relevantQuizzes.map((quiz: Quiz, idx: number) => {
+            const relatedQuestions = (quizQuestions || []).filter(
+              (q: any) => q.quiz_id === quiz.id
+            );
+            if (
+              typeof quiz.location_lat === "number" &&
+              typeof quiz.location_lng === "number"
+            ) {
+              return {
+                quizId: quiz.id,
+                title: quiz.title,
+                difficulty: quiz.difficulty,
+                totalPlays: quiz.total_plays || 0,
+                lat: quiz.location_lat,
+                lng: quiz.location_lng,
+              } satisfies QuizGlobePoint;
+            }
+            const selectedIso3s = relatedQuestions.flatMap((q: any) => {
+              const mapData = q.map_data as { selectedCountries?: string[] } | null;
+              return Array.isArray(mapData?.selectedCountries)
+                ? mapData.selectedCountries
+                : [];
+            });
+            const uniqueIso3s = [...new Set(selectedIso3s)].slice(0, 5);
+            const countries = getCountriesByIso3(uniqueIso3s);
+            if (countries.length > 0) {
+              const avgLat =
+                countries.reduce((sum, c) => sum + c.lat, 0) / countries.length;
+              const avgLng =
+                countries.reduce((sum, c) => sum + c.lng, 0) / countries.length;
+              return {
+                quizId: quiz.id,
+                title: quiz.title,
+                difficulty: quiz.difficulty,
+                totalPlays: quiz.total_plays || 0,
+                lat: avgLat,
+                lng: avgLng,
+              } satisfies QuizGlobePoint;
+            }
+            // Fallback deterministic spread if quiz has no geographic config.
+            const fallbackLat = -40 + idx * 25;
+            const fallbackLng = -140 + idx * 90;
+            return {
+              quizId: quiz.id,
+              title: quiz.title,
+              difficulty: quiz.difficulty,
+              totalPlays: quiz.total_plays || 0,
+              lat: fallbackLat,
+              lng: fallbackLng,
+            } satisfies QuizGlobePoint;
+          });
+          setGlobePoints(points);
         }
 
         const { data: sessions, count: totalSessionsCount } = await supabase
@@ -107,11 +176,12 @@ export function HomePage({
           .limit(5);
 
         if (sessions) {
-          setRecentSessions(sessions);
+          const typedSessions = sessions as GameSession[];
+          setRecentSessions(typedSessions);
 
           const totalPlays = totalSessionsCount || 0;
           const averageScore =
-            sessions.reduce((acc, s) => acc + s.score, 0) / sessions.length ||
+            typedSessions.reduce((acc, s) => acc + s.score, 0) / typedSessions.length ||
             0;
 
           const today = new Date();
@@ -127,7 +197,8 @@ export function HomePage({
 
           let dailyPoints = 0;
           if (todaySessions) {
-            dailyPoints = todaySessions.reduce((sum, s) => sum + s.score, 0);
+            const typedTodaySessions = todaySessions as Array<{ score: number }>;
+            dailyPoints = typedTodaySessions.reduce((sum, s) => sum + s.score, 0);
           }
 
           const { data: allCompletedSessions } = await supabase
@@ -139,8 +210,13 @@ export function HomePage({
 
           let maxDailyPoints = 0;
           if (allCompletedSessions) {
+            const typedCompletedSessions = allCompletedSessions as Array<{
+              score: number;
+              completed_at: string | null;
+            }>;
             const dailyPointsMap = new Map<string, number>();
-            allCompletedSessions.forEach((s) => {
+            typedCompletedSessions.forEach((s) => {
+              if (!s.completed_at) return;
               const date = new Date(s.completed_at).toISOString().split("T")[0];
               dailyPointsMap.set(
                 date,
@@ -266,7 +342,7 @@ export function HomePage({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-white shadow-lg flex flex-col">
           <Target className="w-10 h-10 mb-4" />
           <span className="text-3xl font-extrabold">{stats.totalPlays}</span>
@@ -313,13 +389,13 @@ export function HomePage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-2xl font-extrabold text-gray-900 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-stretch">
+        <div className="bg-white rounded-xl shadow-md p-4 lg:col-span-1 h-full flex flex-col">
+          <h2 className="text-xl font-extrabold text-gray-900 mb-4">
             {t("home.quickActions")}
           </h2>
 
-          <div className="mb-4 p-4 rounded-xl border border-purple-200 bg-purple-50">
+          <div className="mb-3 p-3 rounded-xl border border-purple-200 bg-purple-50">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-semibold text-purple-900">
@@ -331,7 +407,7 @@ export function HomePage({
               </div>
               <button
                 onClick={() => onNavigate("training-mode")}
-                className="shrink-0 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="shrink-0 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 {t("home.trainingSpotlightCta")}
               </button>
@@ -340,7 +416,7 @@ export function HomePage({
 
           <button
             onClick={() => onNavigate("quizzes")}
-            className="w-full flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group mb-4"
+            className="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
               <BookOpen className="w-6 h-6 text-green-600" />
@@ -360,7 +436,7 @@ export function HomePage({
 
           <button
             onClick={() => onNavigate("create-quiz")}
-            className="w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group mb-4"
+            className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
               <Award className="w-6 h-6 text-blue-600" />
@@ -380,7 +456,7 @@ export function HomePage({
 
           <button
             onClick={() => onNavigate("training-mode")}
-            className="w-full flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors group mb-4"
+            className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
               <Dumbbell className="w-6 h-6 text-purple-600" />
@@ -398,7 +474,7 @@ export function HomePage({
 
           <button
             onClick={() => onNavigate("duels")}
-            className="w-full flex items-center justify-between p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors group"
+            className="w-full flex items-center justify-between p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors group"
           >
             <div className="flex items-center space-x-3">
               <Users className="w-6 h-6 text-yellow-600" />
@@ -417,76 +493,25 @@ export function HomePage({
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-md p-6 lg:col-span-2 overflow-hidden h-full">
           <h2 className="text-2xl font-extrabold text-gray-900 mb-6 flex items-center justify-between">
             <span>{t("home.trendingQuizzes")}</span>
             <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              {t("home.newAndPopular")}
+              Top 20 pertinents
             </span>
           </h2>
-
-          {recentQuizzes.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
-              {t("quiz.noQuizzes")}
-            </p>
+          {globePoints.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">{t("quiz.noQuizzes")}</p>
           ) : (
-            recentQuizzes.map((quiz, index) => (
-              <div
-                key={quiz.id}
-                onClick={() => onNavigate("play-quiz", { quizId: quiz.id })}
-                className="cursor-pointer p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:shadow-lg transition-shadow flex flex-col gap-2"
-              >
-                {new Date(quiz.created_at).getTime() >
-                  Date.now() - 7 * 24 * 60 * 60 * 1000 && (
-                  <span className="self-start px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
-                    🆕 {t("home.new")}
-                  </span>
-                )}
-
-                <div className="flex items-center gap-2 text-gray-700">
-                  <span className="font-semibold text-sm">#{index + 1}</span>
-                  <h3 className="font-semibold text-lg">{quiz.title}</h3>
-                </div>
-
-                <p className="text-sm text-gray-600 line-clamp-2">
-                  {quiz.description}
-                </p>
-
-                <div className="flex items-center gap-4 mt-auto">
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <Trophy className="w-4 h-4" />
-                    <span>
-                      {quiz.total_plays} {t("home.games")}
-                    </span>
-                  </div>
-
-                  {quiz.recentPlays !== undefined && quiz.recentPlays > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
-                      <TrendingUp className="w-4 h-4" />
-                      <span>
-                        {quiz.recentPlays} {t("home.thisWeek")}
-                      </span>
-                    </div>
-                  )}
-
-                  <div
-                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      quiz.difficulty === "easy"
-                        ? "bg-green-100 text-green-700"
-                        : quiz.difficulty === "medium"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {quiz.difficulty === "easy" && <>⭐ {t("home.easy")}</>}
-                    {quiz.difficulty === "medium" && (
-                      <>⭐⭐ {t("home.medium")}</>
-                    )}
-                    {quiz.difficulty === "hard" && <>⭐⭐⭐ {t("home.hard")}</>}
-                  </div>
-                </div>
-              </div>
-            ))
+            <>
+              <p className="text-sm text-gray-600 mb-3">
+                Clique sur un point pour lancer un quiz.
+              </p>
+              <QuizGlobe
+                points={globePoints}
+                onPointClick={(quizId) => onNavigate("play-quiz", { quizId })}
+              />
+            </>
           )}
         </div>
       </div>

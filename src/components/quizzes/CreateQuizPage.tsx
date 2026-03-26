@@ -102,6 +102,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const [selectedQuizType, setSelectedQuizType] = useState<string>("");
   const [isPublic, setIsPublic] = useState(false);
   const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [locationLat, setLocationLat] = useState("");
+  const [locationLng, setLocationLng] = useState("");
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number>(30);
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [randomizeAnswers, setRandomizeAnswers] = useState(false);
@@ -455,6 +457,26 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
     try {
       const isGlobal = profile.role === "admin" && isPublic;
+      const parsedLocationLat =
+        locationLat.trim() === "" ? null : Number(locationLat);
+      const parsedLocationLng =
+        locationLng.trim() === "" ? null : Number(locationLng);
+
+      if (
+        profile.role === "admin" &&
+        ((locationLat.trim() !== "" &&
+          (!Number.isFinite(parsedLocationLat) ||
+            parsedLocationLat < -90 ||
+            parsedLocationLat > 90)) ||
+          (locationLng.trim() !== "" &&
+            (!Number.isFinite(parsedLocationLng) ||
+              parsedLocationLng < -180 ||
+              parsedLocationLng > 180)))
+      ) {
+        setError(t("createQuiz.errors.invalidQuizCoordinates"));
+        setSaving(false);
+        return;
+      }
 
       const quizData: any = {
         creator_id: profile.id,
@@ -477,6 +499,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         quizData.validation_status = "approved";
         quizData.pending_validation = false;
         quizData.published_at = isPublic ? new Date().toISOString() : null;
+        quizData.location_lat = parsedLocationLat;
+        quizData.location_lng = parsedLocationLng;
       } else if (isPublic) {
         quizData.is_public = false;
         quizData.validation_status = "pending";
@@ -835,6 +859,41 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     )}
               </label>
             </div>
+
+            {profile?.role === "admin" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("createQuiz.quizLocationLatAdmin")}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min={-90}
+                    max={90}
+                    value={locationLat}
+                    onChange={(e) => setLocationLat(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                    placeholder="Ex: 46.2044"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("createQuiz.quizLocationLngAdmin")}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min={-180}
+                    max={180}
+                    value={locationLng}
+                    onChange={(e) => setLocationLng(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                    placeholder="Ex: 6.1432"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

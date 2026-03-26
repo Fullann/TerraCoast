@@ -56,6 +56,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(30);
   const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [locationLat, setLocationLat] = useState("");
+  const [locationLng, setLocationLng] = useState("");
   const [quizLanguage, setQuizLanguage] = useState<Language>("fr");
   const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
   const [selectedQuizType, setSelectedQuizType] = useState<string>("");
@@ -168,6 +170,16 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       setIsPublic(quizData.is_public || false);
       setIsGlobal(quizData.is_global || false);
       setTags(quizData.tags || []);
+      setLocationLat(
+        quizData.location_lat !== null && quizData.location_lat !== undefined
+          ? String(quizData.location_lat)
+          : ""
+      );
+      setLocationLng(
+        quizData.location_lng !== null && quizData.location_lng !== undefined
+          ? String(quizData.location_lng)
+          : ""
+      );
 
       const { data: questionsData } = await supabase
         .from("questions")
@@ -486,21 +498,47 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     setError("");
 
     try {
+      const parsedLocationLat =
+        locationLat.trim() === "" ? null : Number(locationLat);
+      const parsedLocationLng =
+        locationLng.trim() === "" ? null : Number(locationLng);
+      if (
+        profile.role === "admin" &&
+        ((locationLat.trim() !== "" &&
+          (!Number.isFinite(parsedLocationLat) ||
+            parsedLocationLat < -90 ||
+            parsedLocationLat > 90)) ||
+          (locationLng.trim() !== "" &&
+            (!Number.isFinite(parsedLocationLng) ||
+              parsedLocationLng < -180 ||
+              parsedLocationLng > 180)))
+      ) {
+        setError(t("createQuiz.errors.invalidQuizCoordinates"));
+        setSaving(false);
+        return;
+      }
+
+      const quizUpdatePayload: Database["public"]["Tables"]["quizzes"]["Update"] = {
+        title,
+        description,
+        category,
+        difficulty,
+        time_limit_seconds: timeLimitSeconds,
+        cover_image_url: coverImageUrl || null,
+        language: quizLanguage,
+        quiz_type_id: selectedQuizType || null,
+        randomize_questions: randomizeQuestions,
+        randomize_answers: randomizeAnswers,
+        tags: tags.length > 0 ? tags : null,
+      };
+      if (profile.role === "admin") {
+        quizUpdatePayload.location_lat = parsedLocationLat;
+        quizUpdatePayload.location_lng = parsedLocationLng;
+      }
+
       const { error: quizUpdateError } = await supabase
         .from("quizzes")
-        .update({
-          title,
-          description,
-          category,
-          difficulty,
-          time_limit_seconds: timeLimitSeconds,
-          cover_image_url: coverImageUrl || null,
-          language: quizLanguage,
-          quiz_type_id: selectedQuizType || null,
-          randomize_questions: randomizeQuestions,
-          randomize_answers: randomizeAnswers,
-          tags: tags.length > 0 ? tags : null,
-        })
+        .update(quizUpdatePayload)
         .eq("id", quizId);
 
       if (quizUpdateError) {
@@ -939,6 +977,41 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                 />
               </div>
+
+              {profile?.role === "admin" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t("createQuiz.quizLocationLatAdmin")}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      min={-90}
+                      max={90}
+                      value={locationLat}
+                      onChange={(e) => setLocationLat(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                      placeholder="Ex: 46.2044"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t("createQuiz.quizLocationLngAdmin")}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      min={-180}
+                      max={180}
+                      value={locationLng}
+                      onChange={(e) => setLocationLng(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                      placeholder="Ex: 6.1432"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-3 border-t pt-4">
                 <label className="flex items-center space-x-3">

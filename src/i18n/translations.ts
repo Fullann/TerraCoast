@@ -271,6 +271,10 @@ export const translations: Record<Language, Record<string, string>> = {
       "Sélectionne au moins un champ à trouver.",
     "createQuiz.countryMulti.invalidConfigError":
       "Les questions multi-champs doivent avoir au moins un pays cible et un champ.",
+    "createQuiz.quizLocationLatAdmin": "Latitude du quiz (admin)",
+    "createQuiz.quizLocationLngAdmin": "Longitude du quiz (admin)",
+    "createQuiz.errors.invalidQuizCoordinates":
+      "Coordonnees invalides (lat: -90..90, lng: -180..180)",
     "createQuiz.searchTags": "Tags de recherche (Europe, Asie ...)",
     "createQuiz.addTagPlaceholder": "Ajoute un tag et appuie sur Entrée...",
     "createQuiz.maxTags": "Maximum 10 tags",
@@ -1782,6 +1786,10 @@ helpdesk@terracoast.ch`,
       "Select at least one field to find.",
     "createQuiz.countryMulti.invalidConfigError":
       "Multi-field questions must have at least one target country and one field.",
+    "createQuiz.quizLocationLatAdmin": "Quiz latitude (admin)",
+    "createQuiz.quizLocationLngAdmin": "Quiz longitude (admin)",
+    "createQuiz.errors.invalidQuizCoordinates":
+      "Invalid coordinates (lat: -90..90, lng: -180..180)",
     "playQuiz.selectAnswer": "Please select or enter an answer",
     "playQuiz.puzzle.instructions":
       "Drag each country to its position (approximate coordinates).",
@@ -2638,6 +2646,10 @@ helpdesk@terracoast.ch`,
       "Selecciona al menos un campo a encontrar.",
     "createQuiz.countryMulti.invalidConfigError":
       "Las preguntas multicampo deben tener al menos un pais objetivo y un campo.",
+    "createQuiz.quizLocationLatAdmin": "Latitud del quiz (admin)",
+    "createQuiz.quizLocationLngAdmin": "Longitud del quiz (admin)",
+    "createQuiz.errors.invalidQuizCoordinates":
+      "Coordenadas invalidas (lat: -90..90, lng: -180..180)",
     "playQuiz.selectAnswer": "Por favor selecciona o introduce una respuesta",
     "playQuiz.puzzle.instructions":
       "Arrastra cada país a su posición (coordenadas aproximadas).",
@@ -3624,6 +3636,10 @@ helpdesk@terracoast.ch`,
       "Wahle mindestens ein Feld aus.",
     "createQuiz.countryMulti.invalidConfigError":
       "Mehrfeld-Fragen brauchen mindestens ein Zielland und ein Feld.",
+    "createQuiz.quizLocationLatAdmin": "Quiz-Breitengrad (Admin)",
+    "createQuiz.quizLocationLngAdmin": "Quiz-Langengrad (Admin)",
+    "createQuiz.errors.invalidQuizCoordinates":
+      "Ungultige Koordinaten (lat: -90..90, lng: -180..180)",
     "playQuiz.selectAnswer": "Bitte wähle oder gib eine Antwort ein",
     "playQuiz.puzzle.instructions":
       "Ziehe jedes Land an seine Position (ungefähre Koordinaten).",
@@ -4609,6 +4625,10 @@ helpdesk@terracoast.ch`,
       "Seleziona almeno un campo da trovare.",
     "createQuiz.countryMulti.invalidConfigError":
       "Le domande multi-campo richiedono almeno un paese obiettivo e un campo.",
+    "createQuiz.quizLocationLatAdmin": "Latitudine quiz (admin)",
+    "createQuiz.quizLocationLngAdmin": "Longitudine quiz (admin)",
+    "createQuiz.errors.invalidQuizCoordinates":
+      "Coordinate non valide (lat: -90..90, lng: -180..180)",
     "playQuiz.selectAnswer": "Seleziona o inserisci una risposta",
     "playQuiz.puzzle.instructions":
       "Trascina ogni paese nella sua posizione (coordinate approssimative).",
@@ -5589,6 +5609,10 @@ helpdesk@terracoast.ch`,
       "Selecione pelo menos um campo para encontrar.",
     "createQuiz.countryMulti.invalidConfigError":
       "Perguntas multi-campo precisam de pelo menos um pais alvo e um campo.",
+    "createQuiz.quizLocationLatAdmin": "Latitude do quiz (admin)",
+    "createQuiz.quizLocationLngAdmin": "Longitude do quiz (admin)",
+    "createQuiz.errors.invalidQuizCoordinates":
+      "Coordenadas invalidas (lat: -90..90, lng: -180..180)",
     "playQuiz.selectAnswer": "Por favor selecione ou digite uma resposta",
     "playQuiz.puzzle.instructions":
       "Arraste cada país para sua posição (coordenadas aproximadas).",

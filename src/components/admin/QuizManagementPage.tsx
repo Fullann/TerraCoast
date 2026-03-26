@@ -67,6 +67,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     "all" | "public" | "private"
   >("all");
   const [filterReported, setFilterReported] = useState(false);
+  const [filterMissingLocation, setFilterMissingLocation] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizWithCreator | null>(
     null
   );
@@ -76,10 +77,14 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   const [performanceLoading, setPerformanceLoading] = useState(false);
   const [performanceSummary, setPerformanceSummary] =
     useState<QuizPerformanceSummary | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationModalQuizId, setLocationModalQuizId] = useState<string | null>(null);
+  const [locationModalLat, setLocationModalLat] = useState("");
+  const [locationModalLng, setLocationModalLng] = useState("");
 
   useEffect(() => {
     loadQuizzes();
-  }, [sortBy, filterStatus, filterReported]);
+  }, [sortBy, filterStatus, filterReported, filterMissingLocation]);
 
   const loadQuizzes = async () => {
     setLoading(true);
@@ -96,6 +101,9 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
     if (filterReported) {
       query = query.eq("is_reported", true);
+    }
+    if (filterMissingLocation) {
+      query = query.or("location_lat.is.null,location_lng.is.null");
     }
 
     const { data, error } = await query
@@ -174,12 +182,22 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
     if (!confirm(`Rendre ce quiz ${statusText} ?`)) return;
 
+    if (!isPublic && !isGlobal) {
+      setLocationModalQuizId(quizId);
+      setLocationModalLat("");
+      setLocationModalLng("");
+      setShowLocationModal(true);
+      return;
+    }
+
+    const updatePayload: Database["public"]["Tables"]["quizzes"]["Update"] = {
+      is_public: newIsPublic,
+      is_global: newIsGlobal,
+    };
+
     const { error } = await supabase
       .from("quizzes")
-      .update({
-        is_public: newIsPublic,
-        is_global: newIsGlobal,
-      })
+      .update(updatePayload)
       .eq("id", quizId);
 
     if (error) {
@@ -189,7 +207,48 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
     alert(`Quiz rendu ${statusText} !`);
     loadQuizzes();
-  };  
+  };
+
+  const confirmPublishWithLocation = async () => {
+    if (!locationModalQuizId) return;
+
+    const latTrimmed = locationModalLat.trim();
+    const lngTrimmed = locationModalLng.trim();
+    const locationLat = latTrimmed === "" ? null : Number(latTrimmed);
+    const locationLng = lngTrimmed === "" ? null : Number(lngTrimmed);
+
+    if (
+      (latTrimmed !== "" &&
+        (!Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90)) ||
+      (lngTrimmed !== "" &&
+        (!Number.isFinite(locationLng) || locationLng < -180 || locationLng > 180))
+    ) {
+      alert("Coordonnées invalides. Lat: -90..90, Lng: -180..180");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("quizzes")
+      .update({
+        is_public: true,
+        is_global: false,
+        location_lat: locationLat,
+        location_lng: locationLng,
+      })
+      .eq("id", locationModalQuizId);
+
+    if (error) {
+      alert("Erreur : " + error.message);
+      return;
+    }
+
+    setShowLocationModal(false);
+    setLocationModalQuizId(null);
+    setLocationModalLat("");
+    setLocationModalLng("");
+    alert("Quiz rendu public !");
+    loadQuizzes();
+  };
 
   const duplicateQuiz = async (quiz: QuizWithCreator) => {
     if (!confirm(`Dupliquer le quiz "${quiz.title}" ?`)) return;
@@ -487,7 +546,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Tri */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -531,6 +590,21 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                 />
                 <span className="text-sm font-medium text-gray-700">
                   Signalés uniquement
+                </span>
+              </label>
+            </div>
+
+            {/* Filtre sans localisation */}
+            <div className="flex items-end">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filterMissingLocation}
+                  onChange={(e) => setFilterMissingLocation(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded focus:ring-2"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Sans localisation
                 </span>
               </label>
             </div>
@@ -965,6 +1039,61 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">
+              Publier avec localisation
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Tu peux définir des coordonnées pour placer ce quiz sur le globe.
+              Laisse vide pour ne pas définir de point manuel.
+            </p>
+            <div className="space-y-3">
+              <input
+                type="number"
+                step="0.0001"
+                min={-90}
+                max={90}
+                value={locationModalLat}
+                onChange={(e) => setLocationModalLat(e.target.value)}
+                placeholder="Latitude (ex: 46.2044)"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              />
+              <input
+                type="number"
+                step="0.0001"
+                min={-180}
+                max={180}
+                value={locationModalLng}
+                onChange={(e) => setLocationModalLng(e.target.value)}
+                placeholder="Longitude (ex: 6.1432)"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              />
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowLocationModal(false);
+                  setLocationModalQuizId(null);
+                  setLocationModalLat("");
+                  setLocationModalLng("");
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmPublishWithLocation}
+                className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+              >
+                Publier
+              </button>
             </div>
           </div>
         </div>
