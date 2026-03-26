@@ -274,6 +274,7 @@ export interface Database {
             | 'true_false'
             | 'puzzle_map'
             | 'top10_order'
+            | 'country_multi'
           correct_answer: string
           correct_answers: string[] | null
           options: Json | null
@@ -298,6 +299,7 @@ export interface Database {
             | 'true_false'
             | 'puzzle_map'
             | 'top10_order'
+            | 'country_multi'
           correct_answer: string
           correct_answers?: string[] | null
           options?: Json | null
@@ -322,6 +324,7 @@ export interface Database {
             | 'true_false'
             | 'puzzle_map'
             | 'top10_order'
+            | 'country_multi'
           correct_answer?: string
           correct_answers?: string[] | null
           options?: Json | null

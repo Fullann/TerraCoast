@@ -6,6 +6,8 @@ export interface CountryGameEntry {
   iso3: string;
   numericCode: number | null;
   name: string;
+  capital: string;
+  flagEmoji: string;
   continent: string;
   lat: number;
   lng: number;
@@ -20,6 +22,10 @@ const normalizedCountries: CountryGameEntry[] = (countries as any[])
       ? Number(country.ccn3)
       : null,
     name: String(country.name?.common || "").trim(),
+    capital: Array.isArray(country.capital)
+      ? String(country.capital[0] || "").trim()
+      : "",
+    flagEmoji: String(country.flag || "").trim(),
     continent: String(
       Array.isArray(country.continents) && country.continents.length > 0
         ? country.continents[0]

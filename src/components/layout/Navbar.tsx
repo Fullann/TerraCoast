@@ -15,6 +15,8 @@ import {
   CheckCircle,
   Mail,
   UserPlus,
+  Info,
+  AlertCircle,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -32,9 +34,11 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
     duelNotification,
     messageNotification,
     friendRequestNotification,
+    appNotification,
     clearDuelNotification,
     clearMessageNotification,
     clearFriendRequestNotification,
+    clearAppNotification,
   } = useNotifications();
   const { t } = useLanguage();
   const [socialMenuOpen, setSocialMenuOpen] = useState(false);
@@ -66,6 +70,13 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
       return () => clearTimeout(timer);
     }
   }, [friendRequestNotification, clearFriendRequestNotification]);
+
+  useEffect(() => {
+    if (appNotification) {
+      const timer = setTimeout(clearAppNotification, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [appNotification, clearAppNotification]);
 
   return (
     <>
@@ -255,6 +266,42 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </div>
               <button
                 onClick={clearDuelNotification}
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast App */}
+      {appNotification && (
+        <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
+          <div
+            className={`bg-white shadow-2xl rounded-xl border-2 p-4 max-w-sm ${
+              appNotification.type === "success"
+                ? "border-emerald-500"
+                : appNotification.type === "error"
+                ? "border-red-500"
+                : "border-sky-500"
+            }`}
+          >
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                {appNotification.type === "success" ? (
+                  <CheckCircle className="w-6 h-6 text-emerald-600" />
+                ) : appNotification.type === "error" ? (
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                ) : (
+                  <Info className="w-6 h-6 text-sky-600" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-800">{appNotification.message}</p>
+              </div>
+              <button
+                onClick={clearAppNotification}
                 className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-5 h-5" />

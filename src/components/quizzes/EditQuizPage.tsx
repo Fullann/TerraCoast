@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 import { languageNames, Language } from "../../i18n/translations";
 import {
   Plus,
@@ -30,7 +31,8 @@ type QuestionType =
   | "text_free"
   | "true_false"
   | "puzzle_map"
-  | "top10_order";
+  | "top10_order"
+  | "country_multi";
 type QuizCategory = string;
 type Difficulty = "easy" | "medium" | "hard";
 
@@ -46,6 +48,7 @@ interface EditQuizPageProps {
 export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const { profile } = useAuth();
   const { t } = useLanguage();
+  const { showAppNotification } = useNotifications();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -278,10 +281,16 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
     if (error) {
       loadQuiz();
-      alert(t("editQuiz.deleteQuestionError"));
+      showAppNotification({
+        type: "error",
+        message: t("editQuiz.deleteQuestionError"),
+      });
       return;
     }
-    alert(t("editQuiz.deleteQuestionSuccess"));
+    showAppNotification({
+      type: "success",
+      message: t("editQuiz.deleteQuestionSuccess"),
+    });
   };
 
   const moveQuestion = (fromIndex: number, toIndex: number) => {
@@ -369,9 +378,15 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         .eq("id", quizId);
 
       if (error) {
-        alert("Erreur lors de la modification");
+        showAppNotification({
+          type: "error",
+          message: "Erreur lors de la modification",
+        });
       } else {
-        alert("Quiz rendu privé avec succès !");
+        showAppNotification({
+          type: "success",
+          message: "Quiz rendu privé avec succès !",
+        });
         loadQuiz();
       }
     }
@@ -410,6 +425,25 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     });
     if (hasInvalidTop10) {
       setError(t("editQuiz.errors.top10Range"));
+      return;
+    }
+
+    const hasInvalidCountryMulti = questions.some((q: any) => {
+      if (q.question_type !== "country_multi") return false;
+      const selected = Array.isArray(q.map_data?.selectedCountries)
+        ? q.map_data.selectedCountries.filter((iso: string) => String(iso).trim())
+        : [];
+      const fields = Array.isArray(q.map_data?.requiredFields)
+        ? q.map_data.requiredFields
+        : [];
+      const hasPromptOrTextOrImage =
+        String(q.question_text || "").trim().length > 0 ||
+        String(q.image_url || "").trim().length > 0 ||
+        String(q.map_data?.countryMultiPrompt || "").trim().length > 0;
+      return selected.length < 1 || fields.length < 1 || !hasPromptOrTextOrImage;
+    });
+    if (hasInvalidCountryMulti) {
+      setError(t("createQuiz.countryMulti.invalidConfigError"));
       return;
     }
 
@@ -597,7 +631,10 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         }
       }
 
-      alert(t("editQuiz.updateSuccess"));
+      showAppNotification({
+        type: "success",
+        message: t("editQuiz.updateSuccess"),
+      });
       onNavigate("quizzes");
     } catch (err: any) {
       setError(err.message || t("editQuiz.updateError"));
@@ -617,6 +654,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const getQuestionTypeLabel = (type: string) => {
     if (type === "puzzle_map") return t("editQuiz.questionType.puzzle_map");
     if (type === "top10_order") return t("editQuiz.questionType.top10_order");
+    if (type === "country_multi") return t("createQuiz.countryMulti.typeLabel");
     return t(`editQuiz.questionType.${type}` as any);
   };
 
@@ -991,6 +1029,11 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                       </div>
 
                       <ImageDropzone
+                        label={
+                          editingQuestion.question_type === "country_multi"
+                            ? t("createQuiz.countryMulti.imageOptionalLabel")
+                            : t("editQuiz.questionImageOptional")
+                        }
                         currentImageUrl={editingQuestion.image_url || ""}
                         onImageUploaded={(url) =>
                           setEditingQuestion({
@@ -1000,6 +1043,11 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                         }
                         bucketName="quiz-images"
                       />
+                      {editingQuestion.question_type === "country_multi" && (
+                        <p className="text-xs text-gray-500">
+                          {t("createQuiz.countryMulti.imageOrTextHint")}
+                        </p>
+                      )}
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -1093,6 +1141,24 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                 });
                                 return;
                               }
+                              if (nextType === "country_multi") {
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  question_type: nextType,
+                                  options: [],
+                                  correct_answer: "__AUTO__",
+                                  correct_answers: [],
+                                  map_data: {
+                                    mode: "country_multi",
+                                    selectedCountries: [],
+                                    requiredFields: ["name", "capital", "map_click"],
+                                    countryMultiPrompt: "",
+                                    nameTolerance: "lenient",
+                                    capitalTolerance: "strict",
+                                  },
+                                });
+                                return;
+                              }
                               setEditingQuestion({
                                 ...editingQuestion,
                                 question_type: nextType,
@@ -1118,6 +1184,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                             </option>
                             <option value="top10_order">
                               {t("editQuiz.questionType.top10_order")}
+                            </option>
+                            <option value="country_multi">
+                              {t("createQuiz.countryMulti.typeLabel")}
                             </option>
                           </select>
                         </div>
@@ -1729,6 +1798,162 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                         </div>
                       )}
 
+                      {editingQuestion.question_type === "country_multi" && (
+                        <div className="space-y-3 p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+                          <CountryMultiSelect
+                            label={t("createQuiz.countryMulti.targetCountriesLabel")}
+                            selectedIso3={editingQuestion.map_data?.selectedCountries || []}
+                            hint={t("createQuiz.countryMulti.targetCountriesHint")}
+                            onChange={(next) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                map_data: {
+                                  ...(editingQuestion.map_data || {}),
+                                  mode: "country_multi",
+                                  selectedCountries: next,
+                                  requiredFields: ["name", "capital", "map_click"],
+                                  countryMultiPrompt:
+                                    editingQuestion.map_data?.countryMultiPrompt || "",
+                                  nameTolerance:
+                                    editingQuestion.map_data?.nameTolerance ||
+                                    "lenient",
+                                  capitalTolerance:
+                                    editingQuestion.map_data?.capitalTolerance ||
+                                    "strict",
+                                },
+                              })
+                            }
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">
+                              {t("createQuiz.countryMulti.fieldsLabel")}
+                            </p>
+                            <div className="flex flex-wrap gap-2 text-sm">
+                              <span className="px-2 py-1 rounded bg-indigo-100 text-indigo-800">
+                                {t("createQuiz.countryMulti.fieldName")}
+                              </span>
+                              <span className="px-2 py-1 rounded bg-indigo-100 text-indigo-800">
+                                {t("createQuiz.countryMulti.fieldCapital")}
+                              </span>
+                              <span className="px-2 py-1 rounded bg-indigo-100 text-indigo-800">
+                                {t("createQuiz.countryMulti.fieldMapClick")}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-700">
+                              {t("createQuiz.countryMulti.customPromptLabel")}
+                            </label>
+                            <input
+                              type="text"
+                              value={
+                                editingQuestion.map_data?.countryMultiPrompt || ""
+                              }
+                              onChange={(e) =>
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  map_data: {
+                                    ...(editingQuestion.map_data || {}),
+                                    mode: "country_multi",
+                                    selectedCountries:
+                                      editingQuestion.map_data?.selectedCountries ||
+                                      [],
+                                    requiredFields: [
+                                      "name",
+                                      "capital",
+                                      "map_click",
+                                    ],
+                                    countryMultiPrompt: e.target.value,
+                                    nameTolerance:
+                                      editingQuestion.map_data?.nameTolerance ||
+                                      "lenient",
+                                    capitalTolerance:
+                                      editingQuestion.map_data?.capitalTolerance ||
+                                      "strict",
+                                  },
+                                })
+                              }
+                              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              placeholder={t(
+                                "createQuiz.countryMulti.customPromptPlaceholder"
+                              )}
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <label className="text-sm text-gray-700">
+                              {t("createQuiz.countryMulti.nameToleranceLabel")}
+                              <select
+                                value={
+                                  editingQuestion.map_data?.nameTolerance || "lenient"
+                                }
+                                onChange={(e) =>
+                                  setEditingQuestion({
+                                    ...editingQuestion,
+                                    map_data: {
+                                      ...(editingQuestion.map_data || {}),
+                                      mode: "country_multi",
+                                      selectedCountries:
+                                        editingQuestion.map_data?.selectedCountries ||
+                                        [],
+                                      requiredFields: ["name", "capital", "map_click"],
+                                      nameTolerance: e.target.value as
+                                        | "strict"
+                                        | "lenient",
+                                      capitalTolerance:
+                                        editingQuestion.map_data?.capitalTolerance ||
+                                        "strict",
+                                    },
+                                  })
+                                }
+                                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              >
+                                <option value="strict">
+                                  {t("createQuiz.countryMulti.toleranceStrict")}
+                                </option>
+                                <option value="lenient">
+                                  {t("createQuiz.countryMulti.toleranceLenient")}
+                                </option>
+                              </select>
+                            </label>
+                            <label className="text-sm text-gray-700">
+                              {t("createQuiz.countryMulti.capitalToleranceLabel")}
+                              <select
+                                value={
+                                  editingQuestion.map_data?.capitalTolerance || "strict"
+                                }
+                                onChange={(e) =>
+                                  setEditingQuestion({
+                                    ...editingQuestion,
+                                    map_data: {
+                                      ...(editingQuestion.map_data || {}),
+                                      mode: "country_multi",
+                                      selectedCountries:
+                                        editingQuestion.map_data?.selectedCountries ||
+                                        [],
+                                      requiredFields: ["name", "capital", "map_click"],
+                                      nameTolerance:
+                                        editingQuestion.map_data?.nameTolerance ||
+                                        "lenient",
+                                      capitalTolerance: e.target.value as
+                                        | "strict"
+                                        | "lenient",
+                                    },
+                                  })
+                                }
+                                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+                              >
+                                <option value="strict">
+                                  {t("createQuiz.countryMulti.toleranceStrict")}
+                                </option>
+                                <option value="lenient">
+                                  {t("createQuiz.countryMulti.toleranceLenient")}
+                                </option>
+                              </select>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           {t("editQuiz.correctAnswer")} *
@@ -1742,6 +1967,10 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               : editingQuestion.question_type === "map_click"
                               ? t("createQuiz.mapClick.autoAnswerInfo")
                               : t("createQuiz.puzzle.autoAnswerInfo")}
+                          </div>
+                        ) : editingQuestion.question_type === "country_multi" ? (
+                          <div className="p-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg">
+                            {t("createQuiz.countryMulti.autoAnswerInfo")}
                           </div>
                         ) : editingQuestion.question_type === "mcq" ? (
                           <div className="space-y-2">

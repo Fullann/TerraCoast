@@ -243,6 +243,34 @@ export const translations: Record<Language, Record<string, string>> = {
       "Tu peux aussi réorganiser en glissant-déposant les lignes.",
     "createQuiz.top10.customHint":
       "Tu peux définir n'importe quels éléments (pays, villes, joueurs, événements, etc.). En jeu, ils seront mélangés et le joueur les remettra dans le bon ordre en glisser-déposer.",
+    "createQuiz.countryMulti.targetCountriesLabel": "Pays cibles",
+    "createQuiz.countryMulti.targetCountriesHint":
+      "Sélectionne un ou plusieurs pays pour cette question.",
+    "createQuiz.countryMulti.fieldsLabel": "Champs à trouver",
+    "createQuiz.countryMulti.fieldName": "Nom du pays",
+    "createQuiz.countryMulti.fieldCapital": "Capitale",
+    "createQuiz.countryMulti.fieldMapClick": "Placement sur carte",
+    "createQuiz.countryMulti.typeLabel": "Pays: multi-champs",
+    "createQuiz.countryMulti.imageOptionalLabel": "Image (optionnelle)",
+    "createQuiz.countryMulti.imageOrTextHint":
+      "Pour ce mode: mets un texte et/ou une image.",
+    "createQuiz.countryMulti.customPromptLabel":
+      "Texte affiché au joueur (optionnel)",
+    "createQuiz.countryMulti.customPromptPlaceholder":
+      "Ex: Remplis les champs et place le bon pays sur la carte",
+    "createQuiz.countryMulti.nameToleranceLabel": "Tolérance orthographe (nom)",
+    "createQuiz.countryMulti.capitalToleranceLabel":
+      "Tolérance orthographe (capitale)",
+    "createQuiz.countryMulti.toleranceStrict": "Stricte",
+    "createQuiz.countryMulti.toleranceLenient": "Souple",
+    "createQuiz.countryMulti.autoAnswerInfo":
+      "Réponse évaluée automatiquement sur les champs activés.",
+    "createQuiz.countryMulti.minCountriesError":
+      "Sélectionne au moins un pays cible.",
+    "createQuiz.countryMulti.minFieldsError":
+      "Sélectionne au moins un champ à trouver.",
+    "createQuiz.countryMulti.invalidConfigError":
+      "Les questions multi-champs doivent avoir au moins un pays cible et un champ.",
     "createQuiz.searchTags": "Tags de recherche (Europe, Asie ...)",
     "createQuiz.addTagPlaceholder": "Ajoute un tag et appuie sur Entrée...",
     "createQuiz.maxTags": "Maximum 10 tags",
@@ -357,6 +385,13 @@ export const translations: Record<Language, Record<string, string>> = {
       "La ligne orange montre où la box sera déposée.",
     "playQuiz.top10.mobileHint":
       "Sur téléphone: touche une box, puis touche la position d'arrivée.",
+    "playQuiz.countryMulti.objective":
+      "Objectif: complète les champs demandés pour chaque pays cible, puis valide.",
+    "playQuiz.countryMulti.targetCountries": "Pays cibles",
+    "playQuiz.countryMulti.targetIndex": "Cible {index}",
+    "playQuiz.countryMulti.fieldName": "Nom du pays",
+    "playQuiz.countryMulti.fieldCapital": "Capitale",
+    "playQuiz.countryMulti.fieldMapClick": "Placement sur carte",
     "admin.quizValidation.puzzle.modeLabel": "Mode Puzzle:",
     "admin.quizValidation.puzzle.selectedCountries": "pays sélectionnés",
     "admin.quizValidation.puzzle.zone": "zone",
@@ -1719,6 +1754,34 @@ helpdesk@terracoast.ch`,
       "You can also reorder rows by drag and drop.",
     "createQuiz.top10.customHint":
       "You can define any items (countries, cities, players, events, etc.). In game, they are shuffled and the player must reorder them with drag and drop.",
+    "createQuiz.countryMulti.targetCountriesLabel": "Target countries",
+    "createQuiz.countryMulti.targetCountriesHint":
+      "Select one or more countries for this question.",
+    "createQuiz.countryMulti.fieldsLabel": "Fields to find",
+    "createQuiz.countryMulti.fieldName": "Country name",
+    "createQuiz.countryMulti.fieldCapital": "Capital",
+    "createQuiz.countryMulti.fieldMapClick": "Map placement",
+    "createQuiz.countryMulti.typeLabel": "Country: multi-field",
+    "createQuiz.countryMulti.imageOptionalLabel": "Image (optional)",
+    "createQuiz.countryMulti.imageOrTextHint":
+      "For this mode: provide text and/or an image.",
+    "createQuiz.countryMulti.customPromptLabel":
+      "Text shown to the player (optional)",
+    "createQuiz.countryMulti.customPromptPlaceholder":
+      "Ex: Fill all fields and place the correct country on the map",
+    "createQuiz.countryMulti.nameToleranceLabel": "Spelling tolerance (name)",
+    "createQuiz.countryMulti.capitalToleranceLabel":
+      "Spelling tolerance (capital)",
+    "createQuiz.countryMulti.toleranceStrict": "Strict",
+    "createQuiz.countryMulti.toleranceLenient": "Lenient",
+    "createQuiz.countryMulti.autoAnswerInfo":
+      "Answer is evaluated automatically from enabled fields.",
+    "createQuiz.countryMulti.minCountriesError":
+      "Select at least one target country.",
+    "createQuiz.countryMulti.minFieldsError":
+      "Select at least one field to find.",
+    "createQuiz.countryMulti.invalidConfigError":
+      "Multi-field questions must have at least one target country and one field.",
     "playQuiz.selectAnswer": "Please select or enter an answer",
     "playQuiz.puzzle.instructions":
       "Drag each country to its position (approximate coordinates).",
@@ -1770,6 +1833,13 @@ helpdesk@terracoast.ch`,
       "The orange line shows where the box will be dropped.",
     "playQuiz.top10.mobileHint":
       "On mobile: tap one box, then tap the target position.",
+    "playQuiz.countryMulti.objective":
+      "Goal: complete requested fields for each target country, then validate.",
+    "playQuiz.countryMulti.targetCountries": "Target countries",
+    "playQuiz.countryMulti.targetIndex": "Target {index}",
+    "playQuiz.countryMulti.fieldName": "Country name",
+    "playQuiz.countryMulti.fieldCapital": "Capital",
+    "playQuiz.countryMulti.fieldMapClick": "Map placement",
     "admin.quizValidation.puzzle.modeLabel": "Puzzle mode:",
     "admin.quizValidation.puzzle.selectedCountries": "selected countries",
     "admin.quizValidation.puzzle.zone": "zone",
@@ -2539,6 +2609,35 @@ helpdesk@terracoast.ch`,
       "También puedes reordenar las filas arrastrando y soltando.",
     "createQuiz.top10.customHint":
       "Puedes definir cualquier elemento (países, ciudades, jugadores, eventos, etc.). En juego se mezclarán y el jugador deberá ordenarlos correctamente con arrastrar y soltar.",
+    "createQuiz.countryMulti.targetCountriesLabel": "Paises objetivo",
+    "createQuiz.countryMulti.targetCountriesHint":
+      "Selecciona uno o varios paises para esta pregunta.",
+    "createQuiz.countryMulti.fieldsLabel": "Campos a encontrar",
+    "createQuiz.countryMulti.fieldName": "Nombre del pais",
+    "createQuiz.countryMulti.fieldCapital": "Capital",
+    "createQuiz.countryMulti.fieldMapClick": "Ubicacion en el mapa",
+    "createQuiz.countryMulti.typeLabel": "Pais: multi-campos",
+    "createQuiz.countryMulti.imageOptionalLabel": "Imagen (opcional)",
+    "createQuiz.countryMulti.imageOrTextHint":
+      "Para este modo: pon texto y/o una imagen.",
+    "createQuiz.countryMulti.customPromptLabel":
+      "Texto mostrado al jugador (opcional)",
+    "createQuiz.countryMulti.customPromptPlaceholder":
+      "Ej: Completa los campos y coloca el pais correcto en el mapa",
+    "createQuiz.countryMulti.nameToleranceLabel":
+      "Tolerancia ortografica (nombre)",
+    "createQuiz.countryMulti.capitalToleranceLabel":
+      "Tolerancia ortografica (capital)",
+    "createQuiz.countryMulti.toleranceStrict": "Estricta",
+    "createQuiz.countryMulti.toleranceLenient": "Flexible",
+    "createQuiz.countryMulti.autoAnswerInfo":
+      "La respuesta se evalua automaticamente segun los campos activados.",
+    "createQuiz.countryMulti.minCountriesError":
+      "Selecciona al menos un pais objetivo.",
+    "createQuiz.countryMulti.minFieldsError":
+      "Selecciona al menos un campo a encontrar.",
+    "createQuiz.countryMulti.invalidConfigError":
+      "Las preguntas multicampo deben tener al menos un pais objetivo y un campo.",
     "playQuiz.selectAnswer": "Por favor selecciona o introduce una respuesta",
     "playQuiz.puzzle.instructions":
       "Arrastra cada país a su posición (coordenadas aproximadas).",
@@ -2591,6 +2690,13 @@ helpdesk@terracoast.ch`,
       "La línea naranja muestra dónde se soltará la caja.",
     "playQuiz.top10.mobileHint":
       "En móvil: toca una caja y luego toca la posición de destino.",
+    "playQuiz.countryMulti.objective":
+      "Objetivo: completa los campos pedidos para cada pais objetivo y valida.",
+    "playQuiz.countryMulti.targetCountries": "Paises objetivo",
+    "playQuiz.countryMulti.targetIndex": "Objetivo {index}",
+    "playQuiz.countryMulti.fieldName": "Nombre del pais",
+    "playQuiz.countryMulti.fieldCapital": "Capital",
+    "playQuiz.countryMulti.fieldMapClick": "Ubicacion en el mapa",
     "admin.quizValidation.puzzle.modeLabel": "Modo Puzzle:",
     "admin.quizValidation.puzzle.selectedCountries": "países seleccionados",
     "admin.quizValidation.puzzle.zone": "zona",
@@ -3489,6 +3595,35 @@ helpdesk@terracoast.ch`,
       "Du kannst die Zeilen auch per Drag-and-drop neu anordnen.",
     "createQuiz.top10.customHint":
       "Du kannst beliebige Einträge definieren (Länder, Städte, Spieler, Ereignisse usw.). Im Spiel werden sie gemischt und der Spieler muss sie per Drag-and-drop in die richtige Reihenfolge bringen.",
+    "createQuiz.countryMulti.targetCountriesLabel": "Ziellander",
+    "createQuiz.countryMulti.targetCountriesHint":
+      "Wahle ein oder mehrere Lander fur diese Frage aus.",
+    "createQuiz.countryMulti.fieldsLabel": "Zu findende Felder",
+    "createQuiz.countryMulti.fieldName": "Landesname",
+    "createQuiz.countryMulti.fieldCapital": "Hauptstadt",
+    "createQuiz.countryMulti.fieldMapClick": "Position auf der Karte",
+    "createQuiz.countryMulti.typeLabel": "Land: Mehrfeld",
+    "createQuiz.countryMulti.imageOptionalLabel": "Bild (optional)",
+    "createQuiz.countryMulti.imageOrTextHint":
+      "Fur diesen Modus: Text und/oder Bild angeben.",
+    "createQuiz.countryMulti.customPromptLabel":
+      "Text fur den Spieler (optional)",
+    "createQuiz.countryMulti.customPromptPlaceholder":
+      "Z.B.: Fulle alle Felder aus und setze das richtige Land auf der Karte",
+    "createQuiz.countryMulti.nameToleranceLabel":
+      "Rechtschreib-Toleranz (Name)",
+    "createQuiz.countryMulti.capitalToleranceLabel":
+      "Rechtschreib-Toleranz (Hauptstadt)",
+    "createQuiz.countryMulti.toleranceStrict": "Strikt",
+    "createQuiz.countryMulti.toleranceLenient": "Tolerant",
+    "createQuiz.countryMulti.autoAnswerInfo":
+      "Antwort wird automatisch anhand der aktivierten Felder bewertet.",
+    "createQuiz.countryMulti.minCountriesError":
+      "Wahle mindestens ein Zielland aus.",
+    "createQuiz.countryMulti.minFieldsError":
+      "Wahle mindestens ein Feld aus.",
+    "createQuiz.countryMulti.invalidConfigError":
+      "Mehrfeld-Fragen brauchen mindestens ein Zielland und ein Feld.",
     "playQuiz.selectAnswer": "Bitte wähle oder gib eine Antwort ein",
     "playQuiz.puzzle.instructions":
       "Ziehe jedes Land an seine Position (ungefähre Koordinaten).",
@@ -3541,6 +3676,13 @@ helpdesk@terracoast.ch`,
       "Die orange Linie zeigt, wo die Box abgelegt wird.",
     "playQuiz.top10.mobileHint":
       "Am Handy: Tippe eine Box an und danach die Zielposition.",
+    "playQuiz.countryMulti.objective":
+      "Ziel: Fulle die geforderten Felder fur jedes Zielland aus und bestatige.",
+    "playQuiz.countryMulti.targetCountries": "Ziellander",
+    "playQuiz.countryMulti.targetIndex": "Ziel {index}",
+    "playQuiz.countryMulti.fieldName": "Landesname",
+    "playQuiz.countryMulti.fieldCapital": "Hauptstadt",
+    "playQuiz.countryMulti.fieldMapClick": "Position auf der Karte",
     "admin.quizValidation.puzzle.modeLabel": "Puzzle-Modus:",
     "admin.quizValidation.puzzle.selectedCountries": "ausgewählte Länder",
     "admin.quizValidation.puzzle.zone": "Zone",
@@ -4438,6 +4580,35 @@ helpdesk@terracoast.ch`,
       "Puoi anche riordinare le righe con il drag-and-drop.",
     "createQuiz.top10.customHint":
       "Puoi definire qualsiasi elemento (paesi, città, giocatori, eventi, ecc.). In gioco saranno mescolati e il giocatore dovrà rimetterli nell'ordine corretto con drag-and-drop.",
+    "createQuiz.countryMulti.targetCountriesLabel": "Paesi obiettivo",
+    "createQuiz.countryMulti.targetCountriesHint":
+      "Seleziona uno o piu paesi per questa domanda.",
+    "createQuiz.countryMulti.fieldsLabel": "Campi da trovare",
+    "createQuiz.countryMulti.fieldName": "Nome del paese",
+    "createQuiz.countryMulti.fieldCapital": "Capitale",
+    "createQuiz.countryMulti.fieldMapClick": "Posizione sulla mappa",
+    "createQuiz.countryMulti.typeLabel": "Paese: multi-campo",
+    "createQuiz.countryMulti.imageOptionalLabel": "Immagine (opzionale)",
+    "createQuiz.countryMulti.imageOrTextHint":
+      "Per questa modalita: inserisci testo e/o immagine.",
+    "createQuiz.countryMulti.customPromptLabel":
+      "Testo mostrato al giocatore (opzionale)",
+    "createQuiz.countryMulti.customPromptPlaceholder":
+      "Es: Completa i campi e posiziona il paese corretto sulla mappa",
+    "createQuiz.countryMulti.nameToleranceLabel":
+      "Tolleranza ortografica (nome)",
+    "createQuiz.countryMulti.capitalToleranceLabel":
+      "Tolleranza ortografica (capitale)",
+    "createQuiz.countryMulti.toleranceStrict": "Rigida",
+    "createQuiz.countryMulti.toleranceLenient": "Flessibile",
+    "createQuiz.countryMulti.autoAnswerInfo":
+      "Risposta valutata automaticamente in base ai campi attivi.",
+    "createQuiz.countryMulti.minCountriesError":
+      "Seleziona almeno un paese obiettivo.",
+    "createQuiz.countryMulti.minFieldsError":
+      "Seleziona almeno un campo da trovare.",
+    "createQuiz.countryMulti.invalidConfigError":
+      "Le domande multi-campo richiedono almeno un paese obiettivo e un campo.",
     "playQuiz.selectAnswer": "Seleziona o inserisci una risposta",
     "playQuiz.puzzle.instructions":
       "Trascina ogni paese nella sua posizione (coordinate approssimative).",
@@ -4490,6 +4661,13 @@ helpdesk@terracoast.ch`,
       "La linea arancione mostra dove verrà inserita la box.",
     "playQuiz.top10.mobileHint":
       "Su telefono: tocca una box e poi tocca la posizione di arrivo.",
+    "playQuiz.countryMulti.objective":
+      "Obiettivo: completa i campi richiesti per ogni paese obiettivo e valida.",
+    "playQuiz.countryMulti.targetCountries": "Paesi obiettivo",
+    "playQuiz.countryMulti.targetIndex": "Obiettivo {index}",
+    "playQuiz.countryMulti.fieldName": "Nome del paese",
+    "playQuiz.countryMulti.fieldCapital": "Capitale",
+    "playQuiz.countryMulti.fieldMapClick": "Posizione sulla mappa",
     "admin.quizValidation.puzzle.modeLabel": "Modalità Puzzle:",
     "admin.quizValidation.puzzle.selectedCountries": "paesi selezionati",
     "admin.quizValidation.puzzle.zone": "zona",
@@ -5382,6 +5560,35 @@ helpdesk@terracoast.ch`,
       "Você também pode reordenar as linhas arrastando e soltando.",
     "createQuiz.top10.customHint":
       "Você pode definir quaisquer itens (países, cidades, jogadores, eventos etc.). No jogo, eles serão embaralhados e o jogador deverá colocá-los na ordem correta com arrastar e soltar.",
+    "createQuiz.countryMulti.targetCountriesLabel": "Paises alvo",
+    "createQuiz.countryMulti.targetCountriesHint":
+      "Selecione um ou mais paises para esta pergunta.",
+    "createQuiz.countryMulti.fieldsLabel": "Campos a encontrar",
+    "createQuiz.countryMulti.fieldName": "Nome do pais",
+    "createQuiz.countryMulti.fieldCapital": "Capital",
+    "createQuiz.countryMulti.fieldMapClick": "Posicionamento no mapa",
+    "createQuiz.countryMulti.typeLabel": "Pais: multi-campos",
+    "createQuiz.countryMulti.imageOptionalLabel": "Imagem (opcional)",
+    "createQuiz.countryMulti.imageOrTextHint":
+      "Para este modo: coloca texto e/ou imagem.",
+    "createQuiz.countryMulti.customPromptLabel":
+      "Texto mostrado ao jogador (opcional)",
+    "createQuiz.countryMulti.customPromptPlaceholder":
+      "Ex: Preenche os campos e coloca o pais correto no mapa",
+    "createQuiz.countryMulti.nameToleranceLabel":
+      "Tolerancia ortografica (nome)",
+    "createQuiz.countryMulti.capitalToleranceLabel":
+      "Tolerancia ortografica (capital)",
+    "createQuiz.countryMulti.toleranceStrict": "Estrita",
+    "createQuiz.countryMulti.toleranceLenient": "Flexivel",
+    "createQuiz.countryMulti.autoAnswerInfo":
+      "Resposta avaliada automaticamente com base nos campos ativados.",
+    "createQuiz.countryMulti.minCountriesError":
+      "Selecione pelo menos um pais alvo.",
+    "createQuiz.countryMulti.minFieldsError":
+      "Selecione pelo menos um campo para encontrar.",
+    "createQuiz.countryMulti.invalidConfigError":
+      "Perguntas multi-campo precisam de pelo menos um pais alvo e um campo.",
     "playQuiz.selectAnswer": "Por favor selecione ou digite uma resposta",
     "playQuiz.puzzle.instructions":
       "Arraste cada país para sua posição (coordenadas aproximadas).",
@@ -5434,6 +5641,13 @@ helpdesk@terracoast.ch`,
       "A linha laranja mostra onde a caixa será inserida.",
     "playQuiz.top10.mobileHint":
       "No telemóvel: toque numa caixa e depois toque na posição de destino.",
+    "playQuiz.countryMulti.objective":
+      "Objetivo: complete os campos pedidos para cada pais alvo e valide.",
+    "playQuiz.countryMulti.targetCountries": "Paises alvo",
+    "playQuiz.countryMulti.targetIndex": "Alvo {index}",
+    "playQuiz.countryMulti.fieldName": "Nome do pais",
+    "playQuiz.countryMulti.fieldCapital": "Capital",
+    "playQuiz.countryMulti.fieldMapClick": "Posicionamento no mapa",
     "admin.quizValidation.puzzle.modeLabel": "Modo Puzzle:",
     "admin.quizValidation.puzzle.selectedCountries": "países selecionados",
     "admin.quizValidation.puzzle.zone": "zona",
