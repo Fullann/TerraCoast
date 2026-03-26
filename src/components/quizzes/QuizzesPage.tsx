@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 import {
   BookOpen,
   Search,
@@ -25,6 +26,7 @@ import worldMapData from "world-atlas/countries-110m.json";
 import { ShareQuizModal } from "./ShareQuizModal";
 import type { Database } from "../../lib/database.types";
 import { getCountriesByIso3 } from "../../lib/countryGameData";
+import { ConfirmModal } from "../common/ConfirmModal";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type QuizType = Database["public"]["Tables"]["quiz_types"]["Row"];
@@ -39,6 +41,10 @@ interface MapQuizPoint {
   lat: number;
   lng: number;
   isApprox: boolean;
+}
+interface HiddenMapQuizInfo {
+  id: string;
+  title: string;
 }
 
 const TAG_BASED_REGION_CENTERS: Array<{
@@ -79,6 +85,7 @@ interface QuizzesPageProps {
 export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   const { profile } = useAuth();
   const { language, showAllLanguages, t } = useLanguage();
+  const { showAppNotification } = useNotifications();
   const [quizzes, setQuizzes] = useState<QuizWithType[]>([]);
   const [myQuizzes, setMyQuizzes] = useState<QuizWithType[]>([]);
   const [sharedQuizzes, setSharedQuizzes] = useState<QuizWithType[]>([]);
@@ -106,6 +113,13 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   const [derivedMapCoords, setDerivedMapCoords] = useState<
     Record<string, { lat: number; lng: number }>
   >({});
+  const [hiddenMapQuizzes, setHiddenMapQuizzes] = useState<HiddenMapQuizInfo[]>([]);
+  const [showHiddenMapQuizzes, setShowHiddenMapQuizzes] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    message: string;
+    onConfirm: null | (() => void | Promise<void>);
+  }>({ open: false, message: "", onConfirm: null });
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [selectedContinent, setSelectedContinent] = useState<
     "all" | "europe" | "africa" | "asia" | "americas" | "oceania"
@@ -116,17 +130,28 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
     "all" | "europe" | "africa" | "asia" | "americas" | "oceania",
     { center: [number, number]; zoom: number; label: string }
   > = {
-    all: { center: [0, 20], zoom: 1, label: "Monde" },
-    europe: { center: [15, 54], zoom: 2.9, label: "Europe" },
-    africa: { center: [20, 5], zoom: 2.5, label: "Afrique" },
-    asia: { center: [95, 30], zoom: 2.2, label: "Asie" },
-    americas: { center: [-75, 15], zoom: 2.0, label: "Amériques" },
-    oceania: { center: [140, -22], zoom: 2.8, label: "Océanie" },
+    all: { center: [0, 20], zoom: 1, label: t("quizzes.map.continent.all") },
+    europe: { center: [15, 54], zoom: 2.9, label: t("quizzes.map.continent.europe") },
+    africa: { center: [20, 5], zoom: 2.5, label: t("quizzes.map.continent.africa") },
+    asia: { center: [95, 30], zoom: 2.2, label: t("quizzes.map.continent.asia") },
+    americas: {
+      center: [-75, 15],
+      zoom: 2.0,
+      label: t("quizzes.map.continent.americas"),
+    },
+    oceania: { center: [140, -22], zoom: 2.8, label: t("quizzes.map.continent.oceania") },
   };
 
   const getGamesText = (count: number) => {
     // Règle demandée: 0 ou 1 => "partie", sinon "parties"
-    return count <= 1 ? "partie" : t("quizzes.games");
+    return count <= 1 ? t("quizzes.game") : t("quizzes.games");
+  };
+
+  const openConfirmModal = (
+    message: string,
+    onConfirm: () => void | Promise<void>
+  ) => {
+    setConfirmModal({ open: true, message, onConfirm });
   };
 
   const resolveApproxCoordsFromTags = (quiz: QuizWithType) => {
@@ -269,22 +294,26 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   };
 
   const requestPublish = async (quizId: string, quizTitle: string) => {
-    if (
-      !confirm(t("quizzes.confirmPublishRequest").replace("{title}", quizTitle))
-    )
-      return;
+    openConfirmModal(
+      t("quizzes.confirmPublishRequest").replace("{title}", quizTitle),
+      async () => {
+        await performPublishRequest(quizId);
+      }
+    );
+  };
 
+  const performPublishRequest = async (quizId: string) => {
     const { error } = await (supabase as any)
       .from("quizzes")
       .update({ pending_validation: true, validation_status: "pending" })
       .eq("id", quizId);
 
     if (error) {
-      alert(t("quizzes.publishRequestError"));
+      showAppNotification({ type: "error", message: t("quizzes.publishRequestError") });
       return;
     }
 
-    alert(t("quizzes.publishRequestSuccess"));
+    showAppNotification({ type: "success", message: t("quizzes.publishRequestSuccess") });
     loadQuizzes();
   };
 
@@ -299,18 +328,22 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
       .eq("id", quizId);
 
     if (error) {
-      alert(t("quizzes.publishError"));
+      showAppNotification({ type: "error", message: t("quizzes.publishError") });
       return;
     }
 
-    alert(t("quizzes.publishSuccess"));
+    showAppNotification({ type: "success", message: t("quizzes.publishSuccess") });
     loadQuizzes();
   };
 
   const removeSharedQuiz = async (quizId: string) => {
-    if (!confirm(t("quizzes.confirmRemoveShared"))) return;
-    if (!profile?.id) return;
+    openConfirmModal(t("quizzes.confirmRemoveShared"), async () => {
+      await performRemoveSharedQuiz(quizId);
+    });
+  };
 
+  const performRemoveSharedQuiz = async (quizId: string) => {
+    if (!profile?.id) return;
     const { error } = await supabase
       .from("quiz_shares")
       .delete()
@@ -319,20 +352,27 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
 
     if (error) {
       console.error("Error removing shared quiz:", error);
-      alert(t("quizzes.removeError"));
+      showAppNotification({ type: "error", message: t("quizzes.removeError") });
       return;
     }
 
     setSharedQuizzes(sharedQuizzes.filter((q) => q.id !== quizId));
 
-    alert(
-      t("quizzes.removeSuccess") || "Quiz retiré de votre liste avec succès !"
-    );
+    showAppNotification({
+      type: "success",
+      message: t("quizzes.removeSuccess"),
+    });
   };
   const deleteQuiz = async (quizId: string, quizTitle: string) => {
-    if (!confirm(t("quizzes.confirmDelete").replace("{title}", quizTitle)))
-      return;
+    openConfirmModal(
+      t("quizzes.confirmDelete").replace("{title}", quizTitle),
+      async () => {
+        await performDeleteQuiz(quizId);
+      }
+    );
+  };
 
+  const performDeleteQuiz = async (quizId: string) => {
     // Supprimer d'abord les questions associées
     const { error: questionsError } = await supabase
       .from("questions")
@@ -341,7 +381,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
 
     if (questionsError) {
       console.error("Error deleting questions:", questionsError);
-      alert(t("quizzes.deleteQuestionsError"));
+      showAppNotification({ type: "error", message: t("quizzes.deleteQuestionsError") });
       return;
     }
 
@@ -356,14 +396,14 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
 
     if (quizError) {
       console.error("Error deleting quiz:", quizError);
-      alert(t("quizzes.deleteError"));
+      showAppNotification({ type: "error", message: t("quizzes.deleteError") });
       return;
     }
 
     // Mettre à jour la liste locale
     setMyQuizzes(myQuizzes.filter((q) => q.id !== quizId));
 
-    alert(t("quizzes.deleteSuccess"));
+    showAppNotification({ type: "success", message: t("quizzes.deleteSuccess") });
   };
 
   const loadQuizzes = async () => {
@@ -452,7 +492,10 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           )
       );
       if (missingCoords.length === 0) {
-        if (!cancelled) setDerivedMapCoords({});
+        if (!cancelled) {
+          setDerivedMapCoords({});
+          setHiddenMapQuizzes([]);
+        }
         return;
       }
 
@@ -464,7 +507,8 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
         .in("question_type", ["puzzle_map", "map_click", "country_multi"]);
 
       const nextCoords: Record<string, { lat: number; lng: number }> = {};
-      missingCoords.forEach((quiz, idx) => {
+      const nextHidden: HiddenMapQuizInfo[] = [];
+      missingCoords.forEach((quiz) => {
         const relatedQuestions = (quizQuestions || []).filter(
           (q: any) => q.quiz_id === quiz.id
         );
@@ -485,13 +529,13 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           nextCoords[quiz.id] = tagCoords;
           return;
         }
-        // Fallback deterministic spread if no geographic hints exist.
-        const fallbackLat = -35 + ((idx * 17) % 70);
-        const fallbackLng = -150 + ((idx * 53) % 300);
-        nextCoords[quiz.id] = { lat: fallbackLat, lng: fallbackLng };
+        nextHidden.push({ id: quiz.id, title: quiz.title });
       });
 
-      if (!cancelled) setDerivedMapCoords(nextCoords);
+      if (!cancelled) {
+        setDerivedMapCoords(nextCoords);
+        setHiddenMapQuizzes(nextHidden);
+      }
     };
 
     computeFallbackCoords();
@@ -776,10 +820,10 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <div>
               <h2 className="text-xl font-bold text-gray-800">
-                Carte 2D des quiz géolocalisés
+                {t("quizzes.map.title")}
               </h2>
               <p className="text-sm text-gray-600">
-                Clique sur un continent pour zoomer et voir les quiz associés.
+                {t("quizzes.map.subtitle")}
               </p>
             </div>
             <button
@@ -789,7 +833,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
               }}
               className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700"
             >
-              Réinitialiser la vue
+              {t("quizzes.map.resetView")}
             </button>
           </div>
 
@@ -945,7 +989,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
               >
                 <p className="font-semibold text-gray-900">{mapTooltip.quiz.title}</p>
                 {mapTooltip.isApprox && (
-                  <p className="text-amber-700 font-medium">Position approx.</p>
+                  <p className="text-amber-700 font-medium">{t("quizzes.map.approxPosition")}</p>
                 )}
                 <p className="text-gray-700">
                   Difficulté: {getDifficultyLabel(mapTooltip.quiz.difficulty)}
@@ -961,6 +1005,27 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           <p className="mt-3 text-xs text-gray-500">
             {visibleMapQuizzes.length} quiz avec coordonnées visibles sur la carte.
           </p>
+          {activeTab === "public" && hiddenMapQuizzes.length > 0 && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setShowHiddenMapQuizzes((prev) => !prev)}
+                className="text-xs text-amber-700 hover:text-amber-800 underline underline-offset-2"
+              >
+                {t("quizzes.map.hiddenCount")
+                  .replace("{count}", String(hiddenMapQuizzes.length))}
+              </button>
+              {showHiddenMapQuizzes && (
+                <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3 max-h-36 overflow-auto">
+                  <ul className="text-xs text-amber-900 space-y-1">
+                    {hiddenMapQuizzes.map((quiz) => (
+                      <li key={`hidden-map-quiz-${quiz.id}`}>• {quiz.title}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1208,6 +1273,18 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           onClose={() => setShareQuiz(null)}
         />
       )}
+      <ConfirmModal
+        open={confirmModal.open}
+        message={confirmModal.message}
+        cancelLabel={t("common.cancel")}
+        confirmLabel={t("common.confirm")}
+        onCancel={() => setConfirmModal({ open: false, message: "", onConfirm: null })}
+        onConfirm={async () => {
+          const fn = confirmModal.onConfirm;
+          setConfirmModal({ open: false, message: "", onConfirm: null });
+          if (fn) await fn();
+        }}
+      />
     </div>
   );
 }
