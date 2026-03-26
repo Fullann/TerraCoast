@@ -457,6 +457,62 @@ export interface Database {
           completed_at?: string | null
         }
       }
+      geojson_custom_maps: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          storage_path: string
+          public_url: string
+          file_size_bytes: number
+          feature_count: number
+          bbox: number[] | null
+          preset: Json
+          status: 'pending' | 'approved' | 'rejected'
+          created_by: string
+          created_at: string
+          updated_at: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          storage_path: string
+          public_url: string
+          file_size_bytes?: number
+          feature_count?: number
+          bbox?: number[] | null
+          preset?: Json
+          status?: 'pending' | 'approved' | 'rejected'
+          created_by: string
+          created_at?: string
+          updated_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          storage_path?: string
+          public_url?: string
+          file_size_bytes?: number
+          feature_count?: number
+          bbox?: number[] | null
+          preset?: Json
+          status?: 'pending' | 'approved' | 'rejected'
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+      }
       game_answers: {
         Row: {
           id: string
@@ -799,6 +855,17 @@ export interface Database {
           used?: boolean
           created_at?: string
         }
+      }
+    }
+    Functions: {
+      log_admin_event: {
+        Args: {
+          p_action: string
+          p_entity_type?: string | null
+          p_entity_id?: string | null
+          p_details?: Json
+        }
+        Returns: undefined
       }
     }
   }

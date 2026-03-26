@@ -18,32 +18,45 @@ import {
   getSubdivisionIso3ByTopoId,
   type SubdivisionScope,
 } from "../../lib/subdivisionGameData";
+import { normalizeGeoJsonToFeatureCollection } from "../../lib/customGeojsonMaps";
 import usStatesData from "us-atlas/states-10m.json";
+
+export type GeographySource = "world" | SubdivisionScope | "custom_geojson";
 
 interface PuzzleMapQuestionProps {
   countries: CountryGameEntry[];
   showTargetList: boolean;
   revealResult: boolean;
-  geographySource?: "world" | SubdivisionScope;
+  geographySource?: GeographySource;
+  /** URL publique du GeoJSON si geographySource = custom_geojson */
+  customGeoJsonUrl?: string | null;
+  /** Propriété d’identifiant sur chaque entité (ex. tc_id) */
+  customIdProperty?: string;
   initialView?: {
     centerLat?: number;
     centerLng?: number;
     zoom?: number;
   } | null;
+  /** Régions déjà validées dans une question puzzle précédente (non cliquables sauf cibles actuelles). */
+  excludedIso3s?: string[];
   assignments: Record<string, string>;
   pickedIso3s: string[];
   onAssignmentsChange: (next: Record<string, string>) => void;
   onPickedIso3sChange: (next: string[]) => void;
 }
 
+/** Zones déjà « consommées » sur une question carte précédente (plus visibles que le gris carte par défaut). */
+const MAP_FILL_EXCLUDED_PRIOR = "#6B7280";
+
 const defaultMapViewBySource: Record<
-  "world" | SubdivisionScope,
+  GeographySource,
   { center: [number, number]; zoom: number; projectionScale?: number }
 > = {
   world: { center: [0, 20], zoom: 1 },
   ch_cantons: { center: [8.2, 46.8], zoom: 2.2, projectionScale: 6500 },
   fr_departements: { center: [2.4, 46.5], zoom: 1.9, projectionScale: 3800 },
   us_states: { center: [-96, 38], zoom: 1.5, projectionScale: 1200 },
+  custom_geojson: { center: [0, 20], zoom: 2 },
 };
 
 const viewBoundsBySource: Record<
@@ -60,7 +73,10 @@ export function PuzzleMapQuestion({
   showTargetList,
   revealResult,
   geographySource = "world",
+  customGeoJsonUrl = null,
+  customIdProperty = "tc_id",
   initialView,
+  excludedIso3s = [],
   assignments,
   pickedIso3s,
   onAssignmentsChange,
@@ -73,13 +89,15 @@ export function PuzzleMapQuestion({
   const rawZoom = Number(initialView?.zoom ?? 1);
   const hasLegacyWorldView =
     geographySource !== "world" &&
+    geographySource !== "custom_geojson" &&
     rawCenterLng === 0 &&
     rawCenterLat === 20 &&
     rawZoom === 1;
   const hasInvalidSubdivisionView =
     geographySource !== "world" &&
+    geographySource !== "custom_geojson" &&
     (() => {
-      const bounds = viewBoundsBySource[geographySource];
+      const bounds = viewBoundsBySource[geographySource as SubdivisionScope];
       if (!bounds) return false;
       return (
         rawCenterLng < bounds.minLng ||
@@ -116,7 +134,10 @@ export function PuzzleMapQuestion({
   const [mapCenter, setMapCenter] = useState<[number, number]>(initialCenter);
   const [mapZoom, setMapZoom] = useState(initialZoom);
   const [frSubdivisionGeo, setFrSubdivisionGeo] = useState<any | null>(null);
-  const isSubdivision = geographySource !== "world";
+  const [customGeoData, setCustomGeoData] = useState<any | null>(null);
+  const [customGeoError, setCustomGeoError] = useState(false);
+  const isSubdivision =
+    geographySource !== "world" && geographySource !== "custom_geojson";
   const isSubdivisionTargetMode = isSubdivision && showTargetList;
   const swissSubdivisionGeo = useMemo(() => {
     const cantonsObject = (swissMapData as any)?.objects?.cantons;
@@ -133,13 +154,42 @@ export function PuzzleMapQuestion({
     []
   );
   const geoUrl =
-    geographySource === "ch_cantons"
+    geographySource === "custom_geojson"
+      ? customGeoData || emptyFeatureCollection
+      : geographySource === "ch_cantons"
       ? (swissSubdivisionGeo || emptyFeatureCollection)
       : geographySource === "us_states"
       ? (usSubdivisionGeo || emptyFeatureCollection)
       : geographySource === "fr_departements"
       ? (frSubdivisionGeo || emptyFeatureCollection)
       : (worldMapData as any);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (geographySource !== "custom_geojson" || !customGeoJsonUrl) {
+      setCustomGeoData(null);
+      setCustomGeoError(false);
+      return;
+    }
+    setCustomGeoError(false);
+    fetch(customGeoJsonUrl)
+      .then((r) => r.json())
+      .then((json) => {
+        const fc = normalizeGeoJsonToFeatureCollection(json);
+        if (!cancelled) {
+          setCustomGeoData(fc || emptyFeatureCollection);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCustomGeoData(emptyFeatureCollection);
+          setCustomGeoError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [geographySource, customGeoJsonUrl, emptyFeatureCollection]);
 
   useEffect(() => {
     setMapCenter(initialCenter);
@@ -186,8 +236,17 @@ export function PuzzleMapQuestion({
   const unassignedCountries = countries.filter((c) => !usedIsoSet.has(c.iso3));
 
   const targetIsoSet = useMemo(
-    () => new Set(countries.map((country) => country.iso3)),
+    () =>
+      new Set(
+        countries.map((country) => String(country.iso3).toUpperCase())
+      ),
     [countries]
+  );
+
+  /** Zones déjà « jouées » sur les questions carte précédentes (ISO3 ou code sous-division, normalisé). */
+  const excludedNormSet = useMemo(
+    () => new Set(excludedIso3s.map((id) => String(id).toUpperCase())),
+    [excludedIso3s]
   );
 
   const assignCountryToSlot = (draggedIso3: string, slotIso3: string) => {
@@ -227,6 +286,13 @@ export function PuzzleMapQuestion({
 
   const getGeoIso3 = (geo: any): string => {
     const properties = geo?.properties || {};
+    if (geographySource === "custom_geojson") {
+      const key = (customIdProperty || "tc_id").trim() || "tc_id";
+      const raw = properties[key] ?? geo?.id;
+      return raw != null && String(raw).trim()
+        ? String(raw).trim().toUpperCase()
+        : "";
+    }
     const normalize = (value: string) =>
       value
         .toLowerCase()
@@ -343,6 +409,8 @@ export function PuzzleMapQuestion({
               ? t("playQuiz.puzzle.mapTitleFrenchDepartments")
               : geographySource === "us_states"
               ? t("playQuiz.puzzle.mapTitleUsStates")
+              : geographySource === "custom_geojson"
+              ? t("playQuiz.puzzle.mapTitleCustomGeoJson")
               : t("playQuiz.puzzle.worldMap")}
           </p>
           <div className="flex items-center gap-2">
@@ -369,9 +437,15 @@ export function PuzzleMapQuestion({
             </button>
           </div>
         </div>
+        {customGeoError && geographySource === "custom_geojson" && (
+          <p className="text-sm text-red-600 px-3 py-2 border-b border-red-100 bg-red-50">
+            {t("playQuiz.puzzle.customGeoLoadError")}
+          </p>
+        )}
         <ComposableMap
           projection="geoMercator"
           projectionConfig={
+            geographySource !== "custom_geojson" &&
             defaultMapViewBySource[geographySource].projectionScale
               ? { scale: defaultMapViewBySource[geographySource].projectionScale }
               : undefined
@@ -383,52 +457,94 @@ export function PuzzleMapQuestion({
               {({ geographies }: { geographies: any[] }) =>
                 geographies.map((geo: any) => {
                   const geoIso3 = getGeoIso3(geo);
-                  const isTarget = targetIsoSet.has(geoIso3);
-                  const isPicked = pickedIso3s.includes(geoIso3);
-                  const assignedIso3 = assignments[geoIso3] || "";
+                  const geoKey = geoIso3 ? String(geoIso3).toUpperCase() : "";
+                  const countryMatch = geoKey
+                    ? countries.find(
+                        (c) => String(c.iso3).toUpperCase() === geoKey
+                      )
+                    : undefined;
+                  const slotIso = countryMatch?.iso3 || geoIso3 || "";
+                  const pickId =
+                    geoKey ||
+                    (geo?.rsmKey != null && String(geo.rsmKey).length > 0
+                      ? `__shape:${String(geo.rsmKey)}`
+                      : "");
+                  const isTarget = Boolean(geoKey && targetIsoSet.has(geoKey));
+                  const isPicked = Boolean(
+                    pickId &&
+                      (pickedIso3s.includes(pickId) ||
+                        (geoKey && pickedIso3s.includes(geoKey)) ||
+                        (geoIso3 && pickedIso3s.includes(geoIso3)))
+                  );
+                  const assignedIso3 =
+                    assignments[slotIso] ||
+                    assignments[geoIso3 || ""] ||
+                    assignments[geoKey] ||
+                    "";
                   const assignedCountry = assignedIso3
                     ? countryByIso[assignedIso3]
                     : null;
-                  const isCorrect = assignedIso3 === geoIso3 && !!assignedIso3;
+                  const isCorrect =
+                    !!assignedIso3 &&
+                    !!geoKey &&
+                    String(assignedIso3).toUpperCase() === geoKey;
+                  const isBlockedPrior =
+                    geoKey.length > 0 &&
+                    excludedNormSet.has(geoKey) &&
+                    !isTarget;
 
                   return (
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
                       onClick={() => {
+                        if (isBlockedPrior) return;
                         if (showTargetList) {
                           if (isSubdivisionTargetMode) {
-                            if (!geoIso3) return;
-                            const alreadyAssigned = assignments[geoIso3] === geoIso3;
+                            const alreadyAssigned =
+                              !!slotIso &&
+                              String(assignments[slotIso] || "").toUpperCase() ===
+                                geoKey;
                             if (isTarget) {
-                              assignCountryToSlot(alreadyAssigned ? "" : geoIso3, geoIso3);
+                              if (!slotIso) return;
+                              assignCountryToSlot(
+                                alreadyAssigned ? "" : slotIso,
+                                slotIso
+                              );
                             } else {
-                              togglePickedCountry(geoIso3);
+                              if (!pickId) return;
+                              togglePickedCountry(pickId);
                             }
                             return;
                           }
-                          if (!isTarget) return;
-                          if (activeCountryIso3) {
-                            assignCountryToSlot(activeCountryIso3, geoIso3);
+                          if (!isTarget) {
+                            if (!pickId) return;
+                            togglePickedCountry(pickId);
                             return;
                           }
-                          // Permet un clic direct sur la bonne region meme sans selection dans la liste
-                          assignCountryToSlot(geoIso3, geoIso3);
+                          if (!slotIso) return;
+                          if (activeCountryIso3) {
+                            assignCountryToSlot(activeCountryIso3, slotIso);
+                            return;
+                          }
+                          assignCountryToSlot(slotIso, slotIso);
                           return;
                         }
-                        if (!geoIso3) return;
-                        togglePickedCountry(geoIso3);
+                        if (!pickId) return;
+                        togglePickedCountry(pickId);
                       }}
                       onDrop={(event: any) => {
                         if (!showTargetList || !isTarget) return;
-                        handleDropOnSlot(event as any, geoIso3);
+                        handleDropOnSlot(event as any, slotIso || geoIso3);
                       }}
                       onDragOver={(event: any) => {
                         if (showTargetList && isTarget) event.preventDefault();
                       }}
                       style={{
                         default: {
-                          fill: showTargetList
+                          fill: isBlockedPrior
+                            ? MAP_FILL_EXCLUDED_PRIOR
+                            : showTargetList
                             ? isTarget
                               ? assignedCountry
                                 ? revealResult
@@ -439,7 +555,7 @@ export function PuzzleMapQuestion({
                                 : isSubdivisionTargetMode
                                 ? "#E5E7EB"
                                 : "#C7D2FE"
-                              : isSubdivisionTargetMode && isPicked
+                              : !isTarget && isPicked
                               ? revealResult
                                 ? "#EF4444"
                                 : "#93C5FD"
@@ -454,76 +570,89 @@ export function PuzzleMapQuestion({
                           stroke: "#9CA3AF",
                           strokeWidth: 0.5,
                           outline: "none",
-                          cursor: showTargetList
+                          cursor: isBlockedPrior
+                            ? "not-allowed"
+                            : showTargetList
                             ? isSubdivisionTargetMode
                               ? geoIso3
                                 ? "pointer"
                                 : "default"
-                              : isTarget
+                              : pickId
                               ? "pointer"
                               : "default"
-                            : geoIso3
+                            : pickId
                             ? "pointer"
                             : "default",
                         },
                         hover: {
-                          fill: showTargetList
+                          fill: isBlockedPrior
+                            ? MAP_FILL_EXCLUDED_PRIOR
+                            : showTargetList
                             ? isTarget
                               ? isSubdivisionTargetMode
                                 ? "#D1D5DB"
                                 : "#93C5FD"
                               : isSubdivisionTargetMode && geoIso3
                               ? "#D1D5DB"
+                              : !isTarget && pickId
+                              ? "#D1D5DB"
                               : "#D1D5DB"
-                            : geoIso3
+                            : pickId
                             ? "#93C5FD"
                             : "#D1D5DB",
                           stroke: "#6B7280",
                           strokeWidth: 0.6,
                           outline: "none",
-                          cursor: showTargetList
+                          cursor: isBlockedPrior
+                            ? "not-allowed"
+                            : showTargetList
                             ? isSubdivisionTargetMode
                               ? geoIso3
                                 ? "pointer"
                                 : "default"
-                              : isTarget
+                              : pickId
                               ? "pointer"
                               : "default"
-                            : geoIso3
+                            : pickId
                             ? "pointer"
                             : "default",
                         },
                         pressed: {
-                          fill: showTargetList
+                          fill: isBlockedPrior
+                            ? MAP_FILL_EXCLUDED_PRIOR
+                            : showTargetList
                             ? isTarget
                               ? isSubdivisionTargetMode
                                 ? "#9CA3AF"
                                 : "#60A5FA"
-                              : isSubdivisionTargetMode && isPicked
+                              : !isTarget && isPicked
                               ? "#60A5FA"
                               : "#D1D5DB"
-                            : geoIso3
+                            : pickId
                             ? "#60A5FA"
                             : "#D1D5DB",
                           stroke: "#6B7280",
                           strokeWidth: 0.6,
                           outline: "none",
-                          cursor: showTargetList
+                          cursor: isBlockedPrior
+                            ? "not-allowed"
+                            : showTargetList
                             ? isSubdivisionTargetMode
                               ? geoIso3
                                 ? "pointer"
                                 : "default"
-                              : isTarget
+                              : pickId
                               ? "pointer"
                               : "default"
-                            : geoIso3
+                            : pickId
                             ? "pointer"
                             : "default",
                         },
                       }}
                     >
                       <title>
-                        {countryByIso[geoIso3]?.name ||
+                        {countryMatch?.name ||
+                          countryByIso[geoIso3]?.name ||
                           geo?.properties?.NAME ||
                           geo?.properties?.name ||
                           geo?.properties?.ADMIN ||
@@ -624,12 +753,7 @@ export function PuzzleMapQuestion({
             </>
           )}
         </>
-      ) : (
-        <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
-          {t("playQuiz.puzzle.selectedCountries")}: {pickedIso3s.length}/
-          {countries.length}. {t("playQuiz.puzzle.selectionHint")}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

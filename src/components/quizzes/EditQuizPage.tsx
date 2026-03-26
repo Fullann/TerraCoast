@@ -11,10 +11,13 @@ import {
   X,
   ArrowUp,
   ArrowDown,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
 import { CountryMultiSelect } from "./CountryMultiSelect";
+import { CustomGeoJsonMapPicker } from "./CustomGeoJsonMapPicker";
 import {
   getSubdivisions,
   type SubdivisionScope,
@@ -403,7 +406,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       const items = (Array.isArray(q.options) ? q.options : [])
         .map((item: string) => item.trim())
         .filter(Boolean);
-      return items.length < 2 || items.length > 10;
+      return items.length < 2;
     });
     if (hasInvalidTop10) {
       setError(t("editQuiz.errors.top10Range"));
@@ -419,6 +422,29 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     });
     if (hasInvalidPuzzleMap) {
       setError(t("editQuiz.errors.puzzleMinCountries"));
+      return;
+    }
+
+    const hasInvalidMapClick = questions.some((q: any) => {
+      if (q.question_type !== "map_click") return false;
+      const selected = Array.isArray(q.map_data?.selectedCountries)
+        ? q.map_data.selectedCountries.filter((iso: string) => String(iso).trim())
+        : [];
+      return selected.length < 1;
+    });
+    if (hasInvalidMapClick) {
+      setError(t("editQuiz.errors.mapClickMinCountries"));
+      return;
+    }
+
+    const hasInvalidCustomGeo = questions.some((q: any) => {
+      if (q.question_type !== "puzzle_map" && q.question_type !== "map_click")
+        return false;
+      if (q.map_data?.mapLevel !== "custom_geojson") return false;
+      return !String(q.map_data?.customGeojsonMapId || "").trim();
+    });
+    if (hasInvalidCustomGeo) {
+      setError(t("createQuiz.errors.customGeojsonMapRequired"));
       return;
     }
 
@@ -452,10 +478,16 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         .select("id")
         .eq("quiz_id", quizId);
 
-      const orderedQuestions = questions.map((question, index) => ({
-        ...question,
-        order_index: index,
-      }));
+      const orderedQuestions = questions.map((question, index) => {
+        const base = { ...question, order_index: index };
+        if (base.question_type === "map_click") {
+          return {
+            ...base,
+            correct_answer: "__AUTO__",
+          };
+        }
+        return base;
+      });
 
       if (existingQuestions) {
         const currentQuestionIds = orderedQuestions
@@ -481,8 +513,15 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       for (const question of orderedQuestions) {
         if (question.isNew) {
           const { id, isNew, ...questionData } = question;
+          const puzzleMapData =
+            (question.question_type === "puzzle_map" ||
+              question.question_type === "map_click") &&
+            questionData.map_data
+              ? { ...questionData.map_data, showTargetList: false }
+              : questionData.map_data;
           const { error: insertQuestionError } = await supabase.from("questions").insert({
             ...questionData,
+            map_data: puzzleMapData,
             options:
               question.question_type === "mcq" ||
               question.question_type === "top10_order"
@@ -538,7 +577,12 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                       : []
                     ).filter((opt: string) => opt.trim())
                   : null,
-              map_data: questionData.map_data || null,
+              map_data:
+                (questionData.question_type === "puzzle_map" ||
+                  questionData.question_type === "map_click") &&
+                questionData.map_data
+                  ? { ...questionData.map_data, showTargetList: false }
+                  : questionData.map_data || null,
               image_url: questionData.image_url,
               option_images: questionData.option_images || null,
               points: questionData.points,
@@ -591,10 +635,15 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     (editingQuestion?.map_data?.subdivisionScope as SubdivisionScope) ||
     "ch_cantons";
   const editingSubdivisionEntries =
-    editingQuestion?.question_type === "puzzle_map" &&
+    (editingQuestion?.question_type === "puzzle_map" ||
+      editingQuestion?.question_type === "map_click") &&
     (editingQuestion?.map_data?.mapLevel || "countries") === "subdivisions"
       ? getSubdivisions(editingSubdivisionScope)
       : [];
+
+  const mapEditStorageMode: "puzzle_map" | "map_click" =
+    editingQuestion?.question_type === "map_click" ? "map_click" : "puzzle_map";
+  const isMapClickEdit = editingQuestion?.question_type === "map_click";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -961,6 +1010,39 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                             value={editingQuestion.question_type}
                             onChange={(e) => {
                               const nextType = e.target.value as QuestionType;
+                              if (nextType === "map_click") {
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  question_type: nextType,
+                                  options: [],
+                                  correct_answer: editingQuestion.correct_answer || "",
+                                  correct_answers: [],
+                                  map_data: {
+                                    mode: "map_click",
+                                    mapLevel:
+                                      editingQuestion.map_data?.mapLevel || "countries",
+                                    subdivisionScope:
+                                      editingQuestion.map_data?.subdivisionScope,
+                                    selectedCountries: [],
+                                    showTargetList: false,
+                                    initialView: {
+                                      centerLat:
+                                        editingQuestion.map_data?.initialView
+                                          ?.centerLat ?? 20,
+                                      centerLng:
+                                        editingQuestion.map_data?.initialView
+                                          ?.centerLng ?? 0,
+                                      zoom:
+                                        editingQuestion.map_data?.initialView?.zoom ??
+                                        (editingQuestion.map_data?.mapLevel ===
+                                        "subdivisions"
+                                          ? 5.2
+                                          : 1),
+                                    },
+                                  },
+                                });
+                                return;
+                              }
                               if (nextType === "puzzle_map") {
                                 setEditingQuestion({
                                   ...editingQuestion,
@@ -977,9 +1059,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                     selectedCountries:
                                       editingQuestion.map_data
                                         ?.selectedCountries || [],
-                                    showTargetList:
-                                      editingQuestion.map_data?.showTargetList !==
-                                      false,
+                                    showTargetList: false,
                                     initialView: {
                                       centerLat:
                                         editingQuestion.map_data?.initialView
@@ -1032,6 +1112,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                             </option>
                             <option value="puzzle_map">
                               {t("editQuiz.questionType.puzzle_map")}
+                            </option>
+                            <option value="map_click">
+                              {t("editQuiz.questionType.map_click")}
                             </option>
                             <option value="top10_order">
                               {t("editQuiz.questionType.top10_order")}
@@ -1153,8 +1236,19 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                         </div>
                       )}
 
-                      {editingQuestion.question_type === "puzzle_map" && (
+                      {(editingQuestion.question_type === "puzzle_map" ||
+                        editingQuestion.question_type === "map_click") && (
                         <div className="space-y-4 p-4 rounded-lg bg-sky-50 border border-sky-200">
+                          {editingQuestion.question_type === "puzzle_map" && (
+                            <p className="text-sm text-sky-900 bg-white/80 border border-sky-200 rounded-lg px-3 py-2">
+                              {t("createQuiz.puzzle.editorBehaviorHint")}
+                            </p>
+                          )}
+                          {editingQuestion.question_type === "map_click" && (
+                            <p className="text-sm text-sky-900 bg-white/80 border border-sky-200 rounded-lg px-3 py-2">
+                              {t("createQuiz.mapClick.editorBehaviorHint")}
+                            </p>
+                          )}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Niveau de carte
@@ -1164,18 +1258,36 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               onChange={(e) => {
                                 const nextLevel = e.target.value as
                                   | "countries"
-                                  | "subdivisions";
+                                  | "subdivisions"
+                                  | "custom_geojson";
                                 setEditingQuestion({
                                   ...editingQuestion,
                                   map_data: {
                                     ...(editingQuestion.map_data || {}),
-                                    mode: "puzzle_map",
+                                    mode: mapEditStorageMode,
                                     mapLevel: nextLevel,
                                     subdivisionScope:
                                       nextLevel === "subdivisions"
                                         ? "ch_cantons"
                                         : undefined,
-                                    selectedCountries: [],
+                                    customGeojsonMapId:
+                                      nextLevel === "custom_geojson"
+                                        ? ""
+                                        : undefined,
+                                    customGeojsonPublicUrl:
+                                      nextLevel === "custom_geojson"
+                                        ? ""
+                                        : undefined,
+                                    customGeojsonIdProperty:
+                                      nextLevel === "custom_geojson"
+                                        ? "tc_id"
+                                        : undefined,
+                                    selectedCountries:
+                                      nextLevel === "subdivisions" ||
+                                      nextLevel === "custom_geojson"
+                                        ? []
+                                        : editingQuestion.map_data?.selectedCountries ||
+                                          [],
                                     initialView:
                                       nextLevel === "subdivisions"
                                         ? {
@@ -1183,6 +1295,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                             centerLng: 8.2,
                                             zoom: 1.1,
                                           }
+                                        : nextLevel === "custom_geojson"
+                                        ? { centerLat: 20, centerLng: 0, zoom: 2 }
                                         : editingQuestion.map_data?.initialView || {
                                             centerLat: 20,
                                             centerLng: 0,
@@ -1195,6 +1309,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                             >
                               <option value="countries">Pays</option>
                               <option value="subdivisions">Sous-divisions</option>
+                              <option value="custom_geojson">GeoJSON (catalogue admin)</option>
                             </select>
                           </div>
 
@@ -1215,7 +1330,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                       ...editingQuestion,
                                       map_data: {
                                         ...(editingQuestion.map_data || {}),
-                                        mode: "puzzle_map",
+                                        mode: mapEditStorageMode,
                                         mapLevel: "subdivisions",
                                         subdivisionScope:
                                           e.target.value as SubdivisionScope,
@@ -1282,7 +1397,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                               ...editingQuestion,
                                               map_data: {
                                                 ...(editingQuestion.map_data || {}),
-                                                mode: "puzzle_map",
+                                                mode: mapEditStorageMode,
                                                 mapLevel: "subdivisions",
                                                 subdivisionScope: editingSubdivisionScope,
                                                 selectedCountries: next,
@@ -1298,18 +1413,43 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                 </div>
                               </div>
                             </>
+                          ) : (editingQuestion.map_data?.mapLevel || "countries") ===
+                            "custom_geojson" ? (
+                            <CustomGeoJsonMapPicker
+                              mapData={editingQuestion.map_data || undefined}
+                              storageMode={mapEditStorageMode}
+                              onPatch={(patch) =>
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  map_data: {
+                                    ...(editingQuestion.map_data || {}),
+                                    ...patch,
+                                    mode: mapEditStorageMode,
+                                  } as any,
+                                })
+                              }
+                            />
                           ) : (
                             <CountryMultiSelect
-                              label={t("createQuiz.puzzle.targetCountriesLabel")}
+                              label={
+                                isMapClickEdit
+                                  ? t("createQuiz.mapClick.targetZonesLabel")
+                                  : t("createQuiz.puzzle.targetCountriesLabel")
+                              }
                               selectedIso3={
                                 editingQuestion.map_data?.selectedCountries || []
+                              }
+                              hint={
+                                isMapClickEdit
+                                  ? t("createQuiz.mapClick.countryHint")
+                                  : undefined
                               }
                               onChange={(next) =>
                                 setEditingQuestion({
                                   ...editingQuestion,
                                   map_data: {
                                     ...(editingQuestion.map_data || {}),
-                                    mode: "puzzle_map",
+                                    mode: mapEditStorageMode,
                                     mapLevel: "countries",
                                     selectedCountries: next,
                                   },
@@ -1317,26 +1457,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               }
                             />
                           )}
-                          <label className="flex items-center gap-2 text-sm text-gray-700">
-                            <input
-                              type="checkbox"
-                              checked={
-                                editingQuestion.map_data?.showTargetList !== false
-                              }
-                              onChange={(e) =>
-                                setEditingQuestion({
-                                  ...editingQuestion,
-                                  map_data: {
-                                    ...(editingQuestion.map_data || {}),
-                                    mode: "puzzle_map",
-                                    showTargetList: e.target.checked,
-                                  },
-                                })
-                              }
-                              className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                            />
-                            {t("createQuiz.puzzle.showTargetList")}
-                          </label>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="md:col-span-3">
                               <label className="block text-xs text-gray-700 mb-1">
@@ -1350,7 +1470,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                     ...editingQuestion,
                                     map_data: {
                                       ...(editingQuestion.map_data || {}),
-                                      mode: "puzzle_map",
+                                      mode: mapEditStorageMode,
                                       initialView: {
                                         centerLat: preset.centerLat,
                                         centerLng: preset.centerLng,
@@ -1394,7 +1514,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                     ...editingQuestion,
                                     map_data: {
                                       ...(editingQuestion.map_data || {}),
-                                      mode: "puzzle_map",
+                                      mode: mapEditStorageMode,
                                       initialView: {
                                         ...(editingQuestion.map_data?.initialView ||
                                           {}),
@@ -1427,7 +1547,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                     ...editingQuestion,
                                     map_data: {
                                       ...(editingQuestion.map_data || {}),
-                                      mode: "puzzle_map",
+                                      mode: mapEditStorageMode,
                                       initialView: {
                                         ...(editingQuestion.map_data?.initialView ||
                                           {}),
@@ -1457,7 +1577,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                     ...editingQuestion,
                                     map_data: {
                                       ...(editingQuestion.map_data || {}),
-                                      mode: "puzzle_map",
+                                      mode: mapEditStorageMode,
                                       initialView: {
                                         ...(editingQuestion.map_data?.initialView ||
                                           {}),
@@ -1486,7 +1606,11 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               {(Array.isArray(editingQuestion.options)
                                 ? editingQuestion.options
                                 : []
-                              ).map((item: string, index: number) => (
+                              ).map((item: string, index: number) => {
+                                const optList = Array.isArray(editingQuestion.options)
+                                  ? editingQuestion.options
+                                  : [];
+                                return (
                                 <div
                                   key={index}
                                   draggable
@@ -1506,6 +1630,34 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                   <span className="text-xs text-gray-500 w-8">
                                     #{index + 1}
                                   </span>
+                                  <div className="flex flex-col gap-0.5 shrink-0">
+                                    <button
+                                      type="button"
+                                      title={t("playQuiz.top10.moveUp")}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (index === 0) return;
+                                        reorderTop10EditingQuestion(index, index - 1);
+                                      }}
+                                      disabled={index === 0}
+                                      className="p-0.5 rounded border border-orange-200 text-orange-700 hover:bg-orange-100 disabled:opacity-30"
+                                    >
+                                      <ChevronUp className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      title={t("playQuiz.top10.moveDown")}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (index >= optList.length - 1) return;
+                                        reorderTop10EditingQuestion(index, index + 1);
+                                      }}
+                                      disabled={index >= optList.length - 1}
+                                      className="p-0.5 rounded border border-orange-200 text-orange-700 hover:bg-orange-100 disabled:opacity-30"
+                                    >
+                                      <ChevronDown className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                   <input
                                     type="text"
                                     value={item}
@@ -1547,14 +1699,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                     {t("playQuiz.top10.drag")}
                                   </span>
                                 </div>
-                              ))}
+                              );
+                              })}
                               <button
                                 type="button"
                                 onClick={() => {
                                   const current = Array.isArray(editingQuestion.options)
                                     ? editingQuestion.options
                                     : [];
-                                  if (current.length >= 10) return;
                                   setEditingQuestion({
                                     ...editingQuestion,
                                     options: [...current, ""],
@@ -1582,10 +1734,13 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                           {t("editQuiz.correctAnswer")} *
                         </label>
                         {editingQuestion.question_type === "puzzle_map" ||
+                        editingQuestion.question_type === "map_click" ||
                         editingQuestion.question_type === "top10_order" ? (
                           <div className="p-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg">
                             {editingQuestion.question_type === "top10_order"
                               ? t("createQuiz.top10.expectedOrderInfo")
+                              : editingQuestion.question_type === "map_click"
+                              ? t("createQuiz.mapClick.autoAnswerInfo")
                               : t("createQuiz.puzzle.autoAnswerInfo")}
                           </div>
                         ) : editingQuestion.question_type === "mcq" ? (

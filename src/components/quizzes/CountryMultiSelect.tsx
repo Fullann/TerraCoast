@@ -5,12 +5,17 @@ interface CountryMultiSelectProps {
   selectedIso3: string[];
   onChange: (next: string[]) => void;
   label?: string;
+  /** Si défini (ex. 1 pour carte à cliquer), limite le nombre de pays sélectionnables. */
+  maxSelected?: number;
+  hint?: string;
 }
 
 export function CountryMultiSelect({
   selectedIso3,
   onChange,
   label = "Pays sélectionnés",
+  maxSelected,
+  hint,
 }: CountryMultiSelectProps) {
   const [query, setQuery] = useState("");
 
@@ -44,6 +49,14 @@ export function CountryMultiSelect({
   const addCountry = (iso3: string) => {
     const normalized = iso3.toUpperCase();
     if (selectedSet.has(normalized)) return;
+    if (maxSelected === 1) {
+      onChange([normalized]);
+      setQuery("");
+      return;
+    }
+    if (maxSelected != null && (selectedIso3 || []).length >= maxSelected) {
+      return;
+    }
     onChange([...(selectedIso3 || []), normalized]);
     setQuery("");
   };
@@ -99,7 +112,8 @@ export function CountryMultiSelect({
         ))}
       </div>
       <p className="text-xs text-gray-500">
-        Sélectionne 1 ou plusieurs pays. Si vide, le jeu utilise le monde entier.
+        {hint ||
+          "Sélectionne 1 ou plusieurs pays. Si vide, le jeu utilise le monde entier."}
       </p>
     </div>
   );

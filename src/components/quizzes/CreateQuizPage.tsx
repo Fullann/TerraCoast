@@ -13,10 +13,13 @@ import {
   X,
   ArrowUp,
   ArrowDown,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
 import { CountryMultiSelect } from "./CountryMultiSelect";
+import { CustomGeoJsonMapPicker } from "./CustomGeoJsonMapPicker";
 import {
   getSubdivisions,
   type SubdivisionScope,
@@ -47,13 +50,16 @@ interface Question {
   correct_answers?: string[];
   options: string[];
   map_data?: {
-    mode?: "puzzle_map" | "top10_order";
+    mode?: "puzzle_map" | "top10_order" | "map_click";
     continent?: string;
     metric?: "population" | "area_km2";
     selectedCountries?: string[];
     showTargetList?: boolean;
-    mapLevel?: "countries" | "subdivisions";
+    mapLevel?: "countries" | "subdivisions" | "custom_geojson";
     subdivisionScope?: SubdivisionScope;
+    customGeojsonMapId?: string;
+    customGeojsonPublicUrl?: string;
+    customGeojsonIdProperty?: string;
     initialView?: {
       centerLat?: number;
       centerLng?: number;
@@ -191,7 +197,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     if (
       !currentQuestion.correct_answer.trim() &&
       currentQuestion.question_type !== "puzzle_map" &&
-      currentQuestion.question_type !== "top10_order"
+      currentQuestion.question_type !== "top10_order" &&
+      currentQuestion.question_type !== "map_click"
     ) {
       setError(t("createQuiz.errors.answerEmpty"));
       return;
@@ -206,16 +213,32 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       }
     }
 
+    if (currentQuestion.question_type === "map_click") {
+      const selectedCount =
+        currentQuestion.map_data?.selectedCountries?.length || 0;
+      if (selectedCount < 1) {
+        setError(t("createQuiz.errors.mapClickMinCountries"));
+        return;
+      }
+    }
+
+    if (
+      (currentQuestion.question_type === "puzzle_map" ||
+        currentQuestion.question_type === "map_click") &&
+      currentQuestion.map_data?.mapLevel === "custom_geojson"
+    ) {
+      if (!String(currentQuestion.map_data?.customGeojsonMapId || "").trim()) {
+        setError(t("createQuiz.errors.customGeojsonMapRequired"));
+        return;
+      }
+    }
+
     if (currentQuestion.question_type === "top10_order") {
       const items = currentQuestion.options
         .map((item) => item.trim())
         .filter(Boolean);
       if (items.length < 2) {
         setError(t("createQuiz.errors.top10MinItems"));
-        return;
-      }
-      if (items.length > 10) {
-        setError(t("createQuiz.errors.top10MaxItems"));
         return;
       }
     }
@@ -232,24 +255,31 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       }
     }
 
-    const normalizedQuestion =
-      currentQuestion.question_type === "puzzle_map" ||
-      currentQuestion.question_type === "top10_order"
-        ? {
-            ...currentQuestion,
-            correct_answer:
-              currentQuestion.question_type === "top10_order"
-                ? "__ORDER__"
-                : "__AUTO__",
-            correct_answers: [],
-            options:
-              currentQuestion.question_type === "top10_order"
-                ? currentQuestion.options
-                    .map((item) => item.trim())
-                    .filter(Boolean)
-                : [],
-          }
-        : currentQuestion;
+    let normalizedQuestion: Question;
+    if (currentQuestion.question_type === "top10_order") {
+      normalizedQuestion = {
+        ...currentQuestion,
+        correct_answer: "__ORDER__",
+        correct_answers: [],
+        options: currentQuestion.options.map((item) => item.trim()).filter(Boolean),
+      };
+    } else if (currentQuestion.question_type === "puzzle_map") {
+      normalizedQuestion = {
+        ...currentQuestion,
+        correct_answer: "__AUTO__",
+        correct_answers: [],
+        options: [],
+      };
+    } else if (currentQuestion.question_type === "map_click") {
+      normalizedQuestion = {
+        ...currentQuestion,
+        correct_answer: "__AUTO__",
+        correct_answers: [],
+        options: [],
+      };
+    } else {
+      normalizedQuestion = currentQuestion;
+    }
 
     if (editingIndex !== null) {
       const updatedQuestions = [...questions];
@@ -451,7 +481,11 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           q.question_type === "mcq" || q.question_type === "top10_order"
             ? q.options.filter((opt) => opt.trim())
             : null,
-        map_data: q.map_data || null,
+        map_data:
+          (q.question_type === "puzzle_map" || q.question_type === "map_click") &&
+          q.map_data
+            ? { ...q.map_data, showTargetList: false }
+            : q.map_data || null,
         image_url: q.image_url || null,
         option_images:
           q.option_images && Object.keys(q.option_images).length > 0
@@ -489,6 +523,10 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     if (type === "top10_order") return t("editQuiz.questionType.top10_order");
     return t(`editQuiz.questionType.${type}` as any);
   };
+
+  const mapEditorStorageMode: "puzzle_map" | "map_click" =
+    currentQuestion.question_type === "map_click" ? "map_click" : "puzzle_map";
+  const isMapClickEditor = currentQuestion.question_type === "map_click";
 
   const trueFalseLabels = getTrueFalseLabels();
 
@@ -831,7 +869,27 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                         continent: "world",
                         mapLevel: "countries",
                         selectedCountries: [],
-                        showTargetList: true,
+                        showTargetList: false,
+                        initialView: {
+                          centerLat: 20,
+                          centerLng: 0,
+                          zoom: 1,
+                        },
+                      },
+                    });
+                  } else if (newType === "map_click") {
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      question_type: newType,
+                      options: [],
+                      correct_answer: "",
+                      correct_answers: [],
+                      map_data: {
+                        mode: "map_click",
+                        continent: "world",
+                        mapLevel: "countries",
+                        selectedCountries: [],
+                        showTargetList: false,
                         initialView: {
                           centerLat: 20,
                           centerLng: 0,
@@ -870,6 +928,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 </option>
                 <option value="puzzle_map">
                   {t("editQuiz.questionType.puzzle_map")}
+                </option>
+                <option value="map_click">
+                  {t("editQuiz.questionType.map_click")}
                 </option>
                 <option value="top10_order">
                   {t("editQuiz.questionType.top10_order")}
@@ -949,8 +1010,19 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             </div>
           )}
 
-          {currentQuestion.question_type === "puzzle_map" && (
+          {(currentQuestion.question_type === "puzzle_map" ||
+            currentQuestion.question_type === "map_click") && (
             <div className="space-y-4 p-4 rounded-lg bg-sky-50 border border-sky-200">
+              {currentQuestion.question_type === "puzzle_map" && (
+                <p className="text-sm text-sky-900 bg-white/80 border border-sky-200 rounded-lg px-3 py-2">
+                  {t("createQuiz.puzzle.editorBehaviorHint")}
+                </p>
+              )}
+              {currentQuestion.question_type === "map_click" && (
+                <p className="text-sm text-sky-900 bg-white/80 border border-sky-200 rounded-lg px-3 py-2">
+                  {t("createQuiz.mapClick.editorBehaviorHint")}
+                </p>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Niveau de carte
@@ -958,22 +1030,38 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 <select
                   value={currentQuestion.map_data?.mapLevel || "countries"}
                   onChange={(e) => {
-                    const nextLevel = e.target.value as "countries" | "subdivisions";
+                    const nextLevel = e.target.value as
+                      | "countries"
+                      | "subdivisions"
+                      | "custom_geojson";
                     setCurrentQuestion({
                       ...currentQuestion,
                       map_data: {
                         ...(currentQuestion.map_data || {}),
-                        mode: "puzzle_map",
+                        mode: mapEditorStorageMode,
                         mapLevel: nextLevel,
                         subdivisionScope:
                           nextLevel === "subdivisions" ? "ch_cantons" : undefined,
+                        customGeojsonMapId:
+                          nextLevel === "custom_geojson"
+                            ? ""
+                            : undefined,
+                        customGeojsonPublicUrl:
+                          nextLevel === "custom_geojson"
+                            ? ""
+                            : undefined,
+                        customGeojsonIdProperty:
+                          nextLevel === "custom_geojson" ? "tc_id" : undefined,
                         selectedCountries:
-                          nextLevel === "subdivisions"
+                          nextLevel === "subdivisions" ||
+                          nextLevel === "custom_geojson"
                             ? []
                             : currentQuestion.map_data?.selectedCountries || [],
                         initialView:
                           nextLevel === "subdivisions"
                             ? { centerLat: 46.8, centerLng: 8.2, zoom: 1.1 }
+                            : nextLevel === "custom_geojson"
+                            ? { centerLat: 20, centerLng: 0, zoom: 2 }
                             : currentQuestion.map_data?.initialView || {
                                 centerLat: 20,
                                 centerLng: 0,
@@ -986,6 +1074,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 >
                   <option value="countries">Pays</option>
                   <option value="subdivisions">Sous-divisions</option>
+                  <option value="custom_geojson">GeoJSON (catalogue admin)</option>
                 </select>
               </div>
 
@@ -1003,7 +1092,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                           ...currentQuestion,
                           map_data: {
                             ...(currentQuestion.map_data || {}),
-                            mode: "puzzle_map",
+                            mode: mapEditorStorageMode,
                             mapLevel: "subdivisions",
                             subdivisionScope: e.target.value as SubdivisionScope,
                             selectedCountries: [],
@@ -1051,7 +1140,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                                   ...currentQuestion,
                                   map_data: {
                                     ...(currentQuestion.map_data || {}),
-                                    mode: "puzzle_map",
+                                    mode: mapEditorStorageMode,
                                     mapLevel: "subdivisions",
                                     subdivisionScope: currentSubdivisionScope,
                                     selectedCountries: next,
@@ -1067,16 +1156,41 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     </div>
                   </div>
                 </>
+              ) : (currentQuestion.map_data?.mapLevel || "countries") ===
+                "custom_geojson" ? (
+                <CustomGeoJsonMapPicker
+                  mapData={currentQuestion.map_data || undefined}
+                  storageMode={mapEditorStorageMode}
+                  onPatch={(patch) =>
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      map_data: {
+                        ...(currentQuestion.map_data || {}),
+                        ...patch,
+                        mode: mapEditorStorageMode,
+                      } as Question["map_data"],
+                    })
+                  }
+                />
               ) : (
                 <CountryMultiSelect
-                  label={t("createQuiz.puzzle.targetCountriesLabel")}
+                  label={
+                    isMapClickEditor
+                      ? t("createQuiz.mapClick.targetZonesLabel")
+                      : t("createQuiz.puzzle.targetCountriesLabel")
+                  }
                   selectedIso3={currentQuestion.map_data?.selectedCountries || []}
+                  hint={
+                    isMapClickEditor
+                      ? t("createQuiz.mapClick.countryHint")
+                      : undefined
+                  }
                   onChange={(next) =>
                     setCurrentQuestion({
                       ...currentQuestion,
                       map_data: {
                         ...(currentQuestion.map_data || {}),
-                        mode: "puzzle_map",
+                        mode: mapEditorStorageMode,
                         mapLevel: "countries",
                         selectedCountries: next,
                       },
@@ -1084,24 +1198,6 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                   }
                 />
               )}
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={currentQuestion.map_data?.showTargetList !== false}
-                  onChange={(e) =>
-                    setCurrentQuestion({
-                      ...currentQuestion,
-                      map_data: {
-                        ...(currentQuestion.map_data || {}),
-                        mode: "puzzle_map",
-                        showTargetList: e.target.checked,
-                      },
-                    })
-                  }
-                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                {t("createQuiz.puzzle.showTargetList")}
-              </label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="md:col-span-3">
                   <label className="block text-xs text-gray-700 mb-1">
@@ -1115,7 +1211,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                         ...currentQuestion,
                         map_data: {
                           ...(currentQuestion.map_data || {}),
-                          mode: "puzzle_map",
+                          mode: mapEditorStorageMode,
                           initialView: {
                             centerLat: preset.centerLat,
                             centerLng: preset.centerLng,
@@ -1156,7 +1252,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                         ...currentQuestion,
                         map_data: {
                           ...(currentQuestion.map_data || {}),
-                          mode: "puzzle_map",
+                          mode: mapEditorStorageMode,
                           initialView: {
                             ...(currentQuestion.map_data?.initialView || {}),
                             centerLat: Math.max(
@@ -1185,7 +1281,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                         ...currentQuestion,
                         map_data: {
                           ...(currentQuestion.map_data || {}),
-                          mode: "puzzle_map",
+                          mode: mapEditorStorageMode,
                           initialView: {
                             ...(currentQuestion.map_data?.initialView || {}),
                             centerLng: Math.max(
@@ -1214,7 +1310,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                         ...currentQuestion,
                         map_data: {
                           ...(currentQuestion.map_data || {}),
-                          mode: "puzzle_map",
+                          mode: mapEditorStorageMode,
                           initialView: {
                             ...(currentQuestion.map_data?.initialView || {}),
                             zoom: Math.max(
@@ -1256,6 +1352,34 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       <span className="text-xs text-gray-500 w-8">
                         #{index + 1}
                       </span>
+                      <div className="flex flex-col gap-0.5 shrink-0">
+                        <button
+                          type="button"
+                          title={t("playQuiz.top10.moveUp")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (index === 0) return;
+                            reorderTop10CurrentQuestion(index, index - 1);
+                          }}
+                          disabled={index === 0}
+                          className="p-0.5 rounded border border-orange-200 text-orange-700 hover:bg-orange-100 disabled:opacity-30"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title={t("playQuiz.top10.moveDown")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (index >= currentQuestion.options.length - 1) return;
+                            reorderTop10CurrentQuestion(index, index + 1);
+                          }}
+                          disabled={index >= currentQuestion.options.length - 1}
+                          className="p-0.5 rounded border border-orange-200 text-orange-700 hover:bg-orange-100 disabled:opacity-30"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={item}
@@ -1295,7 +1419,6 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                   <button
                     type="button"
                     onClick={() => {
-                      if (currentQuestion.options.length >= 10) return;
                       setCurrentQuestion({
                         ...currentQuestion,
                         options: [...currentQuestion.options, ""],
@@ -1323,10 +1446,13 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               {t("editQuiz.correctAnswer")} *
             </label>
             {currentQuestion.question_type === "puzzle_map" ||
+            currentQuestion.question_type === "map_click" ||
             currentQuestion.question_type === "top10_order" ? (
               <div className="p-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg">
                 {currentQuestion.question_type === "top10_order"
                   ? t("createQuiz.top10.expectedOrderInfo")
+                  : currentQuestion.question_type === "map_click"
+                  ? t("createQuiz.mapClick.autoAnswerInfo")
                   : t("createQuiz.puzzle.autoAnswerInfo")}
               </div>
             ) : currentQuestion.question_type === "true_false" ? (
@@ -1591,6 +1717,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     <p className="text-sm text-emerald-700 mt-2">
                       {q.question_type === "puzzle_map"
                         ? t("createQuiz.puzzle.autoAnswerInfo")
+                        : q.question_type === "map_click"
+                        ? t("createQuiz.mapClick.autoAnswerInfo")
                         : q.question_type === "top10_order"
                         ? t("createQuiz.top10.autoExpectedOrderInfo")
                         : `${t("createQuiz.answer")}: ${q.correct_answer}`}
