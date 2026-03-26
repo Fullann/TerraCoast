@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 import {
   Clock,
   CheckCircle,
@@ -57,6 +58,7 @@ export function PlayQuizPage({
 }: PlayQuizPageProps) {
   const { profile, refreshProfile } = useAuth();
   const { t } = useLanguage();
+  const { showAppNotification } = useNotifications();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -92,6 +94,9 @@ export function PlayQuizPage({
   const [top10States, setTop10States] = useState<
     Record<string, { metric: CountryMetric; expected: string[]; order: string[] }>
   >({});
+  const [countryMultiInputs, setCountryMultiInputs] = useState<
+    Record<string, Record<string, { countryName: string; capital: string }>>
+  >({});
   /** Pays / régions déjà « consommés » après une question puzzle (carte cumulative). */
   const [consumedPuzzleIso3s, setConsumedPuzzleIso3s] = useState<string[]>([]);
   const isCompletingRef = useRef(false);
@@ -102,6 +107,8 @@ export function PlayQuizPage({
   const toCountryEntry = (entry: SubdivisionGameEntry): CountryGameEntry => ({
     iso3: entry.iso3,
     name: entry.name,
+    capital: "",
+    flagEmoji: "",
     lat: entry.lat ?? 0,
     lng: entry.lng ?? 0,
     numericCode: 0,
@@ -230,6 +237,38 @@ export function PlayQuizPage({
       .replace(/\s+/g, " ")
       .trim();
   };
+  const levenshteinDistance = (a: string, b: string): number => {
+    const aa = a || "";
+    const bb = b || "";
+    const dp: number[][] = Array.from({ length: aa.length + 1 }, () =>
+      Array(bb.length + 1).fill(0)
+    );
+    for (let i = 0; i <= aa.length; i += 1) dp[i][0] = i;
+    for (let j = 0; j <= bb.length; j += 1) dp[0][j] = j;
+    for (let i = 1; i <= aa.length; i += 1) {
+      for (let j = 1; j <= bb.length; j += 1) {
+        const cost = aa[i - 1] === bb[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return dp[aa.length][bb.length];
+  };
+  const matchesWithTolerance = (
+    userInput: string,
+    expected: string,
+    mode: "strict" | "lenient"
+  ) => {
+    const ua = normalizeAnswer(userInput);
+    const ea = normalizeAnswer(expected);
+    if (!ua || !ea) return false;
+    if (ua === ea) return true;
+    if (mode === "strict") return false;
+    return levenshteinDistance(ua, ea) <= 1;
+  };
 
   const arraysEqual = (a: string[], b: string[]) =>
     a.length === b.length && a.every((value, index) => value === b[index]);
@@ -317,6 +356,10 @@ export function PlayQuizPage({
         const nextTop10States: Record<
           string,
           { metric: CountryMetric; expected: string[]; order: string[] }
+        > = {};
+        const nextCountryMultiInputs: Record<
+          string,
+          Record<string, { countryName: string; capital: string }>
         > = {};
 
         const customMapIds = [
@@ -559,6 +602,33 @@ export function PlayQuizPage({
             }
           }
 
+          if (question.question_type === "country_multi") {
+            const mapData = (question.map_data || {}) as {
+              selectedCountries?: string[];
+              requiredFields?: ("name" | "capital" | "map_click")[];
+            };
+            const selected = getCountriesByIso3(mapData.selectedCountries || []);
+            nextCountryMultiInputs[question.id] = Object.fromEntries(
+              selected.map((country) => [
+                country.iso3,
+                { countryName: "", capital: "" },
+              ])
+            );
+            const requiredFields = mapData.requiredFields || [];
+            if (requiredFields.includes("map_click")) {
+              const countries = selected;
+              if (countries.length > 0) {
+                nextPuzzleStates[question.id] = {
+                  countries,
+                  assignments: Object.fromEntries(
+                    countries.map((country) => [country.iso3, ""])
+                  ),
+                  pickedIso3s: [],
+                };
+              }
+            }
+          }
+
           if (question.question_type === "top10_order") {
             const mapData = (question.map_data || {}) as {
               metric?: CountryMetric;
@@ -599,6 +669,7 @@ export function PlayQuizPage({
         setQuestions(processedQuestions);
         setPuzzleStates(nextPuzzleStates);
         setTop10States(nextTop10States);
+        setCountryMultiInputs(nextCountryMultiInputs);
         setConsumedPuzzleIso3s([]);
       }
     }
@@ -684,7 +755,7 @@ export function PlayQuizPage({
 
       const pickedIso3s = Array.from(new Set(currentPuzzleState.pickedIso3s));
       if (!fromTimeout && pickedIso3s.length === 0) {
-        alert(t("playQuiz.selectAnswer"));
+        showAppNotification({ type: "error", message: t("playQuiz.selectAnswer") });
         return;
       }
       const targetSet = new Set(
@@ -752,7 +823,10 @@ export function PlayQuizPage({
     if (currentQuestion.question_type === "top10_order") {
       if (!currentTop10State) return;
       if (currentTop10State.order.length !== currentTop10State.expected.length) {
-        alert(t("playQuiz.top10.invalidOrder"));
+        showAppNotification({
+          type: "error",
+          message: t("playQuiz.top10.invalidOrder"),
+        });
         return;
       }
 
@@ -796,8 +870,142 @@ export function PlayQuizPage({
       return;
     }
 
+    if (currentQuestion.question_type === "country_multi") {
+      const mapData = (currentQuestion.map_data || {}) as {
+        selectedCountries?: string[];
+        nameTolerance?: "strict" | "lenient";
+        capitalTolerance?: "strict" | "lenient";
+      };
+      const targets = getCountriesByIso3(mapData.selectedCountries || []);
+      if (targets.length === 0) {
+        showAppNotification({ type: "error", message: t("playQuiz.selectAnswer") });
+        return;
+      }
+      const requiredFields: ("name" | "capital" | "map_click")[] = [
+        "name",
+        "capital",
+        "map_click",
+      ];
+      const nameTolerance = mapData.nameTolerance || "lenient";
+      const capitalTolerance = mapData.capitalTolerance || "strict";
+      const inputByIso = countryMultiInputs[currentQuestion.id] || {};
+      const pickedIso3s = currentPuzzleState?.pickedIso3s || [];
+      const pickedSet = new Set(
+        pickedIso3s.map((iso) => String(iso).toUpperCase())
+      );
+      const targetSet = new Set(targets.map((country) => country.iso3.toUpperCase()));
+
+      if (requiredFields.includes("map_click") && pickedSet.size === 0) {
+        showAppNotification({ type: "error", message: t("playQuiz.selectAnswer") });
+        return;
+      }
+      if (requiredFields.includes("name")) {
+        const hasMissing = targets.some((target) => {
+          const input = inputByIso[target.iso3];
+          return !String(input?.countryName || "").trim();
+        });
+        if (hasMissing) {
+          showAppNotification({ type: "error", message: t("playQuiz.selectAnswer") });
+          return;
+        }
+      }
+      if (requiredFields.includes("capital")) {
+        const hasMissing = targets.some((target) => {
+          const input = inputByIso[target.iso3];
+          return !String(input?.capital || "").trim();
+        });
+        if (hasMissing) {
+          showAppNotification({ type: "error", message: t("playQuiz.selectAnswer") });
+          return;
+        }
+      }
+
+      const details = targets.map((target) => {
+        const input = inputByIso[target.iso3] || { countryName: "", capital: "" };
+        const isNameCorrect = !requiredFields.includes("name")
+          ? true
+          : matchesWithTolerance(input.countryName, target.name, nameTolerance);
+        const isCapitalCorrect = !requiredFields.includes("capital")
+          ? true
+          : matchesWithTolerance(
+              input.capital,
+              String(target.capital || ""),
+              capitalTolerance
+            );
+        const isMapCorrect = !requiredFields.includes("map_click")
+          ? true
+          : pickedSet.has(String(target.iso3).toUpperCase());
+        return {
+          iso3: target.iso3,
+          targetName: target.name,
+          targetCapital: target.capital || "",
+          targetFlagEmoji: target.flagEmoji || "",
+          userCountryName: input.countryName,
+          userCapital: input.capital,
+          isNameCorrect,
+          isCapitalCorrect,
+          isMapCorrect,
+        };
+      });
+
+      const wrongMapClicks = requiredFields.includes("map_click")
+        ? [...pickedSet].filter((iso) => !targetSet.has(iso))
+        : [];
+
+      const totalChecks = Math.max(requiredFields.length * targets.length, 1);
+      const correctChecks = details.reduce((sum, row) => {
+        let local = 0;
+        if (requiredFields.includes("name") && row.isNameCorrect) local += 1;
+        if (requiredFields.includes("capital") && row.isCapitalCorrect) local += 1;
+        if (requiredFields.includes("map_click") && row.isMapCorrect) local += 1;
+        return sum + local;
+      }, 0);
+      const mapPenalty = requiredFields.includes("map_click")
+        ? Math.min(wrongMapClicks.length, totalChecks)
+        : 0;
+      const adjustedCorrect = Math.max(0, correctChecks - mapPenalty);
+      const ratio = adjustedCorrect / totalChecks;
+      const pointsEarned = Math.round(
+        calculatePoints(timeTaken, currentQuestion.points) * ratio
+      );
+      const isCorrect = adjustedCorrect === totalChecks;
+
+      const answerData = {
+        question_id: currentQuestion.id,
+        user_answer: JSON.stringify({
+          type: "country_multi",
+          requiredFields,
+          nameTolerance,
+          capitalTolerance,
+          details,
+          pickedIso3s,
+          wrongMapClicks,
+          correctChecks: adjustedCorrect,
+          totalChecks,
+        }),
+        is_correct: isCorrect,
+        time_taken: timeTaken,
+        points_earned: pointsEarned,
+      };
+
+      setAnswers((prev) => [...prev, answerData]);
+      setTotalScore((prev) => prev + pointsEarned);
+      setShowResult(true);
+      setIsAnswered(true);
+      saveAnswer(answerData);
+
+      if (!trainingMode) {
+        const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
+        setTimeout(() => {
+          hasTimedOutRef.current = false;
+          moveToNextQuestion();
+        }, delayMs);
+      }
+      return;
+    }
+
     if (!answer.trim()) {
-      alert(t("playQuiz.selectAnswer"));
+      showAppNotification({ type: "error", message: t("playQuiz.selectAnswer") });
       return;
     }
 
@@ -1009,6 +1217,19 @@ export function PlayQuizPage({
                       exactMatches?: number;
                       total?: number;
                     } | null = null;
+                    let parsedCountryMulti: {
+                      details?: Array<{
+                        iso3: string;
+                        targetName: string;
+                        targetCapital: string;
+                        targetFlagEmoji?: string;
+                        isNameCorrect: boolean;
+                        isCapitalCorrect: boolean;
+                        isMapCorrect: boolean;
+                      }>;
+                      correctChecks?: number;
+                      totalChecks?: number;
+                    } | null = null;
                     if (
                       (question.question_type === "puzzle_map" ||
                         question.question_type === "map_click") &&
@@ -1030,6 +1251,17 @@ export function PlayQuizPage({
                         parsedTop10 = JSON.parse(answer.user_answer);
                       } catch {
                         parsedTop10 = null;
+                      }
+                    }
+                    if (
+                      question.question_type === "country_multi" &&
+                      answer?.user_answer &&
+                      answer.user_answer.trim().startsWith("{")
+                    ) {
+                      try {
+                        parsedCountryMulti = JSON.parse(answer.user_answer);
+                      } catch {
+                        parsedCountryMulti = null;
                       }
                     }
 
@@ -1076,6 +1308,12 @@ export function PlayQuizPage({
                                         "playQuiz.top10.itemsRanked"
                                       )}`
                                     : t("playQuiz.noAnswer")
+                                  : question.question_type === "country_multi"
+                                  ? parsedCountryMulti?.totalChecks
+                                    ? `${parsedCountryMulti.correctChecks || 0}/${
+                                        parsedCountryMulti.totalChecks
+                                      }`
+                                    : t("playQuiz.noAnswer")
                                   : answer?.user_answer || t("playQuiz.noAnswer")}
                               </span>
                             </p>
@@ -1091,6 +1329,8 @@ export function PlayQuizPage({
                                   ? t("playQuiz.puzzle.expectedCountries")
                                   : question.question_type === "top10_order"
                                   ? t("playQuiz.top10.exactOrder")
+                                  : question.question_type === "country_multi"
+                                  ? t("createQuiz.countryMulti.fieldsLabel")
                                   : question.correct_answer}
                               </span>
                             </p>
@@ -1137,6 +1377,53 @@ export function PlayQuizPage({
                                       ))}
                                     </ol>
                                   </div>
+                                </div>
+                              )}
+                            {question.question_type === "country_multi" &&
+                              parsedCountryMulti?.details &&
+                              parsedCountryMulti.details.length > 0 && (
+                                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {parsedCountryMulti.details.map((row) => (
+                                    <div
+                                      key={`country-multi-summary-${question.id}-${row.iso3}`}
+                                      className="bg-white border border-indigo-200 rounded p-2 text-xs"
+                                    >
+                                      <p className="font-semibold text-indigo-800 mb-1">
+                                        <span className="mr-1">{row.targetFlagEmoji || "🏳️"}</span>
+                                        {row.targetName}
+                                      </p>
+                                      <p
+                                        className={
+                                          row.isNameCorrect
+                                            ? "text-green-700"
+                                            : "text-red-700"
+                                        }
+                                      >
+                                        {row.isNameCorrect ? "✅" : "❌"}{" "}
+                                        {t("playQuiz.countryMulti.fieldName")}
+                                      </p>
+                                      <p
+                                        className={
+                                          row.isCapitalCorrect
+                                            ? "text-green-700"
+                                            : "text-red-700"
+                                        }
+                                      >
+                                        {row.isCapitalCorrect ? "✅" : "❌"}{" "}
+                                        {t("playQuiz.countryMulti.fieldCapital")}
+                                      </p>
+                                      <p
+                                        className={
+                                          row.isMapCorrect
+                                            ? "text-green-700"
+                                            : "text-red-700"
+                                        }
+                                      >
+                                        {row.isMapCorrect ? "✅" : "❌"}{" "}
+                                        {t("playQuiz.countryMulti.fieldMapClick")}
+                                      </p>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                           </div>
@@ -1314,16 +1601,21 @@ export function PlayQuizPage({
           <div className="mb-6">
             <p className="text-sm text-gray-500 mb-2">{quiz.title}</p>
             <h3 className="text-xl md:text-2xl font-bold text-gray-800">
-              {currentQuestion.question_text}
+              {currentQuestion.question_text ||
+                ((currentQuestion.map_data as { countryMultiPrompt?: string } | null)
+                  ?.countryMultiPrompt || "")}
             </h3>
             {(currentQuestion.question_type === "puzzle_map" ||
               currentQuestion.question_type === "map_click" ||
-              currentQuestion.question_type === "top10_order") && (
+              currentQuestion.question_type === "top10_order" ||
+              currentQuestion.question_type === "country_multi") && (
               <p className="mt-2 text-sm text-gray-600 bg-gray-100 border border-gray-200 rounded px-3 py-2">
                 {currentQuestion.question_type === "top10_order"
                   ? t("playQuiz.objective.top10Order")
                   : currentQuestion.question_type === "map_click"
                   ? t("playQuiz.objective.mapClick")
+                  : currentQuestion.question_type === "country_multi"
+                  ? t("playQuiz.countryMulti.objective")
                   : t("playQuiz.objective.puzzleMap")}
               </p>
             )}
@@ -1558,6 +1850,165 @@ export function PlayQuizPage({
             />
           )}
 
+          {currentQuestion.question_type === "country_multi" && (
+            <div className="space-y-3 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+              {(() => {
+                const mapData = (currentQuestion.map_data || {}) as {
+                  selectedCountries?: string[];
+                  requiredFields?: ("name" | "capital" | "map_click")[];
+                  countryMultiPrompt?: string;
+                };
+                const targets = getCountriesByIso3(mapData.selectedCountries || []);
+                const requiredFields: ("name" | "capital" | "map_click")[] = [
+                  "name",
+                  "capital",
+                  "map_click",
+                ];
+                const inputByIso = countryMultiInputs[currentQuestion.id] || {};
+                const isCompact = targets.length >= 8;
+                return (
+                  <>
+                    {(mapData.countryMultiPrompt || "").trim() && (
+                      <p className="text-sm text-indigo-900">
+                        {mapData.countryMultiPrompt}
+                      </p>
+                    )}
+                    <p className="text-sm text-indigo-900">
+                      {t("playQuiz.countryMulti.targetCountries")}:{" "}
+                      <span className="font-semibold">{targets.length}</span>
+                    </p>
+                    <div
+                      className={
+                        isCompact
+                          ? "max-h-80 overflow-auto rounded border border-indigo-200"
+                          : "grid grid-cols-1 md:grid-cols-2 gap-3"
+                      }
+                    >
+                      {targets.map((target) => {
+                        const rowInput = inputByIso[target.iso3] || {
+                          countryName: "",
+                          capital: "",
+                        };
+                        return (
+                          <div
+                            key={target.iso3}
+                            className={`rounded-lg border border-indigo-200 bg-white p-3 ${
+                              isCompact ? "border-x-0 border-t-0 last:border-b-0 rounded-none" : ""
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-indigo-800 mb-2">
+                              {t("playQuiz.countryMulti.targetIndex").replace(
+                                "{index}",
+                                String(
+                                  targets.findIndex((t) => t.iso3 === target.iso3) + 1
+                                )
+                              )}
+                            </p>
+                            {requiredFields.includes("name") && (
+                              <input
+                                type="text"
+                                value={rowInput.countryName}
+                                disabled={isAnswered}
+                                onChange={(e) =>
+                                  setCountryMultiInputs((prev) => ({
+                                    ...prev,
+                                    [currentQuestion.id]: {
+                                      ...(prev[currentQuestion.id] || {}),
+                                      [target.iso3]: {
+                                        ...((prev[currentQuestion.id] || {})[
+                                          target.iso3
+                                        ] || {
+                                          countryName: "",
+                                          capital: "",
+                                        }),
+                                        countryName: e.target.value,
+                                      },
+                                    },
+                                  }))
+                                }
+                                className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
+                                placeholder={t("playQuiz.countryMulti.fieldName")}
+                              />
+                            )}
+                            {requiredFields.includes("capital") && (
+                              <input
+                                type="text"
+                                value={rowInput.capital}
+                                disabled={isAnswered}
+                                onChange={(e) =>
+                                  setCountryMultiInputs((prev) => ({
+                                    ...prev,
+                                    [currentQuestion.id]: {
+                                      ...(prev[currentQuestion.id] || {}),
+                                      [target.iso3]: {
+                                        ...((prev[currentQuestion.id] || {})[
+                                          target.iso3
+                                        ] || {
+                                          countryName: "",
+                                          capital: "",
+                                        }),
+                                        capital: e.target.value,
+                                      },
+                                    },
+                                  }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
+                                placeholder={t("playQuiz.countryMulti.fieldCapital")}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
+          {currentQuestion.question_type === "country_multi" &&
+            (() => {
+              const mapData = (currentQuestion.map_data || {}) as {
+                requiredFields?: ("name" | "capital" | "map_click")[];
+              };
+              const requiredFields = mapData.requiredFields || [
+                "name",
+                "capital",
+                "map_click",
+              ];
+              return requiredFields.includes("map_click");
+            })() &&
+            currentPuzzleState && (
+              <PuzzleMapQuestion
+                countries={currentPuzzleState.countries}
+                geographySource="world"
+                showTargetList={false}
+                excludedIso3s={[]}
+                revealResult={showResult || isAnswered}
+                initialView={(currentQuestion.map_data as any)?.initialView || null}
+                assignments={currentPuzzleState.assignments}
+                pickedIso3s={currentPuzzleState.pickedIso3s}
+                onAssignmentsChange={(nextAssignments) =>
+                  setPuzzleStates((prev) => ({
+                    ...prev,
+                    [currentQuestion.id]: {
+                      ...currentPuzzleState,
+                      assignments: nextAssignments,
+                    },
+                  }))
+                }
+                onPickedIso3sChange={(nextPickedIso3s) =>
+                  setPuzzleStates((prev) => ({
+                    ...prev,
+                    [currentQuestion.id]: {
+                      ...currentPuzzleState,
+                      pickedIso3s: nextPickedIso3s,
+                    },
+                  }))
+                }
+              />
+            )}
+
           {/* FEEDBACK */}
           {showResult && (
             <div
@@ -1579,6 +2030,89 @@ export function PlayQuizPage({
                   : "bg-red-50 border-2 border-red-300"
               }`}
             >
+              {currentQuestion.question_type === "country_multi" &&
+                (() => {
+                  const last = answers[answers.length - 1];
+                  if (!last?.user_answer?.trim()?.startsWith("{")) return null;
+                  try {
+                    const parsed = JSON.parse(last.user_answer) as {
+                      details?: Array<{
+                        iso3: string;
+                        targetName: string;
+                        targetCapital: string;
+                        userCountryName: string;
+                        userCapital: string;
+                        isNameCorrect: boolean;
+                        isCapitalCorrect: boolean;
+                        isMapCorrect: boolean;
+                      }>;
+                      requiredFields?: ("name" | "capital" | "map_click")[];
+                    };
+                    const rows = parsed.details || [];
+                    const req = parsed.requiredFields || [];
+                    return (
+                      <div className="mb-4">
+                        <div className="mb-2 text-xs text-gray-600">
+                          <span className="inline-flex items-center mr-3">
+                            <CheckCircle className="w-3.5 h-3.5 mr-1 text-green-600" />
+                            OK
+                          </span>
+                          <span className="inline-flex items-center">
+                            <XCircle className="w-3.5 h-3.5 mr-1 text-red-600" />
+                            KO
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {rows.map((row) => (
+                          <div
+                            key={`cm-row-${row.iso3}`}
+                            className="rounded border border-gray-200 bg-white p-2 text-xs"
+                          >
+                            <p className="font-semibold text-gray-700 mb-1">
+                              {row.targetName}
+                            </p>
+                            {req.includes("name") && (
+                              <p className={row.isNameCorrect ? "text-green-700" : "text-red-700"}>
+                                {row.isNameCorrect ? "✅" : "❌"}{" "}
+                                {t("playQuiz.countryMulti.fieldName")}:{" "}
+                                {row.userCountryName || "—"}{" "}
+                                {!row.isNameCorrect ? `(${row.targetName})` : ""}
+                              </p>
+                            )}
+                            {req.includes("capital") && (
+                              <p
+                                className={
+                                  row.isCapitalCorrect ? "text-green-700" : "text-red-700"
+                                }
+                              >
+                                {row.isCapitalCorrect ? "✅" : "❌"}{" "}
+                                {t("playQuiz.countryMulti.fieldCapital")}:{" "}
+                                {row.userCapital || "—"}{" "}
+                                {!row.isCapitalCorrect ? `(${row.targetCapital})` : ""}
+                              </p>
+                            )}
+                            {req.includes("map_click") && (
+                              <p
+                                className={
+                                  row.isMapCorrect ? "text-green-700" : "text-red-700"
+                                }
+                              >
+                                {row.isMapCorrect ? "✅" : "❌"}{" "}
+                                {t("playQuiz.countryMulti.fieldMapClick")}:{" "}
+                                {row.isMapCorrect
+                                  ? t("playQuiz.correct")
+                                  : t("playQuiz.incorrect")}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                        </div>
+                      </div>
+                    );
+                  } catch {
+                    return null;
+                  }
+                })()}
               <div className="flex items-center space-x-3">
                 {answers[answers.length - 1]?.is_correct ||
                 (isAnswered &&
@@ -1628,10 +2162,13 @@ export function PlayQuizPage({
                           ? t("playQuiz.puzzle.expectedCountries")
                           : currentQuestion.question_type === "top10_order"
                           ? t("playQuiz.top10.exactOrder")
+                          : currentQuestion.question_type === "country_multi"
+                          ? t("createQuiz.countryMulti.fieldsLabel")
                           : currentQuestion.correct_answer}
                         {currentQuestion.question_type !== "puzzle_map" &&
                           currentQuestion.question_type !== "map_click" &&
                           currentQuestion.question_type !== "top10_order" &&
+                          currentQuestion.question_type !== "country_multi" &&
                           currentQuestion.correct_answers &&
                           currentQuestion.correct_answers.length > 0 && (
                             <span className="block text-xs mt-1">
@@ -1676,6 +2213,45 @@ export function PlayQuizPage({
                     currentTop10State.order.length !==
                       currentTop10State.expected.length ||
                     currentTop10State.expected.length < 2
+                  : currentQuestion.question_type === "country_multi"
+                  ? (() => {
+                      const mapData = (currentQuestion.map_data || {}) as {
+                        selectedCountries?: string[];
+                        requiredFields?: ("name" | "capital" | "map_click")[];
+                      };
+                      const requiredFields = mapData.requiredFields || [];
+                      const targets = getCountriesByIso3(
+                        mapData.selectedCountries || []
+                      );
+                      const inputByIso = countryMultiInputs[currentQuestion.id] || {};
+                      const hasNameMissing = requiredFields.includes("name")
+                        ? targets.some(
+                            (target) =>
+                              !String(
+                                (inputByIso[target.iso3] || {}).countryName || ""
+                              ).trim()
+                          )
+                        : false;
+                      const hasCapitalMissing = requiredFields.includes("capital")
+                        ? targets.some(
+                            (target) =>
+                              !String(
+                                (inputByIso[target.iso3] || {}).capital || ""
+                              ).trim()
+                          )
+                        : false;
+                      const hasMapMissing = requiredFields.includes("map_click")
+                        ? !currentPuzzleState ||
+                          currentPuzzleState.pickedIso3s.length === 0
+                        : false;
+                      return (
+                        targets.length === 0 ||
+                        requiredFields.length === 0 ||
+                        hasNameMissing ||
+                        hasCapitalMissing ||
+                        hasMapMissing
+                      );
+                    })()
                   : !userAnswer.trim()
               }
               className="w-full py-3 md:py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-lg"

@@ -26,6 +26,11 @@ interface FriendRequestNotification {
   from: string;
 }
 
+interface AppNotification {
+  type: "success" | "error" | "info";
+  message: string;
+}
+
 interface NotificationContextType {
   unreadMessages: number;
   pendingDuels: number;
@@ -35,10 +40,13 @@ interface NotificationContextType {
   duelNotification: DuelNotification | null;
   messageNotification: MessageNotification | null;
   friendRequestNotification: FriendRequestNotification | null;
+  appNotification: AppNotification | null;
   clearDuelNotification: () => void;
   showDuelNotification: (notification: DuelNotification) => void;
   clearMessageNotification: () => void;
   clearFriendRequestNotification: () => void;
+  showAppNotification: (notification: AppNotification) => void;
+  clearAppNotification: () => void;
   refreshNotifications: () => Promise<void>;
   setNavigationCallback: (
     callback: (view: string, params?: Record<string, unknown>) => void
@@ -60,6 +68,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     useState<MessageNotification | null>(null);
   const [friendRequestNotification, setFriendRequestNotification] =
     useState<FriendRequestNotification | null>(null);
+  const [appNotification, setAppNotification] =
+    useState<AppNotification | null>(null);
   const [pendingDuelsToPlay, setPendingDuelsToPlay] = useState(0);
   const [newDuelResults, setNewDuelResults] = useState(0);
   const [navigationCallback, setNavigationCallback] = useState<
@@ -147,6 +157,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const clearMessageNotification = () => setMessageNotification(null);
   const clearFriendRequestNotification = () =>
     setFriendRequestNotification(null);
+  const showAppNotification = (notification: AppNotification) =>
+    setAppNotification(notification);
+  const clearAppNotification = () => setAppNotification(null);
 
   useEffect(() => {
     if (!profile) return;
@@ -384,10 +397,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         duelNotification,
         messageNotification,
         friendRequestNotification,
+        appNotification,
         clearDuelNotification,
         showDuelNotification,
         clearMessageNotification,
         clearFriendRequestNotification,
+        showAppNotification,
+        clearAppNotification,
         refreshNotifications,
         setNavigationCallback: (callback) => setNavigationCallback(() => callback),
       }}
