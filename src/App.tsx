@@ -26,6 +26,7 @@ import { QuizTypeManagementPage } from "./components/admin/QuizTypeManagementPag
 import { UserManagementPage } from "./components/admin/UserManagementPage";
 import { QuizManagementPage } from "./components/admin/QuizManagementPage";
 import { DuelFeaturesPage } from "./components/admin/DuelFeaturesPage";
+import { GeoJsonMapsManagementPage } from "./components/admin/GeoJsonMapsManagementPage";
 import { DuelsPage } from "./components/duels/DuelsPage";
 import { ChatPage } from "./components/chat/ChatPage";
 import { LandingPage } from "./components/landing/LandingPage";
@@ -281,6 +282,9 @@ function AppContent() {
           <QuizManagementPage onNavigate={handleNavigate} />
         )}
         {currentView === "duel-features" && <DuelFeaturesPage />}
+        {currentView === "geojson-maps-management" && (
+          <GeoJsonMapsManagementPage />
+        )}
       </main>
     </div>
   );

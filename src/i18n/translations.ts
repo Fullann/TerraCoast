@@ -210,6 +210,19 @@ export const translations: Record<Language, Record<string, string>> = {
     "createQuiz.errors.createError": "Erreur lors de la création du quiz",
     "createQuiz.errors.puzzleMinCountries":
       "Sélectionne au moins un pays à trouver pour le mode puzzle.",
+    "createQuiz.errors.mapClickMinCountries":
+      "Sélectionne au moins une zone sur la carte (tu peux en définir plusieurs).",
+    "createQuiz.errors.customGeojsonMapRequired":
+      "Choisis une carte GeoJSON approuvée dans le catalogue.",
+    "createQuiz.puzzle.editorBehaviorHint":
+      "Puzzle carte : les pays ou zones validés sur une question puzzle restent grisés et non cliquables sur les questions puzzle suivantes du même quiz (carte cumulative).",
+    "createQuiz.mapClick.editorBehaviorHint":
+      "Clic sur carte : chaque question est indépendante — aucun lien avec les questions précédentes, toutes les zones restent cliquables. Tu peux définir une ou plusieurs zones à trouver sur la même question.",
+    "createQuiz.mapClick.targetZonesLabel": "Zones à trouver sur la carte",
+    "createQuiz.mapClick.autoAnswerInfo":
+      "Réponse dérivée des zones sélectionnées (une ou plusieurs).",
+    "createQuiz.mapClick.countryHint":
+      "Ajoute une ou plusieurs zones ; le joueur devra toutes les retrouver sur la carte sans erreur.",
     "createQuiz.errors.top10MinItems":
       "Le mode Top 10 nécessite au moins 2 éléments.",
     "createQuiz.errors.top10MaxItems":
@@ -287,6 +300,8 @@ export const translations: Record<Language, Record<string, string>> = {
       "Chaque question Top 10 doit contenir entre 2 et 10 éléments.",
     "editQuiz.errors.puzzleMinCountries":
       "Chaque question puzzle doit contenir au moins un pays sélectionné.",
+    "editQuiz.errors.mapClickMinCountries":
+      "Chaque question « clic sur carte » doit avoir au moins une zone cible.",
 
     // Play Quiz
     "playQuiz.selectAnswer": "Merci de sélectionner ou d'entrer une réponse",
@@ -298,6 +313,9 @@ export const translations: Record<Language, Record<string, string>> = {
       "Clique directement les pays sur la carte pour les valider.",
     "playQuiz.puzzle.zoomHint": "Utilise + / - pour zoomer.",
     "playQuiz.puzzle.worldMap": "Carte du monde",
+    "playQuiz.puzzle.mapTitleCustomGeoJson": "Carte GeoJSON personnalisée",
+    "playQuiz.puzzle.customGeoLoadError":
+      "Impossible de charger la carte personnalisée.",
     "playQuiz.puzzle.resetView": "Reset",
     "playQuiz.puzzle.mapTitleSwissCantons": "Carte des cantons suisses",
     "playQuiz.puzzle.mapTitleFrenchDepartments":
@@ -319,7 +337,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "playQuiz.top10.instructions":
       "Replace les pays dans le bon ordre (1 = plus grand).",
     "playQuiz.objective.puzzleMap":
-      "Objectif: place chaque element au bon endroit, puis valide.",
+      "Objectif : trouve toutes les zones sur la carte puis valide. Les zones déjà validées aux questions puzzle précédentes de ce quiz restent grisées et non cliquables.",
+    "playQuiz.objective.mapClick":
+      "Objectif : trouve toutes les zones demandées puis valide. Chaque question est indépendante : rien n’est grisé à cause des questions d’avant. Tu peux marquer plusieurs pays si tu hésites ; seules les bonnes zones comptent, sans erreurs.",
     "playQuiz.objective.top10Order":
       "Objectif: reorganise les elements dans le bon ordre avec le drag-and-drop, puis valide.",
     "playQuiz.top10.invalidOrder":
@@ -329,6 +349,10 @@ export const translations: Record<Language, Record<string, string>> = {
     "playQuiz.top10.yourOrder": "Ton ordre",
     "playQuiz.top10.expectedOrder": "Ordre attendu",
     "playQuiz.top10.drag": "Glisser",
+    "playQuiz.top10.moveUp": "Monter",
+    "playQuiz.top10.moveDown": "Descendre",
+    "playQuiz.mcqDoubleClickHint":
+      "Astuce : double-clique sur une réponse pour valider tout de suite.",
     "playQuiz.top10.dropPreview":
       "La ligne orange montre où la box sera déposée.",
     "playQuiz.top10.mobileHint":
@@ -1613,6 +1637,8 @@ helpdesk@terracoast.ch`,
       "Each Top 10 question must contain between 2 and 10 items.",
     "editQuiz.errors.puzzleMinCountries":
       "Each puzzle question must contain at least one selected country.",
+    "editQuiz.errors.mapClickMinCountries":
+      "Each map click question must have at least one target area.",
     "createQuiz.title": "Create Quiz",
     "createQuiz.subtitle": "Create your own geography quiz",
     "createQuiz.quizType": "Quiz Type",
@@ -1660,6 +1686,19 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.createError": "Error creating quiz",
     "createQuiz.errors.puzzleMinCountries":
       "Select at least one target country for puzzle mode.",
+    "createQuiz.errors.mapClickMinCountries":
+      "Select at least one area on the map (you can add several).",
+    "createQuiz.errors.customGeojsonMapRequired":
+      "Choose an approved GeoJSON map from the catalog.",
+    "createQuiz.puzzle.editorBehaviorHint":
+      "Puzzle map: countries or regions you validate stay grayed and non-clickable on later puzzle questions in the same quiz (cumulative map).",
+    "createQuiz.mapClick.editorBehaviorHint":
+      "Map click: each question is independent — no memory from previous questions, every area stays clickable. You can set one or more areas to find in the same question.",
+    "createQuiz.mapClick.targetZonesLabel": "Areas to find on the map",
+    "createQuiz.mapClick.autoAnswerInfo":
+      "Answer is derived from the selected areas (one or more).",
+    "createQuiz.mapClick.countryHint":
+      "Add one or more areas; the player must find them all on the map with no wrong clicks.",
     "createQuiz.errors.top10MinItems":
       "Top 10 mode requires at least 2 items.",
     "createQuiz.errors.top10MaxItems":
@@ -1689,6 +1728,8 @@ helpdesk@terracoast.ch`,
       "Click countries directly on the map to validate them.",
     "playQuiz.puzzle.zoomHint": "Use + / - to zoom.",
     "playQuiz.puzzle.worldMap": "World map",
+    "playQuiz.puzzle.mapTitleCustomGeoJson": "Custom GeoJSON map",
+    "playQuiz.puzzle.customGeoLoadError": "Could not load the custom map.",
     "playQuiz.puzzle.resetView": "Reset",
     "playQuiz.puzzle.mapTitleSwissCantons": "Swiss cantons map",
     "playQuiz.puzzle.mapTitleFrenchDepartments": "French departments map",
@@ -1709,7 +1750,9 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.instructions":
       "Reorder countries in the correct order (1 = biggest).",
     "playQuiz.objective.puzzleMap":
-      "Goal: place each item in the right location, then validate.",
+      "Goal: find all areas on the map then validate. Areas already cleared on earlier puzzle questions in this quiz stay grayed and non-clickable.",
+    "playQuiz.objective.mapClick":
+      "Goal: find all requested areas then validate. Each question is independent — nothing is grayed because of earlier questions. You can mark several countries if unsure; only correct picks count, with no wrong clicks.",
     "playQuiz.objective.top10Order":
       "Goal: reorder the items into the correct order with drag and drop, then validate.",
     "playQuiz.top10.invalidOrder":
@@ -1719,6 +1762,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.yourOrder": "Your order",
     "playQuiz.top10.expectedOrder": "Expected order",
     "playQuiz.top10.drag": "Drag",
+    "playQuiz.top10.moveUp": "Move up",
+    "playQuiz.top10.moveDown": "Move down",
+    "playQuiz.mcqDoubleClickHint":
+      "Tip: double-click an answer to submit immediately.",
     "playQuiz.top10.dropPreview":
       "The orange line shows where the box will be dropped.",
     "playQuiz.top10.mobileHint":
@@ -2407,6 +2454,8 @@ helpdesk@terracoast.ch`,
       "Cada pregunta Top 10 debe contener entre 2 y 10 elementos.",
     "editQuiz.errors.puzzleMinCountries":
       "Cada pregunta puzzle debe contener al menos un país seleccionado.",
+    "editQuiz.errors.mapClickMinCountries":
+      "Cada pregunta de clic en mapa debe tener al menos un área objetivo.",
     "createQuiz.title": "Crear cuestionario",
     "createQuiz.subtitle": "Crea tu propio cuestionario de geografía",
     "createQuiz.quizType": "Tipo de cuestionario",
@@ -2457,6 +2506,19 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.createError": "Error al crear cuestionario",
     "createQuiz.errors.puzzleMinCountries":
       "Selecciona al menos un país objetivo para el modo puzzle.",
+    "createQuiz.errors.mapClickMinCountries":
+      "Selecciona al menos una zona en el mapa (puedes añadir varias).",
+    "createQuiz.errors.customGeojsonMapRequired":
+      "Elige un mapa GeoJSON aprobado del catálogo.",
+    "createQuiz.puzzle.editorBehaviorHint":
+      "Puzzle en mapa: los países o regiones validados en una pregunta puzzle siguen grises y no se pueden clicar en las siguientes preguntas puzzle del mismo cuestionario (mapa acumulativo).",
+    "createQuiz.mapClick.editorBehaviorHint":
+      "Clic en mapa: cada pregunta es independiente — no hay memoria con las anteriores, todas las zonas siguen siendo clicables. Puedes definir una o varias zonas a encontrar en la misma pregunta.",
+    "createQuiz.mapClick.targetZonesLabel": "Zonas a encontrar en el mapa",
+    "createQuiz.mapClick.autoAnswerInfo":
+      "La respuesta se deduce de las zonas seleccionadas (una o varias).",
+    "createQuiz.mapClick.countryHint":
+      "Añade una o varias zonas; el jugador debe encontrarlas todas en el mapa sin errores.",
     "createQuiz.errors.top10MinItems":
       "El modo Top 10 requiere al menos 2 elementos.",
     "createQuiz.errors.top10MaxItems":
@@ -2486,6 +2548,8 @@ helpdesk@terracoast.ch`,
       "Haz clic directamente en los países del mapa para validarlos.",
     "playQuiz.puzzle.zoomHint": "Usa + / - para acercar.",
     "playQuiz.puzzle.worldMap": "Mapa del mundo",
+    "playQuiz.puzzle.mapTitleCustomGeoJson": "Mapa GeoJSON personalizado",
+    "playQuiz.puzzle.customGeoLoadError": "No se pudo cargar el mapa personalizado.",
     "playQuiz.puzzle.resetView": "Reset",
     "playQuiz.puzzle.mapTitleSwissCantons": "Mapa de cantones suizos",
     "playQuiz.puzzle.mapTitleFrenchDepartments":
@@ -2507,7 +2571,9 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.instructions":
       "Reordena los países en el orden correcto (1 = el mayor).",
     "playQuiz.objective.puzzleMap":
-      "Objetivo: coloca cada elemento en el lugar correcto y luego valida.",
+      "Objetivo: encuentra todas las zonas en el mapa y valida. Las zonas ya acertadas en preguntas puzzle anteriores de este cuestionario siguen grises y no se pueden clicar.",
+    "playQuiz.objective.mapClick":
+      "Objetivo: encuentra todas las zonas pedidas y valida. Cada pregunta es independiente: nada queda gris por las preguntas anteriores. Puedes marcar varios países si dudas; solo cuentan las zonas correctas, sin errores.",
     "playQuiz.objective.top10Order":
       "Objetivo: reordena los elementos en el orden correcto con arrastrar y soltar, y luego valida.",
     "playQuiz.top10.invalidOrder":
@@ -2517,6 +2583,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.yourOrder": "Tu orden",
     "playQuiz.top10.expectedOrder": "Orden esperado",
     "playQuiz.top10.drag": "Arrastrar",
+    "playQuiz.top10.moveUp": "Subir",
+    "playQuiz.top10.moveDown": "Bajar",
+    "playQuiz.mcqDoubleClickHint":
+      "Consejo: haz doble clic en una respuesta para validar al instante.",
     "playQuiz.top10.dropPreview":
       "La línea naranja muestra dónde se soltará la caja.",
     "playQuiz.top10.mobileHint":
@@ -3334,6 +3404,8 @@ helpdesk@terracoast.ch`,
       "Jede Top-10-Frage muss zwischen 2 und 10 Einträge enthalten.",
     "editQuiz.errors.puzzleMinCountries":
       "Jede Puzzle-Frage muss mindestens ein ausgewähltes Land enthalten.",
+    "editQuiz.errors.mapClickMinCountries":
+      "Jede Kartenklick-Frage muss mindestens ein Zielgebiet haben.",
     "createQuiz.title": "Quiz erstellen",
     "createQuiz.subtitle": "Erstelle dein eigenes Geografie-Quiz",
     "createQuiz.quizType": "Quiz-Typ",
@@ -3384,6 +3456,19 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.createError": "Fehler beim Erstellen des Quiz",
     "createQuiz.errors.puzzleMinCountries":
       "Wähle mindestens ein Zielland für den Puzzle-Modus aus.",
+    "createQuiz.errors.mapClickMinCountries":
+      "Wähle mindestens ein Gebiet auf der Karte (du kannst mehrere festlegen).",
+    "createQuiz.errors.customGeojsonMapRequired":
+      "Wähle eine genehmigte GeoJSON-Karte aus dem Katalog.",
+    "createQuiz.puzzle.editorBehaviorHint":
+      "Karten-Puzzle: bereits gefundene Länder oder Regionen bleiben in späteren Puzzle-Fragen desselben Quiz grau und nicht anklickbar (kumulative Karte).",
+    "createQuiz.mapClick.editorBehaviorHint":
+      "Kartenklick: jede Frage ist unabhängig — kein Einfluss vorheriger Fragen, alle Gebiete bleiben klickbar. Du kannst ein oder mehrere Ziele pro Frage setzen.",
+    "createQuiz.mapClick.targetZonesLabel": "Auf der Karte zu findende Gebiete",
+    "createQuiz.mapClick.autoAnswerInfo":
+      "Antwort ergibt sich aus den ausgewählten Gebieten (ein oder mehrere).",
+    "createQuiz.mapClick.countryHint":
+      "Füge ein oder mehrere Gebiete hinzu; der Spieler muss sie alle ohne Fehlklick finden.",
     "createQuiz.errors.top10MinItems":
       "Top-10-Modus benötigt mindestens 2 Einträge.",
     "createQuiz.errors.top10MaxItems":
@@ -3413,6 +3498,8 @@ helpdesk@terracoast.ch`,
       "Klicke Länder direkt auf der Karte an, um sie zu markieren.",
     "playQuiz.puzzle.zoomHint": "Nutze + / - zum Zoomen.",
     "playQuiz.puzzle.worldMap": "Weltkarte",
+    "playQuiz.puzzle.mapTitleCustomGeoJson": "Benutzerdefinierte GeoJSON-Karte",
+    "playQuiz.puzzle.customGeoLoadError": "Benutzerdefinierte Karte konnte nicht geladen werden.",
     "playQuiz.puzzle.resetView": "Reset",
     "playQuiz.puzzle.mapTitleSwissCantons": "Karte der Schweizer Kantone",
     "playQuiz.puzzle.mapTitleFrenchDepartments":
@@ -3434,7 +3521,9 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.instructions":
       "Ordne die Länder in die richtige Reihenfolge (1 = größtes).",
     "playQuiz.objective.puzzleMap":
-      "Ziel: Platziere jedes Element am richtigen Ort und bestatige dann.",
+      "Ziel: Finde alle Gebiete auf der Karte und bestätige. Bereits gelöste Gebiete aus früheren Puzzle-Fragen dieses Quiz bleiben grau und nicht anklickbar.",
+    "playQuiz.objective.mapClick":
+      "Ziel: Finde alle gesuchten Gebiete und bestätige. Jede Frage ist unabhängig — nichts wird wegen früherer Fragen grau. Du kannst mehrere Länder markieren; nur richtige Treffer zählen, ohne Fehlklicks.",
     "playQuiz.objective.top10Order":
       "Ziel: Ordne die Elemente per Drag-and-drop in die richtige Reihenfolge und bestatige dann.",
     "playQuiz.top10.invalidOrder":
@@ -3444,6 +3533,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.yourOrder": "Deine Reihenfolge",
     "playQuiz.top10.expectedOrder": "Erwartete Reihenfolge",
     "playQuiz.top10.drag": "Ziehen",
+    "playQuiz.top10.moveUp": "Nach oben",
+    "playQuiz.top10.moveDown": "Nach unten",
+    "playQuiz.mcqDoubleClickHint":
+      "Tipp: Doppelklick auf eine Antwort, um sofort abzusenden.",
     "playQuiz.top10.dropPreview":
       "Die orange Linie zeigt, wo die Box abgelegt wird.",
     "playQuiz.top10.mobileHint":
@@ -4261,6 +4354,8 @@ helpdesk@terracoast.ch`,
       "Ogni domanda Top 10 deve contenere tra 2 e 10 elementi.",
     "editQuiz.errors.puzzleMinCountries":
       "Ogni domanda puzzle deve contenere almeno un paese selezionato.",
+    "editQuiz.errors.mapClickMinCountries":
+      "Ogni domanda con clic sulla mappa deve avere almeno un'area obiettivo.",
     "createQuiz.title": "Crea quiz",
     "createQuiz.subtitle": "Crea il tuo quiz di geografia",
     "createQuiz.quizType": "Tipo di quiz",
@@ -4310,6 +4405,19 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.createError": "Errore nella creazione del quiz",
     "createQuiz.errors.puzzleMinCountries":
       "Seleziona almeno un paese obiettivo per la modalità puzzle.",
+    "createQuiz.errors.mapClickMinCountries":
+      "Seleziona almeno un'area sulla mappa (puoi aggiungerne diverse).",
+    "createQuiz.errors.customGeojsonMapRequired":
+      "Scegli una mappa GeoJSON approvata dal catalogo.",
+    "createQuiz.puzzle.editorBehaviorHint":
+      "Puzzle mappa: paesi o regioni già trovati in una domanda puzzle restano grigi e non cliccabili nelle domande puzzle successive dello stesso quiz (mappa cumulativa).",
+    "createQuiz.mapClick.editorBehaviorHint":
+      "Clic sulla mappa: ogni domanda è indipendente — nessun legame con le precedenti, tutte le zone restano cliccabili. Puoi impostare una o più aree da trovare nella stessa domanda.",
+    "createQuiz.mapClick.targetZonesLabel": "Aree da trovare sulla mappa",
+    "createQuiz.mapClick.autoAnswerInfo":
+      "La risposta deriva dalle aree selezionate (una o più).",
+    "createQuiz.mapClick.countryHint":
+      "Aggiungi una o più aree; il giocatore deve trovarle tutte sulla mappa senza errori.",
     "createQuiz.errors.top10MinItems":
       "La modalità Top 10 richiede almeno 2 elementi.",
     "createQuiz.errors.top10MaxItems":
@@ -4339,6 +4447,8 @@ helpdesk@terracoast.ch`,
       "Clicca direttamente i paesi sulla mappa per convalidarli.",
     "playQuiz.puzzle.zoomHint": "Usa + / - per zoomare.",
     "playQuiz.puzzle.worldMap": "Mappa del mondo",
+    "playQuiz.puzzle.mapTitleCustomGeoJson": "Mappa GeoJSON personalizzata",
+    "playQuiz.puzzle.customGeoLoadError": "Impossibile caricare la mappa personalizzata.",
     "playQuiz.puzzle.resetView": "Reset",
     "playQuiz.puzzle.mapTitleSwissCantons": "Mappa dei cantoni svizzeri",
     "playQuiz.puzzle.mapTitleFrenchDepartments":
@@ -4360,7 +4470,9 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.instructions":
       "Riordina i paesi nell'ordine corretto (1 = più grande).",
     "playQuiz.objective.puzzleMap":
-      "Obiettivo: posiziona ogni elemento nel punto giusto, poi convalida.",
+      "Obiettivo: trova tutte le zone sulla mappa e convalida. Le zone già trovate nelle domande puzzle precedenti di questo quiz restano grigie e non cliccabili.",
+    "playQuiz.objective.mapClick":
+      "Obiettivo: trova tutte le zone richieste e convalida. Ogni domanda è indipendente: nulla resta grigio per colpa delle domande precedenti. Puoi segnare più paesi se dubiti; contano solo le zone giuste, senza errori.",
     "playQuiz.objective.top10Order":
       "Obiettivo: riordina gli elementi nell'ordine corretto con drag-and-drop, poi convalida.",
     "playQuiz.top10.invalidOrder":
@@ -4370,6 +4482,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.yourOrder": "Il tuo ordine",
     "playQuiz.top10.expectedOrder": "Ordine previsto",
     "playQuiz.top10.drag": "Trascina",
+    "playQuiz.top10.moveUp": "Su",
+    "playQuiz.top10.moveDown": "Giù",
+    "playQuiz.mcqDoubleClickHint":
+      "Suggerimento: doppio clic su una risposta per inviare subito.",
     "playQuiz.top10.dropPreview":
       "La linea arancione mostra dove verrà inserita la box.",
     "playQuiz.top10.mobileHint":
@@ -5182,6 +5298,8 @@ helpdesk@terracoast.ch`,
       "Cada pergunta Top 10 deve conter entre 2 e 10 itens.",
     "editQuiz.errors.puzzleMinCountries":
       "Cada pergunta puzzle deve conter pelo menos um país selecionado.",
+    "editQuiz.errors.mapClickMinCountries":
+      "Cada pergunta de clique no mapa deve ter pelo menos uma área alvo.",
     "createQuiz.title": "Criar questionário",
     "createQuiz.subtitle": "Crie seu próprio questionário de geografia",
     "createQuiz.quizType": "Tipo de questionário",
@@ -5231,6 +5349,19 @@ helpdesk@terracoast.ch`,
     "createQuiz.errors.createError": "Erro ao criar questionário",
     "createQuiz.errors.puzzleMinCountries":
       "Selecione pelo menos um país alvo para o modo puzzle.",
+    "createQuiz.errors.mapClickMinCountries":
+      "Seleciona pelo menos uma área no mapa (podes adicionar várias).",
+    "createQuiz.errors.customGeojsonMapRequired":
+      "Escolhe um mapa GeoJSON aprovado no catálogo.",
+    "createQuiz.puzzle.editorBehaviorHint":
+      "Puzzle no mapa: países ou regiões já acertados numa pergunta puzzle continuam cinzentos e não clicáveis nas perguntas puzzle seguintes do mesmo questionário (mapa cumulativo).",
+    "createQuiz.mapClick.editorBehaviorHint":
+      "Clique no mapa: cada pergunta é independente — sem memória das anteriores, todas as áreas continuam clicáveis. Podes definir uma ou várias zonas a encontrar na mesma pergunta.",
+    "createQuiz.mapClick.targetZonesLabel": "Zonas a encontrar no mapa",
+    "createQuiz.mapClick.autoAnswerInfo":
+      "A resposta deriva das zonas selecionadas (uma ou mais).",
+    "createQuiz.mapClick.countryHint":
+      "Adiciona uma ou mais zonas; o jogador deve encontrá-las todas no mapa sem erros.",
     "createQuiz.errors.top10MinItems":
       "O modo Top 10 exige pelo menos 2 itens.",
     "createQuiz.errors.top10MaxItems":
@@ -5260,6 +5391,8 @@ helpdesk@terracoast.ch`,
       "Clique diretamente nos países do mapa para validá-los.",
     "playQuiz.puzzle.zoomHint": "Use + / - para zoom.",
     "playQuiz.puzzle.worldMap": "Mapa-múndi",
+    "playQuiz.puzzle.mapTitleCustomGeoJson": "Mapa GeoJSON personalizado",
+    "playQuiz.puzzle.customGeoLoadError": "Não foi possível carregar o mapa personalizado.",
     "playQuiz.puzzle.resetView": "Reset",
     "playQuiz.puzzle.mapTitleSwissCantons": "Mapa dos cantões suíços",
     "playQuiz.puzzle.mapTitleFrenchDepartments":
@@ -5281,7 +5414,9 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.instructions":
       "Reordene os países na ordem correta (1 = maior).",
     "playQuiz.objective.puzzleMap":
-      "Objetivo: posicione cada elemento no local correto e depois valide.",
+      "Objetivo: encontra todas as zonas no mapa e valida. As zonas já acertadas em perguntas puzzle anteriores deste questionário continuam cinzentas e não clicáveis.",
+    "playQuiz.objective.mapClick":
+      "Objetivo: encontra todas as zonas pedidas e valida. Cada pergunta é independente — nada fica cinzento por causa das anteriores. Podes marcar vários países se tiveres dúvida; só contam as zonas certas, sem erros.",
     "playQuiz.objective.top10Order":
       "Objetivo: reorganize os elementos na ordem correta com arrastar e soltar e depois valide.",
     "playQuiz.top10.invalidOrder":
@@ -5291,6 +5426,10 @@ helpdesk@terracoast.ch`,
     "playQuiz.top10.yourOrder": "Sua ordem",
     "playQuiz.top10.expectedOrder": "Ordem esperada",
     "playQuiz.top10.drag": "Arrastar",
+    "playQuiz.top10.moveUp": "Subir",
+    "playQuiz.top10.moveDown": "Descer",
+    "playQuiz.mcqDoubleClickHint":
+      "Dica: clique duas vezes numa resposta para validar na hora.",
     "playQuiz.top10.dropPreview":
       "A linha laranja mostra onde a caixa será inserida.",
     "playQuiz.top10.mobileHint":

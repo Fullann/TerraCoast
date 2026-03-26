@@ -474,9 +474,9 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                   disabled={matchmakingLoading}
                 >
                   <option value="">{t("duels.anyDifficulty")}</option>
-                  <option value="easy">{t("quiz.difficulty.easy")}</option>
-                  <option value="medium">{t("quiz.difficulty.medium")}</option>
-                  <option value="hard">{t("quiz.difficulty.hard")}</option>
+                  <option value="easy">{t("quizzes.difficulty.easy")}</option>
+                  <option value="medium">{t("quizzes.difficulty.medium")}</option>
+                  <option value="hard">{t("quizzes.difficulty.hard")}</option>
                 </select>
               </div>
 
@@ -571,7 +571,10 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                 <p className="text-xs text-purple-600 mb-1">
                   {t("duels.preferredDifficultyLabel")}{" "}
                   {t(
-                    `quiz.difficulty.${matchmakingQueueEntry.preferred_difficulty}`
+                    `quizzes.difficulty.${matchmakingQueueEntry.preferred_difficulty}` as
+                      | "quizzes.difficulty.easy"
+                      | "quizzes.difficulty.medium"
+                      | "quizzes.difficulty.hard"
                   )}
                 </p>
               )}
@@ -1138,7 +1141,14 @@ function CreateDuelInvitation({
               <option value="">{t("duels.selectQuiz")}</option>
               {quizzes.map((quiz) => (
                 <option key={quiz.id} value={quiz.id}>
-                  {quiz.title} ({quiz.difficulty})
+                  {quiz.title} (
+                  {t(
+                    `quizzes.difficulty.${quiz.difficulty}` as
+                      | "quizzes.difficulty.easy"
+                      | "quizzes.difficulty.medium"
+                      | "quizzes.difficulty.hard"
+                  )}
+                  )
                 </option>
               ))}
             </select>

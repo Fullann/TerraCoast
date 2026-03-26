@@ -1,8 +1,15 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { Clock, CheckCircle, XCircle, Trophy, ArrowLeft } from "lucide-react";
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
+  Trophy,
+  ArrowLeft,
+  Lightbulb,
+} from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import {
   CountryMetric,
@@ -19,6 +26,12 @@ import {
   type SubdivisionGameEntry,
   type SubdivisionScope,
 } from "../../lib/subdivisionGameData";
+import {
+  countryEntriesFromGeoJson,
+  fetchGeoJsonFeatureCollection,
+  presetFromRowPreset,
+  type CustomGeoJsonMapRow,
+} from "../../lib/customGeojsonMaps";
 import { PuzzleMapQuestion } from "./PuzzleMapQuestion";
 import { Top10OrderQuestion } from "./Top10OrderQuestion";
 
@@ -79,6 +92,8 @@ export function PlayQuizPage({
   const [top10States, setTop10States] = useState<
     Record<string, { metric: CountryMetric; expected: string[]; order: string[] }>
   >({});
+  /** Pays / régions déjà « consommés » après une question puzzle (carte cumulative). */
+  const [consumedPuzzleIso3s, setConsumedPuzzleIso3s] = useState<string[]>([]);
   const isCompletingRef = useRef(false);
   const isCreatingSessionRef = useRef(false);
   const hasTimedOutRef = useRef(false);
@@ -111,17 +126,39 @@ export function PlayQuizPage({
     isCreatingSessionRef.current = false;
     loadQuiz();
   }, [quizId]);
-  // Détecter quand toutes les questions ont été répondues
+
+  const firstMcqQuestionIndex = useMemo(
+    () => questions.findIndex((q) => q.question_type === "mcq"),
+    [questions]
+  );
+
+  const getPostAnswerDelayMs = (question: Question, isCorrect: boolean) => {
+    if (trainingMode) return 0;
+    return (question.complement_if_wrong || "").trim() ? 5000 : 1500;
+  };
+
+  // Fin de partie : laisser le temps d'afficher le feedback de la dernière question
   useEffect(() => {
     if (
-      answers.length === questions.length &&
-      answers.length > 0 &&
-      !gameComplete &&
-      !isCompletingRef.current
+      answers.length !== questions.length ||
+      answers.length === 0 ||
+      gameComplete ||
+      trainingMode ||
+      isCompletingRef.current
     ) {
-      completeGame();
+      return;
     }
-  }, [answers.length, questions.length, gameComplete]);
+    const lastAnswer = answers[answers.length - 1];
+    const answeredQuestion = questions.find((q) => q.id === lastAnswer.question_id);
+    const delayMs = getPostAnswerDelayMs(
+      answeredQuestion || questions[questions.length - 1],
+      lastAnswer.is_correct
+    );
+    const t = window.setTimeout(() => {
+      completeGame();
+    }, delayMs);
+    return () => clearTimeout(t);
+  }, [answers, questions, gameComplete, trainingMode]);
   useEffect(() => {
     if (
       quiz &&
@@ -162,6 +199,13 @@ export function PlayQuizPage({
       setTimeLeft(quiz?.time_limit_seconds || 30);
       setQuestionStartTime(Date.now());
       hasTimedOutRef.current = false;
+      return;
+    }
+
+    // In training mode there is no server-side completion call,
+    // so finishing on the last question must mark the game complete locally.
+    if (trainingMode) {
+      setGameComplete(true);
     }
   };
 
@@ -275,48 +319,244 @@ export function PlayQuizPage({
           { metric: CountryMetric; expected: string[]; order: string[] }
         > = {};
 
+        const customMapIds = [
+          ...new Set(
+            processedQuestions
+              .filter(
+                (q) =>
+                  q.question_type === "puzzle_map" ||
+                  q.question_type === "map_click"
+              )
+              .map((q) => {
+                const m = (q.map_data || {}) as { mapLevel?: string; customGeojsonMapId?: string };
+                return m.mapLevel === "custom_geojson" && m.customGeojsonMapId
+                  ? m.customGeojsonMapId
+                  : null;
+              })
+              .filter((id): id is string => Boolean(id))
+          ),
+        ];
+
+        const customMapsMeta: Record<string, CustomGeoJsonMapRow> = {};
+        if (customMapIds.length > 0) {
+          const { data: mapRows } = await supabase
+            .from("geojson_custom_maps")
+            .select("*")
+            .in("id", customMapIds)
+            .eq("status", "approved");
+          for (const row of mapRows || []) {
+            customMapsMeta[row.id] = row as CustomGeoJsonMapRow;
+          }
+        }
+
+        const customFcCache = new Map<
+          string,
+          Awaited<ReturnType<typeof fetchGeoJsonFeatureCollection>>
+        >();
+
+        const getCustomFc = async (
+          mapId: string,
+          fallbackUrl?: string
+        ): Promise<Awaited<ReturnType<typeof fetchGeoJsonFeatureCollection>>> => {
+          if (customFcCache.has(mapId)) {
+            return customFcCache.get(mapId)!;
+          }
+          const meta = customMapsMeta[mapId];
+          const url = meta?.public_url || fallbackUrl;
+          if (!url) {
+            customFcCache.set(mapId, null);
+            return null;
+          }
+          const fc = await fetchGeoJsonFeatureCollection(url);
+          customFcCache.set(mapId, fc);
+          return fc;
+        };
+
         for (const question of processedQuestions) {
           if (question.question_type === "puzzle_map") {
             const mapData = (question.map_data || {}) as {
               continent?: string;
               selectedCountries?: string[];
               showTargetList?: boolean;
-              mapLevel?: "countries" | "subdivisions";
+              mapLevel?: "countries" | "subdivisions" | "custom_geojson";
               subdivisionScope?: SubdivisionScope;
+              customGeojsonMapId?: string;
+              customGeojsonPublicUrl?: string;
+              customGeojsonIdProperty?: string;
             };
-            const subdivisionScope =
-              mapData.mapLevel === "subdivisions" && mapData.subdivisionScope
-                ? mapData.subdivisionScope
-                : null;
-            const selectedPool = subdivisionScope
-              ? getSubdivisionsByIds(
-                  subdivisionScope,
-                  mapData.selectedCountries || []
-                ).map(toCountryEntry)
-              : getCountriesByIso3(mapData.selectedCountries || []);
-            const subdivisionFallback = subdivisionScope
-              ? getSubdivisions(subdivisionScope).map(toCountryEntry)
-              : [];
-            const countries =
-              selectedPool.length > 0
-                ? shuffleSeeded(selectedPool, `${quizId}:${question.id}:puzzle`)
-                : subdivisionScope
-                  ? shuffleSeeded(
-                      subdivisionFallback,
-                      `${quizId}:${question.id}:puzzle`
-                    ).slice(0, 12)
-                  : pickCountries(
-                    12,
-                    `${quizId}:${question.id}:puzzle`,
-                    mapData.continent || "world"
+
+            if (mapData.mapLevel === "custom_geojson" && mapData.customGeojsonMapId) {
+              const meta = customMapsMeta[mapData.customGeojsonMapId];
+              const rowPreset = presetFromRowPreset(meta?.preset);
+              const idProp =
+                rowPreset.idProperty ||
+                mapData.customGeojsonIdProperty ||
+                "tc_id";
+              const featureLabels = rowPreset.featureLabels;
+              const fc = await getCustomFc(
+                mapData.customGeojsonMapId,
+                mapData.customGeojsonPublicUrl
+              );
+              if (fc && fc.features.length > 0) {
+                const selectedRaw = mapData.selectedCountries || [];
+                const selected = selectedRaw.map((s) =>
+                  String(s).trim().toUpperCase()
+                );
+                const selectedPool = countryEntriesFromGeoJson(
+                  fc,
+                  selected,
+                  idProp,
+                  featureLabels
+                );
+                const countries =
+                  selectedPool.length > 0
+                    ? shuffleSeeded(
+                        selectedPool,
+                        `${quizId}:${question.id}:puzzle`
+                      )
+                    : [];
+                if (countries.length > 0) {
+                  nextPuzzleStates[question.id] = {
+                    countries,
+                    assignments: Object.fromEntries(
+                      countries.map((country) => [country.iso3, ""])
+                    ),
+                    pickedIso3s: [],
+                  };
+                }
+              }
+            } else {
+              const subdivisionScope =
+                mapData.mapLevel === "subdivisions" && mapData.subdivisionScope
+                  ? mapData.subdivisionScope
+                  : null;
+              const selectedPool = subdivisionScope
+                ? getSubdivisionsByIds(
+                    subdivisionScope,
+                    mapData.selectedCountries || []
+                  ).map(toCountryEntry)
+                : getCountriesByIso3(mapData.selectedCountries || []);
+              const subdivisionFallback = subdivisionScope
+                ? getSubdivisions(subdivisionScope).map(toCountryEntry)
+                : [];
+              const countries =
+                selectedPool.length > 0
+                  ? shuffleSeeded(selectedPool, `${quizId}:${question.id}:puzzle`)
+                  : subdivisionScope
+                    ? shuffleSeeded(
+                        subdivisionFallback,
+                        `${quizId}:${question.id}:puzzle`
+                      ).slice(0, 12)
+                    : pickCountries(
+                        12,
+                        `${quizId}:${question.id}:puzzle`,
+                        mapData.continent || "world"
+                      );
+              nextPuzzleStates[question.id] = {
+                countries,
+                assignments: Object.fromEntries(
+                  countries.map((country) => [country.iso3, ""])
+                ),
+                pickedIso3s: [],
+              };
+            }
+          }
+
+          if (question.question_type === "map_click") {
+            const mapData = (question.map_data || {}) as {
+              selectedCountries?: string[];
+              mapLevel?: "countries" | "subdivisions" | "custom_geojson";
+              subdivisionScope?: SubdivisionScope;
+              customGeojsonMapId?: string;
+              customGeojsonPublicUrl?: string;
+              customGeojsonIdProperty?: string;
+            };
+
+            if (mapData.mapLevel === "custom_geojson" && mapData.customGeojsonMapId) {
+              const meta = customMapsMeta[mapData.customGeojsonMapId];
+              const rowPreset = presetFromRowPreset(meta?.preset);
+              const idProp =
+                rowPreset.idProperty ||
+                mapData.customGeojsonIdProperty ||
+                "tc_id";
+              const featureLabels = rowPreset.featureLabels;
+              const fc = await getCustomFc(
+                mapData.customGeojsonMapId,
+                mapData.customGeojsonPublicUrl
+              );
+              if (fc && fc.features.length > 0) {
+                const selectedRaw = mapData.selectedCountries || [];
+                const selected = selectedRaw.map((s) =>
+                  String(s).trim().toUpperCase()
+                );
+                let pool = countryEntriesFromGeoJson(
+                  fc,
+                  selected,
+                  idProp,
+                  featureLabels
+                );
+                if (pool.length > 0) {
+                  const countries = shuffleSeeded(
+                    pool,
+                    `${quizId}:${question.id}:mapclick`
                   );
-            nextPuzzleStates[question.id] = {
-              countries,
-              assignments: Object.fromEntries(
-                countries.map((country) => [country.iso3, ""])
-              ),
-              pickedIso3s: [],
-            };
+                  nextPuzzleStates[question.id] = {
+                    countries,
+                    assignments: Object.fromEntries(
+                      countries.map((country) => [country.iso3, ""])
+                    ),
+                    pickedIso3s: [],
+                  };
+                }
+              }
+            } else {
+              const subdivisionScope =
+                mapData.mapLevel === "subdivisions" && mapData.subdivisionScope
+                  ? mapData.subdivisionScope
+                  : null;
+              const selectedRaw = mapData.selectedCountries || [];
+              const selected = selectedRaw.map((s) => String(s).toUpperCase());
+              let pool: CountryGameEntry[] = [];
+
+              const matchByCorrectName = () => {
+                const raw = (question.correct_answer || "").trim();
+                if (!raw) return;
+                const n = normalizeAnswer(raw);
+                if (subdivisionScope) {
+                  const sub = getSubdivisions(subdivisionScope).find(
+                    (s) => normalizeAnswer(s.name) === n
+                  );
+                  if (sub) pool = [toCountryEntry(sub)];
+                  return;
+                }
+                const c = allCountries.find((x) => normalizeAnswer(x.name) === n);
+                if (c) pool = [c];
+              };
+
+              if (subdivisionScope) {
+                pool = getSubdivisionsByIds(subdivisionScope, selected).map(
+                  toCountryEntry
+                );
+                if (pool.length === 0) matchByCorrectName();
+              } else {
+                pool = getCountriesByIso3(selected);
+                if (pool.length === 0) matchByCorrectName();
+              }
+
+              if (pool.length > 0) {
+                const countries = shuffleSeeded(
+                  pool,
+                  `${quizId}:${question.id}:mapclick`
+                );
+                nextPuzzleStates[question.id] = {
+                  countries,
+                  assignments: Object.fromEntries(
+                    countries.map((country) => [country.iso3, ""])
+                  ),
+                  pickedIso3s: [],
+                };
+              }
+            }
           }
 
           if (question.question_type === "top10_order") {
@@ -330,8 +570,7 @@ export function PlayQuizPage({
               : []
             )
               .map((item) => String(item).trim())
-              .filter(Boolean)
-              .slice(0, 10);
+              .filter(Boolean);
 
             const metric: CountryMetric =
               mapData.metric === "area_km2" ? "area_km2" : "population";
@@ -360,6 +599,7 @@ export function PlayQuizPage({
         setQuestions(processedQuestions);
         setPuzzleStates(nextPuzzleStates);
         setTop10States(nextTop10States);
+        setConsumedPuzzleIso3s([]);
       }
     }
   };
@@ -435,74 +675,31 @@ export function PlayQuizPage({
         ? selectedOption
         : userAnswer);
 
-    if (currentQuestion.question_type === "puzzle_map") {
+    if (
+      currentQuestion.question_type === "puzzle_map" ||
+      currentQuestion.question_type === "map_click"
+    ) {
       if (!currentPuzzleState) return;
-      const mapData = (currentQuestion.map_data || {}) as {
-        showTargetList?: boolean;
-      };
-      const showTargetList = mapData.showTargetList !== false;
       const totalSlots = currentPuzzleState.countries.length;
-
-      if (showTargetList) {
-        const filledSlots = Object.values(currentPuzzleState.assignments).filter(
-          (value) => value
-        ).length;
-        if (!fromTimeout && filledSlots < totalSlots) {
-          alert(t("playQuiz.puzzle.completeBeforeValidate"));
-          return;
-        }
-
-        const exactMatches = currentPuzzleState.countries.filter(
-          (country) => currentPuzzleState.assignments[country.iso3] === country.iso3
-        ).length;
-        const targetSet = new Set(currentPuzzleState.countries.map((country) => country.iso3));
-        const wrongIso3s = Array.from(new Set(currentPuzzleState.pickedIso3s)).filter(
-          (iso3) => !targetSet.has(iso3)
-        );
-        const denominator = totalSlots + wrongIso3s.length;
-        const ratio = denominator > 0 ? exactMatches / denominator : 0;
-        const pointsEarned = Math.round(
-          calculatePoints(timeTaken, currentQuestion.points) * ratio
-        );
-        const isCorrect = exactMatches === totalSlots && wrongIso3s.length === 0;
-
-        const answerData = {
-          question_id: currentQuestion.id,
-          user_answer: JSON.stringify({
-            type: "puzzle_map",
-            assignments: currentPuzzleState.assignments,
-            exactMatches,
-            totalSlots,
-            wrongIso3s,
-          }),
-          is_correct: isCorrect,
-          time_taken: timeTaken,
-          points_earned: pointsEarned,
-        };
-
-        setAnswers((prev) => [...prev, answerData]);
-        setTotalScore((prev) => prev + pointsEarned);
-        setShowResult(true);
-        setIsAnswered(true);
-        saveAnswer(answerData);
-
-        if (!trainingMode) {
-          setTimeout(() => {
-            hasTimedOutRef.current = false;
-            moveToNextQuestion();
-          }, 1500);
-        }
-        return;
-      }
 
       const pickedIso3s = Array.from(new Set(currentPuzzleState.pickedIso3s));
       if (!fromTimeout && pickedIso3s.length === 0) {
         alert(t("playQuiz.selectAnswer"));
         return;
       }
-      const targetSet = new Set(currentPuzzleState.countries.map((country) => country.iso3));
-      const exactMatches = pickedIso3s.filter((iso3) => targetSet.has(iso3)).length;
-      const wrongIso3s = pickedIso3s.filter((iso3) => !targetSet.has(iso3));
+      const targetSet = new Set(
+        currentPuzzleState.countries.map((country) =>
+          String(country.iso3).toUpperCase()
+        )
+      );
+      const normPick = (iso3: string) =>
+        iso3.startsWith("__shape:") ? iso3 : String(iso3).toUpperCase();
+      const exactMatches = pickedIso3s.filter((iso3) =>
+        targetSet.has(normPick(iso3))
+      ).length;
+      const wrongIso3s = pickedIso3s.filter(
+        (iso3) => !targetSet.has(normPick(iso3))
+      );
       const denominator = Math.max(totalSlots, pickedIso3s.length || 0);
       const ratio = denominator > 0 ? exactMatches / denominator : 0;
       const pointsEarned = Math.round(
@@ -513,7 +710,7 @@ export function PlayQuizPage({
       const answerData = {
         question_id: currentQuestion.id,
         user_answer: JSON.stringify({
-          type: "puzzle_map",
+          type: currentQuestion.question_type,
           pickedIso3s,
           exactMatches,
           totalSlots,
@@ -530,11 +727,24 @@ export function PlayQuizPage({
       setIsAnswered(true);
       saveAnswer(answerData);
 
+      if (currentQuestion.question_type === "puzzle_map") {
+        setConsumedPuzzleIso3s((prev) => {
+          const next = new Set(
+            prev.map((id) => String(id).toUpperCase())
+          );
+          for (const c of currentPuzzleState.countries) {
+            if (c.iso3) next.add(String(c.iso3).toUpperCase());
+          }
+          return [...next];
+        });
+      }
+
       if (!trainingMode) {
+        const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
         setTimeout(() => {
           hasTimedOutRef.current = false;
           moveToNextQuestion();
-        }, 1500);
+        }, delayMs);
       }
       return;
     }
@@ -577,10 +787,11 @@ export function PlayQuizPage({
       saveAnswer(answerData);
 
       if (!trainingMode) {
+        const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
         setTimeout(() => {
           hasTimedOutRef.current = false;
           moveToNextQuestion();
-        }, 1500);
+        }, delayMs);
       }
       return;
     }
@@ -619,10 +830,11 @@ export function PlayQuizPage({
     saveAnswer(answerData);
 
     if (!trainingMode) {
+      const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
       setTimeout(() => {
         hasTimedOutRef.current = false;
         moveToNextQuestion();
-      }, 1500);
+      }, delayMs);
     }
   }
 
@@ -798,7 +1010,8 @@ export function PlayQuizPage({
                       total?: number;
                     } | null = null;
                     if (
-                      question.question_type === "puzzle_map" &&
+                      (question.question_type === "puzzle_map" ||
+                        question.question_type === "map_click") &&
                       answer?.user_answer &&
                       answer.user_answer.trim().startsWith("{")
                     ) {
@@ -850,7 +1063,8 @@ export function PlayQuizPage({
                             <p className="text-sm text-gray-600">
                               {t("playQuiz.yourAnswer")}:{" "}
                               <span className="font-medium">
-                                {question.question_type === "puzzle_map"
+                                {question.question_type === "puzzle_map" ||
+                                question.question_type === "map_click"
                                   ? parsedPuzzle?.totalSlots
                                     ? `${parsedPuzzle.exactMatches || 0}/${
                                         parsedPuzzle.totalSlots
@@ -868,14 +1082,21 @@ export function PlayQuizPage({
                             <p className="text-sm text-gray-600">
                               {t("playQuiz.correctAnswer")}:{" "}
                               <span className="font-medium text-emerald-600">
-                                {question.question_type === "puzzle_map"
+                                {question.question_type === "map_click" &&
+                                puzzleState?.countries?.length
+                                  ? puzzleState.countries
+                                      .map((c) => c.name)
+                                      .join(", ")
+                                  : question.question_type === "puzzle_map"
                                   ? t("playQuiz.puzzle.expectedCountries")
                                   : question.question_type === "top10_order"
                                   ? t("playQuiz.top10.exactOrder")
                                   : question.correct_answer}
                               </span>
                             </p>
-                            {question.question_type === "puzzle_map" && puzzleState && (
+                            {(question.question_type === "puzzle_map" ||
+                              question.question_type === "map_click") &&
+                              puzzleState && (
                               <div className="mt-2 bg-white border border-emerald-200 rounded p-2">
                                 <p className="text-xs font-semibold text-emerald-700 mb-1">
                                   {t("playQuiz.puzzle.expectedCountries")}
@@ -915,65 +1136,6 @@ export function PlayQuizPage({
                                         <li key={`expected-order-${itemIndex}`}>{item}</li>
                                       ))}
                                     </ol>
-                                  </div>
-                                </div>
-                              )}
-                            {question.question_type === "puzzle_map" &&
-                              parsedPuzzle?.assignments &&
-                              puzzleState && (
-                                <div className="mt-3 bg-white border border-gray-200 rounded p-2">
-                                  <p className="text-xs font-semibold text-gray-700 mb-2">
-                                    {t("playQuiz.puzzle.placementsByCountry")}
-                                  </p>
-                                  <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-                                    {puzzleState.countries.map((country) => {
-                                      const placedIso =
-                                        parsedPuzzle?.assignments?.[country.iso3] || "";
-                                      const placedName =
-                                        puzzleState.countries.find(
-                                          (entry) => entry.iso3 === placedIso
-                                        )?.name || t("playQuiz.puzzle.notPlaced");
-                                      const isCorrect = placedIso === country.iso3;
-                                      return (
-                                        <div
-                                          key={`puzzle-summary-${question.id}-${country.iso3}`}
-                                          className={`text-xs rounded px-2 py-1 ${
-                                            isCorrect
-                                              ? "bg-emerald-50 text-emerald-700"
-                                              : "bg-red-50 text-red-700"
-                                          }`}
-                                        >
-                                          {country.name} {"->"} {placedName}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            {question.question_type === "puzzle_map" &&
-                              parsedPuzzle?.pickedIso3s &&
-                              parsedPuzzle.pickedIso3s.length > 0 && (
-                                <div className="mt-3 bg-white border border-gray-200 rounded p-2">
-                                  <p className="text-xs font-semibold text-gray-700 mb-2">
-                                    {t("playQuiz.puzzle.selectedCountries")}
-                                  </p>
-                                  <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-                                    {parsedPuzzle.pickedIso3s.map((iso3) => {
-                                      const isWrong =
-                                        parsedPuzzle?.wrongIso3s?.includes(iso3) || false;
-                                      return (
-                                        <div
-                                          key={`picked-summary-${question.id}-${iso3}`}
-                                          className={`text-xs rounded px-2 py-1 ${
-                                            isWrong
-                                              ? "bg-red-50 text-red-700"
-                                              : "bg-emerald-50 text-emerald-700"
-                                          }`}
-                                        >
-                                          {countryNameByIso[iso3] || iso3}
-                                        </div>
-                                      );
-                                    })}
                                   </div>
                                 </div>
                               )}
@@ -1155,18 +1317,31 @@ export function PlayQuizPage({
               {currentQuestion.question_text}
             </h3>
             {(currentQuestion.question_type === "puzzle_map" ||
+              currentQuestion.question_type === "map_click" ||
               currentQuestion.question_type === "top10_order") && (
               <p className="mt-2 text-sm text-gray-600 bg-gray-100 border border-gray-200 rounded px-3 py-2">
-                {currentQuestion.question_type === "puzzle_map"
-                  ? t("playQuiz.objective.puzzleMap")
-                  : t("playQuiz.objective.top10Order")}
+                {currentQuestion.question_type === "top10_order"
+                  ? t("playQuiz.objective.top10Order")
+                  : currentQuestion.question_type === "map_click"
+                  ? t("playQuiz.objective.mapClick")
+                  : t("playQuiz.objective.puzzleMap")}
               </p>
             )}
           </div>
 
           {currentQuestion.question_type === "mcq" &&
             currentQuestion.options && (
-              <div className="grid grid-cols-2 gap-3">
+              <>
+                {!trainingMode &&
+                  firstMcqQuestionIndex >= 0 &&
+                  currentQuestionIndex === firstMcqQuestionIndex &&
+                  !isAnswered && (
+                    <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                      <Lightbulb className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
+                      <span>{t("playQuiz.mcqDoubleClickHint")}</span>
+                    </div>
+                  )}
+                <div className="grid grid-cols-2 gap-3">
                 {(Array.isArray(currentQuestion.options)
                   ? currentQuestion.options
                   : []
@@ -1221,7 +1396,8 @@ export function PlayQuizPage({
                     </button>
                   );
                 })}
-              </div>
+                </div>
+              </>
             )}
 
           {/* VRAI/FAUX */}
@@ -1306,17 +1482,41 @@ export function PlayQuizPage({
             />
           )}
 
-          {currentQuestion.question_type === "puzzle_map" && currentPuzzleState && (
+          {(currentQuestion.question_type === "puzzle_map" ||
+            currentQuestion.question_type === "map_click") &&
+            currentPuzzleState && (
             <PuzzleMapQuestion
               countries={currentPuzzleState.countries}
               geographySource={
-                (currentQuestion.map_data as any)?.mapLevel === "subdivisions" &&
-                (currentQuestion.map_data as any)?.subdivisionScope
-                  ? ((currentQuestion.map_data as any)?.subdivisionScope as any)
+                (currentQuestion.map_data as { mapLevel?: string })?.mapLevel ===
+                "custom_geojson"
+                  ? "custom_geojson"
+                  : (currentQuestion.map_data as { mapLevel?: string })?.mapLevel ===
+                      "subdivisions" &&
+                    (currentQuestion.map_data as { subdivisionScope?: SubdivisionScope })
+                      ?.subdivisionScope
+                  ? ((currentQuestion.map_data as { subdivisionScope?: SubdivisionScope })
+                      .subdivisionScope as SubdivisionScope)
                   : "world"
               }
-              showTargetList={
-                ((currentQuestion.map_data as any)?.showTargetList ?? true) !== false
+              customGeoJsonUrl={
+                (currentQuestion.map_data as { mapLevel?: string })?.mapLevel ===
+                "custom_geojson"
+                  ? String(
+                      (currentQuestion.map_data as { customGeojsonPublicUrl?: string })
+                        .customGeojsonPublicUrl || ""
+                    ) || null
+                  : null
+              }
+              customIdProperty={String(
+                (currentQuestion.map_data as { customGeojsonIdProperty?: string })
+                  .customGeojsonIdProperty || "tc_id"
+              )}
+              showTargetList={false}
+              excludedIso3s={
+                currentQuestion.question_type === "puzzle_map"
+                  ? consumedPuzzleIso3s
+                  : []
               }
               revealResult={showResult || isAnswered}
               initialView={(currentQuestion.map_data as any)?.initialView || null}
@@ -1356,13 +1556,6 @@ export function PlayQuizPage({
                 }))
               }
             />
-          )}
-
-          {/* MAP CLICK */}
-          {currentQuestion.question_type === "map_click" && (
-            <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
-              <p className="text-gray-600">{t("playQuiz.mapClickComing")}</p>
-            </div>
           )}
 
           {/* FEEDBACK */}
@@ -1426,12 +1619,18 @@ export function PlayQuizPage({
                       </p>
                       <p className="text-sm text-red-700">
                         {t("playQuiz.correctAnswerWas")}:{" "}
-                        {currentQuestion.question_type === "puzzle_map"
+                        {currentQuestion.question_type === "map_click" &&
+                        (currentPuzzleState?.countries?.length || 0) > 0
+                          ? currentPuzzleState!.countries
+                              .map((c) => c.name)
+                              .join(", ")
+                          : currentQuestion.question_type === "puzzle_map"
                           ? t("playQuiz.puzzle.expectedCountries")
                           : currentQuestion.question_type === "top10_order"
                           ? t("playQuiz.top10.exactOrder")
                           : currentQuestion.correct_answer}
                         {currentQuestion.question_type !== "puzzle_map" &&
+                          currentQuestion.question_type !== "map_click" &&
                           currentQuestion.question_type !== "top10_order" &&
                           currentQuestion.correct_answers &&
                           currentQuestion.correct_answers.length > 0 && (
@@ -1445,6 +1644,14 @@ export function PlayQuizPage({
                   </>
                 )}
               </div>
+              {(currentQuestion.complement_if_wrong || "").trim() && (
+                  <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    <strong className="block text-amber-800 mb-1">
+                      {t("playQuiz.explanation")}
+                    </strong>
+                    <p>{currentQuestion.complement_if_wrong}</p>
+                  </div>
+                )}
             </div>
           )}
         </div>
@@ -1460,14 +1667,10 @@ export function PlayQuizPage({
                 currentQuestion.question_type === "mcq" ||
                 currentQuestion.question_type === "true_false"
                   ? !selectedOption
-                  : currentQuestion.question_type === "puzzle_map"
+                  : currentQuestion.question_type === "puzzle_map" ||
+                    currentQuestion.question_type === "map_click"
                   ? !currentPuzzleState ||
-                    (((currentQuestion.map_data as any)?.showTargetList ?? true) !==
-                    false
-                      ? Object.values(currentPuzzleState.assignments).some(
-                          (value) => !value
-                        )
-                      : currentPuzzleState.pickedIso3s.length === 0)
+                    currentPuzzleState.pickedIso3s.length === 0
                   : currentQuestion.question_type === "top10_order"
                   ? !currentTop10State ||
                     currentTop10State.order.length !==
@@ -1482,13 +1685,6 @@ export function PlayQuizPage({
           ) : (
             trainingMode && (
               <>
-                {currentQuestion.complement_if_wrong && (
-                  <div className="my-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded shadow">
-                    <strong>{t("playQuiz.explanation")} :</strong>
-                    <p>{currentQuestion.complement_if_wrong}</p>
-                  </div>
-                )}
-
                 <button
                   onClick={moveToNextQuestion}
                   className="w-full py-3 md:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"

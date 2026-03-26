@@ -12,6 +12,7 @@ import {
   Target,
   Activity,
   Clock,
+  Map,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -811,7 +812,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
         <button
           onClick={() => goToSection("quiz-validation", "validation quiz")}
           className="bg-gradient-to-br from-teal-400 to-teal-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
@@ -875,6 +876,17 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <p className="text-purple-100 text-sm">Fonctions duels classes</p>
           <p className="text-xs text-purple-100 mt-2">
             Activer/desactiver anti-rematch, expansion et apercu MMR {"->"}
+          </p>
+        </button>
+
+        <button
+          onClick={() => goToSection("geojson-maps-management", "cartes geojson")}
+          className="bg-gradient-to-br from-cyan-500 to-teal-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+        >
+          <Map className="w-10 h-10 mb-3" />
+          <p className="text-cyan-100 text-sm">Cartes GeoJSON</p>
+          <p className="text-xs text-cyan-100 mt-2">
+            Importer, prévisualiser, preset, approuver — disponible pour les quiz
           </p>
         </button>
       </div>

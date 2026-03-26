@@ -62,9 +62,6 @@ function renderQuestionConfig(question: QuestionRow, t: (key: string) => string)
         {selectedCountries.length > 0
           ? `${selectedCountries.length} ${t('admin.quizValidation.puzzle.selectedCountries')}`
           : `${t('admin.quizValidation.puzzle.zone')} ${mapData.continent || "world"}`}
-        {mapData.showTargetList === false
-          ? ` • ${t('admin.quizValidation.puzzle.hiddenList')}`
-          : ` • ${t('admin.quizValidation.puzzle.visibleList')}`}
       </div>
     );
   }
