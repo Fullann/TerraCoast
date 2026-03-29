@@ -209,6 +209,8 @@ export interface Database {
           language: string | null
           quiz_type_id: string | null
           tags: string[] | null
+          location_lat?: number | null
+          location_lng?: number | null
         }
         Insert: {
           id?: string
@@ -234,6 +236,8 @@ export interface Database {
           language?: string | null
           quiz_type_id?: string | null
           tags?: string[] | null
+          location_lat?: number | null
+          location_lng?: number | null
         }
         Update: {
           id?: string
@@ -259,6 +263,8 @@ export interface Database {
           language?: string | null
           quiz_type_id?: string | null
           tags?: string[] | null
+          location_lat?: number | null
+          location_lng?: number | null
         }
       }
       questions: {

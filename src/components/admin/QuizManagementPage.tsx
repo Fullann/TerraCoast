@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 import {
   BookOpen,
   Search,
@@ -18,8 +19,10 @@ import {
   BarChart3,
   CheckCircle2,
   XCircle,
+  MapPin,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
+import { ConfirmModal } from "../common/ConfirmModal";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -56,6 +59,7 @@ interface QuizManagementPageProps {
 export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   const { profile } = useAuth();
   const { t } = useLanguage();
+  const { showAppNotification } = useNotifications();
   const [quizzes, setQuizzes] = useState<QuizWithCreator[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<QuizWithCreator[]>([]);
@@ -67,6 +71,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     "all" | "public" | "private"
   >("all");
   const [filterReported, setFilterReported] = useState(false);
+  const [filterMissingLocation, setFilterMissingLocation] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizWithCreator | null>(
     null
   );
@@ -76,10 +81,23 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   const [performanceLoading, setPerformanceLoading] = useState(false);
   const [performanceSummary, setPerformanceSummary] =
     useState<QuizPerformanceSummary | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationModalQuizId, setLocationModalQuizId] = useState<string | null>(null);
+  const [locationModalLat, setLocationModalLat] = useState("");
+  const [locationModalLng, setLocationModalLng] = useState("");
+  const [inlineLocationQuizId, setInlineLocationQuizId] = useState<string | null>(null);
+  const [inlineLocationLat, setInlineLocationLat] = useState("");
+  const [inlineLocationLng, setInlineLocationLng] = useState("");
+  const [savingInlineLocation, setSavingInlineLocation] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    message: string;
+    onConfirm: null | (() => void | Promise<void>);
+  }>({ open: false, message: "", onConfirm: null });
 
   useEffect(() => {
     loadQuizzes();
-  }, [sortBy, filterStatus, filterReported]);
+  }, [sortBy, filterStatus, filterReported, filterMissingLocation]);
 
   const loadQuizzes = async () => {
     setLoading(true);
@@ -96,6 +114,9 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
     if (filterReported) {
       query = query.eq("is_reported", true);
+    }
+    if (filterMissingLocation) {
+      query = query.or("location_lat.is.null,location_lng.is.null");
     }
 
     const { data, error } = await query
@@ -172,28 +193,165 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       statusText = "privé";
     }
 
-    if (!confirm(`Rendre ce quiz ${statusText} ?`)) return;
+    setConfirmModal({
+      open: true,
+      message: `Rendre ce quiz ${statusText} ?`,
+      onConfirm: async () => {
+        await applyQuizVisibilityChange(
+          quizId,
+          isPublic,
+          isGlobal,
+          newIsPublic,
+          newIsGlobal,
+          statusText
+        );
+      },
+    });
+  };
+
+  const applyQuizVisibilityChange = async (
+    quizId: string,
+    isPublic: boolean,
+    isGlobal: boolean,
+    newIsPublic: boolean,
+    newIsGlobal: boolean,
+    statusText: string
+  ) => {
+
+    if (!isPublic && !isGlobal) {
+      setLocationModalQuizId(quizId);
+      setLocationModalLat("");
+      setLocationModalLng("");
+      setShowLocationModal(true);
+      return;
+    }
+
+    const updatePayload: Database["public"]["Tables"]["quizzes"]["Update"] = {
+      is_public: newIsPublic,
+      is_global: newIsGlobal,
+    };
+
+    const { error } = await supabase
+      .from("quizzes")
+      .update(updatePayload)
+      .eq("id", quizId);
+
+    if (error) {
+      showAppNotification({ type: "error", message: "Erreur : " + error.message });
+      return;
+    }
+
+    showAppNotification({ type: "success", message: `Quiz rendu ${statusText} !` });
+    loadQuizzes();
+  };  
+
+  const confirmPublishWithLocation = async () => {
+    if (!locationModalQuizId) return;
+
+    const latTrimmed = locationModalLat.trim();
+    const lngTrimmed = locationModalLng.trim();
+    const locationLat = latTrimmed === "" ? null : Number(latTrimmed);
+    const locationLng = lngTrimmed === "" ? null : Number(lngTrimmed);
+
+    if (
+      (latTrimmed !== "" &&
+        (!Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90)) ||
+      (lngTrimmed !== "" &&
+        (!Number.isFinite(locationLng) || locationLng < -180 || locationLng > 180))
+    ) {
+      showAppNotification({
+        type: "error",
+        message: "Coordonnées invalides. Lat: -90..90, Lng: -180..180",
+      });
+      return;
+    }
 
     const { error } = await supabase
       .from("quizzes")
       .update({
-        is_public: newIsPublic,
-        is_global: newIsGlobal,
+        is_public: true,
+        is_global: false,
+        location_lat: locationLat,
+        location_lng: locationLng,
       })
-      .eq("id", quizId);
+      .eq("id", locationModalQuizId);
 
     if (error) {
-      alert("Erreur : " + error.message);
+      showAppNotification({ type: "error", message: "Erreur : " + error.message });
       return;
     }
 
-    alert(`Quiz rendu ${statusText} !`);
+    setShowLocationModal(false);
+    setLocationModalQuizId(null);
+    setLocationModalLat("");
+    setLocationModalLng("");
+    showAppNotification({ type: "success", message: "Quiz rendu public !" });
     loadQuizzes();
-  };  
+  };
+
+  const openInlineLocationEditor = (quiz: QuizWithCreator) => {
+    setInlineLocationQuizId(quiz.id);
+    setInlineLocationLat(
+      quiz.location_lat !== null && quiz.location_lat !== undefined
+        ? String(quiz.location_lat)
+        : ""
+    );
+    setInlineLocationLng(
+      quiz.location_lng !== null && quiz.location_lng !== undefined
+        ? String(quiz.location_lng)
+        : ""
+    );
+  };
+
+  const saveInlineLocation = async () => {
+    if (!inlineLocationQuizId) return;
+    const latTrimmed = inlineLocationLat.trim();
+    const lngTrimmed = inlineLocationLng.trim();
+    const locationLat = latTrimmed === "" ? null : Number(latTrimmed);
+    const locationLng = lngTrimmed === "" ? null : Number(lngTrimmed);
+    if (
+      (latTrimmed !== "" &&
+        (!Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90)) ||
+      (lngTrimmed !== "" &&
+        (!Number.isFinite(locationLng) || locationLng < -180 || locationLng > 180))
+    ) {
+      showAppNotification({
+        type: "error",
+        message: "Coordonnées invalides. Lat: -90..90, Lng: -180..180",
+      });
+      return;
+    }
+    setSavingInlineLocation(true);
+    const { error } = await supabase
+      .from("quizzes")
+      .update({
+        location_lat: locationLat,
+        location_lng: locationLng,
+      })
+      .eq("id", inlineLocationQuizId);
+    setSavingInlineLocation(false);
+    if (error) {
+      showAppNotification({ type: "error", message: "Erreur : " + error.message });
+      return;
+    }
+    showAppNotification({ type: "success", message: "Localisation enregistrée." });
+    setInlineLocationQuizId(null);
+    setInlineLocationLat("");
+    setInlineLocationLng("");
+    loadQuizzes();
+  };
 
   const duplicateQuiz = async (quiz: QuizWithCreator) => {
-    if (!confirm(`Dupliquer le quiz "${quiz.title}" ?`)) return;
+    setConfirmModal({
+      open: true,
+      message: `Dupliquer le quiz "${quiz.title}" ?`,
+      onConfirm: async () => {
+        await performDuplicateQuiz(quiz);
+      },
+    });
+  };
 
+  const performDuplicateQuiz = async (quiz: QuizWithCreator) => {
     try {
       const { data, error } = await supabase.rpc("duplicate_quiz", {
         p_quiz_id: quiz.id,
@@ -202,25 +360,34 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
       if (error) {
         console.error("Erreur:", error);
-        alert("Erreur lors de la duplication : " + error.message);
+        showAppNotification({
+          type: "error",
+          message: "Erreur lors de la duplication : " + error.message,
+        });
         return;
       }
 
-      alert(`Quiz "${quiz.title}" dupliqué avec succès ! ID: ${data}`);
+      showAppNotification({
+        type: "success",
+        message: `Quiz "${quiz.title}" dupliqué avec succès ! ID: ${data}`,
+      });
       loadQuizzes();
     } catch (error: any) {
-      alert("Erreur : " + error.message);
+      showAppNotification({ type: "error", message: "Erreur : " + error.message });
     }
   };
 
   const resetQuizStats = async (quizId: string, quizTitle: string) => {
-    if (
-      !confirm(
-        `Réinitialiser les statistiques de "${quizTitle}" ?\n\nCela remettra à zéro :\n- Le nombre de parties jouées\n- Le score moyen\n- Les signalements`
-      )
-    )
-      return;
+    setConfirmModal({
+      open: true,
+      message: `Réinitialiser les statistiques de "${quizTitle}" ? Cela remettra à zéro le nombre de parties, le score moyen et les signalements.`,
+      onConfirm: async () => {
+        await performResetQuizStats(quizId, quizTitle);
+      },
+    });
+  };
 
+  const performResetQuizStats = async (quizId: string, quizTitle: string) => {
     const { error } = await supabase
       .from("quizzes")
       .update({
@@ -232,11 +399,14 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       .eq("id", quizId);
 
     if (error) {
-      alert("Erreur : " + error.message);
+      showAppNotification({ type: "error", message: "Erreur : " + error.message });
       return;
     }
 
-    alert(`Statistiques réinitialisées pour "${quizTitle}" !`);
+    showAppNotification({
+      type: "success",
+      message: `Statistiques réinitialisées pour "${quizTitle}" !`,
+    });
     loadQuizzes();
   };
 
@@ -244,7 +414,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     if (!selectedQuiz) return;
 
     if (!deleteReason.trim()) {
-      alert("Tu dois indiquer une raison");
+      showAppNotification({ type: "error", message: "Tu dois indiquer une raison" });
       return;
     }
 
@@ -292,7 +462,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
         .eq("id", selectedQuiz.id);
 
       if (error) {
-        alert("Erreur : " + error.message);
+        showAppNotification({ type: "error", message: "Erreur : " + error.message });
         return;
       }
 
@@ -317,13 +487,19 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
         }
       }
 
-      alert(`Quiz "${selectedQuiz.title}" supprimé avec succès !`);
+      showAppNotification({
+        type: "success",
+        message: `Quiz "${selectedQuiz.title}" supprimé avec succès !`,
+      });
       setShowDeleteModal(false);
       setDeleteReason("");
       setSelectedQuiz(null);
       loadQuizzes();
     } catch (error: any) {
-      alert("Erreur lors de la suppression : " + error.message);
+      showAppNotification({
+        type: "error",
+        message: "Erreur lors de la suppression : " + error.message,
+      });
     }
   };
 
@@ -487,7 +663,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Tri */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -534,6 +710,21 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                 </span>
               </label>
             </div>
+
+            {/* Filtre sans localisation */}
+            <div className="flex items-end">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filterMissingLocation}
+                  onChange={(e) => setFilterMissingLocation(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded focus:ring-2"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Sans localisation
+                </span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -577,8 +768,8 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {displayQuizzes.map((quiz) => (
+                  <Fragment key={`quiz-row-wrap-${quiz.id}`}>
                   <tr
-                    key={quiz.id}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-6 py-4">
@@ -732,6 +923,16 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                           )}
                         </button>
 
+                        {(quiz.location_lat === null || quiz.location_lng === null) && (
+                          <button
+                            onClick={() => openInlineLocationEditor(quiz)}
+                            className="p-2 text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Corriger localisation"
+                          >
+                            <MapPin className="w-4 h-4" />
+                          </button>
+                        )}
+
                         {/* Bouton Reset Stats */}
                         <button
                           onClick={() => resetQuizStats(quiz.id, quiz.title)}
@@ -755,6 +956,60 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                       </div>
                     </td>
                   </tr>
+                  {inlineLocationQuizId === quiz.id && (
+                    <tr key={`${quiz.id}-inline-location`} className="bg-amber-50/60">
+                      <td colSpan={8} className="px-6 py-3">
+                        <div className="flex flex-col md:flex-row md:items-end gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-700 mb-1">Latitude</label>
+                            <input
+                              type="number"
+                              step="0.0001"
+                              min={-90}
+                              max={90}
+                              value={inlineLocationLat}
+                              onChange={(e) => setInlineLocationLat(e.target.value)}
+                              className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                              placeholder="Ex: 46.2044"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-700 mb-1">Longitude</label>
+                            <input
+                              type="number"
+                              step="0.0001"
+                              min={-180}
+                              max={180}
+                              value={inlineLocationLng}
+                              onChange={(e) => setInlineLocationLng(e.target.value)}
+                              className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                              placeholder="Ex: 6.1432"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={saveInlineLocation}
+                              disabled={savingInlineLocation}
+                              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                              Enregistrer
+                            </button>
+                            <button
+                              onClick={() => {
+                                setInlineLocationQuizId(null);
+                                setInlineLocationLat("");
+                                setInlineLocationLng("");
+                              }}
+                              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                            >
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -969,6 +1224,73 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
           </div>
         </div>
       )}
+
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">
+              Publier avec localisation
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Tu peux définir des coordonnées pour placer ce quiz sur le globe.
+              Laisse vide pour ne pas définir de point manuel.
+            </p>
+            <div className="space-y-3">
+              <input
+                type="number"
+                step="0.0001"
+                min={-90}
+                max={90}
+                value={locationModalLat}
+                onChange={(e) => setLocationModalLat(e.target.value)}
+                placeholder="Latitude (ex: 46.2044)"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              />
+              <input
+                type="number"
+                step="0.0001"
+                min={-180}
+                max={180}
+                value={locationModalLng}
+                onChange={(e) => setLocationModalLng(e.target.value)}
+                placeholder="Longitude (ex: 6.1432)"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              />
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowLocationModal(false);
+                  setLocationModalQuizId(null);
+                  setLocationModalLat("");
+                  setLocationModalLng("");
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmPublishWithLocation}
+                className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+              >
+                Publier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <ConfirmModal
+        open={confirmModal.open}
+        message={confirmModal.message}
+        cancelLabel={t("common.cancel")}
+        confirmLabel={t("common.confirm")}
+        onCancel={() => setConfirmModal({ open: false, message: "", onConfirm: null })}
+        onConfirm={async () => {
+          const fn = confirmModal.onConfirm;
+          setConfirmModal({ open: false, message: "", onConfirm: null });
+          if (fn) await fn();
+        }}
+      />
     </div>
   );
 }

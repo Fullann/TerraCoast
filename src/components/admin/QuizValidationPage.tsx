@@ -108,6 +108,8 @@ export function QuizValidationPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [quizQuestions, setQuizQuestions] = useState<Record<string, QuestionRow[]>>({});
   const [loadingQuestionsFor, setLoadingQuestionsFor] = useState<string | null>(null);
+  const [locationLat, setLocationLat] = useState<string>('');
+  const [locationLng, setLocationLng] = useState<string>('');
 
   useEffect(() => {
     loadPendingQuizzes();
@@ -161,12 +163,24 @@ export function QuizValidationPage() {
   };
 
   const approveQuiz = async (quizId: string) => {
+    const parsedLat = locationLat.trim() === '' ? null : Number(locationLat);
+    const parsedLng = locationLng.trim() === '' ? null : Number(locationLng);
+    if (
+      (locationLat.trim() !== '' && (!Number.isFinite(parsedLat) || parsedLat < -90 || parsedLat > 90)) ||
+      (locationLng.trim() !== '' && (!Number.isFinite(parsedLng) || parsedLng < -180 || parsedLng > 180))
+    ) {
+      alert('Coordonnées invalides. Lat: -90..90, Lng: -180..180');
+      return;
+    }
+
     const { error: quizError } = await supabase
       .from('quizzes')
       .update({
         is_public: true,
         validation_status: 'approved',
         pending_validation: false,
+        location_lat: parsedLat,
+        location_lng: parsedLng,
       })
       .eq('id', quizId);
 
@@ -199,6 +213,8 @@ export function QuizValidationPage() {
 
       await loadPendingQuizzes();
       setSelectedQuiz(null);
+      setLocationLat('');
+      setLocationLng('');
     }
   };
 
@@ -229,6 +245,8 @@ export function QuizValidationPage() {
       await loadPendingQuizzes();
       setSelectedQuiz(null);
       setRejectionReason('');
+      setLocationLat('');
+      setLocationLng('');
     }
   };
 
@@ -379,11 +397,44 @@ export function QuizValidationPage() {
                     />
                   </div>
 
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Localisation du quiz (admin, optionnel)
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input
+                        type="number"
+                        step="0.0001"
+                        min={-90}
+                        max={90}
+                        value={locationLat}
+                        onChange={(e) => setLocationLat(e.target.value)}
+                        placeholder="Latitude (ex: 46.2044)"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      />
+                      <input
+                        type="number"
+                        step="0.0001"
+                        min={-180}
+                        max={180}
+                        value={locationLng}
+                        onChange={(e) => setLocationLng(e.target.value)}
+                        placeholder="Longitude (ex: 6.1432)"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Ces coordonnées seront utilisées sur le globe d’accueil.
+                    </p>
+                  </div>
+
                   <div className="flex space-x-3">
                     <button
                       onClick={() => {
                         setSelectedQuiz(null);
                         setRejectionReason('');
+                        setLocationLat('');
+                        setLocationLng('');
                       }}
                       className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                     >
@@ -409,6 +460,12 @@ export function QuizValidationPage() {
                 <button
                   onClick={async () => {
                     setSelectedQuiz(quiz);
+                    setLocationLat(
+                      quiz.location_lat != null ? String(quiz.location_lat) : ''
+                    );
+                    setLocationLng(
+                      quiz.location_lng != null ? String(quiz.location_lng) : ''
+                    );
                     if (!quizQuestions[quiz.id]) {
                       await loadQuizQuestions(quiz.id);
                     }
