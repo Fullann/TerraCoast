@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 import {
   Shield,
   Users,
   BookOpen,
   AlertTriangle,
-  Award,
-  Star,
-  Tag,
-  Target,
   Activity,
   Clock,
   Map,
+  CheckCircle2,
+  UserCheck,
+  BarChart3,
+  Flame,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -25,6 +26,13 @@ import {
   Legend,
 } from "recharts";
 import type { Database } from "../../lib/database.types";
+import {
+  normalizeTopQuizzes,
+  scoreHealthTone,
+  toOneDecimal,
+  toPercent,
+  type QuizTopRow,
+} from "./utils/adminDashboardStats";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
@@ -39,6 +47,10 @@ type ProfileTrendRow = Pick<
   Database["public"]["Tables"]["profiles"]["Row"],
   "created_at"
 >;
+type TopQuizSummaryRow = Pick<
+  Database["public"]["Tables"]["quizzes"]["Row"],
+  "id" | "title" | "total_plays" | "average_score"
+>;
 
 interface TrendPoint {
   label: string;
@@ -48,24 +60,28 @@ interface TrendPoint {
 }
 
 interface AdminPageProps {
-  onNavigate?: (view: string, data?: any) => void;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
 export function AdminPage({ onNavigate }: AdminPageProps) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalQuizzes: 0,
     pendingReports: 0,
     totalBadges: 0,
+    pendingValidations: 0,
+    missingLocations: 0,
+    publicQuizzes: 0,
+    globalQuizzes: 0,
+    privateQuizzes: 0,
+    bannedUsers: 0,
   });
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [userSearch, setUserSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<Profile[]>([]);
-  const [quizSearch, setQuizSearch] = useState("");
-  const [quizSearchResults, setQuizSearchResults] = useState<Quiz[]>([]);
+  const [recentUsers, setRecentUsers] = useState<Profile[]>([]);
+  const [recentQuizzes, setRecentQuizzes] = useState<Quiz[]>([]);
+  const [recentReports, setRecentReports] = useState<Report[]>([]);
+  const [topQuizzes, setTopQuizzes] = useState<QuizTopRow[]>([]);
   const [trendPeriod, setTrendPeriod] = useState<"day" | "week" | "month">(
     "day"
   );
@@ -139,12 +155,45 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     const { count: badgesCount } = await supabase
       .from("badges")
       .select("*", { count: "exact", head: true });
+    const { count: pendingValidationCount } = await supabase
+      .from("quizzes")
+      .select("*", { count: "exact", head: true })
+      .eq("pending_validation", true)
+      .eq("validation_status", "pending");
+    const { count: missingLocationCount } = await supabase
+      .from("quizzes")
+      .select("*", { count: "exact", head: true })
+      .or("location_lat.is.null,location_lng.is.null");
+    const { count: publicQuizzesCount } = await supabase
+      .from("quizzes")
+      .select("*", { count: "exact", head: true })
+      .eq("is_public", true)
+      .eq("is_global", false);
+    const { count: globalQuizzesCount } = await supabase
+      .from("quizzes")
+      .select("*", { count: "exact", head: true })
+      .eq("is_global", true);
+    const { count: privateQuizzesCount } = await supabase
+      .from("quizzes")
+      .select("*", { count: "exact", head: true })
+      .eq("is_public", false)
+      .eq("is_global", false);
+    const { count: bannedUsersCount } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("is_banned", true);
 
     setStats({
       totalUsers: usersCount || 0,
       totalQuizzes: quizzesCount || 0,
       pendingReports: warningsCount || 0,
       totalBadges: badgesCount || 0,
+      pendingValidations: pendingValidationCount || 0,
+      missingLocations: missingLocationCount || 0,
+      publicQuizzes: publicQuizzesCount || 0,
+      globalQuizzes: globalQuizzesCount || 0,
+      privateQuizzes: privateQuizzesCount || 0,
+      bannedUsers: bannedUsersCount || 0,
     });
 
     const { data: usersData } = await supabase
@@ -153,7 +202,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    if (usersData) setUsers(usersData);
+    if (usersData) setRecentUsers(usersData);
 
     const { data: quizzesData } = await supabase
       .from("quizzes")
@@ -161,7 +210,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    if (quizzesData) setQuizzes(quizzesData);
+    if (quizzesData) setRecentQuizzes(quizzesData);
 
     const { data: reportsData } = await supabase
       .from("reports")
@@ -169,7 +218,14 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       .eq("status", "pending")
       .order("created_at", { ascending: false });
 
-    if (reportsData) setReports(reportsData);
+    if (reportsData) setRecentReports(reportsData);
+
+    const { data: topQuizzesData } = await supabase
+      .from("quizzes")
+      .select("id, title, total_plays, average_score")
+      .order("total_plays", { ascending: false })
+      .limit(6);
+    setTopQuizzes(normalizeTopQuizzes((topQuizzesData || []) as TopQuizSummaryRow[]));
 
     await loadTrendStats(trendPeriod);
     await loadAdminActors();
@@ -436,94 +492,6 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setExportingCsv(false);
   };
 
-  const toggleUserRole = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === "admin" ? "user" : "admin";
-
-    const { error, data } = await supabase
-      .from("profiles")
-      .update({ role: newRole })
-      .eq("id", userId)
-      .select();
-
-    if (error) {
-      console.error("Error updating role:", error);
-      alert(`Erreur lors de la modification du rôle: ${error.message}`);
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      alert("Aucune ligne mise à jour. Vérifiez les permissions.");
-      return;
-    }
-
-    alert(`Rôle mis à jour avec succès pour ${userId}`);
-    loadAdminData();
-  };
-
-  const toggleUserBan = async (userId: string, isBanned: boolean) => {
-    const confirmMessage = isBanned
-      ? "Voulez-vous vraiment débannir cet utilisateur ?"
-      : "Voulez-vous vraiment bannir cet utilisateur ?";
-
-    if (!confirm(confirmMessage)) return;
-
-    const reason = !isBanned ? prompt("Raison du ban (optionnel):") : null;
-
-    const updateData = isBanned
-      ? { is_banned: false, banned_at: null, ban_reason: null }
-      : {
-          is_banned: true,
-          banned_at: new Date().toISOString(),
-          ban_reason: reason || "Non spécifié",
-        };
-
-    const { error, data } = await supabase
-      .from("profiles")
-      .update(updateData)
-      .eq("id", userId)
-      .select();
-
-    if (error) {
-      console.error("Error updating ban status:", error);
-      alert(
-        `Erreur lors de la modification du statut de ban: ${error.message}`
-      );
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      alert("Aucune ligne mise à jour. Vérifiez les permissions.");
-      return;
-    }
-
-    alert(`Statut de ban mis à jour avec succès`);
-    loadAdminData();
-  };
-
-  const searchQuizzes = async (query: string) => {
-    if (query.trim().length < 2) {
-      setQuizSearchResults([]);
-      return;
-    }
-
-    const { data } = await supabase
-      .from("quizzes")
-      .select("*")
-      .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    if (data) setQuizSearchResults(data);
-  };
-
-  const deleteQuiz = async (quizId: string) => {
-    if (!confirm("Voulez-vous vraiment supprimer ce quiz?")) return;
-
-    await supabase.from("quizzes").delete().eq("id", quizId);
-    loadAdminData();
-    if (quizSearch) searchQuizzes(quizSearch);
-  };
-
   if (profile?.role !== "admin") {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -545,9 +513,60 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
           <Shield className="w-10 h-10 mr-3 text-emerald-600" />
-          Administration
+          {t("admin.nav.overview")}
         </h1>
-        <p className="text-gray-600">Gestion de la plateforme TerraCoast</p>
+        <p className="text-gray-600">{t("admin.dashboard.subtitle")}</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4 mb-8">
+        <button
+          onClick={() => goToSection("user-management", "utilisateurs")}
+          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+        >
+          <Users className="w-5 h-5 text-blue-600 mb-2" />
+          <p className="text-xs text-gray-500">{t("admin.dashboard.totalUsers")}</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+        </button>
+        <button
+          onClick={() => goToSection("quiz-management", "quiz")}
+          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+        >
+          <BookOpen className="w-5 h-5 text-emerald-600 mb-2" />
+          <p className="text-xs text-gray-500">{t("admin.dashboard.totalQuizzes")}</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.totalQuizzes}</p>
+        </button>
+        <button
+          onClick={() => goToSection("quiz-validation", "validation quiz")}
+          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+        >
+          <CheckCircle2 className="w-5 h-5 text-teal-600 mb-2" />
+          <p className="text-xs text-gray-500">{t("admin.dashboard.pendingValidation")}</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.pendingValidations}</p>
+        </button>
+        <button
+          onClick={() => goToSection("warnings-management", "warnings")}
+          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+        >
+          <AlertTriangle className="w-5 h-5 text-amber-600 mb-2" />
+          <p className="text-xs text-gray-500">{t("admin.dashboard.pendingReports")}</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.pendingReports}</p>
+        </button>
+        <button
+          onClick={() => goToSection("quiz-management", "quiz sans localisation")}
+          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+        >
+          <Map className="w-5 h-5 text-cyan-600 mb-2" />
+          <p className="text-xs text-gray-500">{t("admin.dashboard.missingLocation")}</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.missingLocations}</p>
+        </button>
+        <button
+          onClick={() => goToSection("badge-management", "badges")}
+          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+        >
+          <UserCheck className="w-5 h-5 text-purple-600 mb-2" />
+          <p className="text-xs text-gray-500">{t("admin.dashboard.badges")}</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.totalBadges}</p>
+        </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-5 mb-8">
@@ -666,6 +685,115 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow-md p-5">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-sky-600" />
+            Santé plateforme
+          </h3>
+          <div className="space-y-2 text-sm">
+            <p className="flex items-center justify-between">
+              <span className="text-gray-600">Quiz privés</span>
+              <span className="font-semibold text-gray-900">{stats.privateQuizzes}</span>
+            </p>
+            <p className="flex items-center justify-between">
+              <span className="text-gray-600">Quiz publics</span>
+              <span className="font-semibold text-gray-900">{stats.publicQuizzes}</span>
+            </p>
+            <p className="flex items-center justify-between">
+              <span className="text-gray-600">Quiz globaux</span>
+              <span className="font-semibold text-gray-900">{stats.globalQuizzes}</span>
+            </p>
+            <p className="flex items-center justify-between">
+              <span className="text-gray-600">Utilisateurs bannis</span>
+              <span className="font-semibold text-gray-900">{stats.bannedUsers}</span>
+            </p>
+            <p className="flex items-center justify-between">
+              <span className="text-gray-600">Taux signalements / validations</span>
+              <span className="font-semibold text-gray-900">
+                {toPercent(
+                  stats.pendingValidations > 0
+                    ? (stats.pendingReports / stats.pendingValidations) * 100
+                    : 0
+                )}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-5">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Flame className="w-5 h-5 text-orange-600" />
+            Top quiz (parties)
+          </h3>
+          <div className="space-y-2">
+            {topQuizzes.length === 0 ? (
+              <p className="text-sm text-gray-500">Aucune donnée.</p>
+            ) : (
+              topQuizzes.map((quiz) => {
+                const avg = quiz.average_score || 0;
+                const tone = scoreHealthTone(avg);
+                const toneClass =
+                  tone === "good"
+                    ? "text-emerald-700 bg-emerald-100"
+                    : tone === "warn"
+                    ? "text-amber-700 bg-amber-100"
+                    : "text-red-700 bg-red-100";
+                return (
+                  <button
+                    key={quiz.id}
+                    onClick={() => goToSection("quiz-management", "top quiz")}
+                    className="w-full text-left p-2 rounded-lg hover:bg-gray-50"
+                  >
+                    <p className="text-sm font-medium text-gray-800 truncate">{quiz.title}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-gray-500">{quiz.total_plays} parties</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${toneClass}`}>
+                        score {toOneDecimal(avg)}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-5">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">A traiter rapidement</h3>
+          <div className="space-y-3">
+            <button
+              onClick={() => goToSection("quiz-validation", "pending validation")}
+              className="w-full p-3 rounded-lg border border-teal-200 bg-teal-50 hover:bg-teal-100 text-left"
+            >
+              <p className="text-sm text-teal-800 font-semibold">
+                {stats.pendingValidations} quiz a valider
+              </p>
+            </button>
+            <button
+              onClick={() => goToSection("warnings-management", "pending reports")}
+              className="w-full p-3 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-left"
+            >
+              <p className="text-sm text-amber-800 font-semibold">
+                {stats.pendingReports} signalements en attente
+              </p>
+            </button>
+            <button
+              onClick={() => goToSection("quiz-management", "missing location")}
+              className="w-full p-3 rounded-lg border border-cyan-200 bg-cyan-50 hover:bg-cyan-100 text-left"
+            >
+              <p className="text-sm text-cyan-800 font-semibold">
+                {stats.missingLocations} quiz sans localisation
+              </p>
+            </button>
+            <p className="text-xs text-gray-500">
+              Nouveaux utilisateurs: {recentUsers.length} - Nouveaux quiz: {recentQuizzes.length} -
+              Rapports recents: {recentReports.length}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl shadow-md p-5 mb-8">
         <div className="flex items-center justify-between gap-3 mb-4">
           <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -768,127 +896,6 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <button
-          className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-          onClick={() => goToSection("user-management", "utilisateurs")}
-        >
-          <Users className="w-10 h-10 mb-3" />
-          <p className="text-blue-100 text-sm">Utilisateurs</p>
-          <p className="text-4xl font-bold">{stats.totalUsers}</p>
-          <p className="text-amber-100 text-xs">Cliquez pour traiter</p>
-        </button>
-
-        <button
-          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-          onClick={() => goToSection("quiz-management", "quiz")}
-        >
-          <BookOpen className="w-10 h-10 mb-3" />
-          <p className="text-blue-100 text-sm">Quiz</p>
-          <p className="text-4xl font-bold">{stats.totalQuizzes}</p>
-          <p className="text-amber-100 text-xs">Cliquez pour traiter</p>
-        </button>
-
-        <button
-          onClick={() => goToSection("warnings-management", "warnings")}
-          className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <AlertTriangle className="w-10 h-10 mb-3" />
-          <p className="text-amber-100 text-sm">Signalements en attente</p>
-          <p className="text-4xl font-bold mb-2">{stats.pendingReports}</p>
-          <p className="text-amber-100 text-xs">Cliquez pour traiter</p>
-        </button>
-
-        <button
-          onClick={() => goToSection("badge-management", "badges")}
-          className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <Award className="w-10 h-10 mb-3" />
-          <p className="text-purple-100 text-sm">Badges</p>
-          <p className="text-4xl font-bold mb-2">{stats.totalBadges}</p>
-          <p className="text-xs text-purple-100">Cliquer pour gérer →</p>
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-        <button
-          onClick={() => goToSection("quiz-validation", "validation quiz")}
-          className="bg-gradient-to-br from-teal-400 to-teal-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <BookOpen className="w-10 h-10 mb-3" />
-          <p className="text-teal-100 text-sm">Validation des quiz</p>
-          <p className="text-xs text-teal-100 mt-2">
-            Approuver les quiz publics →
-          </p>
-        </button>
-
-        <button
-          onClick={() => goToSection("title-management", "titres")}
-          className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <Star className="w-10 h-10 mb-3" />
-          <p className="text-amber-100 text-sm">Gestion des titres</p>
-          <p className="text-xs text-amber-100 mt-2">
-            Créer et gérer les titres →
-          </p>
-        </button>
-
-        <button
-          onClick={() => goToSection("category-management", "categories")}
-          className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <Tag className="w-10 h-10 mb-3" />
-          <p className="text-blue-100 text-sm">Gestion des catégories</p>
-          <p className="text-xs text-blue-100 mt-2">
-            Gérer les catégories de quiz →
-          </p>
-        </button>
-
-        <button
-          onClick={() => goToSection("difficulty-management", "difficultes")}
-          className="bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <Target className="w-10 h-10 mb-3" />
-          <p className="text-orange-100 text-sm">Gestion des difficultés</p>
-          <p className="text-xs text-orange-100 mt-2">
-            Gérer les niveaux de difficulté →
-          </p>
-        </button>
-
-        <button
-          onClick={() => goToSection("quiz-type-management", "types quiz")}
-          className="bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <Tag className="w-10 h-10 mb-3" />
-          <p className="text-indigo-100 text-sm">Types de quiz</p>
-          <p className="text-xs text-indigo-100 mt-2">
-            QCM, Texte, Mixte... {"->"}
-          </p>
-        </button>
-
-        <button
-          onClick={() => goToSection("duel-features", "duel features")}
-          className="bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <Shield className="w-10 h-10 mb-3" />
-          <p className="text-purple-100 text-sm">Fonctions duels classes</p>
-          <p className="text-xs text-purple-100 mt-2">
-            Activer/desactiver anti-rematch, expansion et apercu MMR {"->"}
-          </p>
-        </button>
-
-        <button
-          onClick={() => goToSection("geojson-maps-management", "cartes geojson")}
-          className="bg-gradient-to-br from-cyan-500 to-teal-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <Map className="w-10 h-10 mb-3" />
-          <p className="text-cyan-100 text-sm">Cartes GeoJSON</p>
-          <p className="text-xs text-cyan-100 mt-2">
-            Importer, prévisualiser, preset, approuver — disponible pour les quiz
-          </p>
-        </button>
       </div>
     </div>
   );

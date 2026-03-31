@@ -252,7 +252,7 @@ export function QuizValidationPage() {
 
   if (profile?.role !== 'admin') {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="w-full px-1 py-4">
         <div className="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Accès refusé</h2>
           <p className="text-gray-600">Seuls les administrateurs peuvent valider les quiz</p>
@@ -262,9 +262,9 @@ export function QuizValidationPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="w-full px-1 py-4">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
           <Clock className="w-10 h-10 mr-3 text-blue-600" />
           Validation des Quiz
         </h1>
