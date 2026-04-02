@@ -84,6 +84,18 @@ export function PuzzleMapQuestion({
 }: PuzzleMapQuestionProps) {
   const { t } = useLanguage();
   const [activeCountryIso3, setActiveCountryIso3] = useState<string>("");
+  const [persistentMarks, setPersistentMarks] = useState<
+    Record<string, "correct" | "wrong">
+  >({});
+  const [hoverTooltip, setHoverTooltip] = useState<{
+    open: boolean;
+    label: string;
+    x: number;
+    y: number;
+  }>({ open: false, label: "", x: 0, y: 0 });
+  const [hoveredKey, setHoveredKey] = useState<string>("");
+  const [flashKey, setFlashKey] = useState<string>("");
+  const [flashOn, setFlashOn] = useState(false);
   const rawCenterLng = Number(initialView?.centerLng ?? 0);
   const rawCenterLat = Number(initialView?.centerLat ?? 20);
   const rawZoom = Number(initialView?.zoom ?? 1);
@@ -196,6 +208,15 @@ export function PuzzleMapQuestion({
     setMapZoom(initialZoom);
   }, [initialCenter, initialZoom]);
 
+  // Reset des feedbacks si la question / pool change
+  useEffect(() => {
+    setPersistentMarks({});
+    setFlashKey("");
+    setFlashOn(false);
+    setHoveredKey("");
+    setHoverTooltip({ open: false, label: "", x: 0, y: 0 });
+  }, [countries, geographySource, customGeoJsonUrl, customIdProperty]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -272,6 +293,30 @@ export function PuzzleMapQuestion({
       return;
     }
     onPickedIso3sChange([...pickedIso3s, iso3]);
+  };
+
+  const markClickResult = (geoKey: string, isCorrect: boolean) => {
+    if (!geoKey) return;
+    setPersistentMarks((prev) => ({
+      ...prev,
+      [geoKey]: isCorrect ? "correct" : "wrong",
+    }));
+  };
+
+  const triggerFlashHint = (targetKey: string) => {
+    if (!targetKey) return;
+    setFlashKey(targetKey);
+    setFlashOn(true);
+    let ticks = 0;
+    const id = window.setInterval(() => {
+      ticks += 1;
+      setFlashOn((v) => !v);
+      if (ticks >= 8) {
+        window.clearInterval(id);
+        setFlashKey("");
+        setFlashOn(false);
+      }
+    }, 180);
   };
 
   const handleDropOnSlot = (
@@ -391,6 +436,18 @@ export function PuzzleMapQuestion({
     return match?.iso3 || "";
   };
 
+  const getGeoLabel = (geo: any, geoIso3: string): string => {
+    const geoKey = geoIso3 ? String(geoIso3).toUpperCase() : "";
+    return (
+      countries.find((c) => String(c.iso3).toUpperCase() === geoKey)?.name ||
+      countryByIso[geoIso3]?.name ||
+      geo?.properties?.NAME ||
+      geo?.properties?.name ||
+      geo?.properties?.ADMIN ||
+      ""
+    );
+  };
+
   const zoomIn = () => setMapZoom((prev) => Math.min(8, prev + 0.5));
   const zoomOut = () => setMapZoom((prev) => Math.max(1, prev - 0.5));
   const resetView = () => {
@@ -488,10 +545,17 @@ export function PuzzleMapQuestion({
                     !!assignedIso3 &&
                     !!geoKey &&
                     String(assignedIso3).toUpperCase() === geoKey;
+                  const persisted = geoKey ? persistentMarks[geoKey] : undefined;
                   const isBlockedPrior =
                     geoKey.length > 0 &&
                     excludedNormSet.has(geoKey) &&
                     !isTarget;
+                  const isFlashing = Boolean(flashKey && geoKey === flashKey && flashOn);
+                  const label = getGeoLabel(geo, geoIso3);
+                  const wrongClicks = pickedIso3s.filter((id) => {
+                    const up = String(id || "").toUpperCase();
+                    return up && !targetIsoSet.has(up);
+                  }).length;
 
                   return (
                     <Geography
@@ -531,7 +595,21 @@ export function PuzzleMapQuestion({
                           return;
                         }
                         if (!pickId) return;
+                        // Mode "clic sur la carte" : feedback immédiat + 2 chances puis indice (clignote)
                         togglePickedCountry(pickId);
+                        if (geoKey) {
+                          markClickResult(geoKey, isTarget);
+                          if (!isTarget) {
+                            // 2e chance: au 2e faux clic, on montre une bonne réponse restante
+                            const hasSecondMistake = wrongClicks + 1 >= 2;
+                            if (hasSecondMistake) {
+                              const remaining = countries
+                                .map((c) => String(c.iso3).toUpperCase())
+                                .find((k) => !persistentMarks[k] || persistentMarks[k] !== "correct");
+                              if (remaining) triggerFlashHint(remaining);
+                            }
+                          }
+                        }
                       }}
                       onDrop={(event: any) => {
                         if (!showTargetList || !isTarget) return;
@@ -542,7 +620,13 @@ export function PuzzleMapQuestion({
                       }}
                       style={{
                         default: {
-                          fill: isBlockedPrior
+                          fill: isFlashing
+                            ? "#EF4444"
+                            : persisted === "correct"
+                            ? "#10B981"
+                            : persisted === "wrong"
+                            ? "#EF4444"
+                            : isBlockedPrior
                             ? MAP_FILL_EXCLUDED_PRIOR
                             : showTargetList
                             ? isTarget
@@ -649,14 +733,34 @@ export function PuzzleMapQuestion({
                             : "default",
                         },
                       }}
+                      onMouseEnter={(e) => {
+                        if (!label) return;
+                        const key = geoKey || String(geo?.rsmKey || "");
+                        setHoveredKey(key);
+                        const x = (e as unknown as MouseEvent).clientX;
+                        const y = (e as unknown as MouseEvent).clientY;
+                        // affichage après survol prolongé
+                        window.setTimeout(() => {
+                          setHoverTooltip((prev) =>
+                            prev.open || hoveredKey !== key
+                              ? prev
+                              : { open: true, label, x, y }
+                          );
+                        }, 650);
+                      }}
+                      onMouseMove={(e) => {
+                        if (!hoverTooltip.open) return;
+                        const x = (e as unknown as MouseEvent).clientX;
+                        const y = (e as unknown as MouseEvent).clientY;
+                        setHoverTooltip((prev) => ({ ...prev, x, y }));
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredKey("");
+                        setHoverTooltip({ open: false, label: "", x: 0, y: 0 });
+                      }}
                     >
                       <title>
-                        {countryMatch?.name ||
-                          countryByIso[geoIso3]?.name ||
-                          geo?.properties?.NAME ||
-                          geo?.properties?.name ||
-                          geo?.properties?.ADMIN ||
-                          ""}
+                        {label}
                       </title>
                     </Geography>
                   );
@@ -665,6 +769,14 @@ export function PuzzleMapQuestion({
             </Geographies>
           </ZoomableGroup>
         </ComposableMap>
+        {hoverTooltip.open && (
+          <div
+            className="pointer-events-none fixed z-50 px-2 py-1 rounded bg-gray-900 text-white text-xs shadow-lg"
+            style={{ left: hoverTooltip.x + 12, top: hoverTooltip.y + 12 }}
+          >
+            {hoverTooltip.label}
+          </div>
+        )}
       </div>
 
       {showTargetList ? (

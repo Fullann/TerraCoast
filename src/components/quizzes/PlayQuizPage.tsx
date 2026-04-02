@@ -17,6 +17,8 @@ import {
   CountryGameEntry,
   getAllCountries,
   getCountriesByIso3,
+  getCountryNameVariantsByIso3,
+  getCountryCapitalVariantsByIso3,
   getTop10CountriesByMetric,
   pickCountries,
   shuffleSeeded,
@@ -887,7 +889,8 @@ export function PlayQuizPage({
         "map_click",
       ];
       const nameTolerance = mapData.nameTolerance || "lenient";
-      const capitalTolerance = mapData.capitalTolerance || "strict";
+      // Par défaut en "lenient" pour éviter faux négatifs (ex: Berne/Bern, Vienne/Vienna).
+      const capitalTolerance = mapData.capitalTolerance || "lenient";
       const inputByIso = countryMultiInputs[currentQuestion.id] || {};
       const pickedIso3s = currentPuzzleState?.pickedIso3s || [];
       const pickedSet = new Set(
@@ -922,23 +925,25 @@ export function PlayQuizPage({
 
       const details = targets.map((target) => {
         const input = inputByIso[target.iso3] || { countryName: "", capital: "" };
+        const nameVariants = getCountryNameVariantsByIso3(target.iso3, language);
+        const capitalVariants = getCountryCapitalVariantsByIso3(target.iso3, language);
         const isNameCorrect = !requiredFields.includes("name")
           ? true
-          : matchesWithTolerance(input.countryName, target.name, nameTolerance);
+          : nameVariants.some((variant) =>
+              matchesWithTolerance(input.countryName, variant, nameTolerance)
+            );
         const isCapitalCorrect = !requiredFields.includes("capital")
           ? true
-          : matchesWithTolerance(
-              input.capital,
-              String(target.capital || ""),
-              capitalTolerance
+          : capitalVariants.some((variant) =>
+              matchesWithTolerance(input.capital, String(variant || ""), capitalTolerance)
             );
         const isMapCorrect = !requiredFields.includes("map_click")
           ? true
           : pickedSet.has(String(target.iso3).toUpperCase());
         return {
           iso3: target.iso3,
-          targetName: target.name,
-          targetCapital: target.capital || "",
+          targetName: nameVariants[0] || target.name,
+          targetCapital: capitalVariants[0] || target.capital || "",
           targetFlagEmoji: target.flagEmoji || "",
           userCountryName: input.countryName,
           userCapital: input.capital,
@@ -1889,6 +1894,10 @@ export function PlayQuizPage({
                           countryName: "",
                           capital: "",
                         };
+                        const nameOptions = getCountryNameVariantsByIso3(target.iso3, language);
+                        const capitalOptions = getCountryCapitalVariantsByIso3(target.iso3, language);
+                        const nameListId = `cm-name-${currentQuestion.id}-${target.iso3}`;
+                        const capitalListId = `cm-capital-${currentQuestion.id}-${target.iso3}`;
                         return (
                           <div
                             key={target.iso3}
@@ -1905,56 +1914,78 @@ export function PlayQuizPage({
                               )}
                             </p>
                             {requiredFields.includes("name") && (
-                              <input
-                                type="text"
-                                value={rowInput.countryName}
-                                disabled={isAnswered}
-                                onChange={(e) =>
-                                  setCountryMultiInputs((prev) => ({
-                                    ...prev,
-                                    [currentQuestion.id]: {
-                                      ...(prev[currentQuestion.id] || {}),
-                                      [target.iso3]: {
-                                        ...((prev[currentQuestion.id] || {})[
-                                          target.iso3
-                                        ] || {
-                                          countryName: "",
-                                          capital: "",
-                                        }),
-                                        countryName: e.target.value,
+                              <div className="mb-2">
+                                <input
+                                  type="text"
+                                  value={rowInput.countryName}
+                                  list={nameListId}
+                                  disabled={isAnswered}
+                                  onChange={(e) =>
+                                    setCountryMultiInputs((prev) => ({
+                                      ...prev,
+                                      [currentQuestion.id]: {
+                                        ...(prev[currentQuestion.id] || {}),
+                                        [target.iso3]: {
+                                          ...((prev[currentQuestion.id] || {})[
+                                            target.iso3
+                                          ] || {
+                                            countryName: "",
+                                            capital: "",
+                                          }),
+                                          countryName: e.target.value,
+                                        },
                                       },
-                                    },
-                                  }))
-                                }
-                                className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
-                                placeholder={t("playQuiz.countryMulti.fieldName")}
-                              />
+                                    }))
+                                  }
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
+                                  placeholder={t("playQuiz.countryMulti.fieldName")}
+                                />
+                                <datalist id={nameListId}>
+                                  {nameOptions.slice(0, 20).map((opt) => (
+                                    <option key={opt} value={opt} />
+                                  ))}
+                                </datalist>
+                                <p className="text-[11px] text-gray-500 mt-1">
+                                  Astuce: commence a taper puis choisis dans la liste.
+                                </p>
+                              </div>
                             )}
                             {requiredFields.includes("capital") && (
-                              <input
-                                type="text"
-                                value={rowInput.capital}
-                                disabled={isAnswered}
-                                onChange={(e) =>
-                                  setCountryMultiInputs((prev) => ({
-                                    ...prev,
-                                    [currentQuestion.id]: {
-                                      ...(prev[currentQuestion.id] || {}),
-                                      [target.iso3]: {
-                                        ...((prev[currentQuestion.id] || {})[
-                                          target.iso3
-                                        ] || {
-                                          countryName: "",
-                                          capital: "",
-                                        }),
-                                        capital: e.target.value,
+                              <div>
+                                <input
+                                  type="text"
+                                  value={rowInput.capital}
+                                  list={capitalListId}
+                                  disabled={isAnswered}
+                                  onChange={(e) =>
+                                    setCountryMultiInputs((prev) => ({
+                                      ...prev,
+                                      [currentQuestion.id]: {
+                                        ...(prev[currentQuestion.id] || {}),
+                                        [target.iso3]: {
+                                          ...((prev[currentQuestion.id] || {})[
+                                            target.iso3
+                                          ] || {
+                                            countryName: "",
+                                            capital: "",
+                                          }),
+                                          capital: e.target.value,
+                                        },
                                       },
-                                    },
-                                  }))
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
-                                placeholder={t("playQuiz.countryMulti.fieldCapital")}
-                              />
+                                    }))
+                                  }
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
+                                  placeholder={t("playQuiz.countryMulti.fieldCapital")}
+                                />
+                                <datalist id={capitalListId}>
+                                  {capitalOptions.slice(0, 20).map((opt) => (
+                                    <option key={opt} value={opt} />
+                                  ))}
+                                </datalist>
+                                <p className="text-[11px] text-gray-500 mt-1">
+                                  Tu peux selectionner la capitale (souvent en anglais) dans la liste.
+                                </p>
+                              </div>
                             )}
                           </div>
                         );
