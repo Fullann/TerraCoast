@@ -28,6 +28,8 @@ export interface Database {
           ban_until?: string | null
           ban_reason?: string | null
           force_username_change?: boolean | null
+          avatar_url?: string | null
+          frame_style?: string | null
           duel_rating?: number
           duel_ranked_games?: number
           duel_ranked_wins?: number
@@ -50,6 +52,8 @@ export interface Database {
           updated_at?: string
           terms_accepted_at?: string | null
           privacy_accepted_at?: string | null
+          avatar_url?: string | null
+          frame_style?: string | null
           duel_rating?: number
           duel_ranked_games?: number
           duel_ranked_wins?: number
@@ -72,6 +76,8 @@ export interface Database {
           updated_at?: string
           terms_accepted_at?: string | null
           privacy_accepted_at?: string | null
+          avatar_url?: string | null
+          frame_style?: string | null
           duel_rating?: number
           duel_ranked_games?: number
           duel_ranked_wins?: number
@@ -750,6 +756,44 @@ export interface Database {
           status?: 'pending' | 'accepted' | 'declined' | 'expired'
           created_at?: string
           expires_at?: string
+        }
+      }
+      quiz_score_challenges: {
+        Row: {
+          id: string
+          from_user_id: string
+          to_user_id: string
+          quiz_id: string
+          target_score: number
+          status: string
+          beaten: boolean | null
+          created_at: string
+          accepted_at: string | null
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          from_user_id: string
+          to_user_id: string
+          quiz_id: string
+          target_score: number
+          status?: string
+          beaten?: boolean | null
+          created_at?: string
+          accepted_at?: string | null
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          from_user_id?: string
+          to_user_id?: string
+          quiz_id?: string
+          target_score?: number
+          status?: string
+          beaten?: boolean | null
+          created_at?: string
+          accepted_at?: string | null
+          completed_at?: string | null
         }
       }
       chat_messages: {

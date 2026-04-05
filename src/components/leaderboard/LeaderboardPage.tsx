@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { Avatar } from "../common/Avatar";
 import {
   Trophy,
   Medal,
@@ -358,6 +359,13 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
                 <div className="flex items-center space-x-4 flex-1">
                   {/* Icône de rang */}
                   <div className="flex-shrink-0">{getRankIcon(index)}</div>
+
+                  <Avatar
+                    url={(entry as any).avatar_url}
+                    pseudo={entry.pseudo}
+                    frameStyle={(entry as any).frame_style}
+                    size="md"
+                  />
 
                   {/* Info joueur */}
                   <div className="flex-1 min-w-0">

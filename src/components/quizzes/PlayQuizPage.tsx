@@ -45,6 +45,7 @@ interface PlayQuizPageProps {
   quizId: string;
   mode?: "solo" | "duel";
   duelId?: string;
+  challengeId?: string;
   trainingMode?: boolean;
   questionCount?: number;
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
@@ -54,6 +55,7 @@ export function PlayQuizPage({
   quizId,
   mode = "solo",
   duelId,
+  challengeId,
   trainingMode = false,
   questionCount,
   onNavigate,
@@ -69,6 +71,15 @@ export function PlayQuizPage({
   const [timeLeft, setTimeLeft] = useState(30);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [challenge, setChallenge] = useState<{
+    id: string;
+    from_user_id: string;
+    to_user_id: string;
+    quiz_id: string;
+    target_score: number;
+    status: string;
+    from_profile?: { pseudo: string | null };
+  } | null>(null);
   const [answers, setAnswers] = useState<
     {
       question_id: string;
@@ -135,6 +146,31 @@ export function PlayQuizPage({
     isCreatingSessionRef.current = false;
     loadQuiz();
   }, [quizId]);
+
+  useEffect(() => {
+    if (!challengeId || trainingMode) {
+      setChallenge(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("quiz_score_challenges")
+        .select("*, from_profile:profiles!quiz_score_challenges_from_user_id_fkey(pseudo)")
+        .eq("id", challengeId)
+        .single();
+      if (cancelled) return;
+      if (error) {
+        console.error("Failed to load challenge:", error);
+        setChallenge(null);
+        return;
+      }
+      setChallenge(data as any);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [challengeId, trainingMode]);
 
   const firstMcqQuestionIndex = useMemo(
     () => questions.findIndex((q) => q.question_type === "mcq"),
@@ -1097,6 +1133,22 @@ export function PlayQuizPage({
       return;
     }
 
+    if (challengeId) {
+      try {
+        const beaten = normalizedScore >= (challenge?.target_score ?? 0);
+        await supabase
+          .from("quiz_score_challenges")
+          .update({
+            status: "completed",
+            beaten,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", challengeId);
+      } catch (e) {
+        console.error("Failed to complete challenge:", e);
+      }
+    }
+
     if (mode === "duel" && duelId) {
       await updateDuel();
     }
@@ -1568,6 +1620,29 @@ export function PlayQuizPage({
               )}
             </div>
           </div>
+
+          {!trainingMode && challenge && (
+            <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-emerald-900">
+                    {t("challenge.title")}
+                  </p>
+                  <p className="text-sm text-emerald-800">
+                    {t("challenge.subtitle")
+                      .replace("{title}", quiz?.title || "")
+                      .replace("{score}", String(challenge.target_score))}
+                    {challenge.from_profile?.pseudo
+                      ? ` • ${challenge.from_profile.pseudo}`
+                      : ""}
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white text-emerald-700 border border-emerald-200">
+                  {challenge.status}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between text-xs md:text-sm text-gray-600 mb-2">
             <span>

@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { languageNames, Language } from "../../i18n/translations";
+import { Avatar } from "../common/Avatar";
 import {
   Settings,
   Mail,
@@ -45,6 +46,8 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
   );
   const [emailCooldownUntil, setEmailCooldownUntil] = useState(0);
   const EMAIL_UPDATE_COOLDOWN_MS = 60_000;
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [frameSaving, setFrameSaving] = useState(false);
 
   const isMfaStepUpError = (message?: string) => {
     const msg = (message || "").toLowerCase();
@@ -302,6 +305,60 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     }
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!profile?.id) return;
+    setAvatarUploading(true);
+    setError("");
+    setMessage("");
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `${profile.id}/avatar-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = data.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", profile.id);
+      if (updateError) throw updateError;
+
+      await refreshProfile();
+      setMessage(t("settings.profilePhotoUpdated"));
+    } catch (e: any) {
+      console.error("Avatar upload failed:", e);
+      setError(t("settings.profilePhotoError"));
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const saveFrameStyle = async (style: string) => {
+    if (!profile?.id) return;
+    setFrameSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ frame_style: style, updated_at: new Date().toISOString() })
+        .eq("id", profile.id);
+      if (updateError) throw updateError;
+      await refreshProfile();
+      setMessage(t("settings.visualEffectsUpdated"));
+    } catch (e) {
+      console.error("Frame save failed:", e);
+      setError(t("settings.visualEffectsError"));
+    } finally {
+      setFrameSaving(false);
+    }
+  };
+
   const updatePseudo = async () => {
     if (!pseudo.trim()) {
       setError(t("settings.pseudoRequired"));
@@ -545,6 +602,88 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
         {/* ✅ GRILLE RESPONSIVE POUR CARTES */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* CARTE PHOTO DE PROFIL */}
+          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <User className="w-6 h-6 text-amber-700" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 ml-3">
+                {t("settings.profilePhoto")}
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Avatar
+                url={(profile as any)?.avatar_url}
+                pseudo={profile?.pseudo}
+                frameStyle={(profile as any)?.frame_style}
+                size="lg"
+              />
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 mb-3">
+                  {t("settings.profilePhotoHint")}
+                </p>
+                <label className="inline-flex items-center justify-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors text-sm font-semibold cursor-pointer disabled:opacity-50">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    disabled={avatarUploading}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadAvatar(f);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                  {avatarUploading ? t("common.loading") : t("profile.changeAvatar")}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* CARTE EFFETS VISUELS */}
+          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Shield className="w-6 h-6 text-purple-700" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 ml-3">
+                {t("settings.visualEffects")}
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Avatar
+                url={(profile as any)?.avatar_url}
+                pseudo={profile?.pseudo}
+                frameStyle={(profile as any)?.frame_style}
+                size="lg"
+              />
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 mb-3">
+                  {t("settings.visualEffectsHint")}
+                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t("profile.frame")}
+                </label>
+                <select
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
+                  value={((profile as any)?.frame_style || "none") as string}
+                  disabled={frameSaving}
+                  onChange={(e) => saveFrameStyle(e.target.value)}
+                >
+                  <option value="none">{t("profile.frameNone")}</option>
+                  <option value="emerald">{t("profile.frameEmerald")}</option>
+                  <option value="gold">{t("profile.frameGold")}</option>
+                  <option value="rainbow">{t("profile.frameRainbow")}</option>
+                  <option value="ice">{t("profile.frameIce")}</option>
+                  <option value="shadow">{t("profile.frameShadow")}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           {/* CARTE LANGUE */}
           <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
             <div className="flex items-center mb-4">

@@ -102,8 +102,8 @@ Assure-toi d’avoir installé :
 Clone le projet :
 
 ```bash
-git clone https://github.com/Fullann/TerraCoast-V2.git
-cd TerraCoast-V2
+git clone https://github.com/Fullann/TerraCoast.git
+cd TerraCoast
 ```
 
 Installe les dépendances :

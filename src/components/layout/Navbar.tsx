@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotifications } from "../../contexts/NotificationContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { Avatar } from "../common/Avatar";
 import {
   Trophy,
   User,
@@ -459,7 +460,12 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                <User className="w-6 h-6" />
+                <Avatar
+                  url={(profile as any)?.avatar_url}
+                  pseudo={profile?.pseudo}
+                  frameStyle={(profile as any)?.frame_style}
+                  size="sm"
+                />
               </button>
             </div>
           </div>
@@ -524,7 +530,12 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               currentView === "profile" ? "text-emerald-600" : "text-gray-600"
             }`}
           >
-            <User className="w-6 h-6" />
+            <Avatar
+              url={(profile as any)?.avatar_url}
+              pseudo={profile?.pseudo}
+              frameStyle={(profile as any)?.frame_style}
+              size="xs"
+            />
             <span className="text-xs mt-1">{t("nav.profile")}</span>
           </button>
         </div>

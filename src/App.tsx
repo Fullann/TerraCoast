@@ -46,6 +46,7 @@ function AppContent() {
     questionCount?: number;
     friendId?: string;
     tab?: string;
+    challengeId?: string;
     resetKey?: string | number;
   }
 
@@ -269,6 +270,7 @@ function AppContent() {
                 : `play-${viewData.quizId}`
             }
             quizId={viewData.quizId}
+            challengeId={viewData.challengeId}
             onNavigate={handleNavigate}
           />
         )}
