@@ -5,6 +5,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { useNotifications } from "../../contexts/NotificationContext";
 import { MessageCircle, Send, ArrowLeft } from "lucide-react";
 import type { Database } from "../../lib/database.types";
+import { Avatar } from "../common/Avatar";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
@@ -244,10 +245,13 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center relative">
-                        <span className="text-emerald-600 font-bold text-lg">
-                          {friend.pseudo?.charAt(0).toUpperCase() || "?"}
-                        </span>
+                      <div className="relative">
+                        <Avatar
+                          url={(friend as any).avatar_url}
+                          pseudo={friend.pseudo}
+                          frameStyle={(friend as any).frame_style}
+                          size="md"
+                        />
                         {unreadCounts[friend.id] > 0 && (
                           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                             {unreadCounts[friend.id]}
@@ -281,11 +285,12 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                       })
                     }
                   >
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <span className="text-emerald-600 font-bold">
-                        {selectedFriend.pseudo?.charAt(0).toUpperCase() || "?"}
-                      </span>
-                    </div>
+                    <Avatar
+                      url={(selectedFriend as any).avatar_url}
+                      pseudo={selectedFriend.pseudo}
+                      frameStyle={(selectedFriend as any).frame_style}
+                      size="sm"
+                    />
                     <div>
                       <h3 className="font-bold text-gray-800 hover:text-emerald-600 transition-colors">
                         {selectedFriend.pseudo || t("chat.user")}

@@ -15,7 +15,7 @@ export function Top10OrderQuestion({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [tapSelectedIndex, setTapSelectedIndex] = useState<number | null>(null);
-  const useMultiColumnLayout = order.length >= 8;
+  const useTwoColumns = order.length >= 10;
   const allowDragAndDrop = true;
 
   const moveItem = (fromIndex: number, toIndex: number) => {
@@ -32,6 +32,11 @@ export function Top10OrderQuestion({
     moveItem(fromIndex, boundedZone);
   };
 
+  const handleDragEnterDropZone = (zoneIndex: number) => {
+    if (!allowDragAndDrop) return;
+    setDropIndex(zoneIndex);
+  };
+
   return (
     <div className="space-y-2">
       <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
@@ -46,40 +51,52 @@ export function Top10OrderQuestion({
         </p>
       </div>
 
-      <div
-        className={
-          useMultiColumnLayout ? "grid grid-cols-1 sm:grid-cols-2 gap-2" : "space-y-0"
-        }
-      >
-      {order.map((item, index) => (
-        <div key={`${item}-${index}`}>
-          <div
-            onDragOver={(event) => {
-              if (!allowDragAndDrop) return;
-              event.preventDefault();
-              setDropIndex(index);
-            }}
-            onDrop={(event) => {
-              if (!allowDragAndDrop) return;
-              event.preventDefault();
-              const fromIndex = Number(event.dataTransfer.getData("text/plain"));
-              if (Number.isNaN(fromIndex)) return;
-              moveItemToDropZone(fromIndex, index);
-              setDragIndex(null);
-              setDropIndex(null);
-            }}
-            className={`mb-2 h-2 rounded-full transition-colors ${
-              dragIndex !== null && dropIndex === index
-                ? "bg-orange-400"
-                : "bg-transparent"
-            }`}
-          />
+      <div className={useTwoColumns ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-0"}>
+        {(useTwoColumns ? [order.slice(0, 5), order.slice(5, 10)] : [order]).map(
+          (columnItems, columnIndex) => (
+            <div key={`col-${columnIndex}`} className="space-y-2">
+              {useTwoColumns && (
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 px-1">
+                  {columnIndex === 0 ? "1–5" : "6–10"}
+                </p>
+              )}
+              {columnItems.map((item, idxInCol) => {
+                const index = useTwoColumns ? columnIndex * 5 + idxInCol : idxInCol;
+                return (
+                  <div key={`${item}-${index}`}>
+                    <div
+                      onDragEnter={() => handleDragEnterDropZone(index)}
+                      onDragOver={(event) => {
+                        if (!allowDragAndDrop) return;
+                        event.preventDefault();
+                        handleDragEnterDropZone(index);
+                      }}
+                      onDrop={(event) => {
+                        if (!allowDragAndDrop) return;
+                        event.preventDefault();
+                        const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+                        if (Number.isNaN(fromIndex)) return;
+                        moveItemToDropZone(fromIndex, index);
+                        setDragIndex(null);
+                        setDropIndex(null);
+                      }}
+                      className={`mb-2 h-3 rounded-full transition-colors ${
+                        dragIndex !== null && dropIndex === index
+                          ? "bg-orange-400"
+                          : "bg-orange-200/0"
+                      }`}
+                    />
           <div
             draggable={allowDragAndDrop}
             onDragStart={(event) => {
               if (!allowDragAndDrop) return;
               setDragIndex(index);
               event.dataTransfer.setData("text/plain", String(index));
+              try {
+                event.dataTransfer.effectAllowed = "move";
+              } catch {
+                /* ignore */
+              }
             }}
             onDragEnd={() => {
               if (!allowDragAndDrop) return;
@@ -99,7 +116,7 @@ export function Top10OrderQuestion({
               moveItem(tapSelectedIndex, index);
               setTapSelectedIndex(null);
             }}
-            className={`flex items-center gap-2 rounded-lg border bg-white p-2 transition-all ${
+            className={`flex items-center gap-2 rounded-lg border bg-white p-3 transition-all select-none ${
               dragIndex === index
                 ? "border-orange-300 opacity-80"
                 : tapSelectedIndex === index
@@ -139,12 +156,14 @@ export function Top10OrderQuestion({
               </button>
             </div>
             <div className="flex-1 text-gray-800 text-sm font-medium">{item}</div>
-            <span className="hidden sm:inline text-[11px] text-gray-500">
-              {t("playQuiz.top10.drag")}
-            </span>
+            <span className="hidden sm:inline text-[11px] text-gray-500">{t("playQuiz.top10.drag")}</span>
           </div>
-        </div>
-      ))}
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
       </div>
       <div
         onDragOver={(event) => {

@@ -228,9 +228,9 @@ export function WarningsManagementPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="w-full px-1 py-4">
       <div className="mb-6">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
           <AlertTriangle className="w-10 h-10 mr-3 text-red-600" />
           Gestion des signalements
         </h1>

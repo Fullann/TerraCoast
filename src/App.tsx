@@ -27,6 +27,8 @@ import { UserManagementPage } from "./components/admin/UserManagementPage";
 import { QuizManagementPage } from "./components/admin/QuizManagementPage";
 import { DuelFeaturesPage } from "./components/admin/DuelFeaturesPage";
 import { GeoJsonMapsManagementPage } from "./components/admin/GeoJsonMapsManagementPage";
+import { AdminAnalyticsPage } from "./components/admin/AdminAnalyticsPage";
+import { AdminDashboardLayout } from "./components/admin/layout/AdminDashboardLayout";
 import { DuelsPage } from "./components/duels/DuelsPage";
 import { ChatPage } from "./components/chat/ChatPage";
 import { LandingPage } from "./components/landing/LandingPage";
@@ -37,6 +39,17 @@ import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 import { useNotifications } from "./contexts/NotificationContext";
 
 function AppContent() {
+  interface ViewData {
+    userId?: string;
+    quizId?: string;
+    duelId?: string;
+    questionCount?: number;
+    friendId?: string;
+    tab?: string;
+    challengeId?: string;
+    resetKey?: string | number;
+  }
+
   const { user, profile, loading, refreshProfile, mfaRequired } = useAuth();
   const { setNavigationCallback } = useNotifications();
   const [authView, setAuthView] = useState<
@@ -46,7 +59,7 @@ function AppContent() {
     "login" | "register" | "landing"
   >("landing");
   const [currentView, setCurrentView] = useState<string>("home");
-  const [viewData, setViewData] = useState<any>(null);
+  const [viewData, setViewData] = useState<ViewData | null>(null);
 
   const openLegal = (view: "terms" | "privacy") => {
     if (authView !== "terms" && authView !== "privacy") {
@@ -55,7 +68,7 @@ function AppContent() {
     setAuthView(view);
   };
 
-  const handleNavigate = (view: string, data?: any) => {
+  const handleNavigate = (view: string, data?: ViewData) => {
     setCurrentView(view);
     setViewData(data);
   };
@@ -71,6 +84,46 @@ function AppContent() {
   }, [user, profile, refreshProfile]);
   const hideNavbarViews = ["play-quiz", "play-training", "play-duel"];
   const shouldShowNavbar = !hideNavbarViews.includes(currentView);
+  const adminViews = new Set([
+    "admin",
+    "badge-management",
+    "title-management",
+    "category-management",
+    "difficulty-management",
+    "quiz-validation",
+    "warnings-management",
+    "quiz-type-management",
+    "user-management",
+    "account-details",
+    "quiz-management",
+    "duel-features",
+    "geojson-maps-management",
+    "admin-analytics",
+  ]);
+  const isAdminView = adminViews.has(currentView);
+
+  const renderAdminView = () => {
+    if (currentView === "admin") return <AdminPage onNavigate={handleNavigate} />;
+    if (currentView === "badge-management") return <BadgeManagementPage />;
+    if (currentView === "title-management") return <TitleManagementPage />;
+    if (currentView === "category-management") return <CategoryManagementPage />;
+    if (currentView === "difficulty-management") return <DifficultyManagementPage />;
+    if (currentView === "quiz-validation") return <QuizValidationPage />;
+    if (currentView === "warnings-management") return <WarningsManagementPage />;
+    if (currentView === "quiz-type-management") return <QuizTypeManagementPage />;
+    if (currentView === "user-management")
+      return <UserManagementPage onNavigate={handleNavigate} />;
+    if (currentView === "account-details")
+      return (
+        <AccountDetailsPage userId={viewData?.userId} onNavigate={handleNavigate} />
+      );
+    if (currentView === "quiz-management")
+      return <QuizManagementPage onNavigate={handleNavigate} />;
+    if (currentView === "duel-features") return <DuelFeaturesPage />;
+    if (currentView === "geojson-maps-management") return <GeoJsonMapsManagementPage />;
+    if (currentView === "admin-analytics") return <AdminAnalyticsPage />;
+    return null;
+  };
 
   if (loading) {
     return (
@@ -217,6 +270,7 @@ function AppContent() {
                 : `play-${viewData.quizId}`
             }
             quizId={viewData.quizId}
+            challengeId={viewData.challengeId}
             onNavigate={handleNavigate}
           />
         )}
@@ -258,32 +312,13 @@ function AppContent() {
         {currentView === "chat" && (
           <ChatPage friendId={viewData?.friendId} onNavigate={handleNavigate} />
         )}
-        {currentView === "admin" && <AdminPage onNavigate={handleNavigate} />}
-        {currentView === "badge-management" && <BadgeManagementPage />}
-        {currentView === "title-management" && <TitleManagementPage />}
-        {currentView === "category-management" && <CategoryManagementPage />}
-        {currentView === "difficulty-management" && (
-          <DifficultyManagementPage />
-        )}
-        {currentView === "quiz-validation" && <QuizValidationPage />}
-        {currentView === "warnings-management" && <WarningsManagementPage />}
-        {currentView === "quiz-type-management" && <QuizTypeManagementPage />}
-        {currentView === "user-management" && (
-          <UserManagementPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "account-details" && (
-          <AccountDetailsPage
-            userId={viewData?.userId}
+        {isAdminView && (
+          <AdminDashboardLayout
+            currentView={currentView}
             onNavigate={handleNavigate}
-          />
-        )}
-
-        {currentView === "quiz-management" && (
-          <QuizManagementPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "duel-features" && <DuelFeaturesPage />}
-        {currentView === "geojson-maps-management" && (
-          <GeoJsonMapsManagementPage />
+          >
+            {renderAdminView()}
+          </AdminDashboardLayout>
         )}
       </main>
     </div>

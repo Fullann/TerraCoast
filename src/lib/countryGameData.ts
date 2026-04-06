@@ -1,4 +1,5 @@
 import countries from "world-countries";
+import type { Language } from "../i18n/translations";
 
 export type CountryMetric = "population" | "area_km2";
 
@@ -14,6 +15,36 @@ export interface CountryGameEntry {
   population: number;
   area_km2: number;
 }
+
+type WorldCountry = {
+  cca3?: string;
+  ccn3?: string;
+  name?: { common?: string; official?: string };
+  capital?: string[];
+  altSpellings?: string[];
+  translations?: Record<string, { common?: string; official?: string }>;
+  flag?: string;
+  continents?: string[];
+  latlng?: number[];
+  population?: number;
+  area?: number;
+};
+
+const languageToWorldTranslationsKey: Record<Language, string> = {
+  fr: "fra",
+  en: "eng",
+  es: "spa",
+  de: "deu",
+  it: "ita",
+  pt: "por",
+};
+
+const rawCountries = countries as unknown as WorldCountry[];
+const rawByIso3 = new Map<string, WorldCountry>(
+  rawCountries
+    .map((c) => [String(c.cca3 || "").toUpperCase(), c] as const)
+    .filter(([iso]) => Boolean(iso))
+);
 
 const normalizedCountries: CountryGameEntry[] = (countries as any[])
   .map((country) => ({
@@ -37,6 +68,76 @@ const normalizedCountries: CountryGameEntry[] = (countries as any[])
     area_km2: Number(country.area || 0),
   }))
   .filter((country) => country.iso3 && country.name);
+
+const frenchCapitalAliasesByIso3: Record<string, string[]> = {
+  CHE: ["Berne"],
+  AUT: ["Vienne"],
+  POL: ["Varsovie"],
+  RUS: ["Moscou"],
+  GBR: ["Londres"],
+  USA: ["Washington", "Washington DC", "Washington D.C."],
+  NLD: ["Amsterdam"],
+  SWE: ["Stockholm"],
+  NOR: ["Oslo"],
+  DNK: ["Copenhague"],
+  FIN: ["Helsinki"],
+  PRT: ["Lisbonne"],
+  HUN: ["Budapest"],
+  GRC: ["Athènes"],
+  ROU: ["Bucarest"],
+  CZE: ["Prague"],
+  UKR: ["Kyiv", "Kiev"],
+};
+
+function pushIfString(list: string[], value: unknown) {
+  if (typeof value !== "string") return;
+  const v = value.trim();
+  if (!v) return;
+  list.push(v);
+}
+
+export function getCountryNameVariantsByIso3(
+  iso3: string,
+  language: Language
+): string[] {
+  const key = String(iso3 || "").toUpperCase();
+  const raw = rawByIso3.get(key);
+  const out: string[] = [];
+  if (raw) {
+    pushIfString(out, raw.name?.common);
+    pushIfString(out, raw.name?.official);
+    const trKey = languageToWorldTranslationsKey[language] || "eng";
+    pushIfString(out, raw.translations?.[trKey]?.common);
+    pushIfString(out, raw.translations?.[trKey]?.official);
+    (raw.altSpellings || []).forEach((s) => pushIfString(out, s));
+  }
+  // Fallback: on retombe sur la liste normalisée (anglais).
+  const normalized = normalizedCountries.find((c) => c.iso3 === key);
+  if (normalized) pushIfString(out, normalized.name);
+
+  // dédoublonnage
+  return [...new Set(out)];
+}
+
+export function getCountryCapitalVariantsByIso3(
+  iso3: string,
+  language: Language
+): string[] {
+  const key = String(iso3 || "").toUpperCase();
+  const raw = rawByIso3.get(key);
+  const out: string[] = [];
+  if (raw?.capital?.length) {
+    raw.capital.forEach((c) => pushIfString(out, c));
+  }
+  const normalized = normalizedCountries.find((c) => c.iso3 === key);
+  if (normalized) pushIfString(out, normalized.capital);
+
+  if (language === "fr") {
+    (frenchCapitalAliasesByIso3[key] || []).forEach((c) => pushIfString(out, c));
+  }
+
+  return [...new Set(out)];
+}
 
 const continentAliases: Record<string, string> = {
   world: "world",

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { supabase } from "../../lib/supabase";
+import { Avatar } from "../common/Avatar";
+import { ChallengeFriendModal } from "../quizzes/ChallengeFriendModal";
 import {
   LineChart,
   Line,
@@ -78,6 +80,14 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   const [showWarningHistory, setShowWarningHistory] = useState(false);
   const [warningHistory, setWarningHistory] = useState<any[]>([]);
   const [selectedDataPoint, setSelectedDataPoint] = useState<any>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [frameSaving, setFrameSaving] = useState(false);
+  const [challengeModalOpen, setChallengeModalOpen] = useState(false);
+  const [challengeQuiz, setChallengeQuiz] = useState<{
+    quizId: string;
+    quizTitle: string;
+    targetScore: number;
+  } | null>(null);
 
   const isOwnProfile = !userId || userId === currentUserProfile?.id;
   const targetUserId = userId || currentUserProfile?.id;
@@ -179,6 +189,54 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   useEffect(() => {
     loadProfileData();
   }, [loadProfileData]);
+
+  const uploadAvatar = async (file: File) => {
+    if (!currentUserProfile || !isOwnProfile) return;
+    setAvatarUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `${currentUserProfile.id}/avatar-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = data.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", currentUserProfile.id);
+
+      if (updateError) throw updateError;
+
+      await loadProfileData();
+    } catch (e) {
+      console.error("Avatar upload failed:", e);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const saveFrameStyle = async (style: string) => {
+    if (!currentUserProfile || !isOwnProfile) return;
+    setFrameSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ frame_style: style, updated_at: new Date().toISOString() })
+        .eq("id", currentUserProfile.id);
+      if (error) throw error;
+      await loadProfileData();
+    } catch (e) {
+      console.error("Frame save failed:", e);
+    } finally {
+      setFrameSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -467,12 +525,27 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        {challengeModalOpen && challengeQuiz && (
+          <ChallengeFriendModal
+            quizId={challengeQuiz.quizId}
+            quizTitle={challengeQuiz.quizTitle}
+            targetScore={challengeQuiz.targetScore}
+            onClose={() => {
+              setChallengeModalOpen(false);
+              setChallengeQuiz(null);
+            }}
+          />
+        )}
         <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl p-6 md:p-8 border border-gray-200">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             <div className="relative">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center shadow-lg">
-                <User className="w-12 h-12 md:w-16 md:h-16 text-white" />
-              </div>
+              <Avatar
+                url={(profile as any).avatar_url}
+                pseudo={profile.pseudo}
+                frameStyle={(profile as any).frame_style}
+                size="xl"
+                className="shadow-lg"
+              />
               <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold shadow-lg border-4 border-white">
                 {profile.level}
               </div>
@@ -919,11 +992,31 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
                     <div>
                       {session.completed ? (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-lg shadow-sm">
-                          <Trophy className="w-4 h-4" />
-                          <span className="text-sm font-bold">
-                            {t("profile.completed")}
-                          </span>
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-lg shadow-sm">
+                            <Trophy className="w-4 h-4" />
+                            <span className="text-sm font-bold">
+                              {t("profile.completed")}
+                            </span>
+                          </div>
+                          {isOwnProfile && session.quiz_id && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setChallengeQuiz({
+                                  quizId: session.quiz_id,
+                                  quizTitle:
+                                    session.quizzes?.title ||
+                                    t("profile.unknownQuiz"),
+                                  targetScore: session.score || 0,
+                                });
+                                setChallengeModalOpen(true);
+                              }}
+                              className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+                            >
+                              {t("home.challengeFriend")}
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg">
@@ -1041,6 +1134,42 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                   </p>
                 </div>
               </div>
+
+              {isOwnProfile && (
+                <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <label className="inline-flex items-center justify-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors text-sm font-semibold cursor-pointer disabled:opacity-50">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      disabled={avatarUploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadAvatar(f);
+                        e.currentTarget.value = "";
+                      }}
+                    />
+                    {avatarUploading ? t("common.loading") : t("profile.changeAvatar")}
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">{t("profile.frame")}</span>
+                    <select
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
+                      value={((profile as any).frame_style || "none") as string}
+                      disabled={frameSaving}
+                      onChange={(e) => saveFrameStyle(e.target.value)}
+                    >
+                      <option value="none">{t("profile.frameNone")}</option>
+                      <option value="emerald">{t("profile.frameEmerald")}</option>
+                      <option value="gold">{t("profile.frameGold")}</option>
+                      <option value="rainbow">{t("profile.frameRainbow")}</option>
+                      <option value="ice">{t("profile.frameIce")}</option>
+                      <option value="shadow">{t("profile.frameShadow")}</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             <button

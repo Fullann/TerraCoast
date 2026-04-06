@@ -53,8 +53,13 @@ interface QuizPerformanceSummary {
 }
 
 interface QuizManagementPageProps {
-  onNavigate?: (view: string, data?: any) => void;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
+
+type SortBy = "created" | "plays" | "score";
+type FilterStatus = "all" | "public" | "private";
+type QuizWithCreatorRaw = Quiz & { creator?: Profile | Profile[] | null };
+type SessionPerfRow = { id: string; score: number | null; accuracy_percentage: number | null };
 
 export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   const { profile } = useAuth();
@@ -64,12 +69,8 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<QuizWithCreator[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sortBy, setSortBy] = useState<"created" | "plays" | "score">(
-    "created"
-  );
-  const [filterStatus, setFilterStatus] = useState<
-    "all" | "public" | "private"
-  >("all");
+  const [sortBy, setSortBy] = useState<SortBy>("created");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [filterReported, setFilterReported] = useState(false);
   const [filterMissingLocation, setFilterMissingLocation] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizWithCreator | null>(
@@ -119,7 +120,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       query = query.or("location_lat.is.null,location_lng.is.null");
     }
 
-    const { data, error } = await query
+    const { data } = await query
       .order(
         sortBy === "created"
           ? "created_at"
@@ -131,10 +132,13 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       .limit(100);
 
     if (data) {
-      const quizzesWithCreator = data.map((quiz: any) => ({
-        ...quiz,
-        creator: Array.isArray(quiz.creator) ? quiz.creator[0] : quiz.creator,
-      }));
+      const quizzesWithCreator = (data as QuizWithCreatorRaw[]).map((quiz) => {
+        const rawCreator = Array.isArray(quiz.creator) ? quiz.creator[0] : quiz.creator;
+        return {
+          ...quiz,
+          creator: rawCreator ?? undefined,
+        };
+      });
       setQuizzes(quizzesWithCreator);
     }
     setLoading(false);
@@ -158,10 +162,13 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       .limit(20);
 
     if (data) {
-      const quizzesWithCreator = data.map((quiz: any) => ({
-        ...quiz,
-        creator: Array.isArray(quiz.creator) ? quiz.creator[0] : quiz.creator,
-      }));
+      const quizzesWithCreator = (data as QuizWithCreatorRaw[]).map((quiz) => {
+        const rawCreator = Array.isArray(quiz.creator) ? quiz.creator[0] : quiz.creator;
+        return {
+          ...quiz,
+          creator: rawCreator ?? undefined,
+        };
+      });
       setSearchResults(quizzesWithCreator);
     }
   };
@@ -231,7 +238,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       is_global: newIsGlobal,
     };
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("quizzes")
       .update(updatePayload)
       .eq("id", quizId);
@@ -255,9 +262,12 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
     if (
       (latTrimmed !== "" &&
-        (!Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90)) ||
+        (locationLat === null || !Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90)) ||
       (lngTrimmed !== "" &&
-        (!Number.isFinite(locationLng) || locationLng < -180 || locationLng > 180))
+        (locationLng === null ||
+          !Number.isFinite(locationLng) ||
+          locationLng < -180 ||
+          locationLng > 180))
     ) {
       showAppNotification({
         type: "error",
@@ -266,7 +276,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       return;
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("quizzes")
       .update({
         is_public: true,
@@ -311,9 +321,12 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     const locationLng = lngTrimmed === "" ? null : Number(lngTrimmed);
     if (
       (latTrimmed !== "" &&
-        (!Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90)) ||
+        (locationLat === null || !Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90)) ||
       (lngTrimmed !== "" &&
-        (!Number.isFinite(locationLng) || locationLng < -180 || locationLng > 180))
+        (locationLng === null ||
+          !Number.isFinite(locationLng) ||
+          locationLng < -180 ||
+          locationLng > 180))
     ) {
       showAppNotification({
         type: "error",
@@ -322,7 +335,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       return;
     }
     setSavingInlineLocation(true);
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("quizzes")
       .update({
         location_lat: locationLat,
@@ -353,7 +366,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
   const performDuplicateQuiz = async (quiz: QuizWithCreator) => {
     try {
-      const { data, error } = await supabase.rpc("duplicate_quiz", {
+      const { data, error } = await (supabase as any).rpc("duplicate_quiz", {
         p_quiz_id: quiz.id,
         p_new_title: `${quiz.title} (copie)`,
       });
@@ -372,8 +385,9 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
         message: `Quiz "${quiz.title}" dupliqué avec succès ! ID: ${data}`,
       });
       loadQuizzes();
-    } catch (error: any) {
-      showAppNotification({ type: "error", message: "Erreur : " + error.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      showAppNotification({ type: "error", message: "Erreur : " + message });
     }
   };
 
@@ -388,7 +402,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   };
 
   const performResetQuizStats = async (quizId: string, quizTitle: string) => {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("quizzes")
       .update({
         total_plays: 0,
@@ -424,9 +438,10 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
         .from("game_sessions")
         .select("id")
         .eq("quiz_id", selectedQuiz.id);
+      const typedSessions = (sessions || []) as Array<{ id: string }>;
 
-      if (sessions) {
-        for (const session of sessions) {
+      if (typedSessions.length > 0) {
+        for (const session of typedSessions) {
           await supabase
             .from("game_answers")
             .delete()
@@ -473,14 +488,17 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
           .select("published_quiz_count")
           .eq("id", selectedQuiz.creator_id)
           .single();
+        const typedCreatorProfile = creatorProfile as
+          | { published_quiz_count: number | null }
+          | null;
 
-        if (creatorProfile) {
-          await supabase
+        if (typedCreatorProfile) {
+          await (supabase as any)
             .from("profiles")
             .update({
               published_quiz_count: Math.max(
                 0,
-                (creatorProfile.published_quiz_count || 0) - 1
+                (typedCreatorProfile.published_quiz_count || 0) - 1
               ),
             })
             .eq("id", selectedQuiz.creator_id);
@@ -495,10 +513,11 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       setDeleteReason("");
       setSelectedQuiz(null);
       loadQuizzes();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       showAppNotification({
         type: "error",
-        message: "Erreur lors de la suppression : " + error.message,
+        message: "Erreur lors de la suppression : " + message,
       });
     }
   };
@@ -513,6 +532,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       .select("id, score, accuracy_percentage")
       .eq("quiz_id", quiz.id)
       .eq("completed", true);
+    const typedSessions = (sessionsData || []) as SessionPerfRow[];
 
     const { data: questionsData } = await supabase
       .from("questions")
@@ -542,7 +562,6 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     }
 
     const typedAnswers = answersData || [];
-    const typedSessions = sessionsData || [];
 
     const byQuestion = new Map<
       string,
@@ -610,7 +629,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
   if (profile?.role !== "admin") {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="w-full px-1 py-4">
         <div className="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center">
           <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -626,12 +645,15 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
   const displayQuizzes =
     searchTerm.trim().length >= 2 ? searchResults : quizzes;
+  const missingLocationQuizzes = displayQuizzes.filter(
+    (quiz) => quiz.location_lat === null || quiz.location_lng === null
+  );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="w-full px-1 py-4">
       {/* En-tête */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
           <BookOpen className="w-10 h-10 mr-3 text-emerald-600" />
           Gestion des quiz
         </h1>
@@ -671,7 +693,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
               </label>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as SortBy)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
                 <option value="created">Date de création</option>
@@ -687,7 +709,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
               </label>
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
+                onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
                 <option value="all">Tous les quiz</option>
@@ -726,6 +748,19 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
               </label>
             </div>
           </div>
+          {missingLocationQuizzes.length > 0 && (
+            <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm text-amber-900">
+                {missingLocationQuizzes.length} quiz sans localisation.
+              </p>
+              <button
+                onClick={() => openInlineLocationEditor(missingLocationQuizzes[0])}
+                className="px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+              >
+                Corriger maintenant
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -781,6 +816,12 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                           {quiz.description.substring(0, 50)}
                           {quiz.description.length > 50 ? "..." : ""}
                         </p>
+                      )}
+                      {(quiz.location_lat === null || quiz.location_lng === null) && (
+                        <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 mt-1">
+                          <MapPin className="w-3 h-3" />
+                          <span>Sans localisation</span>
+                        </span>
                       )}
                       {quiz.is_reported && (
                         <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 mt-1">
