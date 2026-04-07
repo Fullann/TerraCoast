@@ -35,7 +35,7 @@ Le projet n’a pas de serveur backend Node/Express dédié : le “backend” e
 - RPC (fonctions SQL) et triggers
 - Storage (images, GeoJSON, etc.)
 
-## Sources de vérité
+## Sources de vérité 
 
 - **Schéma DB** : `src/supabase/migrations/*.sql`
 - **Types DB** : `src/lib/database.types.ts`
