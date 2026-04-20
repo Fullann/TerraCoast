@@ -166,27 +166,6 @@ Si tu souhaites proposer une amélioration, corriger un bug ou ajouter une fonct
 
 ***
 
-### Captures d’écran
-
-```markdown
-## Captures d’écran
-
-<p align="center">
-  <img src="./screenshots/home.png" alt="Accueil TerraCoast" width="820" />
-</p>
-
-<p align="center">
-  <img src="./screenshots/quiz.png" alt="Interface de quiz" width="820" />
-</p>
-
-<p align="center">
-  <img src="./screenshots/duel.png" alt="Duels multijoueurs" width="820" />
-</p>
-
-<p align="center">
-  <img src="./screenshots/profile.png" alt="Profil, niveaux et badges" width="820" />
-</p>
-```
 
 ## Technologies
 - React + TypeScript (UI réactive et typée)  

@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Users,
-  BookOpen,
-  Zap,
-  Target,
-  Star,
-  Globe,
   ArrowRight,
-  Menu,
-  X,
+  BookOpen,
   ChevronDown,
+  Globe,
+  Menu,
+  ShieldCheck,
+  Star,
+  Users,
+  X,
+  Zap,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { languageNames, type Language } from "../../i18n/translations";
+import { QuizGlobe, type QuizGlobePoint } from "../home/QuizGlobe";
+import { supabase } from "../../lib/supabase";
 
 interface LandingPageProps {
   onNavigate: (view: string) => void;
@@ -23,6 +25,11 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
+  const [liveStats, setLiveStats] = useState({
+    activeQuizzes: 0,
+    completedSessions: 0,
+    loading: true,
+  });
 
   const offers = [
     t("landing.about.offer1"),
@@ -32,568 +39,466 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     t("landing.about.offer5"),
   ];
 
+  const testimonials = [
+    {
+      name: "Lina",
+      role: "Joueuse quotidienne",
+      text: "La meilleure app pour progresser en géographie sans s’ennuyer.",
+    },
+    {
+      name: "Mathis",
+      role: "Créateur de quiz",
+      text: "Créer et partager mes quiz est super rapide, la communauté joue vraiment.",
+    },
+    {
+      name: "Sara",
+      role: "Mode duel",
+      text: "Les défis entre amis rendent tout plus fun et motivant.",
+    },
+  ];
+
+  const globePoints = useMemo<QuizGlobePoint[]>(
+    () => [
+      {
+        quizId: "landing-eu",
+        title: "Europe Capitals",
+        difficulty: "easy",
+        totalPlays: 1450,
+        lat: 48.8566,
+        lng: 2.3522,
+      },
+      {
+        quizId: "landing-sa",
+        title: "South America",
+        difficulty: "medium",
+        totalPlays: 980,
+        lat: -15.78,
+        lng: -47.93,
+      },
+      {
+        quizId: "landing-af",
+        title: "Africa Challenge",
+        difficulty: "hard",
+        totalPlays: 720,
+        lat: 6.5244,
+        lng: 3.3792,
+      },
+      {
+        quizId: "landing-na",
+        title: "US States",
+        difficulty: "medium",
+        totalPlays: 1280,
+        lat: 38.9072,
+        lng: -77.0369,
+      },
+      {
+        quizId: "landing-as",
+        title: "Asia Mega Quiz",
+        difficulty: "hard",
+        totalPlays: 840,
+        lat: 35.6762,
+        lng: 139.6503,
+      },
+    ],
+    []
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadStats = async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_public_landing_stats");
+        if (error) throw error;
+        const row = (Array.isArray(data) ? data[0] : null) as
+          | { active_quizzes?: number | string | null; completed_sessions?: number | string | null }
+          | null;
+        const activeQuizzes = Number(row?.active_quizzes || 0);
+        const completedSessions = Number(row?.completed_sessions || 0);
+
+        if (!cancelled) {
+          setLiveStats({
+            activeQuizzes,
+            completedSessions,
+            loading: false,
+          });
+        }
+      } catch (e) {
+        console.error("Landing stats load failed:", e);
+        if (!cancelled) {
+          setLiveStats((prev) => ({ ...prev, loading: false }));
+        }
+      }
+    };
+
+    loadStats();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-      {/* Header moderne avec navigation */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <button
-                onClick={() => onNavigate("landing")}
-                className="flex items-center hover:opacity-80 transition-opacity"
-              >
-                <img
-                  src="/logo.png"
-                  alt="TerraCoast Logo"
-                  className="h-12 w-auto"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-                <span className="ml-3 text-2xl font-bold text-emerald-600">
-                  TerraCoast
-                </span>
-              </button>
+    <div className="min-h-screen bg-slate-950 text-white">
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(16,185,129,0.35),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.30),transparent_35%),radial-gradient(circle_at_70%_80%,rgba(14,116,144,0.25),transparent_40%)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-16 -left-16 w-72 h-72 rounded-full bg-emerald-400/10 blur-3xl animate-pulse" />
+        <div className="absolute top-1/3 -right-20 w-72 h-72 rounded-full bg-cyan-400/10 blur-3xl animate-pulse [animation-delay:700ms]" />
+      </div>
 
-            {/* Navigation desktop */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <a
-                href="#features"
-                className="text-gray-700 hover:text-emerald-600 transition-colors font-medium"
-              >
-                {t("landing.nav.features")}
-              </a>
-              <a
-                href="#about"
-                className="text-gray-700 hover:text-emerald-600 transition-colors font-medium"
-              >
-                {t("landing.nav.about")}
-              </a>
-              <a
-                href="#contact"
-                className="text-gray-700 hover:text-emerald-600 transition-colors font-medium"
-              >
-                {t("landing.nav.contact")}
-              </a>
-            </nav>
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <button
+            onClick={() => onNavigate("landing")}
+            className="flex items-center hover:opacity-90 transition-opacity"
+          >
+            <img
+              src="/logo.png"
+              alt="TerraCoast"
+              className="h-10 w-auto"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+            <span className="ml-3 text-2xl font-black bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
+              TerraCoast
+            </span>
+          </button>
 
-            {/* Boutons action + langue */}
-            <div className="hidden md:flex items-center space-x-4">
-              {/* Sélecteur de langue */}
-              <div className="relative">
-                <button
-                  onClick={() => setLangMenuOpen(!langMenuOpen)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <Globe className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-700">
-                    {language.toUpperCase()}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-gray-600" />
-                </button>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-200">
+            <a href="#features" className="hover:text-emerald-300 transition-colors">
+              {t("landing.nav.features")}
+            </a>
+            <a href="#about" className="hover:text-emerald-300 transition-colors">
+              {t("landing.nav.about")}
+            </a>
+            <a href="#contact" className="hover:text-emerald-300 transition-colors">
+              {t("landing.nav.contact")}
+            </a>
+          </nav>
 
-                {langMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
-                    {(Object.keys(languageNames) as Language[]).map((lang) => (
-                      <button
-                        key={lang}
-                        onClick={() => {
-                          setLanguage(lang);
-                          setLangMenuOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 hover:bg-emerald-50 transition-colors ${
-                          language === lang
-                            ? "bg-emerald-50 text-emerald-600 font-semibold"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {languageNames[lang]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
+          <div className="hidden md:flex items-center gap-3">
+            <div className="relative">
               <button
-                onClick={() => onNavigate("login")}
-                className="px-4 py-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors font-medium"
+                onClick={() => setLangMenuOpen((v) => !v)}
+                className="px-3 py-2 rounded-lg border border-white/15 hover:bg-white/10 transition-colors flex items-center gap-2 text-sm"
               >
-                {t("landing.hero.login")}
+                <Globe className="w-4 h-4" />
+                {language.toUpperCase()}
+                <ChevronDown className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => onNavigate("register")}
-                className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all shadow-md font-medium"
-              >
-                {t("landing.hero.startAdventure")}
-              </button>
-            </div>
-
-            {/* Menu burger mobile */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-            >
-              {mobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
+              {langMenuOpen && (
+                <div className="absolute right-0 mt-2 w-52 rounded-xl border border-white/10 bg-slate-900 shadow-2xl p-1">
+                  {(Object.keys(languageNames) as Language[]).map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => {
+                        setLanguage(lang);
+                        setLangMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        language === lang
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "text-slate-200 hover:bg-white/10"
+                      }`}
+                    >
+                      {languageNames[lang]}
+                    </button>
+                  ))}
+                </div>
               )}
+            </div>
+            <button
+              onClick={() => onNavigate("login")}
+              className="px-4 py-2 rounded-lg border border-white/20 hover:bg-white/10 transition-colors"
+            >
+              {t("landing.hero.login")}
+            </button>
+            <button
+              onClick={() => onNavigate("register")}
+              className="px-5 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold hover:brightness-110 transition-all"
+            >
+              {t("landing.hero.startAdventure")}
             </button>
           </div>
+
+          <button
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            className="md:hidden p-2 rounded-lg border border-white/20"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
-
-        {/* Menu mobile */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
-            <div className="px-4 py-4 space-y-3">
-              <a
-                href="#features"
-                className="block px-4 py-2 text-gray-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t("landing.nav.features")}
-              </a>
-              <a
-                href="#about"
-                className="block px-4 py-2 text-gray-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t("landing.nav.about")}
-              </a>
-              <a
-                href="#contact"
-                className="block px-4 py-2 text-gray-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t("landing.nav.contact")}
-              </a>
-
-              {/* Langue mobile */}
-              <div className="pt-3 border-t border-gray-200">
-                <p className="px-4 py-2 text-sm font-semibold text-gray-500">
-                  Langue / Language
-                </p>
-                {(Object.keys(languageNames) as Language[]).map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => {
-                      setLanguage(lang);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                      language === lang
-                        ? "bg-emerald-50 text-emerald-600 font-semibold"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {languageNames[lang]}
-                  </button>
-                ))}
-              </div>
-
-              <div className="pt-3 border-t border-gray-200 space-y-2">
-                <button
-                  onClick={() => {
-                    onNavigate("login");
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors font-medium"
-                >
-                  {t("landing.hero.login")}
-                </button>
-                <button
-                  onClick={() => {
-                    onNavigate("register");
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all font-medium"
-                >
-                  {t("landing.hero.startAdventure")}
-                </button>
-              </div>
-            </div>
+          <div className="md:hidden px-4 pb-4 space-y-2 border-t border-white/10">
+            <button onClick={() => onNavigate("login")} className="w-full px-4 py-2 rounded-lg border border-white/20 text-left">
+              {t("landing.hero.login")}
+            </button>
+            <button onClick={() => onNavigate("register")} className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 text-left font-semibold">
+              {t("landing.hero.startAdventure")}
+            </button>
           </div>
         )}
       </header>
 
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
-        <div className="text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-gray-900 mb-6">
-            {t("landing.hero.welcome")}{" "}
-            <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-              TerraCoast
-            </span>
-          </h1>
-          <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 max-w-3xl mx-auto mb-4">
-            {t("landing.hero.subtitle")}{" "}
-            <span className="font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-              {t("landing.hero.subtitleHighlight")}
-            </span>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-14 sm:pb-16">
+        <div className="grid lg:grid-cols-2 gap-10 items-center">
+          <div className="animate-[fadeInUp_.6s_ease-out]">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-200 text-xs sm:text-sm mb-5 sm:mb-6">
+              <ShieldCheck className="w-4 h-4" />
+              Quiz geo moderne, social et compétitif
+            </div>
+            <h1 className="text-3xl sm:text-5xl xl:text-6xl font-black leading-tight mb-4 sm:mb-5">
+              {t("landing.hero.welcome")}{" "}
+              <span className="bg-gradient-to-r from-emerald-300 via-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                TerraCoast
+              </span>
+            </h1>
+            <p className="text-slate-300 text-base sm:text-xl mb-6 sm:mb-8 max-w-2xl">
+              {t("landing.hero.subtitle")} {t("landing.hero.subtitleHighlight")}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => onNavigate("register")}
+                className="px-7 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-extrabold hover:brightness-110 transition-all flex items-center justify-center hover:scale-[1.02] active:scale-[0.99]"
+              >
+                {t("landing.hero.startAdventure")}
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
+              <button
+                onClick={() => onNavigate("login")}
+                className="px-7 py-4 rounded-xl border border-white/20 hover:bg-white/10 font-semibold transition-colors hover:scale-[1.02] active:scale-[0.99]"
+              >
+                {t("landing.hero.login")}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-2 sm:p-3 shadow-2xl animate-[fadeInUp_.7s_ease-out] [animation-delay:120ms]">
+            <QuizGlobe points={globePoints} onPointClick={() => onNavigate("register")} />
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 -mt-4 sm:-mt-6">
+        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 sm:p-6">
+          <p className="text-xs uppercase tracking-wider text-slate-300 mb-4">
+            TerraCoast ecosystem
           </p>
-
-          {/* Badges sociaux */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
-            <a
-              href="https://discord.gg/KUU9WeDuPj"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" />
-              </svg>
-              <span className="hidden sm:inline">Discord</span>
-            </a>
-
-            <a
-              href="https://fr.tipeee.com/terracoast/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md hover:shadow-lg font-medium"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-              <span className="hidden sm:inline">Tipeee</span>
-            </a>
-            <a
-              href="https://www.patreon.com/cw/TerraCoast?utm_source=search&vanity=TerraCoast"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF424D] text-white rounded-lg hover:bg-[#E13D47] transition-all shadow-md hover:shadow-lg font-medium"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M15.386.524c-4.764 0-8.64 3.876-8.64 8.64 0 4.75 3.876 8.613 8.64 8.613 4.75 0 8.614-3.864 8.614-8.613C24 4.4 20.136.524 15.386.524M.003 23.537h4.22V.524H.003" />
-              </svg>
-              <span className="hidden sm:inline">Patreon</span>
-            </a>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => onNavigate("register")}
-              className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all transform hover:scale-105 shadow-lg font-semibold text-lg flex items-center justify-center"
-            >
-              {t("landing.hero.startAdventure")}
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </button>
-            <button
-              onClick={() => onNavigate("login")}
-              className="px-8 py-4 bg-white text-emerald-600 border-2 border-emerald-600 rounded-xl hover:bg-emerald-50 transition-all font-semibold text-lg"
-            >
-              {t("landing.hero.login")}
-            </button>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            {[
+              "Supabase",
+              "React",
+              "TypeScript",
+              "Tailwind",
+              "Recharts",
+              "GeoJSON",
+              "Multilang",
+            ].map((logo, idx) => (
+              <div
+                key={logo}
+                className="px-4 py-2 rounded-xl border border-white/10 bg-slate-900/40 text-slate-200 text-sm font-semibold animate-[floatY_4s_ease-in-out_infinite]"
+                style={{ animationDelay: `${idx * 180}ms` }}
+              >
+                {logo}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section
-        id="features"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          <div className="group bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <BookOpen className="w-7 h-7 text-white" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">
-              {t("landing.features.free.title")}
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t("landing.features.free.desc")}
-            </p>
-          </div>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            value={liveStats.loading ? "..." : formatCompact(liveStats.activeQuizzes)}
+            label="Quiz actifs"
+            tone="emerald"
+          />
+          <StatCard
+            value={liveStats.loading ? "..." : formatCompact(liveStats.completedSessions)}
+            label="Parties jouées"
+            tone="cyan"
+          />
+          <StatCard value={String(Object.keys(languageNames).length)} label="Langues supportées" tone="violet" />
+          <StatCard value="24/7" label="Disponible" tone="amber" />
+        </div>
+      </section>
 
-          <div className="group bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Users className="w-7 h-7 text-white" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">
-              {t("landing.features.community.title")}
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t("landing.features.community.desc")}
-            </p>
-          </div>
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+        <div className="grid md:grid-cols-3 gap-5">
+          <FeatureCard icon={<BookOpen className="w-6 h-6" />} title={t("landing.features.free.title")} description={t("landing.features.free.desc")} />
+          <FeatureCard icon={<Users className="w-6 h-6" />} title={t("landing.features.community.title")} description={t("landing.features.community.desc")} />
+          <FeatureCard icon={<Star className="w-6 h-6" />} title={t("landing.features.progress.title")} description={t("landing.features.progress.desc")} />
+        </div>
+      </section>
 
-          <div className="group bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <Star className="w-7 h-7 text-white" />
+      <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 sm:p-10">
+          <h2 className="text-3xl sm:text-4xl font-extrabold mb-6">{t("landing.about.title")}</h2>
+          <p className="text-slate-200 mb-5">{t("landing.about.intro")}</p>
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-5">
+              <h3 className="font-bold text-xl mb-2 flex items-center gap-2"><TargetIcon />{t("landing.about.mission")}</h3>
+              <p className="text-slate-200">{t("landing.about.missionText")}</p>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">
-              {t("landing.features.progress.title")}
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              {t("landing.features.progress.desc")}
-            </p>
+            <div className="rounded-2xl bg-blue-500/10 border border-blue-400/20 p-5">
+              <h3 className="font-bold text-xl mb-2 flex items-center gap-2"><Zap className="w-5 h-5 text-blue-300" />{t("landing.about.goal")}</h3>
+              <p className="text-slate-200">{t("landing.about.goalText")}</p>
+            </div>
+          </div>
+          <div className="rounded-2xl bg-slate-900/50 border border-white/10 p-5">
+            <h3 className="font-bold text-xl mb-3">{t("landing.about.offers")}</h3>
+            <ul className="space-y-2 text-slate-200">
+              {offers.map((offer, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <Star className="w-4 h-4 mt-1 text-emerald-300" />
+                  {offer}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section
-        id="about"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16"
-      >
-        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-8 text-center">
-            {t("landing.about.title")}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 sm:p-10">
+          <h2 className="text-2xl sm:text-3xl font-extrabold mb-6">
+            Ils adorent TerraCoast
           </h2>
-
-          <div className="space-y-6 text-gray-700 text-base sm:text-lg leading-relaxed">
-            <p>{t("landing.about.intro")}</p>
-
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-l-4 border-emerald-600 p-6 rounded-r-xl">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 flex items-center">
-                <Target className="w-6 h-6 mr-2 text-emerald-600" />
-                {t("landing.about.mission")}
-              </h3>
-              <p className="text-gray-700">{t("landing.about.missionText")}</p>
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-600 p-6 rounded-r-xl">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 flex items-center">
-                <Zap className="w-6 h-6 mr-2 text-blue-600" />
-                {t("landing.about.goal")}
-              </h3>
-              <p className="text-gray-700">{t("landing.about.goalText")}</p>
-            </div>
-
-            <div className="bg-gray-50 border-l-4 border-gray-600 p-6 rounded-r-xl">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
-                {t("landing.about.offers")}
-              </h3>
-              <ul className="space-y-3">
-                {offers.map((offer, index) => (
-                  <li key={index} className="flex items-start">
-                    <Star className="w-5 h-5 text-emerald-600 mr-3 mt-1 flex-shrink-0" />
-                    <span>{offer}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-6 text-white">
-              <h3 className="text-xl sm:text-2xl font-bold mb-3 flex items-center">
-                <Globe className="w-6 h-6 mr-2" />
-                {t("landing.about.joinTitle")}
-              </h3>
-              <p className="text-emerald-50">{t("landing.about.joinText")}</p>
-            </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {testimonials.map((item) => (
+              <div
+                key={item.name}
+                className="rounded-2xl border border-white/10 bg-slate-900/50 p-5 hover:bg-slate-900/70 transition-colors"
+              >
+                <p className="text-slate-200 mb-4">“{item.text}”</p>
+                <div className="text-sm">
+                  <p className="font-bold text-white">{item.name}</p>
+                  <p className="text-slate-400">{item.role}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className="text-center bg-white rounded-2xl p-6 shadow-lg">
-            <div className="text-3xl sm:text-4xl font-bold text-emerald-600 mb-2">
-              100%
-            </div>
-            <div className="text-sm sm:text-base text-gray-600">
-              {t("landing.stats.free")}
-            </div>
-          </div>
-          <div className="text-center bg-white rounded-2xl p-6 shadow-lg">
-            <div className="text-3xl sm:text-4xl font-bold text-blue-600 mb-2">
-              0
-            </div>
-            <div className="text-sm sm:text-base text-gray-600">
-              {t("landing.stats.ads")}
-            </div>
-          </div>
-          <div className="text-center bg-white rounded-2xl p-6 shadow-lg">
-            <div className="text-3xl sm:text-4xl font-bold text-amber-600 mb-2">
-              ∞
-            </div>
-            <div className="text-sm sm:text-base text-gray-600">
-              {t("landing.stats.quizzes")}
-            </div>
-          </div>
-          <div className="text-center bg-white rounded-2xl p-6 shadow-lg">
-            <div className="text-3xl sm:text-4xl font-bold text-purple-600 mb-2">
-              24/7
-            </div>
-            <div className="text-sm sm:text-base text-gray-600">
-              {t("landing.stats.available")}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Final */}
-      <section
-        id="contact"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16"
-      >
-        <div className="text-center bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-8 sm:p-12 text-white shadow-2xl">
-          <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6">
-            {t("landing.cta.ready")}
-          </h3>
+      <section id="contact" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="rounded-3xl p-8 sm:p-12 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 text-center">
+          <h3 className="text-3xl sm:text-4xl font-black mb-5">{t("landing.cta.ready")}</h3>
           <button
             onClick={() => onNavigate("register")}
-            className="px-8 sm:px-12 py-4 sm:py-5 bg-white text-emerald-600 rounded-xl hover:bg-gray-100 transition-all transform hover:scale-105 shadow-xl font-bold text-lg sm:text-xl"
+            className="px-10 py-4 rounded-xl bg-slate-950 text-white font-bold hover:bg-slate-900 transition-colors hover:scale-[1.02] active:scale-[0.99]"
           >
             {t("landing.cta.createAccount")}
           </button>
         </div>
       </section>
 
-      {/* Footer amélioré */}
-      <footer className="bg-gray-900 text-white py-8 sm:py-12 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            {/* Colonne 1: Logo et description */}
-            <div>
-              <button
-                onClick={() => onNavigate("home")}
-                className="flex items-center hover:opacity-80 transition-opacity"
-              >
-                <img
-                  src="/logo.png"
-                  alt="TerraCoast Logo"
-                  className="h-12 w-auto"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-                <span className="ml-3 text-2xl font-bold text-emerald-600">
-                  TerraCoast
-                </span>
-              </button>
-              <p className="text-gray-400 text-sm">© 2025 TerraCoast</p>
-              <p className="text-gray-400 text-sm mt-2">
-                {t("landing.footer.tagline")}
-              </p>
-            </div>
-
-            {/* Colonne 2: Liens légaux */}
-            <div>
-              <h4 className="font-bold text-lg mb-4">Informations</h4>
-              <ul className="space-y-2">
-                <li>
-                  <button
-                    onClick={() => setShowLegal(true)}
-                    className="text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    {t("landing.footer.legal")}
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => onNavigate("privacy")}
-                    className="text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    {t("landing.footer.privacy")}
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => onNavigate("terms")}
-                    className="text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    {t("landing.footer.terms")}
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Colonne 3: Réseaux sociaux */}
-            <div>
-              <h4 className="font-bold text-lg mb-4">{t("landing.footer.social")}</h4>
-              <div className="flex flex-col space-y-3">
-                <a
-                  href="https://discord.gg/KUU9WeDuPj"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" />
-                  </svg>
-                  Discord
-                </a>
-                <a
-                  href="https://fr.tipeee.com/terracoast/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                  Tipeee
-                </a>
-                <a
-                  href="https://www.patreon.com/cw/TerraCoast?utm_source=search&vanity=TerraCoast"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden
-                  >
-                    <path d="M15.386.524c-4.764 0-8.64 3.876-8.64 8.64 0 4.75 3.876 8.613 8.64 8.613 4.75 0 8.614-3.864 8.614-8.613C24 4.4 20.136.524 15.386.524M.003 23.537h4.22V.524H.003" />
-                  </svg>
-                  Patreon
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 pt-6 text-center text-gray-400 text-sm">
-            <p>TerraCoast - {new Date().getFullYear()}</p>
+      <footer className="border-t border-white/10 bg-slate-950/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-400">
+          <p>© {new Date().getFullYear()} TerraCoast</p>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setShowLegal(true)} className="hover:text-white transition-colors">
+              {t("landing.footer.legal")}
+            </button>
+            <button onClick={() => onNavigate("privacy")} className="hover:text-white transition-colors">
+              {t("landing.footer.privacy")}
+            </button>
+            <button onClick={() => onNavigate("terms")} className="hover:text-white transition-colors">
+              {t("landing.footer.terms")}
+            </button>
           </div>
         </div>
       </footer>
 
-      {/* Modales pour mentions légales */}
       {showLegal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
-                {t("landing.footer.legal")}
-              </h3>
-              <button
-                onClick={() => setShowLegal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-white text-slate-800 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold">{t("landing.footer.legal")}</h3>
+              <button onClick={() => setShowLegal(false)} className="p-2 rounded-lg hover:bg-slate-100">
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="prose prose-sm max-w-none text-gray-700">
-              <h4 className="font-bold">Éditeur du site</h4>
+            <div className="space-y-4 text-sm leading-relaxed">
               <p>
-                TerraCoast
+                <strong>TerraCoast</strong>
                 <br />
-                Site web : terracoast.com
+                Site web: terracoast.com
               </p>
-
-              <h4 className="font-bold mt-6">Hébergement</h4>
-              <p>Le site est hébergé par Supabase</p>
-
-              <h4 className="font-bold mt-6">Propriété intellectuelle</h4>
+              <p>Hébergement: Supabase.</p>
               <p>
-                L'ensemble du contenu du site TerraCoast est protégé par le
-                droit d'auteur. Toute reproduction non autorisée est interdite.
+                L’ensemble des contenus de TerraCoast est protégé par le droit
+                d’auteur. Toute reproduction non autorisée est interdite.
               </p>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
+
+function FeatureCard({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:bg-white/10 transition-colors">
+      <div className="w-12 h-12 rounded-xl bg-emerald-400/20 text-emerald-300 flex items-center justify-center mb-4">
+        {icon}
+      </div>
+      <h3 className="text-xl font-bold mb-2">{title}</h3>
+      <p className="text-slate-300">{description}</p>
+    </div>
+  );
+}
+
+function StatCard({
+  value,
+  label,
+  tone,
+}: {
+  value: string;
+  label: string;
+  tone: "emerald" | "cyan" | "violet" | "amber";
+}) {
+  const toneClass =
+    tone === "emerald"
+      ? "from-emerald-500/20 to-emerald-400/5 border-emerald-300/20 text-emerald-200"
+      : tone === "cyan"
+      ? "from-cyan-500/20 to-cyan-400/5 border-cyan-300/20 text-cyan-200"
+      : tone === "violet"
+      ? "from-violet-500/20 to-violet-400/5 border-violet-300/20 text-violet-200"
+      : "from-amber-500/20 to-amber-400/5 border-amber-300/20 text-amber-200";
+
+  return (
+    <div
+      className={`rounded-2xl border bg-gradient-to-br ${toneClass} backdrop-blur-sm p-5 hover:scale-[1.02] transition-transform`}
+    >
+      <p className="text-3xl sm:text-4xl font-black mb-1">{value}</p>
+      <p className="text-sm text-slate-300">{label}</p>
+    </div>
+  );
+}
+
+function TargetIcon() {
+  return (
+    <svg className="w-5 h-5 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function formatCompact(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+  if (value >= 1_000_000) return `${Math.round(value / 100_000) / 10}M+`;
+  if (value >= 1_000) return `${Math.round(value / 100) / 10}k+`;
+  return `${Math.max(0, Math.floor(value))}`;
+}
+
