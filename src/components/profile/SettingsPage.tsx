@@ -615,9 +615,9 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
             <div className="flex items-center gap-4">
               <Avatar
-                url={(profile as any)?.avatar_url}
+                url={profile?.avatar_url}
                 pseudo={profile?.pseudo}
-                frameStyle={(profile as any)?.frame_style}
+                frameStyle={profile?.frame_style}
                 size="lg"
               />
               <div className="flex-1">
@@ -655,9 +655,9 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
             <div className="flex items-center gap-4">
               <Avatar
-                url={(profile as any)?.avatar_url}
+                url={profile?.avatar_url}
                 pseudo={profile?.pseudo}
-                frameStyle={(profile as any)?.frame_style}
+                frameStyle={profile?.frame_style}
                 size="lg"
               />
               <div className="flex-1">
@@ -669,7 +669,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                 </label>
                 <select
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
-                  value={((profile as any)?.frame_style || "none") as string}
+                  value={profile?.frame_style || "none"}
                   disabled={frameSaving}
                   onChange={(e) => saveFrameStyle(e.target.value)}
                 >

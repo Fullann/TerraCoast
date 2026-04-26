@@ -25,6 +25,7 @@ export function ChallengeFriendModal({
   const { t } = useLanguage();
   const [friends, setFriends] = useState<Profile[]>([]);
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
+  const selectedSet = useMemo(() => new Set(selectedFriends), [selectedFriends]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -75,10 +76,10 @@ export function ChallengeFriendModal({
   };
 
   const toggleFriend = (friendId: string) => {
-    if (selectedFriends.includes(friendId)) {
-      setSelectedFriends(selectedFriends.filter((id) => id !== friendId));
+    if (selectedSet.has(friendId)) {
+      setSelectedFriends((prev) => prev.filter((id) => id !== friendId));
     } else {
-      setSelectedFriends([...selectedFriends, friendId]);
+      setSelectedFriends((prev) => [...prev, friendId]);
     }
   };
 
@@ -157,7 +158,7 @@ export function ChallengeFriendModal({
                       key={friend.id}
                       onClick={() => toggleFriend(friend.id)}
                       className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                        selectedFriends.includes(friend.id)
+                        selectedSet.has(friend.id)
                           ? "border-emerald-500 bg-emerald-50"
                           : "border-gray-200 hover:border-emerald-300"
                       }`}
@@ -165,9 +166,9 @@ export function ChallengeFriendModal({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <Avatar
-                            url={(friend as any).avatar_url}
+                            url={friend.avatar_url}
                             pseudo={friend.pseudo}
-                            frameStyle={(friend as any).frame_style}
+                            frameStyle={friend.frame_style}
                             size="sm"
                           />
                           <div>
@@ -179,7 +180,7 @@ export function ChallengeFriendModal({
                             </p>
                           </div>
                         </div>
-                        {selectedFriends.includes(friend.id) && (
+                        {selectedSet.has(friend.id) && (
                           <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
                             <span className="text-white text-sm">✓</span>
                           </div>

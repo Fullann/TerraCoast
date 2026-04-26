@@ -28,6 +28,7 @@ import { QuizManagementPage } from "./components/admin/QuizManagementPage";
 import { DuelFeaturesPage } from "./components/admin/DuelFeaturesPage";
 import { GeoJsonMapsManagementPage } from "./components/admin/GeoJsonMapsManagementPage";
 import { AdminAnalyticsPage } from "./components/admin/AdminAnalyticsPage";
+import { HomepageTestimonialsManagementPage } from "./components/admin/HomepageTestimonialsManagementPage";
 import { AdminDashboardLayout } from "./components/admin/layout/AdminDashboardLayout";
 import { DuelsPage } from "./components/duels/DuelsPage";
 import { ChatPage } from "./components/chat/ChatPage";
@@ -99,6 +100,7 @@ function AppContent() {
     "duel-features",
     "geojson-maps-management",
     "admin-analytics",
+    "homepage-testimonials-management",
   ]);
   const isAdminView = adminViews.has(currentView);
 
@@ -122,6 +124,8 @@ function AppContent() {
     if (currentView === "duel-features") return <DuelFeaturesPage />;
     if (currentView === "geojson-maps-management") return <GeoJsonMapsManagementPage />;
     if (currentView === "admin-analytics") return <AdminAnalyticsPage />;
+    if (currentView === "homepage-testimonials-management")
+      return <HomepageTestimonialsManagementPage />;
     return null;
   };
 

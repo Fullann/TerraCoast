@@ -58,7 +58,8 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
   useEffect(() => {
     loadFriends();
     loadSuggestions();
-  }, [profile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   useEffect(() => {
     loadChallenges();
@@ -318,9 +319,9 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
               >
                 <div className="flex items-center space-x-3">
                   <Avatar
-                    url={(request.user_profile as any)?.avatar_url}
+                    url={request.user_profile?.avatar_url}
                     pseudo={request.user_profile?.pseudo}
-                    frameStyle={(request.user_profile as any)?.frame_style}
+                    frameStyle={request.user_profile?.frame_style}
                     size="sm"
                   />
                   <div>
@@ -435,9 +436,9 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                     }
                   >
                     <Avatar
-                      url={(friendProfile as any)?.avatar_url}
+                      url={friendProfile.avatar_url}
                       pseudo={friendProfile.pseudo}
-                      frameStyle={(friendProfile as any)?.frame_style}
+                      frameStyle={friendProfile.frame_style}
                       size="md"
                     />
                     <div>
@@ -492,9 +493,9 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                 >
                   <div className="flex justify-center mx-auto mb-2">
                     <Avatar
-                      url={(user as any).avatar_url}
+                      url={user.avatar_url}
                       pseudo={user.pseudo}
-                      frameStyle={(user as any).frame_style}
+                      frameStyle={user.frame_style}
                       size="lg"
                     />
                   </div>

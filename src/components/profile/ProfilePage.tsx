@@ -78,8 +78,8 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     "none" | "pending" | "friends" | "blocked"
   >("none");
   const [showWarningHistory, setShowWarningHistory] = useState(false);
-  const [warningHistory, setWarningHistory] = useState<any[]>([]);
-  const [selectedDataPoint, setSelectedDataPoint] = useState<any>(null);
+  const [warningHistory, setWarningHistory] = useState<{ id: string; reason: string; status: string; created_at: string }[]>([]);
+  const [selectedDataPoint, setSelectedDataPoint] = useState<Record<string, number | string> | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [frameSaving, setFrameSaving] = useState(false);
   const [challengeModalOpen, setChallengeModalOpen] = useState(false);
@@ -138,52 +138,44 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   const loadProfileData = useCallback(async () => {
     if (!targetUserId) return;
 
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", targetUserId)
-      .single();
+    const [profileResult, badgesResult, titlesResult, sessionsResult] =
+      await Promise.all([
+        supabase.from("profiles").select("*").eq("id", targetUserId).single(),
+        supabase
+          .from("user_badges")
+          .select("*, badges(*)")
+          .eq("user_id", targetUserId)
+          .order("earned_at", { ascending: false }),
+        supabase
+          .from("user_titles")
+          .select("*, titles(*)")
+          .eq("user_id", targetUserId)
+          .order("earned_at", { ascending: false }),
+        supabase
+          .from("game_sessions")
+          .select("*, quizzes(title)")
+          .eq("player_id", targetUserId)
+          .eq("completed", true)
+          .order("started_at", { ascending: false })
+          .limit(5),
+      ]);
 
-    if (profileData) setProfile(profileData);
-
-    if (!isOwnProfile && currentUserProfile) {
-      await loadFriendshipStatus();
-    }
-
-    const { data: badgesData } = await supabase
-      .from("user_badges")
-      .select("*, badges(*)")
-      .eq("user_id", targetUserId)
-      .order("earned_at", { ascending: false });
-
-    if (badgesData) setBadges(badgesData);
-
-    const { data: titlesData } = await supabase
-      .from("user_titles")
-      .select("*, titles(*)")
-      .eq("user_id", targetUserId)
-      .order("earned_at", { ascending: false });
-
-    if (titlesData) {
+    if (profileResult.data) setProfile(profileResult.data);
+    if (badgesResult.data) setBadges(badgesResult.data);
+    if (titlesResult.data) {
       setTitles(
-        [...titlesData].sort(
+        [...titlesResult.data].sort(
           (a, b) => Number(Boolean(b.is_active)) - Number(Boolean(a.is_active))
         )
       );
     }
+    if (sessionsResult.data) setSessions(sessionsResult.data as any);
 
-    const { data: sessionsData } = await supabase
-      .from("game_sessions")
-      .select("*, quizzes(title)")
-      .eq("player_id", targetUserId)
-      .eq("completed", true)
-      .order("started_at", { ascending: false })
-      .limit(5);
-
-    if (sessionsData) setSessions(sessionsData as any);
-
-    await loadStats();
-    await loadDailyStats();
+    await Promise.all([
+      loadStats(),
+      loadDailyStats(),
+      (!isOwnProfile && currentUserProfile) ? loadFriendshipStatus() : Promise.resolve(),
+    ]);
   }, [targetUserId, isOwnProfile, currentUserProfile]);
 
   useEffect(() => {
@@ -463,10 +455,9 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   };
 
   // ✅ Fonction corrigée pour gérer le clic sur le graphique
-  const handleChartClick = (data: any) => {
-    if (data && data.activePayload && data.activePayload.length > 0) {
-      const clickedData = data.activePayload.payload;
-      setSelectedDataPoint(clickedData);
+  const handleChartClick = (data: { activePayload?: { payload: Record<string, number | string> }[] } | null) => {
+    if (data?.activePayload && data.activePayload.length > 0) {
+      setSelectedDataPoint(data.activePayload[0].payload);
     }
   };
 
@@ -540,9 +531,9 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             <div className="relative">
               <Avatar
-                url={(profile as any).avatar_url}
+                url={profile.avatar_url}
                 pseudo={profile.pseudo}
-                frameStyle={(profile as any).frame_style}
+                frameStyle={profile.frame_style}
                 size="xl"
                 className="shadow-lg"
               />
@@ -1156,7 +1147,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                     <span className="text-sm text-gray-600">{t("profile.frame")}</span>
                     <select
                       className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
-                      value={((profile as any).frame_style || "none") as string}
+                      value={profile.frame_style || "none"}
                       disabled={frameSaving}
                       onChange={(e) => saveFrameStyle(e.target.value)}
                     >

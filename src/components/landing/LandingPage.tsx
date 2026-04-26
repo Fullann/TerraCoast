@@ -16,6 +16,38 @@ import { languageNames, type Language } from "../../i18n/translations";
 import { QuizGlobe, type QuizGlobePoint } from "../home/QuizGlobe";
 import { supabase } from "../../lib/supabase";
 
+const FALLBACK_TESTIMONIALS = [
+  {
+    id: "fallback-1",
+    name: "Lina",
+    role: "Joueuse quotidienne",
+    text: "La meilleure app pour progresser en géographie sans s'ennuyer.",
+    position: 1,
+  },
+  {
+    id: "fallback-2",
+    name: "Mathis",
+    role: "Créateur de quiz",
+    text: "Créer et partager mes quiz est super rapide, la communauté joue vraiment.",
+    position: 2,
+  },
+  {
+    id: "fallback-3",
+    name: "Sara",
+    role: "Mode duel",
+    text: "Les défis entre amis rendent tout plus fun et motivant.",
+    position: 3,
+  },
+];
+
+interface LandingTestimonial {
+  id: string;
+  name: string;
+  role: string;
+  text: string;
+  position: number;
+}
+
 interface LandingPageProps {
   onNavigate: (view: string) => void;
 }
@@ -30,32 +62,18 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     completedSessions: 0,
     loading: true,
   });
+  const [testimonials, setTestimonials] = useState<LandingTestimonial[]>(FALLBACK_TESTIMONIALS);
 
-  const offers = [
-    t("landing.about.offer1"),
-    t("landing.about.offer2"),
-    t("landing.about.offer3"),
-    t("landing.about.offer4"),
-    t("landing.about.offer5"),
-  ];
-
-  const testimonials = [
-    {
-      name: "Lina",
-      role: "Joueuse quotidienne",
-      text: "La meilleure app pour progresser en géographie sans s’ennuyer.",
-    },
-    {
-      name: "Mathis",
-      role: "Créateur de quiz",
-      text: "Créer et partager mes quiz est super rapide, la communauté joue vraiment.",
-    },
-    {
-      name: "Sara",
-      role: "Mode duel",
-      text: "Les défis entre amis rendent tout plus fun et motivant.",
-    },
-  ];
+  const offers = useMemo(
+    () => [
+      t("landing.about.offer1"),
+      t("landing.about.offer2"),
+      t("landing.about.offer3"),
+      t("landing.about.offer4"),
+      t("landing.about.offer5"),
+    ],
+    [t]
+  );
 
   const globePoints = useMemo<QuizGlobePoint[]>(
     () => [
@@ -131,6 +149,32 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     };
 
     loadStats();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadTestimonials = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("landing_testimonials")
+          .select("id, name, role, text, position")
+          .eq("is_active", true)
+          .order("position", { ascending: true });
+
+        if (error) throw error;
+
+        if (!cancelled && data && data.length > 0) {
+          setTestimonials(data);
+        }
+      } catch (e) {
+        console.error("Landing testimonials load failed:", e);
+      }
+    };
+
+    loadTestimonials();
     return () => {
       cancelled = true;
     };
@@ -366,7 +410,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           <div className="grid md:grid-cols-3 gap-4">
             {testimonials.map((item) => (
               <div
-                key={item.name}
+                key={item.id}
                 className="rounded-2xl border border-white/10 bg-slate-900/50 p-5 hover:bg-slate-900/70 transition-colors"
               >
                 <p className="text-slate-200 mb-4">“{item.text}”</p>

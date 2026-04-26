@@ -376,6 +376,38 @@ export interface Database {
           is_active?: boolean
         }
       }
+      landing_testimonials: {
+        Row: {
+          id: string
+          name: string
+          role: string
+          text: string
+          position: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          role: string
+          text: string
+          position?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          role?: string
+          text?: string
+          position?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
       countries_reference: {
         Row: {
           iso3: string

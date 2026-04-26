@@ -79,15 +79,8 @@ export function Avatar({
   const initials = initialsFromPseudo(pseudo);
   const style = normalizeFrameStyle(frameStyle);
 
-  const outerClasses =
-    style === "rainbow"
-      ? `rounded-full ${frameClass(style)}`
-      : `rounded-full ${frameClass(style)}`;
-
-  const innerClasses =
-    style === "rainbow"
-      ? "rounded-full bg-white"
-      : "rounded-full bg-white";
+  const outerClasses = `rounded-full ${frameClass(style)}`;
+  const innerClasses = "rounded-full bg-white";
 
   const outerStyle: CSSProperties = { width: px, height: px };
 

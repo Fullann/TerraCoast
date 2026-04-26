@@ -361,9 +361,9 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
                   <div className="flex-shrink-0">{getRankIcon(index)}</div>
 
                   <Avatar
-                    url={(entry as any).avatar_url}
+                    url={entry.avatar_url}
                     pseudo={entry.pseudo}
-                    frameStyle={(entry as any).frame_style}
+                    frameStyle={entry.frame_style}
                     size="md"
                   />
 
@@ -388,10 +388,10 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps) {
                           {getWinRate(entry)}%
                         </span>
                       )}
-                      {mode === "xp" && entry.top10_count > 0 && index < 10 && (
+                      {mode === "xp" && (entry.top_10_count ?? 0) > 0 && index < 10 && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow">
                           <Crown className="w-3 h-3 mr-1" />
-                          {entry.top10_count}x {t("leaderboard.top10")}
+                          {entry.top_10_count}x {t("leaderboard.top10")}
                         </span>
                       )}
                     </div>

@@ -11,6 +11,7 @@ import {
   Trophy,
   Map,
   BarChart3,
+  MessageSquareQuote,
 } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
 
@@ -115,6 +116,11 @@ export function AdminDashboardLayout({
           view: "quiz-type-management",
           label: t("admin.nav.quizTypes"),
           icon: <Settings className="w-4 h-4" />,
+        },
+        {
+          view: "homepage-testimonials-management",
+          label: "Testimonials homepage",
+          icon: <MessageSquareQuote className="w-4 h-4" />,
         },
       ],
     },
