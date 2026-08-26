@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { supabase } from "../../lib/supabase";
@@ -52,7 +53,8 @@ interface ProfilePageProps {
   onNavigate: (view: string, data?: any) => void;
 }
 
-export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
+export function ProfilePage({  userId }: any) {
+  const navigate = useNavigate();
   const { profile: currentUserProfile } = useAuth();
   const { t } = useLanguage();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -648,7 +650,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             {isOwnProfile && (
               <>
                 <button
-                  onClick={() => onNavigate("settings")}
+                  onClick={() => navigate("/settings")}
                   className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
                 >
                   <Settings className="w-5 h-5" />
@@ -657,7 +659,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
                 {isAdmin && (
                   <button
-                    onClick={() => onNavigate("account-details")}
+                    onClick={() => navigate("/account-details")}
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
                   >
                     <User className="w-5 h-5" />

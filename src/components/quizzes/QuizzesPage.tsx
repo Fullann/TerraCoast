@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -82,7 +83,8 @@ interface QuizzesPageProps {
   onNavigate: (view: string, data?: any) => void;
 }
 
-export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
+export function QuizzesPage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { language, showAllLanguages, t } = useLanguage();
   const { showAppNotification } = useNotifications();
@@ -806,7 +808,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           </button>
 
           <button
-            onClick={() => onNavigate("create-quiz")}
+            onClick={() => navigate("/quizzes/create")}
             className="flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium bg-gradient-to-br from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md"
           >
             <Plus className="w-5 h-5 mb-1" />
@@ -928,7 +930,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                         <g
                           key={`quiz-point-${quiz.id}-${index}`}
                           transform={`translate(${dx}, ${dy})`}
-                          onClick={() => onNavigate("play-quiz", { quizId: quiz.id })}
+                          onClick={() => navigate(`/quizzes/play/${quiz.id }`)}
                           onMouseEnter={(e: any) => {
                             const rect = mapContainerRef.current?.getBoundingClientRect();
                             if (!rect) return;
@@ -1091,7 +1093,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
               </div>
               <button
                 type="button"
-                onClick={() => onNavigate("training-mode")}
+                onClick={() => navigate("/quizzes/training")}
                 className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 {t("home.trainingMode")}
@@ -1103,7 +1105,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           {filteredQuizzes.map((quiz) => (
             <div
               key={quiz.id}
-              onClick={() => onNavigate("play-quiz", { quizId: quiz.id })}
+              onClick={() => navigate(`/quizzes/play/${quiz.id }`)}
               className="bg-white cursor-pointer rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden flex flex-col h-full"
             >
               {quiz.cover_image_url ? (
@@ -1173,7 +1175,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onNavigate("play-quiz", { quizId: quiz.id });
+                        navigate(`/quizzes/play/${quiz.id }`);
                       }}
                       className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
                     >
@@ -1183,7 +1185,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onNavigate("play-training", { quizId: quiz.id, questionCount: 10 });
+                        navigate(`/quizzes/training/${quiz.id}?count=${10 }`);
                       }}
                       className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-medium flex items-center justify-center"
                       title={t("quizzes.trainNow")}
@@ -1196,7 +1198,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onNavigate("edit-quiz", { quizId: quiz.id });
+                            navigate(`/quizzes/edit/${quiz.id }`);
                           }}
                           className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                           title={t("quiz.edit")}

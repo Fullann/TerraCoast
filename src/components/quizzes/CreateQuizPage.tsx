@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -83,7 +84,8 @@ interface CreateQuizPageProps {
   onNavigate: (view: string) => void;
 }
 
-export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
+export function CreateQuizPage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { language: userLanguage, t } = useLanguage();
   const { showAppNotification } = useNotifications();
@@ -571,7 +573,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         type: "success",
         message: t("createQuiz.success"),
       });
-      onNavigate("quizzes");
+      navigate("/quizzes");
     } catch (err: any) {
       setError(err.message || t("createQuiz.errors.createError"));
     } finally {
@@ -596,7 +598,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
         <button
-          onClick={() => onNavigate("quizzes")}
+          onClick={() => navigate("/quizzes")}
           className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -2024,7 +2026,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
       <div className="flex space-x-4">
         <button
-          onClick={() => onNavigate("quizzes")}
+          onClick={() => navigate("/quizzes")}
           className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
         >
           {t("common.cancel")}

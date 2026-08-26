@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -51,15 +52,14 @@ interface PlayQuizPageProps {
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
 }
 
-export function PlayQuizPage({
+export function PlayQuizPage({ 
   quizId,
   mode = "solo",
   duelId,
   challengeId,
   trainingMode = false,
-  questionCount,
-  onNavigate,
-}: PlayQuizPageProps) {
+  questionCount }: any) {
+  const navigate = useNavigate();
   const { profile, refreshProfile } = useAuth();
   const { t } = useLanguage();
   const { showAppNotification } = useNotifications();
@@ -1509,14 +1509,14 @@ export function PlayQuizPage({
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => onNavigate("quizzes")}
+                  onClick={() => navigate("/quizzes")}
                   className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
                 >
                   {t("playQuiz.exploreOtherQuizzes")}
                 </button>
                 {mode === "duel" ? (
                   <button
-                    onClick={() => onNavigate("duels")}
+                    onClick={() => navigate("/duels")}
                     className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     {t("duels.viewResults")}
@@ -1524,10 +1524,7 @@ export function PlayQuizPage({
                 ) : (
                   <button
                     onClick={() => {
-                      onNavigate("play-quiz", {
-                        quizId,
-                        resetKey: Date.now(),
-                      });
+                      navigate(`/quizzes/play/${quizId}`);
                     }}
                     className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
@@ -1565,14 +1562,14 @@ export function PlayQuizPage({
       typeof window === "undefined" ? true : window.confirm(t("playQuiz.confirmQuit"));
     if (!confirmed) return;
     if (mode === "duel") {
-      onNavigate("duels");
+      navigate("/duels");
       return;
     }
     if (trainingMode) {
-      onNavigate("training-mode");
+      navigate("/quizzes/training");
       return;
     }
-    onNavigate("quizzes");
+    navigate("/quizzes");
   };
 
   return (

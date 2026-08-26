@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -406,7 +407,7 @@ export function HomePage({
                 </p>
               </div>
               <button
-                onClick={() => onNavigate("training-mode")}
+                onClick={() => navigate("/quizzes/training")}
                 className="shrink-0 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 {t("home.trainingSpotlightCta")}
@@ -415,7 +416,7 @@ export function HomePage({
           </div>
 
           <button
-            onClick={() => onNavigate("quizzes")}
+            onClick={() => navigate("/quizzes")}
             className="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
@@ -435,7 +436,7 @@ export function HomePage({
           </button>
 
           <button
-            onClick={() => onNavigate("create-quiz")}
+            onClick={() => navigate("/quizzes/create")}
             className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
@@ -455,7 +456,7 @@ export function HomePage({
           </button>
 
           <button
-            onClick={() => onNavigate("training-mode")}
+            onClick={() => navigate("/quizzes/training")}
             className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
@@ -473,7 +474,7 @@ export function HomePage({
           </button>
 
           <button
-            onClick={() => onNavigate("duels")}
+            onClick={() => navigate("/duels")}
             className="w-full flex items-center justify-between p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors group"
           >
             <div className="flex items-center space-x-3">

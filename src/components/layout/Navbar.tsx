@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotifications } from "../../contexts/NotificationContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -20,12 +21,10 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-interface NavbarProps {
-  currentView: string;
-  onNavigate: (view: string, data?: any) => void;
-}
-
-export function Navbar({ currentView, onNavigate }: NavbarProps) {
+export function Navbar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentView = location.pathname;
   const { profile } = useAuth();
   const {
     unreadMessages,
@@ -102,7 +101,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </p>
                 <button
                   onClick={() => {
-                    onNavigate("chat");
+                    navigate("/chat");
                     clearMessageNotification();
                   }}
                   className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -141,7 +140,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </p>
                 <button
                   onClick={() => {
-                    onNavigate("friends");
+                    navigate("/friends");
                     clearFriendRequestNotification();
                   }}
                   className="mt-3 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
@@ -186,7 +185,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                     <div
                       className="cursor-pointer flex-1"
                       onClick={() => {
-                        onNavigate("duels", { tab: "invitations" });
+                        navigate("/duels", { state: { tab: "invitations" } });
                         clearDuelNotification();
                       }}
                     >
@@ -202,7 +201,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                     <div
                       className="cursor-pointer flex-1"
                       onClick={() => {
-                        onNavigate("duels", { tab: "active" });
+                        navigate("/duels", { state: { tab: "active" } });
                         clearDuelNotification();
                       }}
                     >
@@ -218,7 +217,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                     <div
                       className="cursor-pointer flex-1"
                       onClick={() => {
-                        onNavigate("duels", { tab: "history" });
+                        navigate("/duels", { state: { tab: "history" } });
                         clearDuelNotification();
                       }}
                     >
@@ -235,7 +234,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                     <div
                       className="cursor-pointer flex-1"
                       onClick={() => {
-                        onNavigate("duels", { tab: "matchmaking" });
+                        navigate("/duels", { state: { tab: "matchmaking" } });
                         clearDuelNotification();
                       }}
                     >
@@ -248,13 +247,13 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 <button
                   onClick={() => {
                     if (duelNotification.type === "completed") {
-                      onNavigate("duels", { tab: "history" });
+                      navigate("/duels", { state: { tab: "history" } });
                     } else if (duelNotification.type === "found") {
-                      onNavigate("duels", { tab: "matchmaking" });
+                      navigate("/duels", { state: { tab: "matchmaking" } });
                     } else if (duelNotification.type === "accepted") {
-                      onNavigate("duels", { tab: "active" });
+                      navigate("/duels", { state: { tab: "active" } });
                     } else {
-                      onNavigate("duels", { tab: "invitations" });
+                      navigate("/duels", { state: { tab: "invitations" } });
                     }
                     clearDuelNotification();
                   }}
@@ -317,7 +316,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => onNavigate("home")}
+                onClick={() => navigate("/terra")}
                 className="flex items-center hover:opacity-80 transition-opacity"
               >
                 <img
@@ -336,9 +335,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               {/* Desktop menu */}
               <div className="hidden md:flex space-x-1">
                 <button
-                  onClick={() => onNavigate("home")}
+                  onClick={() => navigate("/terra")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    currentView === "home"
+                    currentView === "/terra" || currentView === "/"
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -348,9 +347,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("quizzes")}
+                  onClick={() => navigate("/quizzes")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    currentView === "quizzes"
+                    currentView.startsWith("/quizzes")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -360,9 +359,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("leaderboard")}
+                  onClick={() => navigate("/leaderboard")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    currentView === "leaderboard"
+                    currentView.startsWith("/leaderboard")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -372,9 +371,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("friends")}
+                  onClick={() => navigate("/friends")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                    currentView === "friends"
+                    currentView.startsWith("/friends")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -389,9 +388,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("duels")}
+                  onClick={() => navigate("/duels")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                    currentView === "duels"
+                    currentView.startsWith("/duels")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -406,9 +405,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("chat")}
+                  onClick={() => navigate("/chat")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                    currentView === "chat"
+                    currentView.startsWith("/chat")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -424,9 +423,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
                 {profile?.role === "admin" && (
                   <button
-                    onClick={() => onNavigate("admin")}
+                    onClick={() => navigate("/admin")}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      currentView === "admin"
+                      currentView.startsWith("/admin")
                         ? "bg-emerald-100 text-emerald-700"
                         : "text-gray-600 hover:bg-gray-100"
                     }`}
@@ -441,7 +440,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             {/* ✅ Bouton profil uniquement (déconnexion supprimée) */}
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => onNavigate("profile")}
+                onClick={() => navigate("/profile")}
                 className="hidden md:block text-right hover:bg-gray-50 p-2 rounded-lg transition-colors"
               >
                 <p className="text-sm font-medium text-gray-800">
@@ -453,9 +452,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </button>
 
               <button
-                onClick={() => onNavigate("profile")}
+                onClick={() => navigate("/profile")}
                 className={`hidden md:block p-2 rounded-lg transition-colors ${
-                  currentView === "profile"
+                  currentView.startsWith("/profile")
                     ? "bg-emerald-100 text-emerald-700"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
@@ -472,13 +471,12 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         </div>
       </nav>
 
-      {/* Bottom Nav Mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40 safe-area-inset-bottom">
         <div className="grid grid-cols-5 h-16">
           <button
-            onClick={() => onNavigate("home")}
+            onClick={() => navigate("/terra")}
             className={`flex flex-col items-center justify-center transition-colors ${
-              currentView === "home" ? "text-emerald-600" : "text-gray-600"
+              currentView === "/terra" ? "text-emerald-600" : "text-gray-600"
             }`}
           >
             <Home className="w-6 h-6" />
@@ -486,9 +484,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           </button>
 
           <button
-            onClick={() => onNavigate("quizzes")}
+            onClick={() => navigate("/quizzes")}
             className={`flex flex-col items-center justify-center transition-colors ${
-              currentView === "quizzes" ? "text-emerald-600" : "text-gray-600"
+              currentView.startsWith("/quizzes") ? "text-emerald-600" : "text-gray-600"
             }`}
           >
             <BookOpen className="w-6 h-6" />
@@ -498,7 +496,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           <button
             onClick={() => setSocialMenuOpen(!socialMenuOpen)}
             className={`flex flex-col items-center justify-center transition-colors relative ${
-              ["friends", "duels", "chat"].includes(currentView)
+              currentView.startsWith("/friends") || currentView.startsWith("/duels") || currentView.startsWith("/chat")
                 ? "text-emerald-600"
                 : "text-gray-600"
             }`}
@@ -513,9 +511,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           </button>
 
           <button
-            onClick={() => onNavigate("leaderboard")}
+            onClick={() => navigate("/leaderboard")}
             className={`flex flex-col items-center justify-center transition-colors ${
-              currentView === "leaderboard"
+              currentView.startsWith("/leaderboard")
                 ? "text-emerald-600"
                 : "text-gray-600"
             }`}
@@ -525,9 +523,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           </button>
 
           <button
-            onClick={() => onNavigate("profile")}
+            onClick={() => navigate("/profile")}
             className={`flex flex-col items-center justify-center transition-colors ${
-              currentView === "profile" ? "text-emerald-600" : "text-gray-600"
+              currentView.startsWith("/profile") ? "text-emerald-600" : "text-gray-600"
             }`}
           >
             <Avatar
@@ -566,11 +564,11 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             <div className="space-y-2">
               <button
                 onClick={() => {
-                  onNavigate("friends");
+                  navigate("/friends");
                   setSocialMenuOpen(false);
                 }}
                 className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  currentView === "friends"
+                  currentView.startsWith("/friends")
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
@@ -588,11 +586,11 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
               <button
                 onClick={() => {
-                  onNavigate("duels");
+                  navigate("/duels");
                   setSocialMenuOpen(false);
                 }}
                 className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  currentView === "duels"
+                  currentView.startsWith("/duels")
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
@@ -625,11 +623,11 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
               <button
                 onClick={() => {
-                  onNavigate("chat");
+                  navigate("/chat");
                   setSocialMenuOpen(false);
                 }}
                 className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  currentView === "chat"
+                  currentView.startsWith("/chat")
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}

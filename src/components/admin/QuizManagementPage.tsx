@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -63,7 +64,8 @@ type FilterStatus = "all" | "public" | "private";
 type QuizWithCreatorRaw = Quiz & { creator?: Profile | Profile[] | null };
 type SessionPerfRow = { id: string; score: number | null; accuracy_percentage: number | null };
 
-export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
+export function QuizManagementPage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { showAppNotification } = useNotifications();

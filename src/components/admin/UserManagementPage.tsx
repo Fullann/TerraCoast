@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -22,7 +23,8 @@ interface UserManagementPageProps {
   onNavigate?: (view: string, data?: any) => void;
 }
 
-export function UserManagementPage({ onNavigate }: UserManagementPageProps) {
+export function UserManagementPage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const [users, setUsers] = useState<Profile[]>([]);

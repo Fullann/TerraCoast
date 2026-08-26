@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   BookOpen,
@@ -20,7 +21,8 @@ interface LandingPageProps {
   onNavigate: (view: string) => void;
 }
 
-export function LandingPage({ onNavigate }: LandingPageProps) {
+export function LandingPage() {
+  const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -142,7 +144,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <button
-            onClick={() => onNavigate("landing")}
+            onClick={() => navigate("/landing")}
             className="flex items-center hover:opacity-80 transition-opacity"
           >
             <img
@@ -202,13 +204,13 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               )}
             </div>
             <button
-              onClick={() => onNavigate("login")}
+              onClick={() => navigate("/login")}
               className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
             >
               {t("landing.hero.login")}
             </button>
             <button
-              onClick={() => onNavigate("register")}
+              onClick={() => navigate("/register")}
               className="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 shadow-sm transition-all"
             >
               {t("landing.hero.startAdventure")}
@@ -224,10 +226,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
         {mobileMenuOpen && (
           <div className="md:hidden px-4 pb-4 space-y-2 border-t border-slate-200 bg-white">
-            <button onClick={() => onNavigate("login")} className="w-full mt-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-left font-medium">
+            <button onClick={() => navigate("/login")} className="w-full mt-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-left font-medium">
               {t("landing.hero.login")}
             </button>
-            <button onClick={() => onNavigate("register")} className="w-full px-4 py-2 rounded-lg bg-emerald-600 text-white text-left font-semibold shadow-sm">
+            <button onClick={() => navigate("/register")} className="w-full px-4 py-2 rounded-lg bg-emerald-600 text-white text-left font-semibold shadow-sm">
               {t("landing.hero.startAdventure")}
             </button>
           </div>
@@ -252,14 +254,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => onNavigate("register")}
+                onClick={() => navigate("/register")}
                 className="px-7 py-4 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-md transition-all flex items-center justify-center hover:scale-[1.02] active:scale-[0.99]"
               >
                 {t("landing.hero.startAdventure")}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
               <button
-                onClick={() => onNavigate("login")}
+                onClick={() => navigate("/login")}
                 className="px-7 py-4 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 shadow-sm transition-colors hover:scale-[1.02] active:scale-[0.99]"
               >
                 {t("landing.hero.login")}
@@ -268,7 +270,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-2 sm:p-3 shadow-xl animate-[fadeInUp_.7s_ease-out] [animation-delay:120ms]">
-            <QuizGlobe points={globePoints} onPointClick={() => onNavigate("register")} />
+            <QuizGlobe points={globePoints} onPointClick={() => navigate("/register")} />
           </div>
         </div>
       </section>
@@ -379,7 +381,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         <div className="rounded-3xl p-8 sm:p-12 bg-emerald-600 text-white text-center shadow-lg">
           <h3 className="text-3xl sm:text-4xl font-black mb-5">{t("landing.cta.ready")}</h3>
           <button
-            onClick={() => onNavigate("register")}
+            onClick={() => navigate("/register")}
             className="px-10 py-4 rounded-xl bg-white text-emerald-700 font-bold hover:bg-slate-50 shadow-md transition-colors hover:scale-[1.02] active:scale-[0.99]"
           >
             {t("landing.cta.createAccount")}
@@ -394,10 +396,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             <button onClick={() => setShowLegal(true)} className="hover:text-slate-800 transition-colors">
               {t("landing.footer.legal")}
             </button>
-            <button onClick={() => onNavigate("privacy")} className="hover:text-slate-800 transition-colors">
+            <button onClick={() => navigate("/privacy")} className="hover:text-slate-800 transition-colors">
               {t("landing.footer.privacy")}
             </button>
-            <button onClick={() => onNavigate("terms")} className="hover:text-slate-800 transition-colors">
+            <button onClick={() => navigate("/terms")} className="hover:text-slate-800 transition-colors">
               {t("landing.footer.terms")}
             </button>
           </div>

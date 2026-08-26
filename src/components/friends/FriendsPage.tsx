@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -33,7 +34,8 @@ interface FriendsPageProps {
   onNavigate?: (view: string, data?: any) => void;
 }
 
-export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
+export function FriendsPage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { showAppNotification } = useNotifications();

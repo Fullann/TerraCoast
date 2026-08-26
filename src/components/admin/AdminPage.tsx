@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -63,7 +64,8 @@ interface AdminPageProps {
   onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
-export function AdminPage({ onNavigate }: AdminPageProps) {
+export function AdminPage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const [stats, setStats] = useState({

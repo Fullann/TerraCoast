@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -33,7 +34,8 @@ interface DuelsPageProps {
   initialTab?: string;
 }
 
-export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
+export function DuelsPage({ initialTab }: any) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { refreshNotifications, showDuelNotification } = useNotifications();

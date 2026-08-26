@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Shield,
@@ -26,11 +27,10 @@ interface AdminNavItem {
   icon: ReactNode;
 }
 
-export function AdminDashboardLayout({
+export function AdminDashboardLayout({ 
   currentView,
-  onNavigate,
-  children,
-}: AdminDashboardLayoutProps) {
+  children }: any) {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const sections: Array<{ title: string; items: AdminNavItem[] }> = [
     {

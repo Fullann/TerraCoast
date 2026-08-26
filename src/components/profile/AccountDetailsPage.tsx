@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -19,7 +20,8 @@ interface AccountDetailsPageProps {
   userId?: string; // ID du profil à afficher
 }
 
-export function AccountDetailsPage({ onNavigate, userId }: AccountDetailsPageProps) {
+export function AccountDetailsPage({ userId }: any) {
+  const navigate = useNavigate();
   const { profile: currentUserProfile } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [chargement, setChargement] = useState(true);
