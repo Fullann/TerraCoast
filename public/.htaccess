@@ -1,9 +1,16 @@
+Options -MultiViews
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_FILENAME} !-l
-  RewriteRule . /index.html [L]
+
+  # Ne pas réécrire les vraies ressources (fichiers, dossiers)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Tout le reste → index.html (React Router gère)
+  RewriteRule ^ index.html [L]
 </IfModule>
+
+# Optionnel : Désactiver la signature du serveur
+ServerSignature Off

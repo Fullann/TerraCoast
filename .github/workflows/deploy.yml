@@ -53,5 +53,8 @@ jobs:
           local-dir: dist/
           server-dir: /
           dangerous-clean-slate: true
-             # remplace/élimine l’ancien contenu
- 
+          exclude: |
+            **/.git*
+            **/.git*/**
+          # dangerous-clean-slate remplace tout l'ancien contenu
+          # Les fichiers dot (.htaccess) sont inclus par défaut avec cette action
