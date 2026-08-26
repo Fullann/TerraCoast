@@ -136,7 +136,24 @@ export function AdminDashboardLayout({
                     return (
                       <button
                         key={item.view}
-                        onClick={() => onNavigate(item.view)}
+                        onClick={() => {
+                          const viewToPath: Record<string, string> = {
+                            'admin': '/admin',
+                            'admin-analytics': '/admin/analytics',
+                            'quiz-management': '/admin/quizzes',
+                            'quiz-validation': '/admin/validation',
+                            'geojson-maps-management': '/admin/geojson',
+                            'warnings-management': '/admin/warnings',
+                            'user-management': '/admin/users',
+                            'duel-features': '/admin/duels',
+                            'badge-management': '/admin/badges',
+                            'title-management': '/admin/titles',
+                            'category-management': '/admin/categories',
+                            'difficulty-management': '/admin/difficulties',
+                            'quiz-type-management': '/admin/types',
+                          };
+                          navigate(viewToPath[item.view] ?? `/admin/${item.view}`);
+                        }}
                         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                           active
                             ? "bg-emerald-100 text-emerald-800 font-semibold"

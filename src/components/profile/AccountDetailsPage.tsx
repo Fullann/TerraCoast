@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 interface AccountDetailsPageProps {
-  onNavigate: (view: string, data?: any) => void;
   userId?: string; // ID du profil à afficher
 }
 
@@ -66,7 +65,7 @@ export function AccountDetailsPage({ userId }: any) {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => onNavigate("profile", { userId })}
+          onClick={() => navigate(userId ? `/profile/${userId}` : '/profile')}
           className="flex items-center text-gray-600 hover:text-gray-800 mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />

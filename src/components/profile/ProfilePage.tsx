@@ -50,7 +50,6 @@ type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"] & {
 
 interface ProfilePageProps {
   userId?: string;
-  onNavigate: (view: string, data?: any) => void;
 }
 
 export function ProfilePage({  userId }: any) {
@@ -710,7 +709,7 @@ export function ProfilePage({  userId }: any) {
                   <>
                     <button
                       onClick={() =>
-                        onNavigate("account-details", { userId: targetUserId })
+                        navigate(`/account-details?userId=${targetUserId}`)
                       }
                       className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
                     >

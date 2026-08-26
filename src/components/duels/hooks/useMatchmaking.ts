@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
 import type {
   Difficulty,
   DuelMatchmakingQueue,
   DuelWithDetails,
   MatchedPreview,
-  NavigateFn,
   Quiz,
 } from "../types";
 
@@ -22,7 +22,7 @@ interface UseMatchmakingParams {
   loadDuels: () => Promise<void>;
   loadMatchmakingStatus: () => Promise<void>;
   notifyMatchFound: (from: string, quizTitle: string) => void;
-  onNavigate: NavigateFn;
+  navigate: NavigateFunction;
   t: (key: string) => string;
 }
 
@@ -35,7 +35,7 @@ export function useMatchmaking({
   loadDuels,
   loadMatchmakingStatus,
   notifyMatchFound,
-  onNavigate,
+  navigate,
   t,
 }: UseMatchmakingParams) {
   const [matchmakingLoading, setMatchmakingLoading] = useState(false);
@@ -97,10 +97,7 @@ export function useMatchmaking({
 
         if (!duelFeatureFlags.show_opponent_mmr) {
           notifyMatchFound(t("duels.unknownOpponent"), quizTitle);
-          onNavigate("play-duel", {
-            duelId: payload.duel_id,
-            quizId: payload.quiz_id,
-          });
+          navigate(`/duels/play/${payload.duel_id}?quizId=${payload.quiz_id}`);
           return;
         }
 
@@ -133,7 +130,7 @@ export function useMatchmaking({
       loadMatchmakingStatus,
       matchmakingQuizzes,
       notifyMatchFound,
-      onNavigate,
+      navigate,
       t,
     ]
   );
@@ -163,12 +160,9 @@ export function useMatchmaking({
 
   const launchMatchedDuel = useCallback(() => {
     if (!matchedPreview) return;
-    onNavigate("play-duel", {
-      duelId: matchedPreview.duelId,
-      quizId: matchedPreview.quizId,
-    });
+    navigate(`/duels/play/${matchedPreview.duelId}?quizId=${matchedPreview.quizId}`);
     setMatchedPreview(null);
-  }, [matchedPreview, onNavigate]);
+  }, [matchedPreview, navigate]);
 
   const togglePreferredQuiz = useCallback((quizId: string) => {
     setPreferredQuizIds((prev) => {

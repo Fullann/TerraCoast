@@ -29,12 +29,7 @@ import type {
   Quiz,
 } from "./types";
 
-interface DuelsPageProps {
-  onNavigate: NavigateFn;
-  initialTab?: string;
-}
-
-export function DuelsPage({ initialTab }: any) {
+export function DuelsPage({ initialTab }: { initialTab?: string }) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
@@ -101,7 +96,7 @@ export function DuelsPage({ initialTab }: any) {
     loadDuels,
     loadMatchmakingStatus,
     notifyMatchFound,
-    onNavigate,
+    navigate,
     t,
   });
 
@@ -135,7 +130,7 @@ export function DuelsPage({ initialTab }: any) {
     loadInvitations();
 
     if (duel) {
-      onNavigate("play-duel", { duelId: duel.id, quizId: invitation.quiz_id });
+      navigate(`/duels/play/${duel.id}?quizId=${invitation.quiz_id}`);
     }
   };
 
@@ -150,7 +145,7 @@ export function DuelsPage({ initialTab }: any) {
   };
 
   const joinDuel = async (duel: DuelWithDetails) => {
-    onNavigate("play-duel", { duelId: duel.id, quizId: duel.quiz_id });
+    navigate(`/duels/play/${duel.id}?quizId=${duel.quiz_id}`);
   };
 
   const handleStartRandomMatchmaking = async (matchType: "ranked" | "casual") => {
