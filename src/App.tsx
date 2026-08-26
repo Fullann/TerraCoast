@@ -1,7 +1,8 @@
 import { useEffect, Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "./contexts/AuthContext";
-import { useNotifications } from "./contexts/NotificationContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { NotificationProvider, useNotifications } from "./contexts/NotificationContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 // Auth & Layout (Garder statique car critique au premier rendu)
 import { LoginForm } from "./components/auth/LoginForm";
@@ -52,7 +53,7 @@ function PageLoader() {
   );
 }
 
-export default function App() {
+function AppContent() {
   const { user } = useAuth();
   const { setNavigationCallback } = useNotifications();
   const navigate = useNavigate();
@@ -144,5 +145,17 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
