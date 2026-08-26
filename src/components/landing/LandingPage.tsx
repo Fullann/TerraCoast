@@ -137,18 +137,13 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(16,185,129,0.35),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.30),transparent_35%),radial-gradient(circle_at_70%_80%,rgba(14,116,144,0.25),transparent_40%)]" />
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-16 -left-16 w-72 h-72 rounded-full bg-emerald-400/10 blur-3xl animate-pulse" />
-        <div className="absolute top-1/3 -right-20 w-72 h-72 rounded-full bg-cyan-400/10 blur-3xl animate-pulse [animation-delay:700ms]" />
-      </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <button
             onClick={() => onNavigate("landing")}
-            className="flex items-center hover:opacity-90 transition-opacity"
+            className="flex items-center hover:opacity-80 transition-opacity"
           >
             <img
               src="/logo.png"
@@ -158,19 +153,19 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
-            <span className="ml-3 text-2xl font-black bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
+            <span className="ml-3 text-2xl font-extrabold text-emerald-600 tracking-tight">
               TerraCoast
             </span>
           </button>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-200">
-            <a href="#features" className="hover:text-emerald-300 transition-colors">
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href="#features" className="hover:text-emerald-600 transition-colors">
               {t("landing.nav.features")}
             </a>
-            <a href="#about" className="hover:text-emerald-300 transition-colors">
+            <a href="#about" className="hover:text-emerald-600 transition-colors">
               {t("landing.nav.about")}
             </a>
-            <a href="#contact" className="hover:text-emerald-300 transition-colors">
+            <a href="#contact" className="hover:text-emerald-600 transition-colors">
               {t("landing.nav.contact")}
             </a>
           </nav>
@@ -179,14 +174,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             <div className="relative">
               <button
                 onClick={() => setLangMenuOpen((v) => !v)}
-                className="px-3 py-2 rounded-lg border border-white/15 hover:bg-white/10 transition-colors flex items-center gap-2 text-sm"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-medium"
               >
                 <Globe className="w-4 h-4" />
                 {language.toUpperCase()}
                 <ChevronDown className="w-4 h-4" />
               </button>
               {langMenuOpen && (
-                <div className="absolute right-0 mt-2 w-52 rounded-xl border border-white/10 bg-slate-900 shadow-2xl p-1">
+                <div className="absolute right-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white shadow-xl p-1">
                   {(Object.keys(languageNames) as Language[]).map((lang) => (
                     <button
                       key={lang}
@@ -194,10 +189,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                         setLanguage(lang);
                         setLangMenuOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors font-medium ${
                         language === lang
-                          ? "bg-emerald-500/20 text-emerald-300"
-                          : "text-slate-200 hover:bg-white/10"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
                       {languageNames[lang]}
@@ -208,13 +203,13 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </div>
             <button
               onClick={() => onNavigate("login")}
-              className="px-4 py-2 rounded-lg border border-white/20 hover:bg-white/10 transition-colors"
+              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
             >
               {t("landing.hero.login")}
             </button>
             <button
               onClick={() => onNavigate("register")}
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold hover:brightness-110 transition-all"
+              className="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 shadow-sm transition-all"
             >
               {t("landing.hero.startAdventure")}
             </button>
@@ -222,17 +217,17 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 
           <button
             onClick={() => setMobileMenuOpen((v) => !v)}
-            className="md:hidden p-2 rounded-lg border border-white/20"
+            className="md:hidden p-2 rounded-lg border border-slate-200 text-slate-600"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
         {mobileMenuOpen && (
-          <div className="md:hidden px-4 pb-4 space-y-2 border-t border-white/10">
-            <button onClick={() => onNavigate("login")} className="w-full px-4 py-2 rounded-lg border border-white/20 text-left">
+          <div className="md:hidden px-4 pb-4 space-y-2 border-t border-slate-200 bg-white">
+            <button onClick={() => onNavigate("login")} className="w-full mt-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-left font-medium">
               {t("landing.hero.login")}
             </button>
-            <button onClick={() => onNavigate("register")} className="w-full px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 text-left font-semibold">
+            <button onClick={() => onNavigate("register")} className="w-full px-4 py-2 rounded-lg bg-emerald-600 text-white text-left font-semibold shadow-sm">
               {t("landing.hero.startAdventure")}
             </button>
           </div>
@@ -242,45 +237,45 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-14 sm:pb-16">
         <div className="grid lg:grid-cols-2 gap-10 items-center">
           <div className="animate-[fadeInUp_.6s_ease-out]">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-200 text-xs sm:text-sm mb-5 sm:mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs sm:text-sm font-medium mb-5 sm:mb-6 shadow-sm">
               <ShieldCheck className="w-4 h-4" />
               Quiz geo moderne, social et compétitif
             </div>
-            <h1 className="text-3xl sm:text-5xl xl:text-6xl font-black leading-tight mb-4 sm:mb-5">
+            <h1 className="text-3xl sm:text-5xl xl:text-6xl font-black leading-tight text-slate-900 mb-4 sm:mb-5">
               {t("landing.hero.welcome")}{" "}
-              <span className="bg-gradient-to-r from-emerald-300 via-cyan-300 to-blue-300 bg-clip-text text-transparent">
+              <span className="text-emerald-600">
                 TerraCoast
               </span>
             </h1>
-            <p className="text-slate-300 text-base sm:text-xl mb-6 sm:mb-8 max-w-2xl">
+            <p className="text-slate-600 text-base sm:text-xl mb-6 sm:mb-8 max-w-2xl">
               {t("landing.hero.subtitle")} {t("landing.hero.subtitleHighlight")}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => onNavigate("register")}
-                className="px-7 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-extrabold hover:brightness-110 transition-all flex items-center justify-center hover:scale-[1.02] active:scale-[0.99]"
+                className="px-7 py-4 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-md transition-all flex items-center justify-center hover:scale-[1.02] active:scale-[0.99]"
               >
                 {t("landing.hero.startAdventure")}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
               <button
                 onClick={() => onNavigate("login")}
-                className="px-7 py-4 rounded-xl border border-white/20 hover:bg-white/10 font-semibold transition-colors hover:scale-[1.02] active:scale-[0.99]"
+                className="px-7 py-4 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 shadow-sm transition-colors hover:scale-[1.02] active:scale-[0.99]"
               >
                 {t("landing.hero.login")}
               </button>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-2 sm:p-3 shadow-2xl animate-[fadeInUp_.7s_ease-out] [animation-delay:120ms]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-2 sm:p-3 shadow-xl animate-[fadeInUp_.7s_ease-out] [animation-delay:120ms]">
             <QuizGlobe points={globePoints} onPointClick={() => onNavigate("register")} />
           </div>
         </div>
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 -mt-4 sm:-mt-6">
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 sm:p-6">
-          <p className="text-xs uppercase tracking-wider text-slate-300 mb-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+          <p className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-4">
             TerraCoast ecosystem
           </p>
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -295,7 +290,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             ].map((logo, idx) => (
               <div
                 key={logo}
-                className="px-4 py-2 rounded-xl border border-white/10 bg-slate-900/40 text-slate-200 text-sm font-semibold animate-[floatY_4s_ease-in-out_infinite]"
+                className="px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-sm font-semibold animate-[floatY_4s_ease-in-out_infinite]"
                 style={{ animationDelay: `${idx * 180}ms` }}
               >
                 {logo}
@@ -331,25 +326,25 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 sm:p-10">
-          <h2 className="text-3xl sm:text-4xl font-extrabold mb-6">{t("landing.about.title")}</h2>
-          <p className="text-slate-200 mb-5">{t("landing.about.intro")}</p>
+        <div className="rounded-3xl border border-slate-200 bg-white p-7 sm:p-10 shadow-sm">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-6">{t("landing.about.title")}</h2>
+          <p className="text-slate-600 mb-5">{t("landing.about.intro")}</p>
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/20 p-5">
-              <h3 className="font-bold text-xl mb-2 flex items-center gap-2"><TargetIcon />{t("landing.about.mission")}</h3>
-              <p className="text-slate-200">{t("landing.about.missionText")}</p>
+            <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-5">
+              <h3 className="font-bold text-xl mb-2 flex items-center gap-2 text-emerald-800"><TargetIcon />{t("landing.about.mission")}</h3>
+              <p className="text-slate-700">{t("landing.about.missionText")}</p>
             </div>
-            <div className="rounded-2xl bg-blue-500/10 border border-blue-400/20 p-5">
-              <h3 className="font-bold text-xl mb-2 flex items-center gap-2"><Zap className="w-5 h-5 text-blue-300" />{t("landing.about.goal")}</h3>
-              <p className="text-slate-200">{t("landing.about.goalText")}</p>
+            <div className="rounded-2xl bg-blue-50 border border-blue-100 p-5">
+              <h3 className="font-bold text-xl mb-2 flex items-center gap-2 text-blue-800"><Zap className="w-5 h-5 text-blue-600" />{t("landing.about.goal")}</h3>
+              <p className="text-slate-700">{t("landing.about.goalText")}</p>
             </div>
           </div>
-          <div className="rounded-2xl bg-slate-900/50 border border-white/10 p-5">
-            <h3 className="font-bold text-xl mb-3">{t("landing.about.offers")}</h3>
-            <ul className="space-y-2 text-slate-200">
+          <div className="rounded-2xl bg-slate-50 border border-slate-200 p-5">
+            <h3 className="font-bold text-xl text-slate-900 mb-3">{t("landing.about.offers")}</h3>
+            <ul className="space-y-2 text-slate-700">
               {offers.map((offer, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <Star className="w-4 h-4 mt-1 text-emerald-300" />
+                  <Star className="w-4 h-4 mt-1 text-emerald-500" />
                   {offer}
                 </li>
               ))}
@@ -359,20 +354,20 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 sm:p-10">
-          <h2 className="text-2xl sm:text-3xl font-extrabold mb-6">
+        <div className="rounded-3xl border border-slate-200 bg-white p-7 sm:p-10 shadow-sm">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-6">
             Ils adorent TerraCoast
           </h2>
           <div className="grid md:grid-cols-3 gap-4">
             {testimonials.map((item) => (
               <div
                 key={item.name}
-                className="rounded-2xl border border-white/10 bg-slate-900/50 p-5 hover:bg-slate-900/70 transition-colors"
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-5 hover:bg-slate-100 transition-colors shadow-sm"
               >
-                <p className="text-slate-200 mb-4">“{item.text}”</p>
+                <p className="text-slate-700 mb-4">“{item.text}”</p>
                 <div className="text-sm">
-                  <p className="font-bold text-white">{item.name}</p>
-                  <p className="text-slate-400">{item.role}</p>
+                  <p className="font-bold text-slate-900">{item.name}</p>
+                  <p className="text-slate-500">{item.role}</p>
                 </div>
               </div>
             ))}
@@ -381,28 +376,28 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <section id="contact" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="rounded-3xl p-8 sm:p-12 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 text-center">
+        <div className="rounded-3xl p-8 sm:p-12 bg-emerald-600 text-white text-center shadow-lg">
           <h3 className="text-3xl sm:text-4xl font-black mb-5">{t("landing.cta.ready")}</h3>
           <button
             onClick={() => onNavigate("register")}
-            className="px-10 py-4 rounded-xl bg-slate-950 text-white font-bold hover:bg-slate-900 transition-colors hover:scale-[1.02] active:scale-[0.99]"
+            className="px-10 py-4 rounded-xl bg-white text-emerald-700 font-bold hover:bg-slate-50 shadow-md transition-colors hover:scale-[1.02] active:scale-[0.99]"
           >
             {t("landing.cta.createAccount")}
           </button>
         </div>
       </section>
 
-      <footer className="border-t border-white/10 bg-slate-950/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-400">
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
           <p>© {new Date().getFullYear()} TerraCoast</p>
           <div className="flex items-center gap-4">
-            <button onClick={() => setShowLegal(true)} className="hover:text-white transition-colors">
+            <button onClick={() => setShowLegal(true)} className="hover:text-slate-800 transition-colors">
               {t("landing.footer.legal")}
             </button>
-            <button onClick={() => onNavigate("privacy")} className="hover:text-white transition-colors">
+            <button onClick={() => onNavigate("privacy")} className="hover:text-slate-800 transition-colors">
               {t("landing.footer.privacy")}
             </button>
-            <button onClick={() => onNavigate("terms")} className="hover:text-white transition-colors">
+            <button onClick={() => onNavigate("terms")} className="hover:text-slate-800 transition-colors">
               {t("landing.footer.terms")}
             </button>
           </div>
@@ -447,12 +442,12 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:bg-white/10 transition-colors">
-      <div className="w-12 h-12 rounded-xl bg-emerald-400/20 text-emerald-300 flex items-center justify-center mb-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-md transition-shadow">
+      <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
         {icon}
       </div>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-slate-300">{description}</p>
+      <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
+      <p className="text-slate-600">{description}</p>
     </div>
   );
 }
@@ -468,26 +463,26 @@ function StatCard({
 }) {
   const toneClass =
     tone === "emerald"
-      ? "from-emerald-500/20 to-emerald-400/5 border-emerald-300/20 text-emerald-200"
+      ? "text-emerald-700 bg-emerald-50 border-emerald-100"
       : tone === "cyan"
-      ? "from-cyan-500/20 to-cyan-400/5 border-cyan-300/20 text-cyan-200"
+      ? "text-blue-700 bg-blue-50 border-blue-100"
       : tone === "violet"
-      ? "from-violet-500/20 to-violet-400/5 border-violet-300/20 text-violet-200"
-      : "from-amber-500/20 to-amber-400/5 border-amber-300/20 text-amber-200";
+      ? "text-purple-700 bg-purple-50 border-purple-100"
+      : "text-amber-700 bg-amber-50 border-amber-100";
 
   return (
     <div
-      className={`rounded-2xl border bg-gradient-to-br ${toneClass} backdrop-blur-sm p-5 hover:scale-[1.02] transition-transform`}
+      className={`rounded-2xl border ${toneClass} p-5 hover:scale-[1.02] shadow-sm transition-transform`}
     >
       <p className="text-3xl sm:text-4xl font-black mb-1">{value}</p>
-      <p className="text-sm text-slate-300">{label}</p>
+      <p className="text-sm font-medium opacity-80">{label}</p>
     </div>
   );
 }
 
 function TargetIcon() {
   return (
-    <svg className="w-5 h-5 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg className="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="12" cy="12" r="9" />
       <circle cx="12" cy="12" r="5" />
       <circle cx="12" cy="12" r="1.5" fill="currentColor" />

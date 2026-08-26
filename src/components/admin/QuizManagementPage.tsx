@@ -20,6 +20,8 @@ import {
   CheckCircle2,
   XCircle,
   MapPin,
+  Download,
+  Upload,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ConfirmModal } from "../common/ConfirmModal";
@@ -95,6 +97,18 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     message: string;
     onConfirm: null | (() => void | Promise<void>);
   }>({ open: false, message: "", onConfirm: null });
+
+  // Export Modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportQuizData, setExportQuizData] = useState("");
+  const [exportQuizTitle, setExportQuizTitle] = useState("");
+
+  // Import Modal state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJsonText, setImportJsonText] = useState("");
+  const [importLanguage, setImportLanguage] = useState("en");
+  const [importVerificationResult, setImportVerificationResult] = useState<any>(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     loadQuizzes();
@@ -627,6 +641,112 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     setPerformanceLoading(false);
   };
 
+  const handleExportQuiz = async (quiz: QuizWithCreator) => {
+    try {
+      const { data: questions, error } = await supabase
+        .from("questions")
+        .select("*")
+        .eq("quiz_id", quiz.id)
+        .order("order_index", { ascending: true });
+
+      if (error) throw error;
+
+      const exportData = {
+        title: quiz.title,
+        description: quiz.description,
+        category: quiz.category,
+        difficulty: quiz.difficulty,
+        time_limit_seconds: quiz.time_limit_seconds,
+        language: quiz.language,
+        tags: quiz.tags,
+        questions: questions.map((q) => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          correct_answer: q.correct_answer,
+          correct_answers: q.correct_answers,
+          options: q.options,
+          points: q.points,
+          complement_if_wrong: q.complement_if_wrong,
+        })),
+      };
+
+      setExportQuizData(JSON.stringify(exportData, null, 2));
+      setExportQuizTitle(quiz.title);
+      setShowExportModal(true);
+    } catch (err: any) {
+      showAppNotification({ type: "error", message: "Erreur lors de l'export: " + err.message });
+    }
+  };
+
+  const handleVerifyImport = () => {
+    try {
+      const parsed = JSON.parse(importJsonText);
+      if (!parsed.title || !Array.isArray(parsed.questions)) {
+        throw new Error("Format JSON invalide. Il manque 'title' ou 'questions'.");
+      }
+      setImportVerificationResult(parsed);
+    } catch (err: any) {
+      showAppNotification({ type: "error", message: "Erreur JSON: " + err.message });
+      setImportVerificationResult(null);
+    }
+  };
+
+  const handlePublishImport = async () => {
+    if (!importVerificationResult) return;
+    setImporting(true);
+    try {
+      const newQuiz = {
+        creator_id: profile!.id,
+        title: importVerificationResult.title,
+        description: importVerificationResult.description || null,
+        category: importVerificationResult.category || "mixed",
+        difficulty: importVerificationResult.difficulty || "medium",
+        time_limit_seconds: importVerificationResult.time_limit_seconds || null,
+        is_public: true,
+        is_global: false,
+        language: importLanguage,
+        tags: importVerificationResult.tags || [],
+      };
+
+      const { data: insertedQuiz, error: quizError } = await supabase
+        .from("quizzes")
+        .insert(newQuiz)
+        .select()
+        .single();
+
+      if (quizError) throw quizError;
+
+      const newQuestions = importVerificationResult.questions.map((q: any, idx: number) => ({
+        quiz_id: insertedQuiz.id,
+        question_text: q.question_text,
+        question_type: q.question_type || "mcq",
+        correct_answer: q.correct_answer || "",
+        correct_answers: q.correct_answers || null,
+        options: q.options || null,
+        points: q.points || 10,
+        order_index: idx,
+        complement_if_wrong: q.complement_if_wrong || null,
+      }));
+
+      const { error: questionsError } = await supabase
+        .from("questions")
+        .insert(newQuestions);
+
+      if (questionsError) throw questionsError;
+
+      showAppNotification({ type: "success", message: "Quiz importé et publié avec succès !" });
+      setShowImportModal(false);
+      setImportJsonText("");
+      setImportVerificationResult(null);
+      loadQuizzes();
+    } catch (err: any) {
+      showAppNotification({ type: "error", message: "Erreur lors de l'import: " + err.message });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+
   if (profile?.role !== "admin") {
     return (
       <div className="w-full px-1 py-4">
@@ -652,14 +772,23 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   return (
     <div className="w-full px-1 py-4">
       {/* En-tête */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
-          <BookOpen className="w-10 h-10 mr-3 text-emerald-600" />
-          Gestion des quiz
-        </h1>
-        <p className="text-gray-600">
-          Gère les quiz, leur visibilité et leurs statistiques
-        </p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
+            <BookOpen className="w-10 h-10 mr-3 text-emerald-600" />
+            Gestion des quiz
+          </h1>
+          <p className="text-gray-600">
+            Gère les quiz, leur visibilité et leurs statistiques
+          </p>
+        </div>
+        <button
+          onClick={() => setShowImportModal(true)}
+          className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-sm"
+        >
+          <Upload className="w-5 h-5" />
+          <span>Importer un Quiz JSON</span>
+        </button>
       </div>
 
       {/* Filtres et recherche */}
@@ -981,6 +1110,15 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                           title="Réinitialiser les statistiques"
                         >
                           <RotateCcw className="w-4 h-4" />
+                        </button>
+
+                        {/* Bouton Export */}
+                        <button
+                          onClick={() => handleExportQuiz(quiz)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Exporter JSON"
+                        >
+                          <Download className="w-4 h-4" />
                         </button>
 
                         {/* Bouton Supprimer */}
@@ -1320,6 +1458,168 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
           </div>
         </div>
       )}
+      {/* Modal Export Quiz */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 flex flex-col max-h-[90vh]">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <Download className="w-6 h-6 mr-2 text-indigo-600" />
+              Exporter pour traduction: {exportQuizTitle}
+            </h3>
+            
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4 text-sm text-indigo-800">
+              <p className="font-semibold mb-1">Instruction pour l'IA (ChatGPT, Claude, etc.) :</p>
+              <p className="mb-2">Copie le prompt ci-dessous avec le JSON. L'IA traduira tout le contenu texte et renverra un JSON valide que tu pourras importer.</p>
+              <div className="bg-white p-3 rounded border border-indigo-100 flex justify-between items-start gap-4">
+                <code className="text-xs break-words whitespace-pre-wrap flex-1">
+                  Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), et 'complement_if_wrong'. Ne modifie PAS la structure du JSON, ni les clés, ni les champs 'question_type' ou 'category' ou 'difficulty' ou 'points'. Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), et 'complement_if_wrong'. Ne modifie PAS la structure du JSON, ni les clés, ni les champs 'question_type' ou 'category' ou 'difficulty' ou 'points'. Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :\n\n${exportQuizData}`);
+                    showAppNotification({ type: "success", message: "Prompt + JSON copié !" });
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs whitespace-nowrap"
+                >
+                  Tout copier
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0 mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Données du Quiz (JSON)</label>
+              <textarea 
+                className="w-full flex-1 p-3 border border-gray-300 rounded-lg font-mono text-xs outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                readOnly
+                value={exportQuizData}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowExportModal(false);
+                  setExportQuizData("");
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([exportQuizData], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `quiz_export_${exportQuizTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Télécharger JSON</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Import Quiz */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 flex flex-col max-h-[90vh]">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <Upload className="w-6 h-6 mr-2 text-emerald-600" />
+              Importer un Quiz JSON
+            </h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Langue du quiz importé</label>
+              <select
+                value={importLanguage}
+                onChange={(e) => setImportLanguage(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              >
+                <option value="fr">Français (fr)</option>
+                <option value="en">Anglais (en)</option>
+                <option value="es">Espagnol (es)</option>
+                <option value="de">Allemand (de)</option>
+                <option value="it">Italien (it)</option>
+                <option value="pt">Portugais (pt)</option>
+              </select>
+            </div>
+
+            <div className="flex-1 overflow-hidden flex flex-col min-h-[300px] mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Colle le JSON traduit ici
+              </label>
+              <textarea 
+                className="w-full flex-1 p-3 border border-gray-300 rounded-lg font-mono text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                placeholder='{"title": "Mon Quiz", "questions": [...]}'
+                value={importJsonText}
+                onChange={(e) => {
+                  setImportJsonText(e.target.value);
+                  setImportVerificationResult(null);
+                }}
+              />
+            </div>
+
+            {importVerificationResult && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start space-x-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      JSON Valide !
+                    </p>
+                    <p className="text-xs text-green-700 mt-1">
+                      <strong>Titre :</strong> {importVerificationResult.title}<br/>
+                      <strong>Questions :</strong> {importVerificationResult.questions?.length || 0} question(s)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mt-auto">
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportJsonText("");
+                  setImportVerificationResult(null);
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              
+              <div className="flex space-x-3">
+                {!importVerificationResult ? (
+                  <button
+                    onClick={handleVerifyImport}
+                    disabled={!importJsonText.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Vérifier
+                  </button>
+                ) : (
+                  <button
+                    onClick={handlePublishImport}
+                    disabled={importing}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center disabled:opacity-50"
+                  >
+                    {importing ? "Publication..." : "Publier le Quiz"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmModal
         open={confirmModal.open}
         message={confirmModal.message}
