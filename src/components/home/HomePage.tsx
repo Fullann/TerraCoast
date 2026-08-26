@@ -28,11 +28,8 @@ type Warning = {
   created_at: string;
 };
 
-export function HomePage({
-  onNavigate,
-}: {
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
-}) {
+export function HomePage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const [, setRecentQuizzes] = useState<Quiz[]>([]);
@@ -510,7 +507,7 @@ export function HomePage({
               </p>
               <QuizGlobe
                 points={globePoints}
-                onPointClick={(quizId) => onNavigate("play-quiz", { quizId })}
+                onPointClick={(quizId) => navigate(`/quizzes/play/${quizId}`)}
               />
             </>
           )}
