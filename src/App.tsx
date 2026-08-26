@@ -4,44 +4,44 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider, useNotifications } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
-// Auth & Layout (Garder statique car critique au premier rendu)
+// Auth & Layout (statiques - chargés immédiatement, sans Suspense)
 import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { LandingPage } from "./components/landing/LandingPage";
 import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 
-// Pages (Chargement asynchrone - Lazy Loading)
-const HomePage = lazy(() => import("./components/home/HomePage").then(module => ({ default: module.HomePage })));
-const ProfilePage = lazy(() => import("./components/profile/ProfilePage").then(module => ({ default: module.ProfilePage })));
-const SettingsPage = lazy(() => import("./components/profile/SettingsPage").then(module => ({ default: module.SettingsPage })));
-const AccountDetailsPage = lazy(() => import("./components/profile/AccountDetailsPage").then(module => ({ default: module.AccountDetailsPage })));
-const QuizzesPage = lazy(() => import("./components/quizzes/QuizzesPage").then(module => ({ default: module.QuizzesPage })));
-const CreateQuizPage = lazy(() => import("./components/quizzes/CreateQuizPage").then(module => ({ default: module.CreateQuizPage })));
-const EditQuizPage = lazy(() => import("./components/quizzes/EditQuizPage").then(module => ({ default: module.EditQuizPage })));
-const PlayQuizPage = lazy(() => import("./components/quizzes/PlayQuizPage").then(module => ({ default: module.PlayQuizPage })));
-const TrainingModePage = lazy(() => import("./components/quizzes/TrainingModePage").then(module => ({ default: module.TrainingModePage })));
-const LeaderboardPage = lazy(() => import("./components/leaderboard/LeaderboardPage").then(module => ({ default: module.LeaderboardPage })));
-const FriendsPage = lazy(() => import("./components/friends/FriendsPage").then(module => ({ default: module.FriendsPage })));
-const DuelsPage = lazy(() => import("./components/duels/DuelsPage").then(module => ({ default: module.DuelsPage })));
-const ChatPage = lazy(() => import("./components/chat/ChatPage").then(module => ({ default: module.ChatPage })));
+// Pages protégées (Lazy Loading - chargées uniquement si l'utilisateur est connecté)
+const HomePage = lazy(() => import("./components/home/HomePage").then(m => ({ default: m.HomePage })));
+const ProfilePage = lazy(() => import("./components/profile/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const SettingsPage = lazy(() => import("./components/profile/SettingsPage").then(m => ({ default: m.SettingsPage })));
+const AccountDetailsPage = lazy(() => import("./components/profile/AccountDetailsPage").then(m => ({ default: m.AccountDetailsPage })));
+const QuizzesPage = lazy(() => import("./components/quizzes/QuizzesPage").then(m => ({ default: m.QuizzesPage })));
+const CreateQuizPage = lazy(() => import("./components/quizzes/CreateQuizPage").then(m => ({ default: m.CreateQuizPage })));
+const EditQuizPage = lazy(() => import("./components/quizzes/EditQuizPage").then(m => ({ default: m.EditQuizPage })));
+const PlayQuizPage = lazy(() => import("./components/quizzes/PlayQuizPage").then(m => ({ default: m.PlayQuizPage })));
+const TrainingModePage = lazy(() => import("./components/quizzes/TrainingModePage").then(m => ({ default: m.TrainingModePage })));
+const LeaderboardPage = lazy(() => import("./components/leaderboard/LeaderboardPage").then(m => ({ default: m.LeaderboardPage })));
+const FriendsPage = lazy(() => import("./components/friends/FriendsPage").then(m => ({ default: m.FriendsPage })));
+const DuelsPage = lazy(() => import("./components/duels/DuelsPage").then(m => ({ default: m.DuelsPage })));
+const ChatPage = lazy(() => import("./components/chat/ChatPage").then(m => ({ default: m.ChatPage })));
 
-// Admin Pages (Chargement asynchrone car lourd et utilisé que par les admins)
-const AdminPage = lazy(() => import("./components/admin/AdminPage").then(module => ({ default: module.AdminPage })));
-const BadgeManagementPage = lazy(() => import("./components/admin/BadgeManagementPage").then(module => ({ default: module.BadgeManagementPage })));
-const TitleManagementPage = lazy(() => import("./components/admin/TitleManagementPage").then(module => ({ default: module.TitleManagementPage })));
-const CategoryManagementPage = lazy(() => import("./components/admin/CategoryManagementPage").then(module => ({ default: module.CategoryManagementPage })));
-const DifficultyManagementPage = lazy(() => import("./components/admin/DifficultyManagementPage").then(module => ({ default: module.DifficultyManagementPage })));
-const QuizValidationPage = lazy(() => import("./components/admin/QuizValidationPage").then(module => ({ default: module.QuizValidationPage })));
-const WarningsManagementPage = lazy(() => import("./components/admin/WarningsManagementPage").then(module => ({ default: module.WarningsManagementPage })));
-const QuizTypeManagementPage = lazy(() => import("./components/admin/QuizTypeManagementPage").then(module => ({ default: module.QuizTypeManagementPage })));
-const UserManagementPage = lazy(() => import("./components/admin/UserManagementPage").then(module => ({ default: module.UserManagementPage })));
-const QuizManagementPage = lazy(() => import("./components/admin/QuizManagementPage").then(module => ({ default: module.QuizManagementPage })));
-const DuelFeaturesPage = lazy(() => import("./components/admin/DuelFeaturesPage").then(module => ({ default: module.DuelFeaturesPage })));
-const GeoJsonMapsManagementPage = lazy(() => import("./components/admin/GeoJsonMapsManagementPage").then(module => ({ default: module.GeoJsonMapsManagementPage })));
-const AdminAnalyticsPage = lazy(() => import("./components/admin/AdminAnalyticsPage").then(module => ({ default: module.AdminAnalyticsPage })));
+// Admin Pages (Lazy Loading)
+const AdminPage = lazy(() => import("./components/admin/AdminPage").then(m => ({ default: m.AdminPage })));
+const BadgeManagementPage = lazy(() => import("./components/admin/BadgeManagementPage").then(m => ({ default: m.BadgeManagementPage })));
+const TitleManagementPage = lazy(() => import("./components/admin/TitleManagementPage").then(m => ({ default: m.TitleManagementPage })));
+const CategoryManagementPage = lazy(() => import("./components/admin/CategoryManagementPage").then(m => ({ default: m.CategoryManagementPage })));
+const DifficultyManagementPage = lazy(() => import("./components/admin/DifficultyManagementPage").then(m => ({ default: m.DifficultyManagementPage })));
+const QuizValidationPage = lazy(() => import("./components/admin/QuizValidationPage").then(m => ({ default: m.QuizValidationPage })));
+const WarningsManagementPage = lazy(() => import("./components/admin/WarningsManagementPage").then(m => ({ default: m.WarningsManagementPage })));
+const QuizTypeManagementPage = lazy(() => import("./components/admin/QuizTypeManagementPage").then(m => ({ default: m.QuizTypeManagementPage })));
+const UserManagementPage = lazy(() => import("./components/admin/UserManagementPage").then(m => ({ default: m.UserManagementPage })));
+const QuizManagementPage = lazy(() => import("./components/admin/QuizManagementPage").then(m => ({ default: m.QuizManagementPage })));
+const DuelFeaturesPage = lazy(() => import("./components/admin/DuelFeaturesPage").then(m => ({ default: m.DuelFeaturesPage })));
+const GeoJsonMapsManagementPage = lazy(() => import("./components/admin/GeoJsonMapsManagementPage").then(m => ({ default: m.GeoJsonMapsManagementPage })));
+const AdminAnalyticsPage = lazy(() => import("./components/admin/AdminAnalyticsPage").then(m => ({ default: m.AdminAnalyticsPage })));
 
-// Loading Component
+// Loader affiché pendant le chargement des pages lazy
 function PageLoader() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
@@ -53,13 +53,17 @@ function PageLoader() {
   );
 }
 
+// Wrapper Suspense pour chaque page lazy individuelle
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+}
+
 function AppContent() {
   const { user } = useAuth();
   const { setNavigationCallback } = useNotifications();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Adapter le NotificationContext pour utiliser React Router au lieu de l'ancien onNavigate
     setNavigationCallback((view: string, data?: any) => {
       if (view === "duels") {
         navigate("/duels", { state: data });
@@ -72,79 +76,81 @@ function AppContent() {
   }, [navigate, setNavigationCallback]);
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={!user ? <LandingPage /> : <Navigate to="/terra" replace />} />
-        <Route path="/login" element={!user ? (
-          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-            <div className="w-full max-w-md mx-auto">
-              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
-                ← Retour à l'accueil
-              </button>
-              <LoginForm onSwitchToRegister={() => navigate("/register")} />
-            </div>
+    // PAS de Suspense global ici - chaque route lazy a le sien
+    <Routes>
+      {/* ── Routes publiques ── statiques, transition immédiate */}
+      <Route path="/" element={!user ? <LandingPage /> : <Navigate to="/terra" replace />} />
+
+      <Route path="/login" element={!user ? (
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+          <div className="w-full max-w-md mx-auto">
+            <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
+              ← Retour à l'accueil
+            </button>
+            <LoginForm onSwitchToRegister={() => navigate("/register")} />
           </div>
-        ) : <Navigate to="/terra" replace />} />
-        <Route path="/register" element={!user ? (
-          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-            <div className="w-full max-w-md mx-auto">
-              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
-                ← Retour à l'accueil
-              </button>
-              <RegisterForm 
-                onSwitchToLogin={() => navigate("/login")}
-                onShowTerms={() => navigate("/terms")}
-                onShowPrivacy={() => navigate("/privacy")}
-              />
-            </div>
+        </div>
+      ) : <Navigate to="/terra" replace />} />
+
+      <Route path="/register" element={!user ? (
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+          <div className="w-full max-w-md mx-auto">
+            <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
+              ← Retour à l'accueil
+            </button>
+            <RegisterForm
+              onSwitchToLogin={() => navigate("/login")}
+              onShowTerms={() => navigate("/terms")}
+              onShowPrivacy={() => navigate("/privacy")}
+            />
           </div>
-        ) : <Navigate to="/terra" replace />} />
-        <Route path="/terms" element={<LegalDocumentPage type="terms" onBack={() => navigate(-1)} />} />
-        <Route path="/privacy" element={<LegalDocumentPage type="privacy" onBack={() => navigate(-1)} />} />
+        </div>
+      ) : <Navigate to="/terra" replace />} />
 
-        {/* Protected Routes (Authenticated) */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/terra" element={<HomePage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/:userId" element={<ProfilePage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/account-details" element={<AccountDetailsPage />} />
-          
-          <Route path="/quizzes" element={<QuizzesPage />} />
-          <Route path="/quizzes/create" element={<CreateQuizPage />} />
-          <Route path="/quizzes/edit/:quizId" element={<EditQuizPage />} />
-          <Route path="/quizzes/play/:quizId" element={<PlayQuizPage />} />
-          <Route path="/quizzes/training" element={<TrainingModePage />} />
-          
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/friends" element={<FriendsPage />} />
-          <Route path="/duels" element={<DuelsPage />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/chat/:friendId" element={<ChatPage />} />
-        </Route>
+      <Route path="/terms" element={<LegalDocumentPage type="terms" onBack={() => navigate(-1)} />} />
+      <Route path="/privacy" element={<LegalDocumentPage type="privacy" onBack={() => navigate(-1)} />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<ProtectedRoute requireAdmin={true} />}>
-          <Route index element={<AdminPage />} />
-          <Route path="users" element={<UserManagementPage />} />
-          <Route path="quizzes" element={<QuizManagementPage />} />
-          <Route path="badges" element={<BadgeManagementPage />} />
-          <Route path="titles" element={<TitleManagementPage />} />
-          <Route path="categories" element={<CategoryManagementPage />} />
-          <Route path="difficulties" element={<DifficultyManagementPage />} />
-          <Route path="validation" element={<QuizValidationPage />} />
-          <Route path="warnings" element={<WarningsManagementPage />} />
-          <Route path="types" element={<QuizTypeManagementPage />} />
-          <Route path="duels" element={<DuelFeaturesPage />} />
-          <Route path="geojson" element={<GeoJsonMapsManagementPage />} />
-          <Route path="analytics" element={<AdminAnalyticsPage />} />
-        </Route>
+      {/* ── Routes protégées ── chaque page lazy a son propre Suspense */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/terra" element={<Lazy><HomePage /></Lazy>} />
+        <Route path="/profile" element={<Lazy><ProfilePage /></Lazy>} />
+        <Route path="/profile/:userId" element={<Lazy><ProfilePage /></Lazy>} />
+        <Route path="/settings" element={<Lazy><SettingsPage /></Lazy>} />
+        <Route path="/account-details" element={<Lazy><AccountDetailsPage /></Lazy>} />
 
-        {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+        <Route path="/quizzes" element={<Lazy><QuizzesPage /></Lazy>} />
+        <Route path="/quizzes/create" element={<Lazy><CreateQuizPage /></Lazy>} />
+        <Route path="/quizzes/edit/:quizId" element={<Lazy><EditQuizPage /></Lazy>} />
+        <Route path="/quizzes/play/:quizId" element={<Lazy><PlayQuizPage /></Lazy>} />
+        <Route path="/quizzes/training" element={<Lazy><TrainingModePage /></Lazy>} />
+
+        <Route path="/leaderboard" element={<Lazy><LeaderboardPage /></Lazy>} />
+        <Route path="/friends" element={<Lazy><FriendsPage /></Lazy>} />
+        <Route path="/duels" element={<Lazy><DuelsPage /></Lazy>} />
+        <Route path="/chat" element={<Lazy><ChatPage /></Lazy>} />
+        <Route path="/chat/:friendId" element={<Lazy><ChatPage /></Lazy>} />
+      </Route>
+
+      {/* ── Routes Admin ── */}
+      <Route path="/admin" element={<ProtectedRoute requireAdmin={true} />}>
+        <Route index element={<Lazy><AdminPage /></Lazy>} />
+        <Route path="users" element={<Lazy><UserManagementPage /></Lazy>} />
+        <Route path="quizzes" element={<Lazy><QuizManagementPage /></Lazy>} />
+        <Route path="badges" element={<Lazy><BadgeManagementPage /></Lazy>} />
+        <Route path="titles" element={<Lazy><TitleManagementPage /></Lazy>} />
+        <Route path="categories" element={<Lazy><CategoryManagementPage /></Lazy>} />
+        <Route path="difficulties" element={<Lazy><DifficultyManagementPage /></Lazy>} />
+        <Route path="validation" element={<Lazy><QuizValidationPage /></Lazy>} />
+        <Route path="warnings" element={<Lazy><WarningsManagementPage /></Lazy>} />
+        <Route path="types" element={<Lazy><QuizTypeManagementPage /></Lazy>} />
+        <Route path="duels" element={<Lazy><DuelFeaturesPage /></Lazy>} />
+        <Route path="geojson" element={<Lazy><GeoJsonMapsManagementPage /></Lazy>} />
+        <Route path="analytics" element={<Lazy><AdminAnalyticsPage /></Lazy>} />
+      </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
