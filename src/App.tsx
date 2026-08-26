@@ -1,340 +1,148 @@
-import { useState, useEffect } from "react";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { NotificationProvider } from "./contexts/NotificationContext";
-import { LanguageProvider } from "./contexts/LanguageContext";
-import { LoginForm } from "./components/auth/LoginForm";
-import { RegisterForm } from "./components/auth/RegisterForm";
-import { Navbar } from "./components/layout/Navbar";
-import { HomePage } from "./components/home/HomePage";
-import { ProfilePage } from "./components/profile/ProfilePage";
-import { SettingsPage } from "./components/profile/SettingsPage";
-import { QuizzesPage } from "./components/quizzes/QuizzesPage";
-import { CreateQuizPage } from "./components/quizzes/CreateQuizPage";
-import { EditQuizPage } from "./components/quizzes/EditQuizPage";
-import { PlayQuizPage } from "./components/quizzes/PlayQuizPage";
-import { TrainingModePage } from "./components/quizzes/TrainingModePage";
-import { LeaderboardPage } from "./components/leaderboard/LeaderboardPage";
-import { FriendsPage } from "./components/friends/FriendsPage";
-import { AdminPage } from "./components/admin/AdminPage";
-import { BadgeManagementPage } from "./components/admin/BadgeManagementPage";
-import { TitleManagementPage } from "./components/admin/TitleManagementPage";
-import { CategoryManagementPage } from "./components/admin/CategoryManagementPage";
-import { DifficultyManagementPage } from "./components/admin/DifficultyManagementPage";
-import { QuizValidationPage } from "./components/admin/QuizValidationPage";
-import { WarningsManagementPage } from "./components/admin/WarningsManagementPage";
-import { QuizTypeManagementPage } from "./components/admin/QuizTypeManagementPage";
-import { UserManagementPage } from "./components/admin/UserManagementPage";
-import { QuizManagementPage } from "./components/admin/QuizManagementPage";
-import { DuelFeaturesPage } from "./components/admin/DuelFeaturesPage";
-import { GeoJsonMapsManagementPage } from "./components/admin/GeoJsonMapsManagementPage";
-import { AdminAnalyticsPage } from "./components/admin/AdminAnalyticsPage";
-import { AdminDashboardLayout } from "./components/admin/layout/AdminDashboardLayout";
-import { DuelsPage } from "./components/duels/DuelsPage";
-import { ChatPage } from "./components/chat/ChatPage";
-import { LandingPage } from "./components/landing/LandingPage";
-import { BannedPage } from "./components/auth/BannedPage";
-import { ForceUsernamePage } from "./components/auth/ForceUsernamePage";
-import { AccountDetailsPage } from "./components/profile/AccountDetailsPage";
-import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
+import { useEffect, Suspense, lazy } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
 import { useNotifications } from "./contexts/NotificationContext";
 
-function AppContent() {
-  interface ViewData {
-    userId?: string;
-    quizId?: string;
-    duelId?: string;
-    questionCount?: number;
-    friendId?: string;
-    tab?: string;
-    challengeId?: string;
-    resetKey?: string | number;
-  }
+// Auth & Layout (Garder statique car critique au premier rendu)
+import { LoginForm } from "./components/auth/LoginForm";
+import { RegisterForm } from "./components/auth/RegisterForm";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { LandingPage } from "./components/landing/LandingPage";
+import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 
-  const { user, profile, loading, refreshProfile, mfaRequired } = useAuth();
-  const { setNavigationCallback } = useNotifications();
-  const [authView, setAuthView] = useState<
-    "login" | "register" | "landing" | "terms" | "privacy"
-  >("landing");
-  const [authViewBeforeLegal, setAuthViewBeforeLegal] = useState<
-    "login" | "register" | "landing"
-  >("landing");
-  const [currentView, setCurrentView] = useState<string>("home");
-  const [viewData, setViewData] = useState<ViewData | null>(null);
+// Pages (Chargement asynchrone - Lazy Loading)
+const HomePage = lazy(() => import("./components/home/HomePage").then(module => ({ default: module.HomePage })));
+const ProfilePage = lazy(() => import("./components/profile/ProfilePage").then(module => ({ default: module.ProfilePage })));
+const SettingsPage = lazy(() => import("./components/profile/SettingsPage").then(module => ({ default: module.SettingsPage })));
+const AccountDetailsPage = lazy(() => import("./components/profile/AccountDetailsPage").then(module => ({ default: module.AccountDetailsPage })));
+const QuizzesPage = lazy(() => import("./components/quizzes/QuizzesPage").then(module => ({ default: module.QuizzesPage })));
+const CreateQuizPage = lazy(() => import("./components/quizzes/CreateQuizPage").then(module => ({ default: module.CreateQuizPage })));
+const EditQuizPage = lazy(() => import("./components/quizzes/EditQuizPage").then(module => ({ default: module.EditQuizPage })));
+const PlayQuizPage = lazy(() => import("./components/quizzes/PlayQuizPage").then(module => ({ default: module.PlayQuizPage })));
+const TrainingModePage = lazy(() => import("./components/quizzes/TrainingModePage").then(module => ({ default: module.TrainingModePage })));
+const LeaderboardPage = lazy(() => import("./components/leaderboard/LeaderboardPage").then(module => ({ default: module.LeaderboardPage })));
+const FriendsPage = lazy(() => import("./components/friends/FriendsPage").then(module => ({ default: module.FriendsPage })));
+const DuelsPage = lazy(() => import("./components/duels/DuelsPage").then(module => ({ default: module.DuelsPage })));
+const ChatPage = lazy(() => import("./components/chat/ChatPage").then(module => ({ default: module.ChatPage })));
 
-  const openLegal = (view: "terms" | "privacy") => {
-    if (authView !== "terms" && authView !== "privacy") {
-      setAuthViewBeforeLegal(authView);
-    }
-    setAuthView(view);
-  };
+// Admin Pages (Chargement asynchrone car lourd et utilisé que par les admins)
+const AdminPage = lazy(() => import("./components/admin/AdminPage").then(module => ({ default: module.AdminPage })));
+const BadgeManagementPage = lazy(() => import("./components/admin/BadgeManagementPage").then(module => ({ default: module.BadgeManagementPage })));
+const TitleManagementPage = lazy(() => import("./components/admin/TitleManagementPage").then(module => ({ default: module.TitleManagementPage })));
+const CategoryManagementPage = lazy(() => import("./components/admin/CategoryManagementPage").then(module => ({ default: module.CategoryManagementPage })));
+const DifficultyManagementPage = lazy(() => import("./components/admin/DifficultyManagementPage").then(module => ({ default: module.DifficultyManagementPage })));
+const QuizValidationPage = lazy(() => import("./components/admin/QuizValidationPage").then(module => ({ default: module.QuizValidationPage })));
+const WarningsManagementPage = lazy(() => import("./components/admin/WarningsManagementPage").then(module => ({ default: module.WarningsManagementPage })));
+const QuizTypeManagementPage = lazy(() => import("./components/admin/QuizTypeManagementPage").then(module => ({ default: module.QuizTypeManagementPage })));
+const UserManagementPage = lazy(() => import("./components/admin/UserManagementPage").then(module => ({ default: module.UserManagementPage })));
+const QuizManagementPage = lazy(() => import("./components/admin/QuizManagementPage").then(module => ({ default: module.QuizManagementPage })));
+const DuelFeaturesPage = lazy(() => import("./components/admin/DuelFeaturesPage").then(module => ({ default: module.DuelFeaturesPage })));
+const GeoJsonMapsManagementPage = lazy(() => import("./components/admin/GeoJsonMapsManagementPage").then(module => ({ default: module.GeoJsonMapsManagementPage })));
+const AdminAnalyticsPage = lazy(() => import("./components/admin/AdminAnalyticsPage").then(module => ({ default: module.AdminAnalyticsPage })));
 
-  const handleNavigate = (view: string, data?: ViewData) => {
-    setCurrentView(view);
-    setViewData(data);
-  };
-  useEffect(() => {
-    setNavigationCallback(handleNavigate);
-  }, []);
-
-  // Si on a un user mais pas de profil (ex. délai après inscription), réessayer de charger le profil
-  useEffect(() => {
-    if (!user || profile) return;
-    const t = setTimeout(() => refreshProfile(), 500);
-    return () => clearTimeout(t);
-  }, [user, profile, refreshProfile]);
-  const hideNavbarViews = ["play-quiz", "play-training", "play-duel"];
-  const shouldShowNavbar = !hideNavbarViews.includes(currentView);
-  const adminViews = new Set([
-    "admin",
-    "badge-management",
-    "title-management",
-    "category-management",
-    "difficulty-management",
-    "quiz-validation",
-    "warnings-management",
-    "quiz-type-management",
-    "user-management",
-    "account-details",
-    "quiz-management",
-    "duel-features",
-    "geojson-maps-management",
-    "admin-analytics",
-  ]);
-  const isAdminView = adminViews.has(currentView);
-
-  const renderAdminView = () => {
-    if (currentView === "admin") return <AdminPage onNavigate={handleNavigate} />;
-    if (currentView === "badge-management") return <BadgeManagementPage />;
-    if (currentView === "title-management") return <TitleManagementPage />;
-    if (currentView === "category-management") return <CategoryManagementPage />;
-    if (currentView === "difficulty-management") return <DifficultyManagementPage />;
-    if (currentView === "quiz-validation") return <QuizValidationPage />;
-    if (currentView === "warnings-management") return <WarningsManagementPage />;
-    if (currentView === "quiz-type-management") return <QuizTypeManagementPage />;
-    if (currentView === "user-management")
-      return <UserManagementPage onNavigate={handleNavigate} />;
-    if (currentView === "account-details")
-      return (
-        <AccountDetailsPage userId={viewData?.userId} onNavigate={handleNavigate} />
-      );
-    if (currentView === "quiz-management")
-      return <QuizManagementPage onNavigate={handleNavigate} />;
-    if (currentView === "duel-features") return <DuelFeaturesPage />;
-    if (currentView === "geojson-maps-management") return <GeoJsonMapsManagementPage />;
-    if (currentView === "admin-analytics") return <AdminAnalyticsPage />;
-    return null;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 text-lg font-medium">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (user && mfaRequired) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-        <div className="w-full">
-          <div className="max-w-md mx-auto mb-4">
-            <button
-              onClick={() => setAuthView("landing")}
-              className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
-            >
-              ← Retour à l'accueil
-            </button>
-          </div>
-          <LoginForm
-            onSwitchToRegister={() => setAuthView("register")}
-            forceMfa={true}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (user && profile) {
-    const now = new Date();
-    const isBanned = profile.is_banned;
-    const banUntil = profile.ban_until ? new Date(profile.ban_until) : null;
-    const isStillBanned = isBanned && (!banUntil || banUntil > now);
-
-    if (isStillBanned) {
-      return <BannedPage />;
-    }
-
-    if (profile.force_username_change) {
-      return <ForceUsernamePage />;
-    }
-  }
-
-  // Utilisateur connecté mais profil pas encore chargé (ex. juste après inscription)
-  if (user && !profile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 text-lg font-medium">Préparation de votre compte...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    if (authView === "landing") {
-      return (
-        <LandingPage
-          onNavigate={(view) => {
-            if (view === "terms" || view === "privacy") openLegal(view);
-            else
-              setAuthView(
-                view as "login" | "register" | "landing" | "terms" | "privacy"
-              );
-          }}
-        />
-      );
-    }
-
-    if (authView === "terms" || authView === "privacy") {
-      return (
-        <LegalDocumentPage
-          type={authView}
-          onBack={() => setAuthView(authViewBeforeLegal)}
-        />
-      );
-    }
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-        <div className="w-full">
-          <div className="max-w-md mx-auto mb-4">
-            <button
-              onClick={() => setAuthView("landing")}
-              className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
-            >
-              ← Retour à l'accueil
-            </button>
-          </div>
-          {authView === "login" ? (
-            <LoginForm onSwitchToRegister={() => setAuthView("register")} />
-          ) : (
-            <RegisterForm
-              onSwitchToLogin={() => setAuthView("login")}
-              onShowTerms={() => openLegal("terms")}
-              onShowPrivacy={() => openLegal("privacy")}
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
-
+// Loading Component
+function PageLoader() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {shouldShowNavbar && (
-        <Navbar currentView={currentView} onNavigate={handleNavigate} />
-      )}
-
-      <main className={shouldShowNavbar ? "pb-8" : ""}>
-        {currentView === "home" && <HomePage onNavigate={handleNavigate} />}
-        {currentView === "profile" && (
-          <ProfilePage onNavigate={handleNavigate} />
-        )}
-        {currentView === "view-profile" && viewData?.userId && (
-          <ProfilePage userId={viewData.userId} onNavigate={handleNavigate} />
-        )}
-        {currentView === "settings" && (
-          <SettingsPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "quizzes" && (
-          <QuizzesPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "create-quiz" && (
-          <CreateQuizPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "edit-quiz" && viewData?.quizId && (
-          <EditQuizPage quizId={viewData.quizId} onNavigate={handleNavigate} />
-        )}
-        {currentView === "training-mode" && (
-          <TrainingModePage onNavigate={handleNavigate} />
-        )}
-        {currentView === "play-quiz" && viewData?.quizId && (
-          <PlayQuizPage
-            key={
-              viewData.resetKey
-                ? `play-${viewData.quizId}-${viewData.resetKey}`
-                : `play-${viewData.quizId}`
-            }
-            quizId={viewData.quizId}
-            challengeId={viewData.challengeId}
-            onNavigate={handleNavigate}
-          />
-        )}
-        {currentView === "play-training" && viewData?.quizId && (
-          <PlayQuizPage
-            key={
-              viewData.resetKey
-                ? `training-${viewData.quizId}-${viewData.resetKey}`
-                : `training-${viewData.quizId}`
-            }
-            quizId={viewData.quizId}
-            trainingMode={true}
-            questionCount={viewData.questionCount}
-            onNavigate={handleNavigate}
-          />
-        )}
-        {currentView === "play-duel" && viewData?.duelId && (
-          <PlayQuizPage
-            key={
-              viewData.resetKey
-                ? `duel-${viewData.duelId}-${viewData.resetKey}`
-                : `duel-${viewData.duelId}`
-            }
-            quizId={viewData.quizId}
-            mode="duel"
-            duelId={viewData.duelId}
-            onNavigate={handleNavigate}
-          />
-        )}
-        {currentView === "leaderboard" && (
-          <LeaderboardPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "friends" && (
-          <FriendsPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "duels" && (
-          <DuelsPage onNavigate={handleNavigate} initialTab={viewData?.tab} />
-        )}
-        {currentView === "chat" && (
-          <ChatPage friendId={viewData?.friendId} onNavigate={handleNavigate} />
-        )}
-        {isAdminView && (
-          <AdminDashboardLayout
-            currentView={currentView}
-            onNavigate={handleNavigate}
-          >
-            {renderAdminView()}
-          </AdminDashboardLayout>
-        )}
-      </main>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
+        <p className="text-gray-700 text-lg font-medium">Chargement...</p>
+      </div>
     </div>
   );
 }
 
-function App() {
+export default function App() {
+  const { user } = useAuth();
+  const { setNavigationCallback } = useNotifications();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Adapter le NotificationContext pour utiliser React Router au lieu de l'ancien onNavigate
+    setNavigationCallback((view: string, data?: any) => {
+      if (view === "duels") {
+        navigate("/duels", { state: data });
+      } else if (view === "chat" && data?.friendId) {
+        navigate(`/chat/${data.friendId}`);
+      } else {
+        navigate(`/${view}`);
+      }
+    });
+  }, [navigate, setNavigationCallback]);
+
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <NotificationProvider>
-          <AppContent />
-        </NotificationProvider>
-      </LanguageProvider>
-    </AuthProvider>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={!user ? <LandingPage /> : <Navigate to="/terra" replace />} />
+        <Route path="/login" element={!user ? (
+          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+            <div className="w-full max-w-md mx-auto">
+              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
+                ← Retour à l'accueil
+              </button>
+              <LoginForm onSwitchToRegister={() => navigate("/register")} />
+            </div>
+          </div>
+        ) : <Navigate to="/terra" replace />} />
+        <Route path="/register" element={!user ? (
+          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+            <div className="w-full max-w-md mx-auto">
+              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
+                ← Retour à l'accueil
+              </button>
+              <RegisterForm 
+                onSwitchToLogin={() => navigate("/login")}
+                onShowTerms={() => navigate("/terms")}
+                onShowPrivacy={() => navigate("/privacy")}
+              />
+            </div>
+          </div>
+        ) : <Navigate to="/terra" replace />} />
+        <Route path="/terms" element={<LegalDocumentPage type="terms" onBack={() => navigate(-1)} />} />
+        <Route path="/privacy" element={<LegalDocumentPage type="privacy" onBack={() => navigate(-1)} />} />
+
+        {/* Protected Routes (Authenticated) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/terra" element={<HomePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/account-details" element={<AccountDetailsPage />} />
+          
+          <Route path="/quizzes" element={<QuizzesPage />} />
+          <Route path="/quizzes/create" element={<CreateQuizPage />} />
+          <Route path="/quizzes/edit/:quizId" element={<EditQuizPage />} />
+          <Route path="/quizzes/play/:quizId" element={<PlayQuizPage />} />
+          <Route path="/quizzes/training" element={<TrainingModePage />} />
+          
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/duels" element={<DuelsPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/chat/:friendId" element={<ChatPage />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<ProtectedRoute requireAdmin={true} />}>
+          <Route index element={<AdminPage />} />
+          <Route path="users" element={<UserManagementPage />} />
+          <Route path="quizzes" element={<QuizManagementPage />} />
+          <Route path="badges" element={<BadgeManagementPage />} />
+          <Route path="titles" element={<TitleManagementPage />} />
+          <Route path="categories" element={<CategoryManagementPage />} />
+          <Route path="difficulties" element={<DifficultyManagementPage />} />
+          <Route path="validation" element={<QuizValidationPage />} />
+          <Route path="warnings" element={<WarningsManagementPage />} />
+          <Route path="types" element={<QuizTypeManagementPage />} />
+          <Route path="duels" element={<DuelFeaturesPage />} />
+          <Route path="geojson" element={<GeoJsonMapsManagementPage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
+        </Route>
+
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
-
-export default App;
