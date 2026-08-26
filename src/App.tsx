@@ -150,12 +150,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <LanguageProvider>
         <NotificationProvider>
           <AppContent />
         </NotificationProvider>
-      </AuthProvider>
-    </LanguageProvider>
+      </LanguageProvider>
+    </AuthProvider>
   );
 }
