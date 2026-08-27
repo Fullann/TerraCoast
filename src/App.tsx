@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider, useNotifications } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Auth & Layout (statiques - chargés immédiatement, sans Suspense)
 import { LoginForm } from "./components/auth/LoginForm";
@@ -64,7 +65,7 @@ function AppContent() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setNavigationCallback((view: string, data?: any) => {
+    setNavigationCallback(() => (view: string, data?: any) => {
       if (view === "duels") {
         navigate("/duels", { state: data });
       } else if (view === "chat" && data?.friendId) {
@@ -77,7 +78,8 @@ function AppContent() {
 
   return (
     // PAS de Suspense global ici - chaque route lazy a le sien
-    <Routes>
+    <ErrorBoundary>
+      <Routes>
       {/* ── Routes publiques ── statiques, transition immédiate */}
       <Route path="/" element={!user ? <LandingPage /> : <Navigate to="/terra" replace />} />
 
@@ -150,7 +152,8 @@ function AppContent() {
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </ErrorBoundary>
   );
 }
 
