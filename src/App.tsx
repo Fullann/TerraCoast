@@ -1,5 +1,6 @@
 import { useEffect, Suspense, lazy } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider, useNotifications } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -12,6 +13,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { LandingPage } from "./components/landing/LandingPage";
 import { AdminDashboardLayout } from "./components/admin/layout/AdminDashboardLayout";
 import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
+import { PageTransition } from "./components/ui/PageTransition";
 
 // Pages protégées (Lazy Loading - chargées uniquement si l'utilisateur est connecté)
 const HomePage = lazy(() => import("./components/home/HomePage").then(m => ({ default: m.HomePage })));
@@ -57,13 +59,18 @@ function PageLoader() {
 
 // Wrapper Suspense pour chaque page lazy individuelle
 function Lazy({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <PageTransition>{children}</PageTransition>
+    </Suspense>
+  );
 }
 
 function AppContent() {
   const { user } = useAuth();
   const { setNavigationCallback } = useNotifications();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     setNavigationCallback((view: string, data?: any) => {
@@ -80,34 +87,39 @@ function AppContent() {
   return (
     // PAS de Suspense global ici - chaque route lazy a le sien
     <ErrorBoundary>
-      <Routes>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
       {/* ── Routes publiques ── statiques, transition immédiate */}
       <Route path="/" element={!user ? <LandingPage /> : <Navigate to="/terra" replace />} />
 
       <Route path="/login" element={!user ? (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-          <div className="w-full max-w-md mx-auto">
-            <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
-              ← Retour à l'accueil
-            </button>
-            <LoginForm onSwitchToRegister={() => navigate("/register")} />
+        <PageTransition>
+          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+            <div className="w-full max-w-md mx-auto">
+              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
+                ← Retour à l'accueil
+              </button>
+              <LoginForm onSwitchToRegister={() => navigate("/register")} />
+            </div>
           </div>
-        </div>
+        </PageTransition>
       ) : <Navigate to="/terra" replace />} />
 
       <Route path="/register" element={!user ? (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-          <div className="w-full max-w-md mx-auto">
-            <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
-              ← Retour à l'accueil
-            </button>
-            <RegisterForm
-              onSwitchToLogin={() => navigate("/login")}
-              onShowTerms={() => navigate("/terms")}
-              onShowPrivacy={() => navigate("/privacy")}
-            />
+        <PageTransition>
+          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+            <div className="w-full max-w-md mx-auto">
+              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
+                ← Retour à l'accueil
+              </button>
+              <RegisterForm
+                onSwitchToLogin={() => navigate("/login")}
+                onShowTerms={() => navigate("/terms")}
+                onShowPrivacy={() => navigate("/privacy")}
+              />
+            </div>
           </div>
-        </div>
+        </PageTransition>
       ) : <Navigate to="/terra" replace />} />
 
       <Route path="/terms" element={<LegalDocumentPage type="terms" onBack={() => navigate(-1)} />} />
@@ -155,7 +167,8 @@ function AppContent() {
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </AnimatePresence>
     </ErrorBoundary>
   );
 }

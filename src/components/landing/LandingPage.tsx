@@ -13,6 +13,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { PageTransition } from "../ui/PageTransition";
+import { motion } from "framer-motion";
 import { languageNames, type Language } from "../../i18n/translations";
 import { QuizGlobe, type QuizGlobePoint } from "../home/QuizGlobe";
 import { supabase } from "../../lib/supabase";
@@ -138,8 +140,24 @@ export function LandingPage() {
     };
   }, []);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 },
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <PageTransition>
+      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
 
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -209,12 +227,14 @@ export function LandingPage() {
             >
               {t("landing.hero.login")}
             </button>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => navigate("/register")}
-              className="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 shadow-sm transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-full font-semibold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
             >
               {t("landing.hero.startAdventure")}
-            </button>
+            </motion.button>
           </div>
 
           <button
@@ -226,12 +246,22 @@ export function LandingPage() {
         </div>
         {mobileMenuOpen && (
           <div className="md:hidden px-4 pb-4 space-y-2 border-t border-slate-200 bg-white">
-            <button onClick={() => navigate("/login")} className="w-full mt-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-left font-medium">
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/login")} 
+              className="w-full mt-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-left font-medium"
+            >
               {t("landing.hero.login")}
-            </button>
-            <button onClick={() => navigate("/register")} className="w-full px-4 py-2 rounded-lg bg-emerald-600 text-white text-left font-semibold shadow-sm">
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/register")} 
+              className="w-full mt-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-left font-medium hover:bg-emerald-700 transition-colors"
+            >
               {t("landing.hero.startAdventure")}
-            </button>
+            </motion.button>
           </div>
         )}
       </header>
@@ -302,24 +332,40 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            value={liveStats.loading ? "..." : formatCompact(liveStats.activeQuizzes)}
-            label="Quiz actifs"
-            tone="emerald"
-          />
-          <StatCard
-            value={liveStats.loading ? "..." : formatCompact(liveStats.completedSessions)}
-            label="Parties jouées"
-            tone="cyan"
-          />
-          <StatCard value={String(Object.keys(languageNames).length)} label="Langues supportées" tone="violet" />
-          <StatCard value="24/7" label="Disponible" tone="amber" />
+      <section className="py-16 bg-white border-y border-slate-100 relative z-10">
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 md:grid-cols-4 gap-8"
+          >
+            <motion.div variants={itemVariants}>
+              <StatCard
+                value={liveStats.loading ? "..." : formatCompact(liveStats.activeQuizzes)}
+                label="Quiz actifs"
+                tone="emerald"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard
+                value={liveStats.loading ? "..." : formatCompact(liveStats.completedSessions)}
+                label="Parties jouées"
+                tone="cyan"
+              />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard value={String(Object.keys(languageNames).length)} label="Langues supportées" tone="violet" />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <StatCard value="24/7" label="Disponible" tone="amber" />
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
-      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 pt-14">
         <div className="grid md:grid-cols-3 gap-5">
           <FeatureCard icon={<BookOpen className="w-6 h-6" />} title={t("landing.features.free.title")} description={t("landing.features.free.desc")} />
           <FeatureCard icon={<Users className="w-6 h-6" />} title={t("landing.features.community.title")} description={t("landing.features.community.desc")} />
@@ -431,6 +477,7 @@ export function LandingPage() {
         </div>
       )}
     </div>
+    </PageTransition>
   );
 }
 
