@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
   Shield,
@@ -15,11 +14,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
 
-interface AdminDashboardLayoutProps {
-  currentView: string;
-  onNavigate: (view: string, data?: any) => void;
-  children: ReactNode;
-}
+import type { ReactNode } from "react";
 
 interface AdminNavItem {
   view: string;
@@ -27,11 +22,30 @@ interface AdminNavItem {
   icon: ReactNode;
 }
 
-export function AdminDashboardLayout({ 
-  currentView,
-  children }: any) {
+export function AdminDashboardLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
+
+  // Déduire la vue courante à partir du pathname
+  const currentView = (() => {
+    const path = location.pathname;
+    if (path === '/admin') return 'admin';
+    if (path.includes('/admin/analytics')) return 'admin-analytics';
+    if (path.includes('/admin/quizzes')) return 'quiz-management';
+    if (path.includes('/admin/validation')) return 'quiz-validation';
+    if (path.includes('/admin/geojson')) return 'geojson-maps-management';
+    if (path.includes('/admin/warnings')) return 'warnings-management';
+    if (path.includes('/admin/users')) return 'user-management';
+    if (path.includes('/admin/duels')) return 'duel-features';
+    if (path.includes('/admin/badges')) return 'badge-management';
+    if (path.includes('/admin/titles')) return 'title-management';
+    if (path.includes('/admin/categories')) return 'category-management';
+    if (path.includes('/admin/difficulties')) return 'difficulty-management';
+    if (path.includes('/admin/types')) return 'quiz-type-management';
+    return 'admin';
+  })();
+
   const sections: Array<{ title: string; items: AdminNavItem[] }> = [
     {
       title: t("admin.nav.dashboard"),
@@ -170,7 +184,7 @@ export function AdminDashboardLayout({
             ))}
           </div>
         </aside>
-        <section className="lg:col-span-9 xl:col-span-10">{children}</section>
+        <section className="lg:col-span-9 xl:col-span-10"><Outlet /></section>
       </div>
     </div>
   );

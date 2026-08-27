@@ -10,6 +10,7 @@ import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { LandingPage } from "./components/landing/LandingPage";
+import { AdminDashboardLayout } from "./components/admin/layout/AdminDashboardLayout";
 import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 
 // Pages protégées (Lazy Loading - chargées uniquement si l'utilisateur est connecté)
@@ -135,19 +136,21 @@ function AppContent() {
 
       {/* ── Routes Admin ── */}
       <Route path="/admin" element={<ProtectedRoute requireAdmin={true} />}>
-        <Route index element={<Lazy><AdminPage /></Lazy>} />
-        <Route path="users" element={<Lazy><UserManagementPage /></Lazy>} />
-        <Route path="quizzes" element={<Lazy><QuizManagementPage /></Lazy>} />
-        <Route path="badges" element={<Lazy><BadgeManagementPage /></Lazy>} />
-        <Route path="titles" element={<Lazy><TitleManagementPage /></Lazy>} />
-        <Route path="categories" element={<Lazy><CategoryManagementPage /></Lazy>} />
-        <Route path="difficulties" element={<Lazy><DifficultyManagementPage /></Lazy>} />
-        <Route path="validation" element={<Lazy><QuizValidationPage /></Lazy>} />
-        <Route path="warnings" element={<Lazy><WarningsManagementPage /></Lazy>} />
-        <Route path="types" element={<Lazy><QuizTypeManagementPage /></Lazy>} />
-        <Route path="duels" element={<Lazy><DuelFeaturesPage /></Lazy>} />
-        <Route path="geojson" element={<Lazy><GeoJsonMapsManagementPage /></Lazy>} />
-        <Route path="analytics" element={<Lazy><AdminAnalyticsPage /></Lazy>} />
+        <Route element={<AdminDashboardLayout />}>
+          <Route index element={<Lazy><AdminPage /></Lazy>} />
+          <Route path="users" element={<Lazy><UserManagementPage /></Lazy>} />
+          <Route path="quizzes" element={<Lazy><QuizManagementPage /></Lazy>} />
+          <Route path="badges" element={<Lazy><BadgeManagementPage /></Lazy>} />
+          <Route path="titles" element={<Lazy><TitleManagementPage /></Lazy>} />
+          <Route path="categories" element={<Lazy><CategoryManagementPage /></Lazy>} />
+          <Route path="difficulties" element={<Lazy><DifficultyManagementPage /></Lazy>} />
+          <Route path="validation" element={<Lazy><QuizValidationPage /></Lazy>} />
+          <Route path="warnings" element={<Lazy><WarningsManagementPage /></Lazy>} />
+          <Route path="types" element={<Lazy><QuizTypeManagementPage /></Lazy>} />
+          <Route path="duels" element={<Lazy><DuelFeaturesPage /></Lazy>} />
+          <Route path="geojson" element={<Lazy><GeoJsonMapsManagementPage /></Lazy>} />
+          <Route path="analytics" element={<Lazy><AdminAnalyticsPage /></Lazy>} />
+        </Route>
       </Route>
 
       {/* Fallback */}
