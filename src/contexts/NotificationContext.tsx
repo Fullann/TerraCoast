@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from "react";
 import { supabase } from "../lib/supabase";
 import type { Database } from "../lib/database.types";
@@ -72,9 +73,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     useState<AppNotification | null>(null);
   const [pendingDuelsToPlay, setPendingDuelsToPlay] = useState(0);
   const [newDuelResults, setNewDuelResults] = useState(0);
-  const [navigationCallback, setNavigationCallback] = useState<
+  const [navigationCallback, setNavigationCallbackState] = useState<
     ((view: string, params?: Record<string, unknown>) => void) | null
   >(null);
+
+  const setNavigationCallback = useCallback(
+    (callback: (view: string, params?: Record<string, unknown>) => void) => {
+      setNavigationCallbackState(() => callback);
+    },
+    []
+  );
 
   const refreshNotifications = async () => {
     if (!profile) return;
@@ -405,7 +413,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         showAppNotification,
         clearAppNotification,
         refreshNotifications,
-        setNavigationCallback: (callback) => setNavigationCallback(() => callback),
+        setNavigationCallback,
       }}
     >
       {children}

@@ -65,7 +65,7 @@ function AppContent() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setNavigationCallback(() => (view: string, data?: any) => {
+    setNavigationCallback((view: string, data?: any) => {
       if (view === "duels") {
         navigate("/duels", { state: data });
       } else if (view === "chat" && data?.friendId) {
