@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
@@ -16,8 +16,11 @@ import {
   X,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
-import { getCountriesByIso3 } from "../../lib/countryGameData";
-import { QuizGlobe, type QuizGlobePoint } from "./QuizGlobe";
+import type { QuizGlobePoint } from "./QuizGlobe";
+
+const QuizGlobe = lazy(() =>
+  import("./QuizGlobe").then((m) => ({ default: m.QuizGlobe }))
+);
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"];
@@ -111,23 +114,31 @@ export function HomePage() {
             .in("quiz_id", quizIds)
             .in("question_type", ["puzzle_map", "map_click", "country_multi"]);
 
-          const points = relevantQuizzes.map((quiz: Quiz, idx: number) => {
-            const relatedQuestions = (quizQuestions || []).filter(
-              (q: any) => q.quiz_id === quiz.id
-            );
+          let countryResolver:
+            | ((iso3s: string[]) => { lat: number; lng: number }[])
+            | null = null;
+
+          const points: QuizGlobePoint[] = [];
+          for (let idx = 0; idx < relevantQuizzes.length; idx++) {
+            const quiz = relevantQuizzes[idx];
             if (
               typeof quiz.location_lat === "number" &&
               typeof quiz.location_lng === "number"
             ) {
-              return {
+              points.push({
                 quizId: quiz.id,
                 title: quiz.title,
                 difficulty: quiz.difficulty,
                 totalPlays: quiz.total_plays || 0,
                 lat: quiz.location_lat,
                 lng: quiz.location_lng,
-              } satisfies QuizGlobePoint;
+              });
+              continue;
             }
+
+            const relatedQuestions = (quizQuestions || []).filter(
+              (q: any) => q.quiz_id === quiz.id
+            );
             const selectedIso3s = relatedQuestions.flatMap((q: any) => {
               const mapData = q.map_data as { selectedCountries?: string[] } | null;
               return Array.isArray(mapData?.selectedCountries)
@@ -135,33 +146,46 @@ export function HomePage() {
                 : [];
             });
             const uniqueIso3s = [...new Set(selectedIso3s)].slice(0, 5);
-            const countries = getCountriesByIso3(uniqueIso3s);
-            if (countries.length > 0) {
-              const avgLat =
-                countries.reduce((sum, c) => sum + c.lat, 0) / countries.length;
-              const avgLng =
-                countries.reduce((sum, c) => sum + c.lng, 0) / countries.length;
-              return {
-                quizId: quiz.id,
-                title: quiz.title,
-                difficulty: quiz.difficulty,
-                totalPlays: quiz.total_plays || 0,
-                lat: avgLat,
-                lng: avgLng,
-              } satisfies QuizGlobePoint;
+
+            if (uniqueIso3s.length > 0) {
+              if (!countryResolver) {
+                const { getCountriesByIso3 } = await import(
+                  "../../lib/countryGameData"
+                );
+                countryResolver = getCountriesByIso3;
+              }
+              const countries = countryResolver(uniqueIso3s);
+              if (countries.length > 0) {
+                const avgLat =
+                  countries.reduce((sum, c) => sum + c.lat, 0) /
+                  countries.length;
+                const avgLng =
+                  countries.reduce((sum, c) => sum + c.lng, 0) /
+                  countries.length;
+                points.push({
+                  quizId: quiz.id,
+                  title: quiz.title,
+                  difficulty: quiz.difficulty,
+                  totalPlays: quiz.total_plays || 0,
+                  lat: avgLat,
+                  lng: avgLng,
+                });
+                continue;
+              }
             }
+
             // Fallback deterministic spread if quiz has no geographic config.
             const fallbackLat = -40 + idx * 25;
             const fallbackLng = -140 + idx * 90;
-            return {
+            points.push({
               quizId: quiz.id,
               title: quiz.title,
               difficulty: quiz.difficulty,
               totalPlays: quiz.total_plays || 0,
               lat: fallbackLat,
               lng: fallbackLng,
-            } satisfies QuizGlobePoint;
-          });
+            });
+          }
           setGlobePoints(points);
         }
 
@@ -505,10 +529,21 @@ export function HomePage() {
               <p className="text-sm text-gray-600 mb-3">
                 Clique sur un point pour lancer un quiz.
               </p>
-              <QuizGlobe
-                points={globePoints}
-                onPointClick={(quizId) => navigate(`/quizzes/play/${quizId}`)}
-              />
+              <Suspense
+                fallback={
+                  <div className="h-[400px] w-full flex items-center justify-center bg-slate-900 rounded-2xl">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-3"></div>
+                      <p className="text-slate-300 text-sm font-medium">Chargement du globe 3D...</p>
+                    </div>
+                  </div>
+                }
+              >
+                <QuizGlobe
+                  points={globePoints}
+                  onPointClick={(quizId) => navigate(`/quizzes/play/${quizId}`)}
+                />
+              </Suspense>
             </>
           )}
         </div>
@@ -516,17 +551,25 @@ export function HomePage() {
 
       {showStreakModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("home.currentStreak")}
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <Flame className="w-6 h-6 mr-2 text-orange-600" />
+                <Flame className="w-6 h-6 mr-2 text-orange-600" aria-hidden="true" />
                 {t("home.currentStreak")}
               </h3>
               <button
+                type="button"
                 onClick={() => setShowStreakModal(false)}
+                aria-label={t("common.close")}
+                title={t("common.close")}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-6 h-6 text-gray-600" />
+                <X className="w-6 h-6 text-gray-600" aria-hidden="true" />
               </button>
             </div>
 

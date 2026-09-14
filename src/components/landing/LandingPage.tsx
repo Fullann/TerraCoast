@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -16,14 +16,18 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { PageTransition } from "../ui/PageTransition";
 import { motion } from "framer-motion";
 import { languageNames, type Language } from "../../i18n/translations";
-import { QuizGlobe, type QuizGlobePoint } from "../home/QuizGlobe";
+import type { QuizGlobePoint } from "../home/QuizGlobe";
 import { supabase } from "../../lib/supabase";
 
-interface LandingPageProps {
-  onNavigate: (view: string) => void;
+const QuizGlobe = lazy(() =>
+  import("../home/QuizGlobe").then((m) => ({ default: m.QuizGlobe }))
+);
+
+export interface LandingPageProps {
+  onNavigate?: (view: string) => void;
 }
 
-export function LandingPage() {
+export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) {
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -193,12 +197,16 @@ export function LandingPage() {
           <div className="hidden md:flex items-center gap-3">
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setLangMenuOpen((v) => !v)}
+                aria-label={t("settings.language")}
+                aria-expanded={langMenuOpen}
+                aria-haspopup="listbox"
                 className="px-3 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-medium"
               >
-                <Globe className="w-4 h-4" />
+                <Globe className="w-4 h-4" aria-hidden="true" />
                 {language.toUpperCase()}
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-4 h-4" aria-hidden="true" />
               </button>
               {langMenuOpen && (
                 <div className="absolute right-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white shadow-xl p-1">
@@ -221,27 +229,36 @@ export function LandingPage() {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => navigate("/login")}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/login")} 
+              className="px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors font-medium"
             >
               {t("landing.hero.login")}
-            </button>
+            </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate("/register")}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-full font-semibold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors font-medium"
             >
               {t("landing.hero.startAdventure")}
             </motion.button>
           </div>
 
           <button
+            type="button"
             onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label={mobileMenuOpen ? t("a11y.closeMenu") : t("a11y.openMenu")}
+            aria-expanded={mobileMenuOpen}
             className="md:hidden p-2 rounded-lg border border-slate-200 text-slate-600"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5" aria-hidden="true" />
+            ) : (
+              <Menu className="w-5 h-5" aria-hidden="true" />
+            )}
           </button>
         </div>
         {mobileMenuOpen && (
@@ -300,7 +317,18 @@ export function LandingPage() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-2 sm:p-3 shadow-xl animate-[fadeInUp_.7s_ease-out] [animation-delay:120ms]">
-            <QuizGlobe points={globePoints} onPointClick={() => navigate("/register")} />
+            <Suspense
+              fallback={
+                <div className="h-[400px] sm:h-[500px] w-full flex items-center justify-center bg-slate-900 rounded-2xl">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-3"></div>
+                    <p className="text-slate-300 text-sm font-medium">Chargement du globe 3D...</p>
+                  </div>
+                </div>
+              }
+            >
+              <QuizGlobe points={globePoints} onPointClick={() => navigate("/register")} />
+            </Suspense>
           </div>
         </div>
       </section>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotifications } from "../../contexts/NotificationContext";
@@ -6,7 +6,6 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { Avatar } from "../common/Avatar";
 import {
   Trophy,
-  User,
   Home,
   BookOpen,
   Users,
@@ -14,11 +13,6 @@ import {
   Swords,
   MessageCircle,
   X,
-  CheckCircle,
-  Mail,
-  UserPlus,
-  Info,
-  AlertCircle,
 } from "lucide-react";
 
 export function Navbar() {
@@ -31,14 +25,6 @@ export function Navbar() {
     pendingFriendRequests,
     pendingDuelsToPlay,
     newDuelResults,
-    duelNotification,
-    messageNotification,
-    friendRequestNotification,
-    appNotification,
-    clearDuelNotification,
-    clearMessageNotification,
-    clearFriendRequestNotification,
-    clearAppNotification,
   } = useNotifications();
   const { t } = useLanguage();
   const [socialMenuOpen, setSocialMenuOpen] = useState(false);
@@ -49,268 +35,8 @@ export function Navbar() {
     (pendingDuelsToPlay || 0) +
     (newDuelResults || 0);
 
-  // Auto-fermeture des toasts
-  useEffect(() => {
-    if (duelNotification) {
-      const timer = setTimeout(clearDuelNotification, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [duelNotification, clearDuelNotification]);
-
-  useEffect(() => {
-    if (messageNotification) {
-      const timer = setTimeout(clearMessageNotification, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [messageNotification, clearMessageNotification]);
-
-  useEffect(() => {
-    if (friendRequestNotification) {
-      const timer = setTimeout(clearFriendRequestNotification, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [friendRequestNotification, clearFriendRequestNotification]);
-
-  useEffect(() => {
-    if (appNotification) {
-      const timer = setTimeout(clearAppNotification, 4500);
-      return () => clearTimeout(timer);
-    }
-  }, [appNotification, clearAppNotification]);
-
   return (
     <>
-      {/* Toast Message */}
-      {messageNotification && (
-        <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-          <div className="bg-white shadow-2xl rounded-xl border-2 border-blue-500 p-4 max-w-sm">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <Mail className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-gray-900">
-                  {t("notifications.newMessage")}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  <span className="font-medium">
-                    {messageNotification.from}
-                  </span>{" "}
-                  : {messageNotification.message.substring(0, 50)}
-                  {messageNotification.message.length > 50 && "..."}
-                </p>
-                <button
-                  onClick={() => {
-                    navigate("/chat");
-                    clearMessageNotification();
-                  }}
-                  className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  {t("notifications.viewMessage")}
-                </button>
-              </div>
-              <button
-                onClick={clearMessageNotification}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Friend Request */}
-      {friendRequestNotification && (
-        <div className="fixed top-36 right-4 z-50 animate-slide-in-right">
-          <div className="bg-white shadow-2xl rounded-xl border-2 border-purple-500 p-4 max-w-sm">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <UserPlus className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-gray-900">
-                  {t("notifications.newFriendRequest")}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  <span className="font-medium">
-                    {friendRequestNotification.from}
-                  </span>{" "}
-                  {t("notifications.wantsFriend")}
-                </p>
-                <button
-                  onClick={() => {
-                    navigate("/friends");
-                    clearFriendRequestNotification();
-                  }}
-                  className="mt-3 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                >
-                  {t("notifications.viewRequests")}
-                </button>
-              </div>
-              <button
-                onClick={clearFriendRequestNotification}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Duel */}
-      {duelNotification && (
-        <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-          <div className="bg-white shadow-2xl rounded-xl border-2 border-emerald-500 p-4 max-w-sm">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                {duelNotification.type === "invitation" && (
-                  <Swords className="w-6 h-6 text-emerald-600" />
-                )}
-                {duelNotification.type === "accepted" && (
-                  <CheckCircle className="w-6 h-6 text-blue-600" />
-                )}
-                {duelNotification.type === "completed" && (
-                  <Trophy className="w-6 h-6 text-yellow-600" />
-                )}
-                {duelNotification.type === "found" && (
-                  <Swords className="w-6 h-6 text-purple-600" />
-                )}
-              </div>
-              <div className="flex-1">
-                {duelNotification.type === "invitation" && (
-                  <>
-                    <CheckCircle className="w-6 h-6 text-emerald-600 flex-shrink-0" />
-                    <div
-                      className="cursor-pointer flex-1"
-                      onClick={() => {
-                        navigate("/duels", { state: { tab: "invitations" } });
-                        clearDuelNotification();
-                      }}
-                    >
-                      <strong>{duelNotification.from}</strong>{" "}
-                      {t("notifications.challengedYou")}{" "}
-                      <strong>{duelNotification.quizTitle}</strong>
-                    </div>
-                  </>
-                )}
-                {duelNotification.type === "accepted" && (
-                  <>
-                    <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
-                    <div
-                      className="cursor-pointer flex-1"
-                      onClick={() => {
-                        navigate("/duels", { state: { tab: "active" } });
-                        clearDuelNotification();
-                      }}
-                    >
-                      <strong>{duelNotification.from}</strong>{" "}
-                      {t("notifications.acceptedDuel")}{" "}
-                      <strong>{duelNotification.quizTitle}</strong>
-                    </div>
-                  </>
-                )}
-                {duelNotification.type === "completed" && (
-                  <>
-                    <Trophy className="w-6 h-6 text-yellow-600 flex-shrink-0" />
-                    <div
-                      className="cursor-pointer flex-1"
-                      onClick={() => {
-                        navigate("/duels", { state: { tab: "history" } });
-                        clearDuelNotification();
-                      }}
-                    >
-                      {t("notifications.duelFinished")}{" "}
-                      <strong>{duelNotification.from}</strong>{" "}
-                      {t("notifications.on")}{" "}
-                      <strong>{duelNotification.quizTitle}</strong>
-                    </div>
-                  </>
-                )}
-                {duelNotification.type === "found" && (
-                  <>
-                    <Swords className="w-6 h-6 text-purple-600 flex-shrink-0" />
-                    <div
-                      className="cursor-pointer flex-1"
-                      onClick={() => {
-                        navigate("/duels", { state: { tab: "matchmaking" } });
-                        clearDuelNotification();
-                      }}
-                    >
-                      <strong>{t("duels.matchFound")}</strong> -{" "}
-                      <strong>{duelNotification.from}</strong>{" "}
-                      {t("notifications.on")} <strong>{duelNotification.quizTitle}</strong>
-                    </div>
-                  </>
-                )}
-                <button
-                  onClick={() => {
-                    if (duelNotification.type === "completed") {
-                      navigate("/duels", { state: { tab: "history" } });
-                    } else if (duelNotification.type === "found") {
-                      navigate("/duels", { state: { tab: "matchmaking" } });
-                    } else if (duelNotification.type === "accepted") {
-                      navigate("/duels", { state: { tab: "active" } });
-                    } else {
-                      navigate("/duels", { state: { tab: "invitations" } });
-                    }
-                    clearDuelNotification();
-                  }}
-                  className="mt-3 w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
-                >
-                  {duelNotification.type === "completed"
-                    ? t("duels.viewResults")
-                    : t("notifications.viewDuels")}
-                </button>
-              </div>
-              <button
-                onClick={clearDuelNotification}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast App */}
-      {appNotification && (
-        <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-          <div
-            className={`bg-white shadow-2xl rounded-xl border-2 p-4 max-w-sm ${
-              appNotification.type === "success"
-                ? "border-emerald-500"
-                : appNotification.type === "error"
-                ? "border-red-500"
-                : "border-sky-500"
-            }`}
-          >
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                {appNotification.type === "success" ? (
-                  <CheckCircle className="w-6 h-6 text-emerald-600" />
-                ) : appNotification.type === "error" ? (
-                  <AlertCircle className="w-6 h-6 text-red-600" />
-                ) : (
-                  <Info className="w-6 h-6 text-sky-600" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-800">{appNotification.message}</p>
-              </div>
-              <button
-                onClick={clearAppNotification}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <nav className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -452,7 +178,10 @@ export function Navbar() {
               </button>
 
               <button
+                type="button"
                 onClick={() => navigate("/profile")}
+                aria-label={t("nav.profile")}
+                title={t("nav.profile")}
                 className={`hidden md:block p-2 rounded-lg transition-colors ${
                   currentView.startsWith("/profile")
                     ? "bg-emerald-100 text-emerald-700"
@@ -494,7 +223,11 @@ export function Navbar() {
           </button>
 
           <button
+            type="button"
             onClick={() => setSocialMenuOpen(!socialMenuOpen)}
+            aria-label={t("nav.social")}
+            aria-expanded={socialMenuOpen}
+            aria-haspopup="dialog"
             className={`flex flex-col items-center justify-center transition-colors relative ${
               currentView.startsWith("/friends") || currentView.startsWith("/duels") || currentView.startsWith("/chat")
                 ? "text-emerald-600"
@@ -546,6 +279,9 @@ export function Navbar() {
           onClick={() => setSocialMenuOpen(false)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("nav.social")}
             className="fixed bottom-16 left-0 right-0 bg-white rounded-t-2xl shadow-2xl p-4 animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
@@ -554,10 +290,13 @@ export function Navbar() {
                 {t("nav.social")}
               </h3>
               <button
+                type="button"
                 onClick={() => setSocialMenuOpen(false)}
+                aria-label={t("common.close")}
+                title={t("common.close")}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5 text-gray-600" aria-hidden="true" />
               </button>
             </div>
 

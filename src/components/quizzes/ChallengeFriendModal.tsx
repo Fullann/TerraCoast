@@ -112,17 +112,25 @@ export function ChallengeFriendModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="challenge-modal-title"
+        className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-            <Target className="w-6 h-6 mr-2 text-emerald-600" />
+          <h2 id="challenge-modal-title" className="text-2xl font-bold text-gray-800 flex items-center">
+            <Target className="w-6 h-6 mr-2 text-emerald-600" aria-hidden="true" />
             {t("challenge.title")}
           </h2>
           <button
+            type="button"
             onClick={onClose}
+            aria-label={t("common.close")}
+            title={t("common.close")}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
           </button>
         </div>
 

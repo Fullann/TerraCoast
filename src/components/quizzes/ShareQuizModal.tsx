@@ -3,9 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Share2, X } from 'lucide-react';
-import type { Database } from '../../lib/database.types';
-
-type Profile = Database['public']['Tables']['profiles']['Row'];
+import { useFriendsQuery } from '../../lib/queries/friendQueries';
 
 interface ShareQuizModalProps {
   quizId: string;
@@ -16,47 +14,21 @@ interface ShareQuizModalProps {
 export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalProps) {
   const { profile } = useAuth();
   const { t } = useLanguage();
-  const [friends, setFriends] = useState<Profile[]>([]);
+  const { data: friends = [], isLoading: loadingFriends } = useFriendsQuery(profile?.id);
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    loadFriends();
-  }, []);
-
-  const loadFriends = async () => {
-    if (!profile) return;
-
-    // Charger les amitiés où l'utilisateur est l'expéditeur
-    const { data: friendshipsAsSender } = await supabase
-      .from('friendships')
-      .select('friend_profile:profiles!friendships_friend_id_fkey(*)')
-      .eq('user_id', profile.id)
-      .eq('status', 'accepted')
-      .eq('friend_profile.is_banned', false); // Filtrer les utilisateurs bannis
-
-    // Charger les amitiés où l'utilisateur est le destinataire
-    const { data: friendshipsAsReceiver } = await supabase
-      .from('friendships')
-      .select('user_profile:profiles!friendships_user_id_fkey(*)')
-      .eq('friend_id', profile.id)
-      .eq('status', 'accepted')
-      .eq('user_profile.is_banned', false); // Filtrer les utilisateurs bannis
-
-    // Combiner et filtrer les amis
-    const allFriends: Profile[] = [
-      ...(friendshipsAsSender?.map((f: any) => f.friend_profile).filter(Boolean) || []),
-      ...(friendshipsAsReceiver?.map((f: any) => f.user_profile).filter(Boolean) || []),
-    ];
-
-    const uniqueFriends = Array.from(
-      new Map(allFriends.map((friend) => [friend.id, friend])).values()
-    ).sort((a, b) => a.pseudo.localeCompare(b.pseudo));
-
-    setFriends(uniqueFriends);
-  };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const toggleFriend = (friendId: string) => {
     if (selectedFriends.includes(friendId)) {
@@ -100,17 +72,25 @@ export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalPro
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-quiz-modal-title"
+        className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+      >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-            <Share2 className="w-6 h-6 mr-2 text-emerald-600" />
+          <h2 id="share-quiz-modal-title" className="text-2xl font-bold text-gray-800 flex items-center">
+            <Share2 className="w-6 h-6 mr-2 text-emerald-600" aria-hidden="true" />
             {t('share.title')}
           </h2>
           <button
+            type="button"
             onClick={onClose}
+            aria-label={t("common.close")}
+            title={t("common.close")}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
           </button>
         </div>
 
@@ -128,7 +108,11 @@ export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalPro
               {t('share.shareWith').replace('{title}', quizTitle)}
             </p>
 
-            {friends.length === 0 ? (
+            {loadingFriends ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+              </div>
+            ) : friends.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">{t('friends.noFriends')}</p>
               </div>

@@ -1,4 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from "react";
+import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface Props {
   children?: ReactNode;
@@ -9,6 +11,74 @@ interface State {
   error: Error | null;
 }
 
+interface FallbackProps {
+  error: Error | null;
+  onReset: () => void;
+}
+
+function ErrorFallback({ error, onReset }: FallbackProps) {
+  let t = (key: string) => {
+    const defaults: Record<string, string> = {
+      "error.title": "Oups ! Une erreur est survenue.",
+      "error.message": "L'application a rencontré un problème inattendu.",
+      "error.returnHome": "Retour à l'accueil",
+      "error.reload": "Recharger la page",
+    };
+    return defaults[key] || key;
+  };
+
+  try {
+    const langContext = useLanguage();
+    if (langContext && typeof langContext.t === "function") {
+      t = langContext.t;
+    }
+  } catch (_) {
+    // Si l'erreur survient en dehors ou avant le montage du LanguageProvider
+  }
+
+  return (
+    <div
+      role="alert"
+      className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4"
+    >
+      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-gray-100">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600">
+          <AlertTriangle className="w-8 h-8" aria-hidden="true" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          {t("error.title")}
+        </h1>
+        <p className="text-gray-600 mb-6 text-sm">
+          {t("error.message")}
+        </p>
+        {error?.message && (
+          <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-left text-xs font-mono text-red-700 overflow-auto mb-6 max-h-36">
+            {error.message}
+          </div>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-medium text-sm transition-colors cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4" aria-hidden="true" />
+            {t("error.reload")}
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-sm transition-colors shadow-sm cursor-pointer"
+          >
+            <Home className="w-4 h-4" aria-hidden="true" />
+            {t("error.returnHome")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
@@ -16,7 +86,6 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI.
     return { hasError: true, error };
   }
 
@@ -24,29 +93,18 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("Uncaught error:", error, errorInfo);
   }
 
+  private handleReset = () => {
+    this.setState({ hasError: false, error: null });
+    window.location.href = "/";
+  };
+
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Oups ! Une erreur est survenue.</h1>
-            <p className="text-gray-600 mb-6">
-              L'application a rencontré un problème inattendu.
-            </p>
-            <div className="bg-gray-100 p-4 rounded text-left text-sm text-red-500 overflow-auto mb-6 max-h-40">
-              {this.state.error?.message}
-            </div>
-            <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.href = "/";
-              }}
-              className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
-            >
-              Retour à l'accueil
-            </button>
-          </div>
-        </div>
+        <ErrorFallback
+          error={this.state.error}
+          onReset={this.handleReset}
+        />
       );
     }
 

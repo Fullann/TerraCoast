@@ -10,12 +10,16 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { LandingPage } from "./components/landing/LandingPage";
 import { AdminDashboardLayout } from "./components/admin/layout/AdminDashboardLayout";
 import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 import { PageTransition } from "./components/ui/PageTransition";
+import { ToastContainer } from "./components/common/ToastContainer";
+import { OfflineIndicator } from "./components/common/OfflineIndicator";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 
-// Pages protégées (Lazy Loading - chargées uniquement si l'utilisateur est connecté)
+// Pages avec Lazy Loading
+const LandingPage = lazy(() => import("./components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
 const HomePage = lazy(() => import("./components/home/HomePage").then(m => ({ default: m.HomePage })));
 const ProfilePage = lazy(() => import("./components/profile/ProfilePage").then(m => ({ default: m.ProfilePage })));
 const SettingsPage = lazy(() => import("./components/profile/SettingsPage").then(m => ({ default: m.SettingsPage })));
@@ -87,10 +91,12 @@ function AppContent() {
   return (
     // PAS de Suspense global ici - chaque route lazy a le sien
     <ErrorBoundary>
+      <ToastContainer />
+      <OfflineIndicator />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
       {/* ── Routes publiques ── statiques, transition immédiate */}
-      <Route path="/" element={!user ? <LandingPage /> : <Navigate to="/terra" replace />} />
+      <Route path="/" element={!user ? <Lazy><LandingPage /></Lazy> : <Navigate to="/terra" replace />} />
 
       <Route path="/login" element={!user ? (
         <PageTransition>
@@ -138,10 +144,12 @@ function AppContent() {
         <Route path="/quizzes/edit/:quizId" element={<Lazy><EditQuizPage /></Lazy>} />
         <Route path="/quizzes/play/:quizId" element={<Lazy><PlayQuizPage /></Lazy>} />
         <Route path="/quizzes/training" element={<Lazy><TrainingModePage /></Lazy>} />
+        <Route path="/quizzes/training/:quizId" element={<Lazy><PlayQuizPage trainingMode={true} /></Lazy>} />
 
         <Route path="/leaderboard" element={<Lazy><LeaderboardPage /></Lazy>} />
         <Route path="/friends" element={<Lazy><FriendsPage /></Lazy>} />
         <Route path="/duels" element={<Lazy><DuelsPage /></Lazy>} />
+        <Route path="/duels/play/:duelId" element={<Lazy><PlayQuizPage mode="duel" /></Lazy>} />
         <Route path="/chat" element={<Lazy><ChatPage /></Lazy>} />
         <Route path="/chat/:friendId" element={<Lazy><ChatPage /></Lazy>} />
       </Route>
@@ -175,12 +183,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <NotificationProvider>
-          <AppContent />
-        </NotificationProvider>
-      </LanguageProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <LanguageProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

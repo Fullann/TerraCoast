@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
-import { useLanguage } from "../../contexts/LanguageContext";
 import {
   Users,
   Search,
-  ArrowLeft,
   RotateCcw,
   Trash2,
   Shield,
@@ -19,14 +17,13 @@ import type { Database } from "../../lib/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
-interface UserManagementPageProps {
+export interface UserManagementPageProps {
   onNavigate?: (view: string, data?: any) => void;
 }
 
-export function UserManagementPage() {
+export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPageProps = {}) {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { t } = useLanguage();
   const [users, setUsers] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
@@ -57,7 +54,7 @@ export function UserManagementPage() {
       query = query.eq("is_banned", true);
     }
 
-    const { data, error } = await query
+    const { data } = await query
       .order(
         sortBy === "created"
           ? "created_at"
@@ -471,9 +468,7 @@ export function UserManagementPage() {
                   >
                     <td className="px-6 py-4">
                       <button
-                        onClick={() =>
-                          onNavigate?.("view-profile", { userId: user.id })
-                        }
+                        onClick={() => navigate(`/profile/${user.id}`)}
                         className="font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
                       >
                         {user.pseudo}

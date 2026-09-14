@@ -1,12 +1,17 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useNotifications } from "../../contexts/NotificationContext";
-import { MessageCircle, Send, ArrowLeft } from "lucide-react";
+import {
+  Send,
+  ArrowLeft,
+  MessageCircle,
+} from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { Avatar } from "../common/Avatar";
+import { fetchUserFriends } from "../../lib/queries/friendQueries";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
@@ -15,18 +20,21 @@ interface MessageWithUser extends ChatMessage {
   from_profile: Profile | null;
 }
 
-interface ChatPageProps {
+export interface ChatPageProps {
   friendId?: string;
-  onNavigate: (view: string) => void;
+  onNavigate?: (view: string) => void;
 }
 
-export function ChatPage({  friendId }: any) {
+export function ChatPage({ friendId: propFriendId }: ChatPageProps = {}) {
   const navigate = useNavigate();
+  const params = useParams<{ friendId?: string }>();
+  const friendId = propFriendId || params.friendId;
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { refreshNotifications } = useNotifications();
   const [friends, setFriends] = useState<Profile[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Profile | null>(null);
+  const selectedFriendRef = useRef<Profile | null>(null);
   const [messages, setMessages] = useState<MessageWithUser[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,12 +42,16 @@ export function ChatPage({  friendId }: any) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    selectedFriendRef.current = selectedFriend;
+  }, [selectedFriend]);
+
+  useEffect(() => {
     loadFriends();
 
     if (!profile) return;
 
     const allMessagesSubscription = supabase
-      .channel("all_messages_notifications")
+      .channel(`all_messages_notifications_${profile.id}`)
       .on(
         "postgres_changes",
         {
@@ -50,7 +62,7 @@ export function ChatPage({  friendId }: any) {
         },
         (payload) => {
           const newMsg = payload.new as ChatMessage;
-          if (selectedFriend?.id !== newMsg.from_user_id) {
+          if (selectedFriendRef.current?.id !== newMsg.from_user_id) {
             setUnreadCounts((prev) => ({
               ...prev,
               [newMsg.from_user_id]: (prev[newMsg.from_user_id] || 0) + 1,
@@ -61,9 +73,9 @@ export function ChatPage({  friendId }: any) {
       .subscribe();
 
     return () => {
-      allMessagesSubscription.unsubscribe();
+      supabase.removeChannel(allMessagesSubscription);
     };
-  }, [profile, selectedFriend]);
+  }, [profile?.id]);
 
   useEffect(() => {
     if (friendId) {
@@ -94,7 +106,19 @@ export function ChatPage({  friendId }: any) {
               (newMsg.from_user_id === profile.id &&
                 newMsg.to_user_id === selectedFriend.id)
             ) {
-              loadMessages();
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === newMsg.id)) return prev;
+                return [
+                  ...prev,
+                  {
+                    ...newMsg,
+                    from_profile:
+                      newMsg.from_user_id === profile.id
+                        ? profile
+                        : selectedFriend,
+                  },
+                ];
+              });
               if (newMsg.from_user_id === selectedFriend.id) {
                 markMessagesAsRead();
               }
@@ -104,10 +128,10 @@ export function ChatPage({  friendId }: any) {
         .subscribe();
 
       return () => {
-        subscription.unsubscribe();
+        supabase.removeChannel(subscription);
       };
     }
-  }, [selectedFriend, profile]);
+  }, [selectedFriend?.id, profile?.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -116,41 +140,19 @@ export function ChatPage({  friendId }: any) {
   const loadFriends = async () => {
     if (!profile) return;
 
-    const { data: friendshipsAsSender } = await supabase
-      .from("friendships")
-      .select("friend_profile:profiles!friendships_friend_id_fkey(*)")
-      .eq("user_id", profile.id)
-      .eq("status", "accepted")
-      .eq("friend_profile.is_banned", false);
-
-    const { data: friendshipsAsReceiver } = await supabase
-      .from("friendships")
-      .select("user_profile:profiles!friendships_user_id_fkey(*)")
-      .eq("friend_id", profile.id)
-      .eq("status", "accepted")
-      .eq("user_profile.is_banned", false);
-
-    const allFriends: Profile[] = [
-      ...(friendshipsAsSender
-        ?.map((f: any) => f.friend_profile)
-        .filter(Boolean) || []),
-      ...(friendshipsAsReceiver
-        ?.map((f: any) => f.user_profile)
-        .filter(Boolean) || []),
-    ];
-
+    const allFriends = await fetchUserFriends(profile.id);
     setFriends(allFriends);
 
+    const { data: unreadData } = await supabase
+      .from("chat_messages")
+      .select("from_user_id")
+      .eq("to_user_id", profile.id)
+      .eq("is_read", false);
+
     const counts: Record<string, number> = {};
-    for (const friend of allFriends) {
-      const { count } = await supabase
-        .from("chat_messages")
-        .select("*", { count: "exact", head: true })
-        .eq("from_user_id", friend.id)
-        .eq("to_user_id", profile.id)
-        .eq("is_read", false);
-      counts[friend.id] = count || 0;
-    }
+    (unreadData || []).forEach((msg) => {
+      counts[msg.from_user_id] = (counts[msg.from_user_id] || 0) + 1;
+    });
     setUnreadCounts(counts);
   };
 
@@ -241,7 +243,10 @@ export function ChatPage({  friendId }: any) {
                 friends.map((friend) => (
                   <button
                     key={friend.id}
-                    onClick={() => setSelectedFriend(friend)}
+                    onClick={() => {
+                      setSelectedFriend(friend);
+                      navigate(`/chat/${friend.id}`, { replace: true });
+                    }}
                     className={`w-full p-4 text-left hover:bg-gray-50 transition-colors relative ${
                       selectedFriend?.id === friend.id ? "bg-emerald-50" : ""
                     }`}
@@ -281,11 +286,7 @@ export function ChatPage({  friendId }: any) {
                 <div className="p-4 border-b border-gray-200 bg-gray-50">
                   <div
                     className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() =>
-                      onNavigate?.("view-profile", {
-                        userId: selectedFriend.id,
-                      })
-                    }
+                    onClick={() => navigate(`/profile/${selectedFriend.id}`)}
                   >
                     <Avatar
                       url={(selectedFriend as any).avatar_url}

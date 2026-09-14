@@ -25,6 +25,8 @@ type WorldCountry = {
   translations?: Record<string, { common?: string; official?: string }>;
   flag?: string;
   continents?: string[];
+  region?: string;
+  subregion?: string;
   latlng?: number[];
   population?: number;
   area?: number;
@@ -46,27 +48,75 @@ const rawByIso3 = new Map<string, WorldCountry>(
     .filter(([iso]) => Boolean(iso))
 );
 
-const normalizedCountries: CountryGameEntry[] = (countries as any[])
-  .map((country) => ({
-    iso3: String(country.cca3 || "").toUpperCase(),
-    numericCode: Number.isFinite(Number(country.ccn3))
-      ? Number(country.ccn3)
-      : null,
-    name: String(country.name?.common || "").trim(),
-    capital: Array.isArray(country.capital)
-      ? String(country.capital[0] || "").trim()
-      : "",
-    flagEmoji: String(country.flag || "").trim(),
-    continent: String(
-      Array.isArray(country.continents) && country.continents.length > 0
-        ? country.continents[0]
-        : "Other"
-    ),
-    lat: Array.isArray(country.latlng) ? Number(country.latlng[0] || 0) : 0,
-    lng: Array.isArray(country.latlng) ? Number(country.latlng[1] || 0) : 0,
-    population: Number(country.population || 0),
-    area_km2: Number(country.area || 0),
-  }))
+const estimatedPopulationsByIso3: Record<string, number> = {
+  IND: 1428627000,
+  CHN: 1425671000,
+  USA: 339996000,
+  IDN: 277534000,
+  PAK: 240485000,
+  NGA: 223804000,
+  BRA: 216422000,
+  BGD: 172954000,
+  RUS: 144444000,
+  MEX: 128455000,
+  ETH: 126527000,
+  JPN: 123294000,
+  PHL: 117337000,
+  EGY: 112716000,
+  COD: 102262000,
+  VNM: 98858000,
+  IRN: 89172000,
+  TUR: 85816000,
+  DEU: 84482000,
+  THA: 71801000,
+  GBR: 67736000,
+  FRA: 68000000,
+  ITA: 58870000,
+  ZAF: 60414000,
+  ESP: 48059000,
+  COL: 52085000,
+  KOR: 51784000,
+  ARG: 46044000,
+  CAN: 38929000,
+  POL: 37749000,
+  MAR: 37840000,
+  SAU: 36947000,
+  UKR: 38000000,
+  AUS: 26000000,
+  CHE: 8770000,
+  BEL: 11590000,
+  NLD: 17700000,
+  GRC: 10430000,
+  PRT: 10330000,
+  SWE: 10490000,
+  NOR: 5460000,
+  DNK: 5900000,
+  FIN: 5540000,
+};
+
+const normalizedCountries: CountryGameEntry[] = (countries as unknown as WorldCountry[])
+  .map((country) => {
+    const iso3 = String(country.cca3 || "").toUpperCase();
+    const ccn3 = country.ccn3 ? String(country.ccn3).trim() : "";
+    return {
+      iso3,
+      numericCode: ccn3 && Number.isFinite(Number(ccn3)) ? Number(ccn3) : null,
+      name: String(country.name?.common || "").trim(),
+      capital: Array.isArray(country.capital)
+        ? String(country.capital[0] || "").trim()
+        : "",
+      flagEmoji: String(country.flag || "").trim(),
+      continent: String(
+        (Array.isArray(country.continents) && country.continents.length > 0 && country.continents[0]) ||
+          country.region ||
+          "Other"
+      ),
+      lat: Array.isArray(country.latlng) ? Number(country.latlng[0] || 0) : 0,
+      lng: Array.isArray(country.latlng) ? Number(country.latlng[1] || 0) : 0,
+      population: estimatedPopulationsByIso3[iso3] || Number(country.population || 0),
+      area_km2: Number(country.area || 0),
+    };
+  })
   .filter((country) => country.iso3 && country.name);
 
 const frenchCapitalAliasesByIso3: Record<string, string[]> = {
@@ -164,6 +214,7 @@ export function getCountries(continent?: string): CountryGameEntry[] {
   if (normalized === "Americas") {
     return normalizedCountries.filter(
       (country) =>
+        country.continent === "Americas" ||
         country.continent === "North America" ||
         country.continent === "South America"
     );
@@ -183,8 +234,9 @@ export function getCountriesByIso3(iso3List: string[]): CountryGameEntry[] {
 }
 
 export function getIso3ByNumericCode(code: number | string | null | undefined): string {
+  if (code == null || code === "") return "";
   const normalized = Number(code);
-  if (!Number.isFinite(normalized)) return "";
+  if (!Number.isFinite(normalized) || normalized <= 0) return "";
   const match = normalizedCountries.find(
     (country) => country.numericCode === normalized
   );

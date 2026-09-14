@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
-import { Language, translate, detectUserLanguage } from '../i18n/translations';
+import { Language, translate, detectUserLanguage, loadLanguage } from '../i18n/translations';
 
 interface LanguageContextType {
   language: Language;
@@ -17,28 +17,34 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const [language, setLanguageState] = useState<Language>('fr');
   const [showAllLanguages, setShowAllLanguagesState] = useState(false);
+  const [, setLoadedVersion] = useState(0);
 
   useEffect(() => {
+    const lang = profile ? ((profile.language as Language) || 'fr') : detectUserLanguage();
+    setLanguageState(lang);
+    document.documentElement.lang = lang;
     if (profile) {
-      setLanguageState((profile.language as Language) || 'fr');
       setShowAllLanguagesState(profile.show_all_languages || false);
-    } else {
-      const detectedLang = detectUserLanguage();
-      setLanguageState(detectedLang);
     }
+    loadLanguage(lang).then(() => {
+      setLoadedVersion((v) => v + 1);
+    });
   }, [profile]);
 
-  const setLanguage = async (lang: Language) => {
+  const setLanguage = useCallback(async (lang: Language) => {
     setLanguageState(lang);
+    document.documentElement.lang = lang;
+    await loadLanguage(lang);
+    setLoadedVersion((v) => v + 1);
     if (profile) {
       await supabase
         .from('profiles')
         .update({ language: lang })
         .eq('id', profile.id);
     }
-  };
+  }, [profile]);
 
-  const setShowAllLanguages = async (show: boolean) => {
+  const setShowAllLanguages = useCallback(async (show: boolean) => {
     setShowAllLanguagesState(show);
     if (profile) {
       await supabase
@@ -46,12 +52,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         .update({ show_all_languages: show })
         .eq('id', profile.id);
     }
-  };
+  }, [profile]);
 
-  const t = (key: string) => translate(key, language);
+  const t = useCallback((key: string) => translate(key, language), [language]);
+
+  const value = useMemo(
+    () => ({ language, setLanguage, t, showAllLanguages, setShowAllLanguages }),
+    [language, setLanguage, t, showAllLanguages, setShowAllLanguages]
+  );
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, showAllLanguages, setShowAllLanguages }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

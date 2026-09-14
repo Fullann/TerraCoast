@@ -733,7 +733,7 @@ export function PuzzleMapQuestion({
                             : "default",
                         },
                       }}
-                      onMouseEnter={(e) => {
+                      onMouseEnter={(e: React.MouseEvent) => {
                         if (!label) return;
                         const key = geoKey || String(geo?.rsmKey || "");
                         setHoveredKey(key);
@@ -748,7 +748,7 @@ export function PuzzleMapQuestion({
                           );
                         }, 650);
                       }}
-                      onMouseMove={(e) => {
+                      onMouseMove={(e: React.MouseEvent) => {
                         if (!hoverTooltip.open) return;
                         const x = (e as unknown as MouseEvent).clientX;
                         const y = (e as unknown as MouseEvent).clientY;

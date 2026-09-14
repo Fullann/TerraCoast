@@ -60,11 +60,11 @@ interface TrendPoint {
   activePlayers: number;
 }
 
-interface AdminPageProps {
+export interface AdminPageProps {
   onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
-export function AdminPage() {
+export function AdminPage({ onNavigate }: AdminPageProps = {}) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
@@ -136,7 +136,7 @@ export function AdminPage() {
       p_action: action,
       p_entity_type: entityType,
       p_entity_id: entityId,
-      p_details: details,
+      p_details: details as any,
     });
   };
 
@@ -417,6 +417,22 @@ export function AdminPage() {
 
   const goToSection = async (view: string, label: string) => {
     await logAdminEvent("open_admin_section", "navigation", view, { label });
+    const viewToPath: Record<string, string> = {
+      "admin": "/admin",
+      "admin-analytics": "/admin/analytics",
+      "quiz-management": "/admin/quizzes",
+      "quiz-validation": "/admin/validation",
+      "geojson-maps-management": "/admin/geojson",
+      "warnings-management": "/admin/warnings",
+      "user-management": "/admin/users",
+      "duel-features": "/admin/duels",
+      "badge-management": "/admin/badges",
+      "title-management": "/admin/titles",
+      "category-management": "/admin/categories",
+      "difficulty-management": "/admin/difficulties",
+      "quiz-type-management": "/admin/types",
+    };
+    navigate(viewToPath[view] ?? `/admin/${view}`);
     onNavigate?.(view);
   };
 

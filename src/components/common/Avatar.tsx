@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import { User } from "lucide-react";
 
 type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -75,35 +75,34 @@ export function Avatar({
   size = "md",
   className = "",
 }: AvatarProps) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [url]);
+
   const { px, text } = sizeMap[size];
   const initials = initialsFromPseudo(pseudo);
   const style = normalizeFrameStyle(frameStyle);
 
-  const outerClasses =
-    style === "rainbow"
-      ? `rounded-full ${frameClass(style)}`
-      : `rounded-full ${frameClass(style)}`;
-
-  const innerClasses =
-    style === "rainbow"
-      ? "rounded-full bg-white"
-      : "rounded-full bg-white";
-
+  const outerClasses = `rounded-full ${frameClass(style)}`;
+  const innerClasses = "rounded-full bg-white";
   const outerStyle: CSSProperties = { width: px, height: px };
 
   return (
     <div className={`${outerClasses} ${className}`} style={outerStyle}>
       <div className={`${innerClasses} w-full h-full overflow-hidden flex items-center justify-center`}>
-        {url ? (
+        {url && !imgFailed ? (
           <img
             src={url}
             alt={pseudo || "avatar"}
             className="w-full h-full object-cover"
             loading="lazy"
             referrerPolicy="no-referrer"
+            onError={() => setImgFailed(true)}
           />
         ) : initials ? (
-          <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 font-bold ${text}`}>
+          <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-100 to-teal-200 text-emerald-800 font-bold ${text}`}>
             {initials}
           </div>
         ) : (

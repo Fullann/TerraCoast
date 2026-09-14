@@ -18,11 +18,11 @@ import {
   Shield,
 } from "lucide-react";
 
-interface SettingsPageProps {
-  onNavigate: (view: string) => void;
+export interface SettingsPageProps {
+  onNavigate?: (view: string) => void;
 }
 
-export function SettingsPage() {
+export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}) {
   const navigate = useNavigate();
   const { profile, user, refreshProfile } = useAuth();
   const { language, setLanguage, showAllLanguages, setShowAllLanguages, t } =
@@ -50,16 +50,6 @@ export function SettingsPage() {
   const EMAIL_UPDATE_COOLDOWN_MS = 60_000;
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [frameSaving, setFrameSaving] = useState(false);
-
-  const isMfaStepUpError = (message?: string) => {
-    const msg = (message || "").toLowerCase();
-    return (
-      msg.includes("mfa") ||
-      msg.includes("factor") ||
-      msg.includes("aal2") ||
-      msg.includes("challenge")
-    );
-  };
 
   const ensureValidAuthSession = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -362,7 +352,7 @@ export function SettingsPage() {
   };
 
   const updatePseudo = async () => {
-    if (!pseudo.trim()) {
+    if (!pseudo.trim() || !profile?.id) {
       setError(t("settings.pseudoRequired"));
       return;
     }
@@ -374,7 +364,7 @@ export function SettingsPage() {
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ pseudo: pseudo.trim() })
-      .eq("id", profile?.id);
+      .eq("id", profile.id);
 
     if (updateError) {
       setError(t("settings.pseudoUpdateError"));

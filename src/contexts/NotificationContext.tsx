@@ -5,6 +5,7 @@ import {
   useEffect,
   ReactNode,
   useCallback,
+  useMemo,
 } from "react";
 import { supabase } from "../lib/supabase";
 import type { Database } from "../lib/database.types";
@@ -84,7 +85,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const refreshNotifications = async () => {
+  const refreshNotifications = useCallback(async () => {
     if (!profile) return;
 
     const { count: messagesCount } = await supabase
@@ -157,27 +158,38 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       setNewDuelResults(newResults);
     }
-  };
+  }, [profile]);
 
-  const clearDuelNotification = () => setDuelNotification(null);
-  const showDuelNotification = (notification: DuelNotification) =>
-    setDuelNotification(notification);
-  const clearMessageNotification = () => setMessageNotification(null);
-  const clearFriendRequestNotification = () =>
-    setFriendRequestNotification(null);
-  const showAppNotification = (notification: AppNotification) =>
-    setAppNotification(notification);
-  const clearAppNotification = () => setAppNotification(null);
+  const clearDuelNotification = useCallback(() => setDuelNotification(null), []);
+  const showDuelNotification = useCallback(
+    (notification: DuelNotification) => setDuelNotification(notification),
+    []
+  );
+  const clearMessageNotification = useCallback(
+    () => setMessageNotification(null),
+    []
+  );
+  const clearFriendRequestNotification = useCallback(
+    () => setFriendRequestNotification(null),
+    []
+  );
+  const showAppNotification = useCallback(
+    (notification: AppNotification) => setAppNotification(notification),
+    []
+  );
+  const clearAppNotification = useCallback(() => setAppNotification(null), []);
 
   useEffect(() => {
     if (!profile) return;
     refreshNotifications();
     const interval = setInterval(() => {
-      refreshNotifications();
-    }, 30000);
+      if (document.visibilityState === "visible") {
+        refreshNotifications();
+      }
+    }, 60000);
 
-    const messagesSubscription = supabase
-      .channel("notifications_messages")
+    const notificationChannel = supabase
+      .channel(`user_notifications_${profile.id}`)
       .on(
         "postgres_changes",
         {
@@ -207,10 +219,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           }
         }
       )
-      .subscribe();
-
-    const friendRequestsSubscription = supabase
-      .channel("notifications_friend_requests")
       .on(
         "postgres_changes",
         {
@@ -239,10 +247,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           }
         }
       )
-      .subscribe();
-
-    const duelInvitationsSubscription = supabase
-      .channel("notifications_duel_invitations")
       .on(
         "postgres_changes",
         {
@@ -274,17 +278,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               type: "invitation",
               from: fromUser.pseudo,
               quizTitle: quiz.title,
-               onNavigate: () => navigationCallback?.("duels", { tab: "invitations" }),
+              onNavigate: () =>
+                navigationCallback?.("duels", { tab: "invitations" }),
             });
 
             setPendingDuels((prev) => prev + 1);
           }
         }
       )
-      .subscribe();
-
-    const duelAcceptedSubscription = supabase
-      .channel("notifications_duel_accepted")
       .on(
         "postgres_changes",
         {
@@ -322,10 +323,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           }
         }
       )
-      .subscribe();
-
-    const duelsCompletedSubscription = supabase
-      .channel("notifications_duels_completed")
       .on(
         "postgres_changes",
         {
@@ -377,7 +374,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               from: opponent.pseudo,
               quizTitle: quiz.title,
               result,
-               onNavigate: () => navigationCallback?.("duels", { tab: "history" }),
+              onNavigate: () =>
+                navigationCallback?.("duels", { tab: "history" }),
             });
           }
         }
@@ -385,37 +383,54 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       .subscribe();
 
     return () => {
-      messagesSubscription.unsubscribe();
-      friendRequestsSubscription.unsubscribe();
-      duelInvitationsSubscription.unsubscribe();
-      duelAcceptedSubscription.unsubscribe();
-      duelsCompletedSubscription.unsubscribe();
+      supabase.removeChannel(notificationChannel);
       clearInterval(interval);
     };
-  }, [profile]);
+  }, [profile, navigationCallback]);
+
+  const value = useMemo(
+    () => ({
+      unreadMessages,
+      pendingDuels,
+      pendingFriendRequests,
+      pendingDuelsToPlay,
+      newDuelResults,
+      duelNotification,
+      messageNotification,
+      friendRequestNotification,
+      appNotification,
+      clearDuelNotification,
+      showDuelNotification,
+      clearMessageNotification,
+      clearFriendRequestNotification,
+      showAppNotification,
+      clearAppNotification,
+      refreshNotifications,
+      setNavigationCallback,
+    }),
+    [
+      unreadMessages,
+      pendingDuels,
+      pendingFriendRequests,
+      pendingDuelsToPlay,
+      newDuelResults,
+      duelNotification,
+      messageNotification,
+      friendRequestNotification,
+      appNotification,
+      clearDuelNotification,
+      showDuelNotification,
+      clearMessageNotification,
+      clearFriendRequestNotification,
+      showAppNotification,
+      clearAppNotification,
+      refreshNotifications,
+      setNavigationCallback,
+    ]
+  );
 
   return (
-    <NotificationContext.Provider
-      value={{
-        unreadMessages,
-        pendingDuels,
-        pendingFriendRequests,
-        pendingDuelsToPlay,
-        newDuelResults,
-        duelNotification,
-        messageNotification,
-        friendRequestNotification,
-        appNotification,
-        clearDuelNotification,
-        showDuelNotification,
-        clearMessageNotification,
-        clearFriendRequestNotification,
-        showAppNotification,
-        clearAppNotification,
-        refreshNotifications,
-        setNavigationCallback,
-      }}
-    >
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );

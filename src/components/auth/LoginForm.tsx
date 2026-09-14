@@ -7,7 +7,7 @@ export function LoginForm({
   onSwitchToRegister,
   forceMfa = false,
 }: {
-  onSwitchToRegister: () => void;
+  onSwitchToRegister?: () => void;
   forceMfa?: boolean;
 }) {
   const { signIn, verifyMfa } = useAuth();

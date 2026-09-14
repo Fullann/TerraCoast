@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Target, Plus, CreditCard as Edit, Trash2, Save, X } from 'lucide-react';
@@ -17,6 +18,7 @@ interface DifficultyFormData {
 }
 
 export function DifficultyManagementPage() {
+  const queryClient = useQueryClient();
   const { profile } = useAuth();
   const [difficulties, setDifficulties] = useState<Difficulty[]>([]);
   const [editingDifficulty, setEditingDifficulty] = useState<Difficulty | null>(null);
@@ -97,6 +99,7 @@ export function DifficultyManagementPage() {
 
       if (!error) {
         await loadDifficulties();
+        queryClient.invalidateQueries({ queryKey: ['difficulties'] });
       }
     }
 
@@ -113,6 +116,7 @@ export function DifficultyManagementPage() {
 
     if (!error) {
       await loadDifficulties();
+      queryClient.invalidateQueries({ queryKey: ['difficulties'] });
     }
   };
 

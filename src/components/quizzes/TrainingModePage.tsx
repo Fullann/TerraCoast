@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Dumbbell, ArrowLeft, Play, Search, X } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
@@ -9,12 +8,11 @@ import type { Database } from '../../lib/database.types';
 type Quiz = Database['public']['Tables']['quizzes']['Row'];
 
 interface TrainingModePageProps {
-  onNavigate: (view: string, data?: any) => void;
+  onNavigate?: (view: string, data?: unknown) => void;
 }
 
-export function TrainingModePage() {
+export function TrainingModePage(_props: TrainingModePageProps = {}) {
   const navigate = useNavigate();
-  const { profile } = useAuth();
   const { t } = useLanguage();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);

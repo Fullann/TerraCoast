@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
@@ -20,11 +20,11 @@ import {
 import { useDuelsData } from "./hooks/useDuelsData";
 import { useMatchmaking } from "./hooks/useMatchmaking";
 import { useDuelNotifications } from "./hooks/useDuelNotifications";
+import { fetchUserFriends } from "../../lib/queries/friendQueries";
 import type {
   DuelWithDetails,
   InvitationWithDetails,
   Difficulty,
-  NavigateFn,
   Profile,
   Quiz,
 } from "./types";
@@ -890,16 +890,16 @@ export function DuelsPage({ initialTab }: { initialTab?: string }) {
                                 </span>
                                 <span
                                   className={`text-sm font-semibold ${
-                                    (duel.player1_id === profile?.id
+                                    ((duel.player1_id === profile?.id
                                       ? duel.player1_rating_delta
-                                      : duel.player2_rating_delta) >= 0
+                                      : duel.player2_rating_delta) ?? 0) >= 0
                                       ? "text-green-700"
                                       : "text-red-700"
                                   }`}
                                 >
-                                  {(duel.player1_id === profile?.id
+                                  {((duel.player1_id === profile?.id
                                     ? duel.player1_rating_delta
-                                    : duel.player2_rating_delta) >= 0
+                                    : duel.player2_rating_delta) ?? 0) >= 0
                                     ? "+"
                                     : ""}
                                   {duel.player1_id === profile?.id
@@ -1041,33 +1041,8 @@ function CreateDuelInvitation({
   const loadFriendsAndQuizzes = async () => {
     if (!profile) return;
 
-    const { data: friendshipsAsSender } = await supabase
-      .from("friendships")
-      .select("friend_profile:profiles!friendships_friend_id_fkey(*)")
-      .eq("user_id", profile.id)
-      .eq("status", "accepted");
-
-    const { data: friendshipsAsReceiver } = await supabase
-      .from("friendships")
-      .select("user_profile:profiles!friendships_user_id_fkey(*)")
-      .eq("friend_id", profile.id)
-      .eq("status", "accepted");
-
-    type SenderFriendshipRow = { friend_profile: Profile | null };
-    type ReceiverFriendshipRow = { user_profile: Profile | null };
-    const senderRows = (friendshipsAsSender ?? []) as SenderFriendshipRow[];
-    const receiverRows = (friendshipsAsReceiver ?? []) as ReceiverFriendshipRow[];
-
-    const allFriends: Profile[] = [
-      ...senderRows
-        .map((row) => row.friend_profile)
-        .filter((friend): friend is Profile => friend !== null),
-      ...receiverRows
-        .map((row) => row.user_profile)
-        .filter((friend): friend is Profile => friend !== null),
-    ].filter((friend) => !friend.is_banned);
-
-    setFriends(allFriends);
+    const allFriends = await fetchUserFriends(profile.id);
+    setFriends(allFriends as Profile[]);
 
     const { data: quizzesData } = await supabase
       .from("quizzes")

@@ -14,6 +14,7 @@ import {
   Flame,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
+import { fetchUserFriends } from "../../lib/queries/friendQueries";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -24,11 +25,11 @@ interface LeaderboardEntry extends Profile {
   rank?: number;
 }
 
-interface LeaderboardPageProps {
+export interface LeaderboardPageProps {
   onNavigate?: (view: string, data?: any) => void;
 }
 
-export function LeaderboardPage() {
+export function LeaderboardPage({ onNavigate: _onNavigate }: LeaderboardPageProps = {}) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
@@ -57,7 +58,9 @@ export function LeaderboardPage() {
           : "experience_points";
       let query = supabase
         .from("profiles")
-        .select("*")
+        .select(
+          "id, pseudo, avatar_url, frame_style, experience_points, monthly_score, duel_rating, level, role, is_banned, last_reset_month, current_streak, longest_streak"
+        )
         .eq("is_banned", false)
         .order(orderBy, { ascending: false })
         .limit(100);
@@ -69,39 +72,9 @@ export function LeaderboardPage() {
       }
 
       const { data } = await query;
-      profiles = data || [];
+      profiles = (data as Profile[]) || [];
     } else if (view === "friends" && profile) {
-      const { data: friendshipsAsSender } = await supabase
-        .from("friendships")
-        .select("friend_profile:profiles!friendships_friend_id_fkey(*)")
-        .eq("user_id", profile.id)
-        .eq("status", "accepted");
-
-      const { data: friendshipsAsReceiver } = await supabase
-        .from("friendships")
-        .select("user_profile:profiles!friendships_user_id_fkey(*)")
-        .eq("friend_id", profile.id)
-        .eq("status", "accepted");
-
-      const senderFriends =
-        friendshipsAsSender
-          ?.map((f: any) => f.friend_profile)
-          .filter((f) => f && !f.is_banned) || [];
-      const receiverFriends =
-        friendshipsAsReceiver
-          ?.map((f: any) => f.user_profile)
-          .filter((f) => f && !f.is_banned) || [];
-
-      const friendIds = new Set<string>();
-      const uniqueFriends: Profile[] = [];
-
-      for (const friend of [...senderFriends, ...receiverFriends]) {
-        if (!friendIds.has(friend.id)) {
-          friendIds.add(friend.id);
-          uniqueFriends.push(friend);
-        }
-      }
-
+      const uniqueFriends = await fetchUserFriends(profile.id);
       profiles = [profile, ...uniqueFriends];
 
       // En mode mensuel : ne garder que les amis (et soi) ayant joué ce mois-ci
@@ -344,7 +317,7 @@ export function LeaderboardPage() {
           {leaderboard.map((entry, index) => (
             <div
               key={entry.id}
-              onClick={() => onNavigate?.("view-profile", { userId: entry.id })}
+              onClick={() => navigate(`/profile/${entry.id}`)}
               className={`${getRankBackground(
                 index,
                 entry
@@ -390,10 +363,10 @@ export function LeaderboardPage() {
                           {getWinRate(entry)}%
                         </span>
                       )}
-                      {mode === "xp" && entry.top10_count > 0 && index < 10 && (
+                      {mode === "xp" && (entry.top_10_count ?? 0) > 0 && index < 10 && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow">
                           <Crown className="w-3 h-3 mr-1" />
-                          {entry.top10_count}x {t("leaderboard.top10")}
+                          {entry.top_10_count}x {t("leaderboard.top10")}
                         </span>
                       )}
                     </div>
