@@ -12,5 +12,20 @@ Options -MultiViews
   RewriteRule ^ index.html [L]
 </IfModule>
 
+# Gestion du cache HTTP (Évite le chargement d'anciens chunks JS obsolètes après un déploiement)
+<IfModule mod_headers.c>
+  # 1. index.html et fichiers de contrôle (Service Worker, Manifest) : JAMAIS mis en cache navigateur
+  <FilesMatch "(index\.html|sw\.js|registerSW\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # 2. Assets versionnés (chunks JS, CSS, fonts avec hash Vite) : Cache fort et immuable
+  <FilesMatch "\.(js|css|webp|png|jpg|jpeg|svg|woff2|woff|ttf)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
 # Optionnel : Désactiver la signature du serveur
 ServerSignature Off

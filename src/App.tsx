@@ -1,4 +1,4 @@
-import { useEffect, Suspense, lazy } from "react";
+import { useEffect, Suspense } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -18,36 +18,38 @@ import { OfflineIndicator } from "./components/common/OfflineIndicator";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 
-// Pages avec Lazy Loading
-const LandingPage = lazy(() => import("./components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
-const HomePage = lazy(() => import("./components/home/HomePage").then(m => ({ default: m.HomePage })));
-const ProfilePage = lazy(() => import("./components/profile/ProfilePage").then(m => ({ default: m.ProfilePage })));
-const SettingsPage = lazy(() => import("./components/profile/SettingsPage").then(m => ({ default: m.SettingsPage })));
-const AccountDetailsPage = lazy(() => import("./components/profile/AccountDetailsPage").then(m => ({ default: m.AccountDetailsPage })));
-const QuizzesPage = lazy(() => import("./components/quizzes/QuizzesPage").then(m => ({ default: m.QuizzesPage })));
-const CreateQuizPage = lazy(() => import("./components/quizzes/CreateQuizPage").then(m => ({ default: m.CreateQuizPage })));
-const EditQuizPage = lazy(() => import("./components/quizzes/EditQuizPage").then(m => ({ default: m.EditQuizPage })));
-const PlayQuizPage = lazy(() => import("./components/quizzes/PlayQuizPage").then(m => ({ default: m.PlayQuizPage })));
-const TrainingModePage = lazy(() => import("./components/quizzes/TrainingModePage").then(m => ({ default: m.TrainingModePage })));
-const LeaderboardPage = lazy(() => import("./components/leaderboard/LeaderboardPage").then(m => ({ default: m.LeaderboardPage })));
-const FriendsPage = lazy(() => import("./components/friends/FriendsPage").then(m => ({ default: m.FriendsPage })));
-const DuelsPage = lazy(() => import("./components/duels/DuelsPage").then(m => ({ default: m.DuelsPage })));
-const ChatPage = lazy(() => import("./components/chat/ChatPage").then(m => ({ default: m.ChatPage })));
+import { lazyWithRetry } from "./lib/lazyWithRetry";
 
-// Admin Pages (Lazy Loading)
-const AdminPage = lazy(() => import("./components/admin/AdminPage").then(m => ({ default: m.AdminPage })));
-const BadgeManagementPage = lazy(() => import("./components/admin/BadgeManagementPage").then(m => ({ default: m.BadgeManagementPage })));
-const TitleManagementPage = lazy(() => import("./components/admin/TitleManagementPage").then(m => ({ default: m.TitleManagementPage })));
-const CategoryManagementPage = lazy(() => import("./components/admin/CategoryManagementPage").then(m => ({ default: m.CategoryManagementPage })));
-const DifficultyManagementPage = lazy(() => import("./components/admin/DifficultyManagementPage").then(m => ({ default: m.DifficultyManagementPage })));
-const QuizValidationPage = lazy(() => import("./components/admin/QuizValidationPage").then(m => ({ default: m.QuizValidationPage })));
-const WarningsManagementPage = lazy(() => import("./components/admin/WarningsManagementPage").then(m => ({ default: m.WarningsManagementPage })));
-const QuizTypeManagementPage = lazy(() => import("./components/admin/QuizTypeManagementPage").then(m => ({ default: m.QuizTypeManagementPage })));
-const UserManagementPage = lazy(() => import("./components/admin/UserManagementPage").then(m => ({ default: m.UserManagementPage })));
-const QuizManagementPage = lazy(() => import("./components/admin/QuizManagementPage").then(m => ({ default: m.QuizManagementPage })));
-const DuelFeaturesPage = lazy(() => import("./components/admin/DuelFeaturesPage").then(m => ({ default: m.DuelFeaturesPage })));
-const GeoJsonMapsManagementPage = lazy(() => import("./components/admin/GeoJsonMapsManagementPage").then(m => ({ default: m.GeoJsonMapsManagementPage })));
-const AdminAnalyticsPage = lazy(() => import("./components/admin/AdminAnalyticsPage").then(m => ({ default: m.AdminAnalyticsPage })));
+// Pages avec Lazy Loading et reprise automatique en cas de mise à jour (stale chunk)
+const LandingPage = lazyWithRetry(() => import("./components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
+const HomePage = lazyWithRetry(() => import("./components/home/HomePage").then(m => ({ default: m.HomePage })));
+const ProfilePage = lazyWithRetry(() => import("./components/profile/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const SettingsPage = lazyWithRetry(() => import("./components/profile/SettingsPage").then(m => ({ default: m.SettingsPage })));
+const AccountDetailsPage = lazyWithRetry(() => import("./components/profile/AccountDetailsPage").then(m => ({ default: m.AccountDetailsPage })));
+const QuizzesPage = lazyWithRetry(() => import("./components/quizzes/QuizzesPage").then(m => ({ default: m.QuizzesPage })));
+const CreateQuizPage = lazyWithRetry(() => import("./components/quizzes/CreateQuizPage").then(m => ({ default: m.CreateQuizPage })));
+const EditQuizPage = lazyWithRetry(() => import("./components/quizzes/EditQuizPage").then(m => ({ default: m.EditQuizPage })));
+const PlayQuizPage = lazyWithRetry(() => import("./components/quizzes/PlayQuizPage").then(m => ({ default: m.PlayQuizPage })));
+const TrainingModePage = lazyWithRetry(() => import("./components/quizzes/TrainingModePage").then(m => ({ default: m.TrainingModePage })));
+const LeaderboardPage = lazyWithRetry(() => import("./components/leaderboard/LeaderboardPage").then(m => ({ default: m.LeaderboardPage })));
+const FriendsPage = lazyWithRetry(() => import("./components/friends/FriendsPage").then(m => ({ default: m.FriendsPage })));
+const DuelsPage = lazyWithRetry(() => import("./components/duels/DuelsPage").then(m => ({ default: m.DuelsPage })));
+const ChatPage = lazyWithRetry(() => import("./components/chat/ChatPage").then(m => ({ default: m.ChatPage })));
+
+// Admin Pages (Lazy Loading avec reprise automatique)
+const AdminPage = lazyWithRetry(() => import("./components/admin/AdminPage").then(m => ({ default: m.AdminPage })));
+const BadgeManagementPage = lazyWithRetry(() => import("./components/admin/BadgeManagementPage").then(m => ({ default: m.BadgeManagementPage })));
+const TitleManagementPage = lazyWithRetry(() => import("./components/admin/TitleManagementPage").then(m => ({ default: m.TitleManagementPage })));
+const CategoryManagementPage = lazyWithRetry(() => import("./components/admin/CategoryManagementPage").then(m => ({ default: m.CategoryManagementPage })));
+const DifficultyManagementPage = lazyWithRetry(() => import("./components/admin/DifficultyManagementPage").then(m => ({ default: m.DifficultyManagementPage })));
+const QuizValidationPage = lazyWithRetry(() => import("./components/admin/QuizValidationPage").then(m => ({ default: m.QuizValidationPage })));
+const WarningsManagementPage = lazyWithRetry(() => import("./components/admin/WarningsManagementPage").then(m => ({ default: m.WarningsManagementPage })));
+const QuizTypeManagementPage = lazyWithRetry(() => import("./components/admin/QuizTypeManagementPage").then(m => ({ default: m.QuizTypeManagementPage })));
+const UserManagementPage = lazyWithRetry(() => import("./components/admin/UserManagementPage").then(m => ({ default: m.UserManagementPage })));
+const QuizManagementPage = lazyWithRetry(() => import("./components/admin/QuizManagementPage").then(m => ({ default: m.QuizManagementPage })));
+const DuelFeaturesPage = lazyWithRetry(() => import("./components/admin/DuelFeaturesPage").then(m => ({ default: m.DuelFeaturesPage })));
+const GeoJsonMapsManagementPage = lazyWithRetry(() => import("./components/admin/GeoJsonMapsManagementPage").then(m => ({ default: m.GeoJsonMapsManagementPage })));
+const AdminAnalyticsPage = lazyWithRetry(() => import("./components/admin/AdminAnalyticsPage").then(m => ({ default: m.AdminAnalyticsPage })));
 
 // Loader affiché pendant le chargement des pages lazy
 function PageLoader() {

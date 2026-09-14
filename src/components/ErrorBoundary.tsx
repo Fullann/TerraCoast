@@ -36,22 +36,33 @@ function ErrorFallback({ error, onReset }: FallbackProps) {
     // Si l'erreur survient en dehors ou avant le montage du LanguageProvider
   }
 
+  const isChunkError =
+    error?.message?.includes("Failed to fetch dynamically imported module") ||
+    error?.message?.includes("Importing a module script failed") ||
+    error?.name === "ChunkLoadError";
+
   return (
     <div
       role="alert"
       className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4"
     >
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-gray-100">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600">
-          <AlertTriangle className="w-8 h-8" aria-hidden="true" />
+        <div className={`w-16 h-16 ${isChunkError ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"} rounded-full flex items-center justify-center mx-auto mb-4`}>
+          {isChunkError ? (
+            <RefreshCw className="w-8 h-8 animate-spin" aria-hidden="true" />
+          ) : (
+            <AlertTriangle className="w-8 h-8" aria-hidden="true" />
+          )}
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          {t("error.title")}
+          {isChunkError ? "Mise à jour disponible" : t("error.title")}
         </h1>
         <p className="text-gray-600 mb-6 text-sm">
-          {t("error.message")}
+          {isChunkError
+            ? "Une nouvelle version de TerraCoast a été déployée. Cliquez sur Recharger pour appliquer la mise à jour."
+            : t("error.message")}
         </p>
-        {error?.message && (
+        {!isChunkError && error?.message && (
           <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-left text-xs font-mono text-red-700 overflow-auto mb-6 max-h-36">
             {error.message}
           </div>
@@ -60,19 +71,21 @@ function ErrorFallback({ error, onReset }: FallbackProps) {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-medium text-sm transition-colors cursor-pointer"
+            className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 ${isChunkError ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-800"} rounded-xl font-medium text-sm transition-colors cursor-pointer`}
           >
             <RefreshCw className="w-4 h-4" aria-hidden="true" />
             {t("error.reload")}
           </button>
-          <button
-            type="button"
-            onClick={onReset}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-sm transition-colors shadow-sm cursor-pointer"
-          >
-            <Home className="w-4 h-4" aria-hidden="true" />
-            {t("error.returnHome")}
-          </button>
+          {!isChunkError && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-sm transition-colors shadow-sm cursor-pointer"
+            >
+              <Home className="w-4 h-4" aria-hidden="true" />
+              {t("error.returnHome")}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -91,6 +104,20 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
+    const msg = error?.message || "";
+    const isChunkError =
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Importing a module script failed") ||
+      error?.name === "ChunkLoadError";
+
+    if (isChunkError) {
+      const reloadKey = "tc_eb_chunk_reload";
+      const lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
+      if (Date.now() - lastReload > 10000) {
+        sessionStorage.setItem(reloadKey, String(Date.now()));
+        window.location.reload();
+      }
+    }
   }
 
   private handleReset = () => {
