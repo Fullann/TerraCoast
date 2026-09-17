@@ -39,6 +39,7 @@ export interface Database {
           last_reset_month?: string | null
           current_streak?: number | null
           longest_streak?: number | null
+          last_activity_date?: string | null
         }
         Insert: {
           id: string
@@ -63,6 +64,7 @@ export interface Database {
           last_reset_month?: string | null
           current_streak?: number | null
           longest_streak?: number | null
+          last_activity_date?: string | null
         }
         Update: {
           id?: string
@@ -87,6 +89,7 @@ export interface Database {
           last_reset_month?: string | null
           current_streak?: number | null
           longest_streak?: number | null
+          last_activity_date?: string | null
         }
       }
       badges: {
@@ -906,6 +909,100 @@ export interface Database {
           token?: string
           expires_at?: string
           used?: boolean
+          created_at?: string
+        }
+      }
+      party_rooms: {
+        Row: {
+          id: string
+          code: string
+          host_id: string | null
+          host_pseudo: string
+          quiz_id: string
+          status: string
+          current_question_index: number
+          time_limit_seconds: number
+          question_start_time?: string | null
+          settings?: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          host_id?: string | null
+          host_pseudo: string
+          quiz_id: string
+          status?: string
+          current_question_index?: number
+          time_limit_seconds?: number
+          question_start_time?: string | null
+          settings?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          host_id?: string | null
+          host_pseudo?: string
+          quiz_id?: string
+          status?: string
+          current_question_index?: number
+          time_limit_seconds?: number
+          question_start_time?: string | null
+          settings?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      party_players: {
+        Row: {
+          id: string
+          room_id: string
+          user_id: string | null
+          guest_id: string
+          pseudo: string
+          avatar_url?: string | null
+          score: number
+          streak: number
+          is_host: boolean
+          is_connected: boolean
+          last_answer_correct?: boolean | null
+          last_answer_time_ms?: number | null
+          last_points_earned?: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          user_id?: string | null
+          guest_id: string
+          pseudo: string
+          avatar_url?: string | null
+          score?: number
+          streak?: number
+          is_host?: boolean
+          is_connected?: boolean
+          last_answer_correct?: boolean | null
+          last_answer_time_ms?: number | null
+          last_points_earned?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          user_id?: string | null
+          guest_id?: string
+          pseudo?: string
+          avatar_url?: string | null
+          score?: number
+          streak?: number
+          is_host?: boolean
+          is_connected?: boolean
+          last_answer_correct?: boolean | null
+          last_answer_time_ms?: number | null
+          last_points_earned?: number
           created_at?: string
         }
       }

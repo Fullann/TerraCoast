@@ -646,6 +646,11 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
         category: quiz.category,
         difficulty: quiz.difficulty,
         time_limit_seconds: quiz.time_limit_seconds,
+        cover_image_url: quiz.cover_image_url,
+        randomize_questions: quiz.randomize_questions,
+        randomize_answers: quiz.randomize_answers,
+        location_lat: quiz.location_lat,
+        location_lng: quiz.location_lng,
         language: quiz.language,
         tags: quiz.tags,
         questions: questions.map((q) => ({
@@ -656,6 +661,10 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
           options: q.options,
           points: q.points,
           complement_if_wrong: q.complement_if_wrong,
+          map_data: q.map_data,
+          image_url: q.image_url,
+          option_images: q.option_images,
+          randomize_options: q.randomize_options,
         })),
       };
 
@@ -695,6 +704,11 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
         is_global: false,
         language: importLanguage,
         tags: importVerificationResult.tags || [],
+        cover_image_url: importVerificationResult.cover_image_url || null,
+        randomize_questions: importVerificationResult.randomize_questions ?? null,
+        randomize_answers: importVerificationResult.randomize_answers ?? null,
+        location_lat: importVerificationResult.location_lat ?? null,
+        location_lng: importVerificationResult.location_lng ?? null,
       };
 
       const { data: insertedQuiz, error: quizError } = await supabase
@@ -715,6 +729,10 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
         points: q.points || 10,
         order_index: idx,
         complement_if_wrong: q.complement_if_wrong || null,
+        map_data: q.map_data || null,
+        image_url: q.image_url || null,
+        option_images: q.option_images || null,
+        randomize_options: q.randomize_options ?? null,
       }));
 
       const { error: questionsError } = await supabase
@@ -1103,11 +1121,11 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
               <p className="mb-2">Copie le prompt ci-dessous avec le JSON. L'IA traduira tout le contenu texte et renverra un JSON valide que tu pourras importer.</p>
               <div className="bg-white p-3 rounded border border-indigo-100 flex justify-between items-start gap-4">
                 <code className="text-xs break-words whitespace-pre-wrap flex-1">
-                  Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), et 'complement_if_wrong'. Ne modifie PAS la structure du JSON, ni les clés, ni les champs 'question_type' ou 'category' ou 'difficulty' ou 'points'. Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :
+                  Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs textuels suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), 'complement_if_wrong', et 'countryMultiPrompt' (si présent dans map_data). Ne modifie PAS la structure du JSON, ni les clés, ni les champs techniques ('question_type', 'category', 'difficulty', 'points', 'map_data' sauf les textes éventuels, 'image_url', 'option_images', 'randomize_options', 'location_lat', 'location_lng'). Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :
                 </code>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), et 'complement_if_wrong'. Ne modifie PAS la structure du JSON, ni les clés, ni les champs 'question_type' ou 'category' ou 'difficulty' ou 'points'. Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :\n\n${exportQuizData}`);
+                    navigator.clipboard.writeText(`Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs textuels suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), 'complement_if_wrong', et 'countryMultiPrompt' (si présent dans map_data). Ne modifie PAS la structure du JSON, ni les clés, ni les champs techniques ('question_type', 'category', 'difficulty', 'points', 'map_data' sauf les textes éventuels, 'image_url', 'option_images', 'randomize_options', 'location_lat', 'location_lng'). Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :\n\n${exportQuizData}`);
                     showAppNotification({ type: "success", message: "Prompt + JSON copié !" });
                   }}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs whitespace-nowrap"

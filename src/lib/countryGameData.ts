@@ -48,7 +48,7 @@ const rawByIso3 = new Map<string, WorldCountry>(
     .filter(([iso]) => Boolean(iso))
 );
 
-const estimatedPopulationsByIso3: Record<string, number> = {
+export const estimatedPopulationsByIso3: Record<string, number> = {
   IND: 1428627000,
   CHN: 1425671000,
   USA: 339996000,

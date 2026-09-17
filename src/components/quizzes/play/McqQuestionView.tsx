@@ -68,9 +68,14 @@ export const McqQuestionView: React.FC<McqQuestionViewProps> = ({
                   />
                 </div>
               )}
-              <span className="font-medium text-center block text-sm md:text-base">
-                {option}
-              </span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-center sm:text-left block text-sm md:text-base flex-1">
+                  {option}
+                </span>
+                <kbd className="hidden sm:inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 text-[11px] font-bold text-gray-400 bg-gray-100 border border-gray-300 rounded shadow-xs shrink-0 select-none">
+                  {index + 1}
+                </kbd>
+              </div>
             </button>
           );
         })}

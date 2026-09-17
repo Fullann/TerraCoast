@@ -3,6 +3,13 @@ import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
+import {
+  playClickSound,
+  playCorrectSound,
+  playIncorrectSound,
+  playVictoryFanfare,
+} from "../../../lib/soundManager";
+import { triggerConfetti } from "../../common/Confetti";
 import type {
   Quiz,
   Question,
@@ -696,6 +703,13 @@ export function usePlayQuiz({
       setXpGained(Number(progress.earned_xp || 0));
       await refreshProfile();
       pendingSessionPayloadRef.current = null;
+
+      if (normalizedScore >= 70) {
+        playVictoryFanfare();
+      }
+      if (normalizedScore === 100) {
+        triggerConfetti();
+      }
     } catch (err) {
       console.warn("[progression-rpc] Network error, falling back to offline sync:", err);
       setIsOfflinePendingSync(true);
@@ -886,6 +900,9 @@ export function usePlayQuiz({
         setIsAnswered(true);
         saveAnswer(answerData);
 
+        if (isCorrect) playCorrectSound();
+        else playIncorrectSound();
+
         if (currentQuestion.question_type === "puzzle_map") {
           setConsumedPuzzleIso3s((prev) => {
             const next = new Set(prev.map((id) => String(id).toUpperCase()));
@@ -949,6 +966,9 @@ export function usePlayQuiz({
         setShowResult(true);
         setIsAnswered(true);
         saveAnswer(answerData);
+
+        if (isCorrect) playCorrectSound();
+        else playIncorrectSound();
 
         if (!trainingMode) {
           const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
@@ -1114,6 +1134,9 @@ export function usePlayQuiz({
         setIsAnswered(true);
         saveAnswer(answerData);
 
+        if (isCorrect) playCorrectSound();
+        else playIncorrectSound();
+
         if (!trainingMode) {
           const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
           setTimeout(() => {
@@ -1163,6 +1186,9 @@ export function usePlayQuiz({
       setIsAnswered(true);
 
       saveAnswer(answerData);
+
+      if (isCorrect) playCorrectSound();
+      else playIncorrectSound();
 
       if (!trainingMode) {
         const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
@@ -1220,15 +1246,36 @@ export function usePlayQuiz({
     handleTimeout,
   ]);
 
-  const handleAnswerClick = (option: string, event: React.MouseEvent) => {
+  const handleAnswerClick = (option: string, event?: React.MouseEvent) => {
     if (isAnswered) return;
 
+    playClickSound();
     setSelectedOption(option);
 
-    if (event.detail === 2) {
+    if (event && event.detail === 2) {
       setTimeout(() => handleSubmitAnswer(option), 50);
     }
   };
+
+  const restartReviewMistakes = useCallback(() => {
+    const wrongQuestionIds = new Set(
+      answers.filter((a) => !a.is_correct).map((a) => a.question_id)
+    );
+    const mistakesQuestions = questions.filter((q) => wrongQuestionIds.has(q.id));
+    if (mistakesQuestions.length === 0) return;
+
+    setQuestions(mistakesQuestions);
+    setCurrentQuestionIndex(0);
+    setAnswers([]);
+    setTotalScore(0);
+    setGameComplete(false);
+    setIsAnswered(false);
+    setShowResult(false);
+    setSelectedOption("");
+    setUserAnswer("");
+    setTimeLeft(quiz?.time_limit_seconds || 30);
+    setQuestionStartTime(Date.now());
+  }, [answers, questions, quiz?.time_limit_seconds]);
 
   return {
     quiz,
@@ -1263,5 +1310,6 @@ export function usePlayQuiz({
     moveToNextQuestion,
     completeGame,
     syncSessionProgress,
+    restartReviewMistakes,
   };
 }

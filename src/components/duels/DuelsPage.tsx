@@ -181,13 +181,22 @@ export function DuelsPage({ initialTab }: { initialTab?: string }) {
               {t("duels.subtitle")}
             </p>
           </div>
-          <button
-            onClick={() => setShowCreateInvitation(true)}
-            className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            {t("duels.createDuel")}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => navigate("/party")}
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-lg shadow-md transition-all font-bold flex items-center justify-center gap-2"
+            >
+              <Crown className="w-5 h-5 text-amber-300" />
+              {t("party.buttonTitle") || "Mode Salon / Party 🏆"}
+            </button>
+            <button
+              onClick={() => setShowCreateInvitation(true)}
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              {t("duels.createDuel")}
+            </button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
           <button

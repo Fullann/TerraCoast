@@ -15,6 +15,7 @@ import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
 import { PageTransition } from "./components/ui/PageTransition";
 import { ToastContainer } from "./components/common/ToastContainer";
 import { OfflineIndicator } from "./components/common/OfflineIndicator";
+import { ConfettiContainer } from "./components/common/Confetti";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 
@@ -34,6 +35,8 @@ const TrainingModePage = lazyWithRetry(() => import("./components/quizzes/Traini
 const LeaderboardPage = lazyWithRetry(() => import("./components/leaderboard/LeaderboardPage").then(m => ({ default: m.LeaderboardPage })));
 const FriendsPage = lazyWithRetry(() => import("./components/friends/FriendsPage").then(m => ({ default: m.FriendsPage })));
 const DuelsPage = lazyWithRetry(() => import("./components/duels/DuelsPage").then(m => ({ default: m.DuelsPage })));
+const PartyPage = lazyWithRetry(() => import("./components/party/PartyPage").then(m => ({ default: m.PartyPage })));
+const AtlasPage = lazyWithRetry(() => import("./components/atlas/AtlasPage").then(m => ({ default: m.AtlasPage })));
 const ChatPage = lazyWithRetry(() => import("./components/chat/ChatPage").then(m => ({ default: m.ChatPage })));
 
 // Admin Pages (Lazy Loading avec reprise automatique)
@@ -95,6 +98,7 @@ function AppContent() {
     <ErrorBoundary>
       <ToastContainer />
       <OfflineIndicator />
+      <ConfettiContainer />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
       {/* ── Routes publiques ── statiques, transition immédiate */}
@@ -133,6 +137,10 @@ function AppContent() {
       <Route path="/terms" element={<LegalDocumentPage type="terms" onBack={() => navigate(-1)} />} />
       <Route path="/privacy" element={<LegalDocumentPage type="privacy" onBack={() => navigate(-1)} />} />
 
+      {/* ── Route Party Multijoueur (Accessible aux joueurs connectés et invités sur smartphone) ── */}
+      <Route path="/party" element={<Lazy><PartyPage /></Lazy>} />
+      <Route path="/party/:code" element={<Lazy><PartyPage /></Lazy>} />
+
       {/* ── Routes protégées ── chaque page lazy a son propre Suspense */}
       <Route element={<ProtectedRoute />}>
         <Route path="/terra" element={<Lazy><HomePage /></Lazy>} />
@@ -142,6 +150,7 @@ function AppContent() {
         <Route path="/account-details" element={<Lazy><AccountDetailsPage /></Lazy>} />
 
         <Route path="/quizzes" element={<Lazy><QuizzesPage /></Lazy>} />
+        <Route path="/atlas" element={<Lazy><AtlasPage /></Lazy>} />
         <Route path="/quizzes/create" element={<Lazy><CreateQuizPage /></Lazy>} />
         <Route path="/quizzes/edit/:quizId" element={<Lazy><EditQuizPage /></Lazy>} />
         <Route path="/quizzes/play/:quizId" element={<Lazy><PlayQuizPage /></Lazy>} />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Trophy,
@@ -7,8 +7,10 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
+  Brain,
 } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { triggerConfetti } from "../../common/Confetti";
 import type { Question, QuizAnswer, PuzzleState } from "./types";
 import { normalizeAnswer } from "./utils";
 
@@ -24,6 +26,8 @@ interface QuizResultsScreenProps {
   isOfflinePendingSync: boolean;
   isSyncing: boolean;
   onRetrySync: () => void;
+  onReviewMistakes?: () => void;
+  isDailyChallenge?: boolean;
 }
 
 export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
@@ -38,12 +42,21 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
   isOfflinePendingSync,
   isSyncing,
   onRetrySync,
+  onReviewMistakes,
+  isDailyChallenge,
 }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
   const correctAnswers = answers.filter((a) => a.is_correct).length;
   const accuracy = questions.length > 0 ? (correctAnswers / questions.length) * 100 : 0;
+  const wrongAnswersCount = answers.filter((a) => !a.is_correct).length;
+
+  useEffect(() => {
+    if (accuracy === 100 || totalScore === 100 || isDailyChallenge) {
+      triggerConfetti();
+    }
+  }, [accuracy, totalScore, isDailyChallenge]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
@@ -91,6 +104,29 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                     <RefreshCw className="w-4 h-4" aria-hidden="true" />
                   )}
                   {t("offline.retrySave")}
+                </button>
+              </div>
+            )}
+
+            {/* BANNIÈRE DÉFI DU JOUR */}
+            {isDailyChallenge && (
+              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">📅🔥</span>
+                  <div>
+                    <h3 className="font-extrabold text-base sm:text-lg">
+                      {t("daily.challengeCompletedTitle") || "Défi Quotidien Validé !"}
+                    </h3>
+                    <p className="text-amber-100 text-xs sm:text-sm">
+                      {t("daily.challengeCompletedDesc") || "Ton score est enregistré au classement du jour et ta flamme est alimentée !"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate("/terra")}
+                  className="shrink-0 px-4 py-2 bg-white text-orange-600 font-bold rounded-xl text-xs sm:text-sm shadow hover:bg-amber-50 transition-colors"
+                >
+                  {t("daily.viewLeaderboard") || "Classement"}
                 </button>
               </div>
             )}
@@ -384,6 +420,20 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                 })}
               </div>
             </div>
+
+            {/* Bouton Réviser mes erreurs */}
+            {wrongAnswersCount > 0 && onReviewMistakes && mode !== "duel" && (
+              <button
+                type="button"
+                onClick={onReviewMistakes}
+                className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-lg shadow-amber-500/25 transition transform hover:scale-[1.01] active:scale-98 flex items-center justify-center gap-2 mb-4 text-base"
+              >
+                <Brain className="w-5 h-5 text-white" />
+                <span>
+                  {t("playQuiz.reviewMistakes") || "Réviser mes erreurs"} ({wrongAnswersCount} question{wrongAnswersCount > 1 ? "s" : ""}) 🧠
+                </span>
+              </button>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-4">
               <button

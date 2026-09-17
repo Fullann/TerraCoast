@@ -11,12 +11,17 @@ import {
   BookOpen,
   Award,
   Dumbbell,
+  Gamepad2,
   AlertTriangle,
   Ban,
-  X,
+  Compass,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import type { QuizGlobePoint } from "./QuizGlobe";
+import { DailyChallengeCard } from "../daily/DailyChallengeCard";
+import { getDailyQuizForDate } from "../../lib/dailyChallenge";
+import { StreakModal } from "../profile/StreakModal";
+import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
 
 const QuizGlobe = lazy(() =>
   import("./QuizGlobe").then((m) => ({ default: m.QuizGlobe }))
@@ -40,6 +45,8 @@ export function HomePage() {
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [globePoints, setGlobePoints] = useState<QuizGlobePoint[]>([]);
+  const [dailyQuiz, setDailyQuiz] = useState<Quiz | null>(null);
+  const [loadingDailyQuiz, setLoadingDailyQuiz] = useState(true);
   const [stats, setStats] = useState({
     totalPlays: 0,
     averageScore: 0,
@@ -49,14 +56,6 @@ export function HomePage() {
 
   const getDayText = (count: number) =>
     count > 1 ? t("common.days") : t("common.day");
-
-  const getStreakStartDate = () => {
-    if (!profile?.current_streak || profile.current_streak === 0) return null;
-    const today = new Date();
-    const streakStartDate = new Date();
-    streakStartDate.setDate(today.getDate() - (profile.current_streak - 1));
-    return streakStartDate;
-  };
 
   useEffect(() => {
     if (!profile) return;
@@ -86,6 +85,10 @@ export function HomePage() {
         }
 
         if (allQuizzes && allQuizzes.length > 0) {
+          const pickedDaily = getDailyQuizForDate(allQuizzes);
+          setDailyQuiz(pickedDaily);
+          setLoadingDailyQuiz(false);
+
           const now = Date.now();
           const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
@@ -364,6 +367,11 @@ export function HomePage() {
         </div>
       )}
 
+      {/* 📅 Quiz du Jour (Daily Challenge) */}
+      <div className="mb-6">
+        <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-white shadow-lg flex flex-col">
           <Target className="w-10 h-10 mb-4" />
@@ -375,10 +383,27 @@ export function HomePage() {
         </div>
 
         <div
-          className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-6 text-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow flex flex-col"
+          className={`rounded-xl p-6 text-white shadow-lg cursor-pointer hover:shadow-xl transition-all flex flex-col ${
+            isStreakPlayedToday(profile?.last_activity_date)
+              ? "bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 ring-2 ring-orange-300/40"
+              : isStreakAtRisk(profile?.last_activity_date, profile?.current_streak)
+              ? "bg-gradient-to-br from-red-600 to-rose-700 animate-pulse ring-2 ring-red-400"
+              : "bg-gradient-to-r from-red-600 to-red-700"
+          }`}
           onClick={() => setShowStreakModal(true)}
         >
-          <Flame className="w-10 h-10 mb-4" />
+          <div className="flex items-center justify-between mb-2">
+            <Flame className="w-10 h-10" />
+            {isStreakPlayedToday(profile?.last_activity_date) ? (
+              <span className="text-xs font-bold bg-white/25 px-2.5 py-0.5 rounded-full backdrop-blur-sm">
+                ✅ {t("streak.validated") || "Validée aujourd'hui"}
+              </span>
+            ) : isStreakAtRisk(profile?.last_activity_date, profile?.current_streak) ? (
+              <span className="text-xs font-bold bg-white text-red-700 px-2 py-0.5 rounded-full animate-bounce">
+                ⚠️ {t("streak.inDanger") || "En danger !"}
+              </span>
+            ) : null}
+          </div>
           <div className="flex items-center space-x-2 mb-3">
             <span className="text-3xl font-extrabold">
               {profile?.current_streak || 0}
@@ -390,11 +415,11 @@ export function HomePage() {
             />
           </div>
           <h3 className="text-lg font-semibold">{t("home.currentStreak")}</h3>
-          <p className="text-red-200 text-sm mt-auto">
+          <p className="text-red-100 text-sm mt-auto">
             {t("home.record")}: {profile?.longest_streak || 0}{" "}
             {getDayText(profile?.longest_streak || 0)}
           </p>
-          <p className="text-xs text-red-300 mt-2 cursor-pointer hover:underline">
+          <p className="text-xs text-orange-200 mt-2 cursor-pointer hover:underline">
             {t("common.clickForDetails")}
           </p>
         </div>
@@ -457,6 +482,26 @@ export function HomePage() {
           </button>
 
           <button
+            onClick={() => navigate("/atlas")}
+            className="w-full flex items-center justify-between p-3 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors group mb-3"
+          >
+            <div className="flex items-center space-x-3">
+              <Compass className="w-6 h-6 text-emerald-600" />
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {t("nav.atlas") || "Atlas 3D / Exploration"}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  {t("home.exploreAtlasDesc") || "Explore le monde, capitales, drapeaux et fiches pays"}
+                </p>
+              </div>
+            </div>
+            <span className="text-emerald-600 group-hover:translate-x-1 transition-transform text-2xl">
+              →
+            </span>
+          </button>
+
+          <button
             onClick={() => navigate("/quizzes/create")}
             className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group mb-3"
           >
@@ -513,6 +558,26 @@ export function HomePage() {
               →
             </span>
           </button>
+
+          <button
+            onClick={() => navigate("/party")}
+            className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 rounded-lg transition-colors group mt-3 border border-indigo-100/60"
+          >
+            <div className="flex items-center space-x-3">
+              <Gamepad2 className="w-6 h-6 text-indigo-600" />
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {t("party.title") || "Salon Party en direct 🏆"}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  {t("party.quickDesc") || "Style Kahoot • 4 à 10 amis avec PIN"}
+                </p>
+              </div>
+            </div>
+            <span className="text-indigo-600 group-hover:translate-x-1 transition-transform text-2xl">
+              →
+            </span>
+          </button>
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-6 lg:col-span-2 overflow-hidden h-full">
@@ -549,137 +614,18 @@ export function HomePage() {
         </div>
       </div>
 
-      {showStreakModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={t("home.currentStreak")}
-            className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <Flame className="w-6 h-6 mr-2 text-orange-600" aria-hidden="true" />
-                {t("home.currentStreak")}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowStreakModal(false)}
-                aria-label={t("common.close")}
-                title={t("common.close")}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-600" aria-hidden="true" />
-              </button>
-            </div>
-
-            {profile?.current_streak && profile.current_streak > 0 ? (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-br from-orange-50 to-red-100 p-6 rounded-lg text-center">
-                  <p className="text-5xl font-bold text-orange-600 mb-2">
-                    {profile.current_streak}
-                  </p>
-                  <p className="text-sm text-orange-700 font-medium">
-                    {t("home.currentStreak")}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">
-                    {t("profile.streakStartedOn")}:
-                  </p>
-                  <p className="text-lg font-bold text-gray-800">
-                    {getStreakStartDate()?.toLocaleDateString(undefined, {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-700 font-medium">
-                    💡 {t("profile.playTodayToKeepStreak")}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <p className="text-xs text-gray-600 mb-1">
-                      {t("home.record")}
-                    </p>
-                    <p className="text-2xl font-bold text-gray-800">
-                      {profile.longest_streak || 0}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {getDayText(profile.longest_streak || 0)}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <p className="text-xs text-gray-600 mb-1">
-                      {(profile.current_streak || 0) >
-                      (profile.longest_streak || 0)
-                        ? t("profile.keepGoing")
-                        : t("profile.daysToBreakRecord")}
-                    </p>
-                    {(profile.current_streak || 0) <=
-                    (profile.longest_streak || 0) ? (
-                      <>
-                        <p className="text-2xl font-bold text-gray-800">
-                          {Math.max(
-                            0,
-                            (profile.longest_streak || 0) -
-                              (profile.current_streak || 0)
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {getDayText(
-                            Math.max(
-                              0,
-                              (profile.longest_streak || 0) -
-                                (profile.current_streak || 0)
-                            )
-                          )}
-                        </p>
-                      </>
-                    ) : (
-                      <div className="mt-2">
-                        <p className="text-3xl">🔥🎉</p>
-                        <p className="text-xs text-emerald-600 font-bold mt-1">
-                          +
-                          {(profile.current_streak || 0) -
-                            (profile.longest_streak || 0)}{" "}
-                          {getDayText(
-                            (profile.current_streak || 0) -
-                              (profile.longest_streak || 0)
-                          )}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Flame className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600">{t("profile.noActiveStreak")}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  {t("profile.playToStartStreak")}
-                </p>
-              </div>
-            )}
-
-            <button
-              onClick={() => setShowStreakModal(false)}
-              className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
-            >
-              {t("common.close")}
-            </button>
-          </div>
-        </div>
-      )}
+      <StreakModal
+        isOpen={showStreakModal}
+        onClose={() => setShowStreakModal(false)}
+        profile={profile}
+        onPlayNow={() => {
+          if (dailyQuiz) {
+            navigate(`/quizzes/play/${dailyQuiz.id}?daily=true`);
+          } else {
+            navigate("/quizzes");
+          }
+        }}
+      />
     </div>
   );
 }

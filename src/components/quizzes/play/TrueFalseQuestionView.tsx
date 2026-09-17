@@ -39,7 +39,12 @@ export const TrueFalseQuestionView: React.FC<TrueFalseQuestionViewProps> = ({
             : "border-gray-200 hover:border-emerald-300"
         } ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
       >
-        ✓ {trueLabel}
+        <div className="flex items-center justify-between gap-2">
+          <span>✓ {trueLabel}</span>
+          <kbd className="hidden sm:inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 text-[11px] font-bold text-gray-400 bg-white/90 border border-gray-300 rounded shadow-xs shrink-0 select-none">
+            1
+          </kbd>
+        </div>
       </button>
       <button
         onClick={(e) =>
@@ -56,7 +61,12 @@ export const TrueFalseQuestionView: React.FC<TrueFalseQuestionViewProps> = ({
             : "border-gray-200 hover:border-emerald-300"
         } ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
       >
-        ✗ {falseLabel}
+        <div className="flex items-center justify-between gap-2">
+          <span>✗ {falseLabel}</span>
+          <kbd className="hidden sm:inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 text-[11px] font-bold text-gray-400 bg-white/90 border border-gray-300 rounded shadow-xs shrink-0 select-none">
+            2
+          </kbd>
+        </div>
       </button>
     </div>
   );

@@ -15,6 +15,8 @@ import { McqQuestionView } from "./play/McqQuestionView";
 import { TrueFalseQuestionView } from "./play/TrueFalseQuestionView";
 import { TextQuestionView } from "./play/TextQuestionView";
 import { CountryMultiQuestionView } from "./play/CountryMultiQuestionView";
+import { ReportQuestionModal } from "./play/ReportQuestionModal";
+import { Flag } from "lucide-react";
 
 interface PlayQuizPageProps {
   quizId?: string;
@@ -126,6 +128,7 @@ export function PlayQuizPage({
     moveToNextQuestion,
     completeGame,
     syncSessionProgress,
+    restartReviewMistakes,
   } = usePlayQuiz({
     quizId,
     mode,
@@ -136,6 +139,7 @@ export function PlayQuizPage({
   });
 
   const textInputRef = useRef<HTMLInputElement>(null);
+  const [showReportModal, setShowReportModal] = useState<boolean>(false);
 
   useEffect(() => {
     const question = questions[currentQuestionIndex];
@@ -174,6 +178,8 @@ export function PlayQuizPage({
         isOfflinePendingSync={isOfflinePendingSync}
         isSyncing={isSyncing}
         onRetrySync={() => syncSessionProgress()}
+        onReviewMistakes={restartReviewMistakes}
+        isDailyChallenge={searchParams.get("daily") === "true"}
       />
     );
   }
@@ -288,16 +294,108 @@ export function PlayQuizPage({
     return !userAnswer.trim();
   })();
 
-  const countryMultiRequiredFields = (
-    ((currentQuestion.map_data || {}) as {
-      requiredFields?: ("name" | "capital" | "map_click")[];
-    }).requiredFields || ["name", "capital", "map_click"]
-  );
+  const currentMapData = (currentQuestion.map_data || {}) as {
+    continent?: string;
+    selectedCountries?: string[];
+    requiredFields?: ("name" | "capital" | "map_click")[];
+    countryMultiPrompt?: string;
+    mapLevel?: string;
+    subdivisionScope?: SubdivisionScope;
+    customGeojsonPublicUrl?: string;
+    customGeojsonIdProperty?: string;
+    initialView?: any;
+  };
+
+  const countryMultiRequiredFields =
+    currentMapData.requiredFields || ["name", "capital", "map_click"];
+
+  // Raccourcis clavier (1-8, A-H, V/F, Entrée, Espace)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorer si le joueur tape dans un champ texte ou si une modale est ouverte
+      if (
+        showReportModal ||
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      // 1. Question suivante sur Espace ou Entrée (si la question est déjà répondue)
+      if (isAnswered) {
+        if (e.key === " " || e.key === "Spacebar" || e.key === "Enter") {
+          e.preventDefault();
+          moveToNextQuestion();
+        }
+        return;
+      }
+
+      // 2. Valider la réponse sur Entrée
+      if (e.key === "Enter") {
+        if (!isValidateDisabled) {
+          e.preventDefault();
+          handleSubmitAnswer();
+        }
+        return;
+      }
+
+      // 3. Sélection des options pour les QCM (touches 1..8 ou A..H)
+      if (currentQuestion.question_type === "mcq") {
+        const options = (currentQuestion.options as string[]) || [];
+        let selectedIndex = -1;
+
+        if (["1", "2", "3", "4", "5", "6", "7", "8"].includes(e.key)) {
+          selectedIndex = parseInt(e.key, 10) - 1;
+        } else {
+          const keyLower = e.key.toLowerCase();
+          const letterIndex = ["a", "b", "c", "d", "e", "f", "g", "h"].indexOf(keyLower);
+          if (letterIndex !== -1) {
+            selectedIndex = letterIndex;
+          }
+        }
+
+        if (selectedIndex >= 0 && selectedIndex < options.length) {
+          e.preventDefault();
+          handleAnswerClick(options[selectedIndex]);
+        }
+        return;
+      }
+
+      // 4. Sélection pour les Vrai / Faux (1 ou V -> Vrai, 2 ou F -> Faux)
+      if (currentQuestion.question_type === "true_false") {
+        const trueLabel = t("createQuiz.trueFalse.true") || "Vrai";
+        const falseLabel = t("createQuiz.trueFalse.false") || "Faux";
+        const keyLower = e.key.toLowerCase();
+
+        if (e.key === "1" || keyLower === "v" || keyLower === "t" || keyLower === "w") {
+          e.preventDefault();
+          handleAnswerClick(trueLabel);
+        } else if (e.key === "2" || keyLower === "f") {
+          e.preventDefault();
+          handleAnswerClick(falseLabel);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isAnswered,
+    isValidateDisabled,
+    currentQuestion,
+    showReportModal,
+    moveToNextQuestion,
+    handleSubmitAnswer,
+    handleAnswerClick,
+    t,
+  ]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
       <QuizHeader
         onQuit={handleQuit}
+        onReport={() => setShowReportModal(true)}
         trainingMode={trainingMode}
         totalScore={totalScore}
         timeLeft={timeLeft}
@@ -327,11 +425,22 @@ export function PlayQuizPage({
 
           {/* TEXTE DE LA QUESTION */}
           <div className="mb-6">
-            <p className="text-sm text-gray-500 mb-2">{quiz.title}</p>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <p className="text-sm text-gray-500 truncate">{quiz.title}</p>
+              <button
+                type="button"
+                onClick={() => setShowReportModal(true)}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-600 transition-colors px-2 py-1 rounded-md hover:bg-amber-50 shrink-0"
+                title={t("playQuiz.report.buttonTitle") || "Signaler un problème sur cette question"}
+              >
+                <Flag className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden sm:inline">{t("playQuiz.report.button") || "Signaler"}</span>
+              </button>
+            </div>
             <h3 className="text-xl md:text-2xl font-bold text-gray-800">
               {currentQuestion.question_text ||
-                ((currentQuestion.map_data as { countryMultiPrompt?: string } | null)
-                  ?.countryMultiPrompt || "")}
+                currentMapData.countryMultiPrompt ||
+                ""}
             </h3>
             {(currentQuestion.question_type === "puzzle_map" ||
               currentQuestion.question_type === "map_click" ||
@@ -401,29 +510,20 @@ export function PlayQuizPage({
               <PuzzleMapQuestion
                 countries={currentPuzzleState.countries}
                 geographySource={
-                  (currentQuestion.map_data as { mapLevel?: string })?.mapLevel ===
-                  "custom_geojson"
+                  currentMapData.mapLevel === "custom_geojson"
                     ? "custom_geojson"
-                    : (currentQuestion.map_data as { mapLevel?: string })?.mapLevel ===
-                        "subdivisions" &&
-                      (currentQuestion.map_data as { subdivisionScope?: SubdivisionScope })
-                        ?.subdivisionScope
-                    ? ((currentQuestion.map_data as { subdivisionScope?: SubdivisionScope })
-                        .subdivisionScope as SubdivisionScope)
+                    : currentMapData.mapLevel === "subdivisions" &&
+                      currentMapData.subdivisionScope
+                    ? (currentMapData.subdivisionScope as SubdivisionScope)
                     : "world"
                 }
                 customGeoJsonUrl={
-                  (currentQuestion.map_data as { mapLevel?: string })?.mapLevel ===
-                  "custom_geojson"
-                    ? String(
-                        (currentQuestion.map_data as { customGeojsonPublicUrl?: string })
-                          .customGeojsonPublicUrl || ""
-                      ) || null
+                  currentMapData.mapLevel === "custom_geojson"
+                    ? String(currentMapData.customGeojsonPublicUrl || "") || null
                     : null
                 }
                 customIdProperty={String(
-                  (currentQuestion.map_data as { customGeojsonIdProperty?: string })
-                    .customGeojsonIdProperty || "tc_id"
+                  currentMapData.customGeojsonIdProperty || "tc_id"
                 )}
                 showTargetList={false}
                 excludedIso3s={
@@ -432,7 +532,7 @@ export function PlayQuizPage({
                     : []
                 }
                 revealResult={showResult || isAnswered}
-                initialView={(currentQuestion.map_data as any)?.initialView || null}
+                initialView={currentMapData.initialView || null}
                 assignments={currentPuzzleState.assignments}
                 pickedIso3s={currentPuzzleState.pickedIso3s}
                 onAssignmentsChange={(nextAssignments) =>
@@ -489,7 +589,7 @@ export function PlayQuizPage({
                 showTargetList={false}
                 excludedIso3s={[]}
                 revealResult={showResult || isAnswered}
-                initialView={(currentQuestion.map_data as any)?.initialView || null}
+                initialView={currentMapData.initialView || null}
                 assignments={currentPuzzleState.assignments}
                 pickedIso3s={currentPuzzleState.pickedIso3s}
                 onAssignmentsChange={(nextAssignments) =>
@@ -535,24 +635,42 @@ export function PlayQuizPage({
             <button
               onClick={() => handleSubmitAnswer()}
               disabled={isValidateDisabled}
-              className="w-full py-3 md:py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+              className="w-full py-3 md:py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-lg flex items-center justify-center gap-2"
             >
-              {t("playQuiz.validate")}
+              <span>{t("playQuiz.validate")}</span>
+              <kbd className="hidden sm:inline-flex items-center text-xs bg-emerald-700/60 text-emerald-100 px-2 py-0.5 rounded border border-emerald-500/50 font-sans font-medium">
+                {t("playQuiz.keyboard.enter") || "Entrée ↵"}
+              </kbd>
             </button>
           ) : (
-            trainingMode && (
-              <button
-                onClick={moveToNextQuestion}
-                className="w-full py-3 md:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
-              >
+            <button
+              onClick={moveToNextQuestion}
+              className="w-full py-3 md:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg flex items-center justify-center gap-2"
+            >
+              <span>
                 {currentQuestionIndex < questions.length - 1
                   ? t("playQuiz.nextQuestion")
                   : t("playQuiz.finishQuiz")}
-              </button>
-            )
+              </span>
+              <kbd className="hidden sm:inline-flex items-center text-xs bg-blue-700/60 text-blue-100 px-2 py-0.5 rounded border border-blue-500/50 font-sans font-medium">
+                {t("playQuiz.keyboard.space") || "Espace ␣"}
+              </kbd>
+            </button>
           )}
         </div>
       </div>
+
+      <ReportQuestionModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        quizId={quiz.id}
+        quizTitle={quiz.title}
+        questionId={currentQuestion.id}
+        questionIndex={currentQuestionIndex}
+        totalQuestions={questions.length}
+        questionText={currentQuestion.question_text || currentMapData.countryMultiPrompt || ""}
+        questionType={currentQuestion.question_type}
+      />
     </div>
   );
 }

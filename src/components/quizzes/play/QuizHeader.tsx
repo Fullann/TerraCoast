@@ -1,10 +1,12 @@
-import React from "react";
-import { ArrowLeft, Clock, Trophy } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowLeft, Clock, Trophy, Flag, Volume2, VolumeX } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { isSoundEnabled, toggleSound } from "../../../lib/soundManager";
 import type { QuizChallenge } from "./types";
 
 interface QuizHeaderProps {
   onQuit: () => void;
+  onReport?: () => void;
   trainingMode: boolean;
   totalScore: number;
   timeLeft: number;
@@ -17,6 +19,7 @@ interface QuizHeaderProps {
 
 export const QuizHeader: React.FC<QuizHeaderProps> = ({
   onQuit,
+  onReport,
   trainingMode,
   totalScore,
   timeLeft,
@@ -27,18 +30,49 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
   progress,
 }) => {
   const { t } = useLanguage();
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+
+  const handleToggleSound = () => {
+    const newState = toggleSound();
+    setSoundOn(newState);
+  };
 
   return (
     <div className="bg-white shadow-sm px-4 py-3">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-3">
-          <button
-            onClick={onQuit}
-            className="flex items-center text-gray-600 hover:text-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className="hidden sm:inline">{t("playQuiz.quit")}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onQuit}
+              className="flex items-center text-gray-600 hover:text-gray-800"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              <span className="hidden sm:inline">{t("playQuiz.quit")}</span>
+            </button>
+            {onReport && (
+              <button
+                type="button"
+                onClick={onReport}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-amber-700 bg-gray-100 hover:bg-amber-50 transition-colors"
+                title={t("playQuiz.report.buttonTitle") || "Signaler un problème"}
+              >
+                <Flag className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden md:inline">{t("playQuiz.report.button") || "Signaler"}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 transition-colors"
+              title={soundOn ? (t("sound.mute") || "Couper le son") : (t("sound.unmute") || "Activer le son")}
+            >
+              {soundOn ? (
+                <Volume2 className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-gray-400" />
+              )}
+            </button>
+          </div>
 
           <div className="flex items-center space-x-2 md:space-x-4">
             {!trainingMode && (

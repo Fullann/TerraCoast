@@ -11,9 +11,13 @@ import {
   Users,
   Shield,
   Swords,
+  Gamepad2,
   MessageCircle,
   X,
+  Compass,
 } from "lucide-react";
+import { StreakModal } from "../profile/StreakModal";
+import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -28,6 +32,7 @@ export function Navbar() {
   } = useNotifications();
   const { t } = useLanguage();
   const [socialMenuOpen, setSocialMenuOpen] = useState(false);
+  const [streakModalOpen, setStreakModalOpen] = useState(false);
 
   const totalSocialNotifications =
     unreadMessages +
@@ -85,6 +90,19 @@ export function Navbar() {
                 </button>
 
                 <button
+                  onClick={() => navigate("/atlas")}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    currentView.startsWith("/atlas")
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  title={t("nav.atlas") || "Atlas 3D / Exploration libre"}
+                >
+                  <Compass className="w-5 h-5 inline mr-2 text-emerald-600" />
+                  {t("nav.atlas") || "Atlas"}
+                </button>
+
+                <button
                   onClick={() => navigate("/leaderboard")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     currentView.startsWith("/leaderboard")
@@ -131,6 +149,19 @@ export function Navbar() {
                 </button>
 
                 <button
+                  onClick={() => navigate("/party")}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
+                    currentView.startsWith("/party")
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  title={t("party.title") || "Salon Party en direct (style Kahoot)"}
+                >
+                  <Gamepad2 className="w-5 h-5 inline mr-2 text-indigo-600" />
+                  {t("nav.party") || "Party"}
+                </button>
+
+                <button
                   onClick={() => navigate("/chat")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
                     currentView.startsWith("/chat")
@@ -163,8 +194,38 @@ export function Navbar() {
               </div>
             </div>
 
-            {/* ✅ Bouton profil uniquement (déconnexion supprimée) */}
-            <div className="flex items-center space-x-4">
+            {/* ✅ Flame Streak Badge + Profil */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {profile && (
+                <button
+                  type="button"
+                  onClick={() => setStreakModalOpen(true)}
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-black transition-all shadow-sm ${
+                    isStreakPlayedToday(profile.last_activity_date)
+                      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:brightness-105 shadow-orange-500/25"
+                      : isStreakAtRisk(profile.last_activity_date, profile.current_streak)
+                      ? "bg-gradient-to-r from-red-600 to-orange-500 text-white animate-pulse shadow-red-500/30 ring-2 ring-red-400"
+                      : "bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
+                  }`}
+                  title={
+                    isStreakPlayedToday(profile.last_activity_date)
+                      ? `${profile.current_streak || 0} jours • Série validée aujourd'hui ! 🔥`
+                      : isStreakAtRisk(profile.last_activity_date, profile.current_streak)
+                      ? `${profile.current_streak || 0} jours • Série en danger ! Joue aujourd'hui`
+                      : `${profile.current_streak || 0} jours consécutifs`
+                  }
+                >
+                  <span
+                    className={`text-base ${
+                      isStreakPlayedToday(profile.last_activity_date) ? "animate-bounce" : ""
+                    }`}
+                  >
+                    🔥
+                  </span>
+                  <span>{profile.current_streak || 0}</span>
+                </button>
+              )}
+
               <button
                 onClick={() => navigate("/profile")}
                 className="hidden md:block text-right hover:bg-gray-50 p-2 rounded-lg transition-colors"
@@ -362,6 +423,26 @@ export function Navbar() {
 
               <button
                 onClick={() => {
+                  navigate("/party");
+                  setSocialMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
+                  currentView.startsWith("/party")
+                    ? "bg-indigo-100 text-indigo-700"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <div className="flex items-center">
+                  <Gamepad2 className="w-5 h-5 mr-3 text-indigo-600" />
+                  <span className="font-medium">{t("party.title") || "Salon Party 🏆"}</span>
+                </div>
+                <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                  Direct
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
                   navigate("/chat");
                   setSocialMenuOpen(false);
                 }}
@@ -381,10 +462,36 @@ export function Navbar() {
                   </span>
                 )}
               </button>
+
+              <button
+                onClick={() => {
+                  navigate("/atlas");
+                  setSocialMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
+                  currentView.startsWith("/atlas")
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <div className="flex items-center">
+                  <Compass className="w-5 h-5 mr-3 text-emerald-600" />
+                  <span className="font-medium">{t("nav.atlas") || "Atlas / Exploration libre"}</span>
+                </div>
+                <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                  3D
+                </span>
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      <StreakModal
+        isOpen={streakModalOpen}
+        onClose={() => setStreakModalOpen(false)}
+        profile={profile}
+      />
 
       <style>{`
         @media (max-width: 768px) {
