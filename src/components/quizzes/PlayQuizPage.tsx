@@ -16,6 +16,7 @@ import { TrueFalseQuestionView } from "./play/TrueFalseQuestionView";
 import { TextQuestionView } from "./play/TextQuestionView";
 import { CountryMultiQuestionView } from "./play/CountryMultiQuestionView";
 import { ReportQuestionModal } from "./play/ReportQuestionModal";
+import { ConfirmModal } from "../common/ConfirmModal";
 import { Flag } from "lucide-react";
 
 interface PlayQuizPageProps {
@@ -140,6 +141,7 @@ export function PlayQuizPage({
 
   const textInputRef = useRef<HTMLInputElement>(null);
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
+  const [showQuitModal, setShowQuitModal] = useState<boolean>(false);
 
   useEffect(() => {
     const question = questions[currentQuestionIndex];
@@ -226,6 +228,7 @@ export function PlayQuizPage({
         gameComplete ||
         !currentQuestion ||
         showReportModal ||
+        showQuitModal ||
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
         e.target instanceof HTMLSelectElement
@@ -299,6 +302,7 @@ export function PlayQuizPage({
     isValidateDisabled,
     currentQuestion,
     showReportModal,
+    showQuitModal,
     moveToNextQuestion,
     handleSubmitAnswer,
     handleAnswerClick,
@@ -359,11 +363,11 @@ export function PlayQuizPage({
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const handleQuit = () => {
-    const confirmed =
-      typeof window === "undefined"
-        ? true
-        : window.confirm(t("playQuiz.confirmQuit"));
-    if (!confirmed) return;
+    setShowQuitModal(true);
+  };
+
+  const confirmQuitGame = () => {
+    setShowQuitModal(false);
     if (mode === "duel") {
       navigate("/duels");
       return;
@@ -689,6 +693,17 @@ export function PlayQuizPage({
         totalQuestions={questions.length}
         questionText={currentQuestion.question_text || currentMapData.countryMultiPrompt || ""}
         questionType={currentQuestion.question_type}
+      />
+
+      <ConfirmModal
+        open={showQuitModal}
+        title={t("playQuiz.quit") || "Quitter le quiz"}
+        message={t("playQuiz.confirmQuit") || "Êtes-vous sûr de vouloir quitter ? Votre progression sera perdue."}
+        confirmLabel={t("playQuiz.quit") || "Quitter"}
+        cancelLabel={t("common.cancel") || "Continuer"}
+        confirmButtonClass="bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+        onCancel={() => setShowQuitModal(false)}
+        onConfirm={confirmQuitGame}
       />
     </div>
   );

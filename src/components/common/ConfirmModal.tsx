@@ -8,6 +8,7 @@ export interface ConfirmModalProps {
   confirmText?: string;
   cancelLabel?: string;
   cancelText?: string;
+  confirmButtonClass?: string;
   onCancel: () => void;
   onConfirm: () => void | Promise<void>;
 }
@@ -20,6 +21,7 @@ export function ConfirmModal({
   confirmText,
   cancelLabel,
   cancelText,
+  confirmButtonClass,
   onCancel,
   onConfirm,
 }: ConfirmModalProps) {
@@ -72,7 +74,9 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors"
+            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+              confirmButtonClass || "bg-emerald-600 hover:bg-emerald-700 text-white"
+            }`}
           >
             {finalConfirmLabel}
           </button>
