@@ -15,6 +15,9 @@ export default defineConfig({
         'android-chrome-512x512.png',
       ],
       workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         maximumFileSizeToCacheInBytes: 5000000, // 5 MiB
         runtimeCaching: [
           {

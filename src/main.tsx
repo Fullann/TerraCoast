@@ -15,6 +15,18 @@ window.addEventListener('vite:preloadError', (event) => {
   }
 });
 
+// Forcer le rechargement dès qu'un nouveau Service Worker s'active (évite les anciens chunks buggés)
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+}
+
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

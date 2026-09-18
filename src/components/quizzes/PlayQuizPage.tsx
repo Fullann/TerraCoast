@@ -305,6 +305,17 @@ export function PlayQuizPage({
     t,
   ]);
 
+  // Déclenche la fin de partie si toutes les questions sont traitées (hors rendu)
+  useEffect(() => {
+    if (
+      currentQuestionIndex >= questions.length &&
+      !gameComplete &&
+      questions.length > 0
+    ) {
+      completeGame();
+    }
+  }, [currentQuestionIndex, questions.length, gameComplete, completeGame]);
+
   if (!quiz || questions.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -337,9 +348,9 @@ export function PlayQuizPage({
   }
 
   if (currentQuestionIndex >= questions.length && !gameComplete) {
-    completeGame();
     return null;
   }
+
 
   if (!currentQuestion) {
     return null;
