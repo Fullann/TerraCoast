@@ -153,42 +153,6 @@ export function PlayQuizPage({
     }
   }, [currentQuestionIndex, questions]);
 
-  if (!quiz || questions.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">{t("playQuiz.loadingQuiz")}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (gameComplete) {
-    return (
-      <QuizResultsScreen
-        trainingMode={trainingMode}
-        mode={mode}
-        quizId={quizId}
-        totalScore={totalScore}
-        xpGained={xpGained}
-        answers={answers}
-        questions={questions}
-        puzzleStates={puzzleStates}
-        isOfflinePendingSync={isOfflinePendingSync}
-        isSyncing={isSyncing}
-        onRetrySync={() => syncSessionProgress()}
-        onReviewMistakes={restartReviewMistakes}
-        isDailyChallenge={searchParams.get("daily") === "true"}
-      />
-    );
-  }
-
-  if (currentQuestionIndex >= questions.length && !gameComplete) {
-    completeGame();
-    return null;
-  }
-
   const currentQuestion = questions[currentQuestionIndex];
   const currentPuzzleState = currentQuestion
     ? puzzleStates[currentQuestion.id]
@@ -197,50 +161,8 @@ export function PlayQuizPage({
     ? top10States[currentQuestion.id]
     : undefined;
 
-  if (!currentQuestion) {
-    return null;
-  }
-
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-
-  const handleQuit = () => {
-    const confirmed =
-      typeof window === "undefined"
-        ? true
-        : window.confirm(t("playQuiz.confirmQuit"));
-    if (!confirmed) return;
-    if (mode === "duel") {
-      navigate("/duels");
-      return;
-    }
-    if (trainingMode) {
-      navigate("/quizzes/training");
-      return;
-    }
-    navigate("/quizzes");
-  };
-
-  const handleCountryMultiInputChange = (
-    iso3: string,
-    field: "countryName" | "capital",
-    val: string
-  ) => {
-    setCountryMultiInputs((prev) => ({
-      ...prev,
-      [currentQuestion.id]: {
-        ...(prev[currentQuestion.id] || {}),
-        [iso3]: {
-          ...((prev[currentQuestion.id] || {})[iso3] || {
-            countryName: "",
-            capital: "",
-          }),
-          [field]: val,
-        },
-      },
-    }));
-  };
-
   const isValidateDisabled = (() => {
+    if (!currentQuestion) return true;
     if (
       currentQuestion.question_type === "mcq" ||
       currentQuestion.question_type === "true_false"
@@ -294,26 +216,15 @@ export function PlayQuizPage({
     return !userAnswer.trim();
   })();
 
-  const currentMapData = (currentQuestion.map_data || {}) as {
-    continent?: string;
-    selectedCountries?: string[];
-    requiredFields?: ("name" | "capital" | "map_click")[];
-    countryMultiPrompt?: string;
-    mapLevel?: string;
-    subdivisionScope?: SubdivisionScope;
-    customGeojsonPublicUrl?: string;
-    customGeojsonIdProperty?: string;
-    initialView?: any;
-  };
-
-  const countryMultiRequiredFields =
-    currentMapData.requiredFields || ["name", "capital", "map_click"];
-
   // Raccourcis clavier (1-8, A-H, V/F, Entrée, Espace)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignorer si le joueur tape dans un champ texte ou si une modale est ouverte
+      // Ignorer si le quiz n'est pas prêt, déjà terminé ou si une modale est ouverte
       if (
+        !quiz ||
+        questions.length === 0 ||
+        gameComplete ||
+        !currentQuestion ||
         showReportModal ||
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -381,6 +292,9 @@ export function PlayQuizPage({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
+    quiz,
+    questions.length,
+    gameComplete,
     isAnswered,
     isValidateDisabled,
     currentQuestion,
@@ -390,6 +304,100 @@ export function PlayQuizPage({
     handleAnswerClick,
     t,
   ]);
+
+  if (!quiz || questions.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">{t("playQuiz.loadingQuiz")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameComplete) {
+    return (
+      <QuizResultsScreen
+        trainingMode={trainingMode}
+        mode={mode}
+        quizId={quizId}
+        totalScore={totalScore}
+        xpGained={xpGained}
+        answers={answers}
+        questions={questions}
+        puzzleStates={puzzleStates}
+        isOfflinePendingSync={isOfflinePendingSync}
+        isSyncing={isSyncing}
+        onRetrySync={() => syncSessionProgress()}
+        onReviewMistakes={restartReviewMistakes}
+        isDailyChallenge={searchParams.get("daily") === "true"}
+      />
+    );
+  }
+
+  if (currentQuestionIndex >= questions.length && !gameComplete) {
+    completeGame();
+    return null;
+  }
+
+  if (!currentQuestion) {
+    return null;
+  }
+
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+
+  const handleQuit = () => {
+    const confirmed =
+      typeof window === "undefined"
+        ? true
+        : window.confirm(t("playQuiz.confirmQuit"));
+    if (!confirmed) return;
+    if (mode === "duel") {
+      navigate("/duels");
+      return;
+    }
+    if (trainingMode) {
+      navigate("/quizzes/training");
+      return;
+    }
+    navigate("/quizzes");
+  };
+
+  const handleCountryMultiInputChange = (
+    iso3: string,
+    field: "countryName" | "capital",
+    val: string
+  ) => {
+    setCountryMultiInputs((prev) => ({
+      ...prev,
+      [currentQuestion.id]: {
+        ...(prev[currentQuestion.id] || {}),
+        [iso3]: {
+          ...((prev[currentQuestion.id] || {})[iso3] || {
+            countryName: "",
+            capital: "",
+          }),
+          [field]: val,
+        },
+      },
+    }));
+  };
+
+  const currentMapData = (currentQuestion.map_data || {}) as {
+    continent?: string;
+    selectedCountries?: string[];
+    requiredFields?: ("name" | "capital" | "map_click")[];
+    countryMultiPrompt?: string;
+    mapLevel?: string;
+    subdivisionScope?: SubdivisionScope;
+    customGeojsonPublicUrl?: string;
+    customGeojsonIdProperty?: string;
+    initialView?: any;
+  };
+
+  const countryMultiRequiredFields =
+    currentMapData.requiredFields || ["name", "capital", "map_click"];
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
