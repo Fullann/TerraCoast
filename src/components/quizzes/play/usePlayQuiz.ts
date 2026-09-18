@@ -925,7 +925,7 @@ export function usePlayQuiz({
 
       if (currentQuestion.question_type === "top10_order") {
         if (!currentTop10State) return;
-        if (currentTop10State.order.length !== currentTop10State.expected.length) {
+        if (!fromTimeout && currentTop10State.order.length !== currentTop10State.expected.length) {
           showAppNotification({
             type: "error",
             message: t("playQuiz.top10.invalidOrder"),
@@ -987,7 +987,7 @@ export function usePlayQuiz({
           capitalTolerance?: "strict" | "lenient";
         };
         const targets = getCountriesByIso3(mapData.selectedCountries || []);
-        if (targets.length === 0) {
+        if (!fromTimeout && targets.length === 0) {
           showAppNotification({
             type: "error",
             message: t("playQuiz.selectAnswer"),
@@ -1010,14 +1010,14 @@ export function usePlayQuiz({
           targets.map((country) => country.iso3.toUpperCase())
         );
 
-        if (requiredFields.includes("map_click") && pickedSet.size === 0) {
+        if (!fromTimeout && requiredFields.includes("map_click") && pickedSet.size === 0) {
           showAppNotification({
             type: "error",
             message: t("playQuiz.selectAnswer"),
           });
           return;
         }
-        if (requiredFields.includes("name")) {
+        if (!fromTimeout && requiredFields.includes("name")) {
           const hasMissing = targets.some((target) => {
             const input = inputByIso[target.iso3];
             return !String(input?.countryName || "").trim();
@@ -1030,7 +1030,7 @@ export function usePlayQuiz({
             return;
           }
         }
-        if (requiredFields.includes("capital")) {
+        if (!fromTimeout && requiredFields.includes("capital")) {
           const hasMissing = targets.some((target) => {
             const input = inputByIso[target.iso3];
             return !String(input?.capital || "").trim();
@@ -1147,7 +1147,7 @@ export function usePlayQuiz({
         return;
       }
 
-      if (!answer.trim()) {
+      if (!fromTimeout && !answer.trim()) {
         showAppNotification({
           type: "error",
           message: t("playQuiz.selectAnswer"),
@@ -1227,18 +1227,18 @@ export function usePlayQuiz({
   useEffect(() => {
     if (gameComplete || isAnswered || trainingMode) return;
 
+    if (timeLeft <= 0) {
+      handleTimeout();
+      return;
+    }
+
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleTimeout();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
   }, [
+    timeLeft,
     currentQuestionIndex,
     isAnswered,
     gameComplete,

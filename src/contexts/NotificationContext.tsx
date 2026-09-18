@@ -173,10 +173,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     () => setFriendRequestNotification(null),
     []
   );
-  const showAppNotification = useCallback(
-    (notification: AppNotification) => setAppNotification(notification),
-    []
-  );
+  const showAppNotification = useCallback((notification: AppNotification) => {
+    setTimeout(() => {
+      setAppNotification(notification);
+    }, 0);
+  }, []);
   const clearAppNotification = useCallback(() => setAppNotification(null), []);
 
   useEffect(() => {
