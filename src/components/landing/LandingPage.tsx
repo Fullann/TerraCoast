@@ -38,18 +38,32 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
     completedSessions: 0,
     loading: true,
   });
-  const [testimonials, setTestimonials] = useState<LandingTestimonial[]>(FALLBACK_TESTIMONIALS);
 
-  const offers = useMemo(
-    () => [
-      t("landing.about.offer1"),
-      t("landing.about.offer2"),
-      t("landing.about.offer3"),
-      t("landing.about.offer4"),
-      t("landing.about.offer5"),
-    ],
-    [t]
-  );
+  const offers = [
+    t("landing.about.offer1"),
+    t("landing.about.offer2"),
+    t("landing.about.offer3"),
+    t("landing.about.offer4"),
+    t("landing.about.offer5"),
+  ];
+
+  const testimonials = [
+    {
+      name: "Lina",
+      role: "Joueuse quotidienne",
+      text: "La meilleure app pour progresser en géographie sans s’ennuyer.",
+    },
+    {
+      name: "Mathis",
+      role: "Créateur de quiz",
+      text: "Créer et partager mes quiz est super rapide, la communauté joue vraiment.",
+    },
+    {
+      name: "Sara",
+      role: "Mode duel",
+      text: "Les défis entre amis rendent tout plus fun et motivant.",
+    },
+  ];
 
   const globePoints = useMemo<QuizGlobePoint[]>(
     () => [

@@ -1,0 +1,39 @@
+# Configuration Dependabot pour TerraCoast (SCA - Software Composition Analysis)
+# Référence : https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  # Surveillance des dépendances npm (package.json / package-lock.json)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Activer les alertes de sécurité prioritaires
+    versioning-strategy: increase-if-necessary
+
+  # Surveillance des actions GitHub utilisées dans les workflows CI/CD
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    labels:
+      - "ci"
+      - "security"
+      - "github-actions"
+    commit-message:
+      prefix: "ci(actions)"
