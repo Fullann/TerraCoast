@@ -117,12 +117,12 @@ export function QuizValidationPage() {
 
   const loadPendingQuizzes = async () => {
     setLoading(true);
-   const { data: quizzes, error } = await supabase
-  .from('quizzes')
-  .select('*, author:profiles!quizzes_creator_id_fkey(*)')
-  .eq('pending_validation', true)
-  .eq('validation_status', 'pending')
-  .order('created_at', { ascending: false });
+    const { data: quizzes } = await supabase
+      .from('quizzes')
+      .select('*, author:profiles!quizzes_creator_id_fkey(*)')
+      .eq('pending_validation', true)
+      .eq('validation_status', 'pending')
+      .order('created_at', { ascending: false });
 
 
     if (quizzes) {
@@ -166,8 +166,8 @@ export function QuizValidationPage() {
     const parsedLat = locationLat.trim() === '' ? null : Number(locationLat);
     const parsedLng = locationLng.trim() === '' ? null : Number(locationLng);
     if (
-      (locationLat.trim() !== '' && (!Number.isFinite(parsedLat) || parsedLat < -90 || parsedLat > 90)) ||
-      (locationLng.trim() !== '' && (!Number.isFinite(parsedLng) || parsedLng < -180 || parsedLng > 180))
+      (parsedLat !== null && (!Number.isFinite(parsedLat) || parsedLat < -90 || parsedLat > 90)) ||
+      (parsedLng !== null && (!Number.isFinite(parsedLng) || parsedLng < -180 || parsedLng > 180))
     ) {
       alert('Coordonnées invalides. Lat: -90..90, Lng: -180..180');
       return;
@@ -194,11 +194,11 @@ export function QuizValidationPage() {
         });
 
       const quiz = pendingQuizzes.find(q => q.id === quizId);
-      if (quiz?.author_id) {
+      if (quiz?.creator_id) {
         const { data: author } = await supabase
           .from('profiles')
           .select('published_quiz_count')
-          .eq('id', quiz.author_id)
+          .eq('id', quiz.creator_id)
           .single();
 
         if (author) {
@@ -207,7 +207,7 @@ export function QuizValidationPage() {
             .update({
               published_quiz_count: (author.published_quiz_count || 0) + 1,
             })
-            .eq('id', quiz.author_id);
+            .eq('id', quiz.creator_id);
         }
       }
 

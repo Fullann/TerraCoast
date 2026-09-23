@@ -1,48 +1,38 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotifications } from "../../contexts/NotificationContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { Avatar } from "../common/Avatar";
 import {
   Trophy,
-  User,
   Home,
   BookOpen,
   Users,
   Shield,
   Swords,
+  Gamepad2,
   MessageCircle,
   X,
-  CheckCircle,
-  Mail,
-  UserPlus,
-  Info,
-  AlertCircle,
+  Compass,
 } from "lucide-react";
+import { StreakModal } from "../profile/StreakModal";
+import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
 
-interface NavbarProps {
-  currentView: string;
-  onNavigate: (view: string, data?: any) => void;
-}
-
-export function Navbar({ currentView, onNavigate }: NavbarProps) {
+export function Navbar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentView = location.pathname;
   const { profile } = useAuth();
   const {
     unreadMessages,
     pendingFriendRequests,
     pendingDuelsToPlay,
     newDuelResults,
-    duelNotification,
-    messageNotification,
-    friendRequestNotification,
-    appNotification,
-    clearDuelNotification,
-    clearMessageNotification,
-    clearFriendRequestNotification,
-    clearAppNotification,
   } = useNotifications();
   const { t } = useLanguage();
   const [socialMenuOpen, setSocialMenuOpen] = useState(false);
+  const [streakModalOpen, setStreakModalOpen] = useState(false);
 
   const totalSocialNotifications =
     unreadMessages +
@@ -50,274 +40,14 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
     (pendingDuelsToPlay || 0) +
     (newDuelResults || 0);
 
-  // Auto-fermeture des toasts
-  useEffect(() => {
-    if (duelNotification) {
-      const timer = setTimeout(clearDuelNotification, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [duelNotification, clearDuelNotification]);
-
-  useEffect(() => {
-    if (messageNotification) {
-      const timer = setTimeout(clearMessageNotification, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [messageNotification, clearMessageNotification]);
-
-  useEffect(() => {
-    if (friendRequestNotification) {
-      const timer = setTimeout(clearFriendRequestNotification, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [friendRequestNotification, clearFriendRequestNotification]);
-
-  useEffect(() => {
-    if (appNotification) {
-      const timer = setTimeout(clearAppNotification, 4500);
-      return () => clearTimeout(timer);
-    }
-  }, [appNotification, clearAppNotification]);
-
   return (
     <>
-      {/* Toast Message */}
-      {messageNotification && (
-        <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-          <div className="bg-white shadow-2xl rounded-xl border-2 border-blue-500 p-4 max-w-sm">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <Mail className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-gray-900">
-                  {t("notifications.newMessage")}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  <span className="font-medium">
-                    {messageNotification.from}
-                  </span>{" "}
-                  : {messageNotification.message.substring(0, 50)}
-                  {messageNotification.message.length > 50 && "..."}
-                </p>
-                <button
-                  onClick={() => {
-                    onNavigate("chat");
-                    clearMessageNotification();
-                  }}
-                  className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  {t("notifications.viewMessage")}
-                </button>
-              </div>
-              <button
-                onClick={clearMessageNotification}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Friend Request */}
-      {friendRequestNotification && (
-        <div className="fixed top-36 right-4 z-50 animate-slide-in-right">
-          <div className="bg-white shadow-2xl rounded-xl border-2 border-purple-500 p-4 max-w-sm">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <UserPlus className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-gray-900">
-                  {t("notifications.newFriendRequest")}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  <span className="font-medium">
-                    {friendRequestNotification.from}
-                  </span>{" "}
-                  {t("notifications.wantsFriend")}
-                </p>
-                <button
-                  onClick={() => {
-                    onNavigate("friends");
-                    clearFriendRequestNotification();
-                  }}
-                  className="mt-3 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                >
-                  {t("notifications.viewRequests")}
-                </button>
-              </div>
-              <button
-                onClick={clearFriendRequestNotification}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Duel */}
-      {duelNotification && (
-        <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-          <div className="bg-white shadow-2xl rounded-xl border-2 border-emerald-500 p-4 max-w-sm">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                {duelNotification.type === "invitation" && (
-                  <Swords className="w-6 h-6 text-emerald-600" />
-                )}
-                {duelNotification.type === "accepted" && (
-                  <CheckCircle className="w-6 h-6 text-blue-600" />
-                )}
-                {duelNotification.type === "completed" && (
-                  <Trophy className="w-6 h-6 text-yellow-600" />
-                )}
-                {duelNotification.type === "found" && (
-                  <Swords className="w-6 h-6 text-purple-600" />
-                )}
-              </div>
-              <div className="flex-1">
-                {duelNotification.type === "invitation" && (
-                  <>
-                    <CheckCircle className="w-6 h-6 text-emerald-600 flex-shrink-0" />
-                    <div
-                      className="cursor-pointer flex-1"
-                      onClick={() => {
-                        onNavigate("duels", { tab: "invitations" });
-                        clearDuelNotification();
-                      }}
-                    >
-                      <strong>{duelNotification.from}</strong>{" "}
-                      {t("notifications.challengedYou")}{" "}
-                      <strong>{duelNotification.quizTitle}</strong>
-                    </div>
-                  </>
-                )}
-                {duelNotification.type === "accepted" && (
-                  <>
-                    <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
-                    <div
-                      className="cursor-pointer flex-1"
-                      onClick={() => {
-                        onNavigate("duels", { tab: "active" });
-                        clearDuelNotification();
-                      }}
-                    >
-                      <strong>{duelNotification.from}</strong>{" "}
-                      {t("notifications.acceptedDuel")}{" "}
-                      <strong>{duelNotification.quizTitle}</strong>
-                    </div>
-                  </>
-                )}
-                {duelNotification.type === "completed" && (
-                  <>
-                    <Trophy className="w-6 h-6 text-yellow-600 flex-shrink-0" />
-                    <div
-                      className="cursor-pointer flex-1"
-                      onClick={() => {
-                        onNavigate("duels", { tab: "history" });
-                        clearDuelNotification();
-                      }}
-                    >
-                      {t("notifications.duelFinished")}{" "}
-                      <strong>{duelNotification.from}</strong>{" "}
-                      {t("notifications.on")}{" "}
-                      <strong>{duelNotification.quizTitle}</strong>
-                    </div>
-                  </>
-                )}
-                {duelNotification.type === "found" && (
-                  <>
-                    <Swords className="w-6 h-6 text-purple-600 flex-shrink-0" />
-                    <div
-                      className="cursor-pointer flex-1"
-                      onClick={() => {
-                        onNavigate("duels", { tab: "matchmaking" });
-                        clearDuelNotification();
-                      }}
-                    >
-                      <strong>{t("duels.matchFound")}</strong> -{" "}
-                      <strong>{duelNotification.from}</strong>{" "}
-                      {t("notifications.on")} <strong>{duelNotification.quizTitle}</strong>
-                    </div>
-                  </>
-                )}
-                <button
-                  onClick={() => {
-                    if (duelNotification.type === "completed") {
-                      onNavigate("duels", { tab: "history" });
-                    } else if (duelNotification.type === "found") {
-                      onNavigate("duels", { tab: "matchmaking" });
-                    } else if (duelNotification.type === "accepted") {
-                      onNavigate("duels", { tab: "active" });
-                    } else {
-                      onNavigate("duels", { tab: "invitations" });
-                    }
-                    clearDuelNotification();
-                  }}
-                  className="mt-3 w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
-                >
-                  {duelNotification.type === "completed"
-                    ? t("duels.viewResults")
-                    : t("notifications.viewDuels")}
-                </button>
-              </div>
-              <button
-                onClick={clearDuelNotification}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast App */}
-      {appNotification && (
-        <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
-          <div
-            className={`bg-white shadow-2xl rounded-xl border-2 p-4 max-w-sm ${
-              appNotification.type === "success"
-                ? "border-emerald-500"
-                : appNotification.type === "error"
-                ? "border-red-500"
-                : "border-sky-500"
-            }`}
-          >
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                {appNotification.type === "success" ? (
-                  <CheckCircle className="w-6 h-6 text-emerald-600" />
-                ) : appNotification.type === "error" ? (
-                  <AlertCircle className="w-6 h-6 text-red-600" />
-                ) : (
-                  <Info className="w-6 h-6 text-sky-600" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-800">{appNotification.message}</p>
-              </div>
-              <button
-                onClick={clearAppNotification}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <nav className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => onNavigate("home")}
+                onClick={() => navigate("/terra")}
                 className="flex items-center hover:opacity-80 transition-opacity"
               >
                 <img
@@ -336,9 +66,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               {/* Desktop menu */}
               <div className="hidden md:flex space-x-1">
                 <button
-                  onClick={() => onNavigate("home")}
+                  onClick={() => navigate("/terra")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    currentView === "home"
+                    currentView === "/terra" || currentView === "/"
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -348,9 +78,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("quizzes")}
+                  onClick={() => navigate("/quizzes")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    currentView === "quizzes"
+                    currentView.startsWith("/quizzes")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -360,9 +90,22 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("leaderboard")}
+                  onClick={() => navigate("/atlas")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    currentView === "leaderboard"
+                    currentView.startsWith("/atlas")
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  title={t("nav.atlas") || "Atlas 3D / Exploration libre"}
+                >
+                  <Compass className="w-5 h-5 inline mr-2 text-emerald-600" />
+                  {t("nav.atlas") || "Atlas"}
+                </button>
+
+                <button
+                  onClick={() => navigate("/leaderboard")}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    currentView.startsWith("/leaderboard")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -372,9 +115,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("friends")}
+                  onClick={() => navigate("/friends")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                    currentView === "friends"
+                    currentView.startsWith("/friends")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -389,9 +132,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("duels")}
+                  onClick={() => navigate("/duels")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                    currentView === "duels"
+                    currentView.startsWith("/duels")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -406,9 +149,22 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </button>
 
                 <button
-                  onClick={() => onNavigate("chat")}
+                  onClick={() => navigate("/party")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                    currentView === "chat"
+                    currentView.startsWith("/party")
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  title={t("party.title") || "Salon Party en direct (style Kahoot)"}
+                >
+                  <Gamepad2 className="w-5 h-5 inline mr-2 text-indigo-600" />
+                  {t("nav.party") || "Party"}
+                </button>
+
+                <button
+                  onClick={() => navigate("/chat")}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
+                    currentView.startsWith("/chat")
                       ? "bg-emerald-100 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
@@ -424,9 +180,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
                 {profile?.role === "admin" && (
                   <button
-                    onClick={() => onNavigate("admin")}
+                    onClick={() => navigate("/admin")}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      currentView === "admin"
+                      currentView.startsWith("/admin")
                         ? "bg-emerald-100 text-emerald-700"
                         : "text-gray-600 hover:bg-gray-100"
                     }`}
@@ -438,10 +194,40 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </div>
             </div>
 
-            {/* ✅ Bouton profil uniquement (déconnexion supprimée) */}
-            <div className="flex items-center space-x-4">
+            {/* ✅ Flame Streak Badge + Profil */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {profile && (
+                <button
+                  type="button"
+                  onClick={() => setStreakModalOpen(true)}
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-black transition-all shadow-sm ${
+                    isStreakPlayedToday(profile.last_activity_date)
+                      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:brightness-105 shadow-orange-500/25"
+                      : isStreakAtRisk(profile.last_activity_date, profile.current_streak)
+                      ? "bg-gradient-to-r from-red-600 to-orange-500 text-white animate-pulse shadow-red-500/30 ring-2 ring-red-400"
+                      : "bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
+                  }`}
+                  title={
+                    isStreakPlayedToday(profile.last_activity_date)
+                      ? `${profile.current_streak || 0} jours • Série validée aujourd'hui ! 🔥`
+                      : isStreakAtRisk(profile.last_activity_date, profile.current_streak)
+                      ? `${profile.current_streak || 0} jours • Série en danger ! Joue aujourd'hui`
+                      : `${profile.current_streak || 0} jours consécutifs`
+                  }
+                >
+                  <span
+                    className={`text-base ${
+                      isStreakPlayedToday(profile.last_activity_date) ? "animate-bounce" : ""
+                    }`}
+                  >
+                    🔥
+                  </span>
+                  <span>{profile.current_streak || 0}</span>
+                </button>
+              )}
+
               <button
-                onClick={() => onNavigate("profile")}
+                onClick={() => navigate("/profile")}
                 className="hidden md:block text-right hover:bg-gray-50 p-2 rounded-lg transition-colors"
               >
                 <p className="text-sm font-medium text-gray-800">
@@ -453,9 +239,12 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </button>
 
               <button
-                onClick={() => onNavigate("profile")}
+                type="button"
+                onClick={() => navigate("/profile")}
+                aria-label={t("nav.profile")}
+                title={t("nav.profile")}
                 className={`hidden md:block p-2 rounded-lg transition-colors ${
-                  currentView === "profile"
+                  currentView.startsWith("/profile")
                     ? "bg-emerald-100 text-emerald-700"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
@@ -472,13 +261,12 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         </div>
       </nav>
 
-      {/* Bottom Nav Mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40 safe-area-inset-bottom">
         <div className="grid grid-cols-5 h-16">
           <button
-            onClick={() => onNavigate("home")}
+            onClick={() => navigate("/terra")}
             className={`flex flex-col items-center justify-center transition-colors ${
-              currentView === "home" ? "text-emerald-600" : "text-gray-600"
+              currentView === "/terra" ? "text-emerald-600" : "text-gray-600"
             }`}
           >
             <Home className="w-6 h-6" />
@@ -486,9 +274,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           </button>
 
           <button
-            onClick={() => onNavigate("quizzes")}
+            onClick={() => navigate("/quizzes")}
             className={`flex flex-col items-center justify-center transition-colors ${
-              currentView === "quizzes" ? "text-emerald-600" : "text-gray-600"
+              currentView.startsWith("/quizzes") ? "text-emerald-600" : "text-gray-600"
             }`}
           >
             <BookOpen className="w-6 h-6" />
@@ -496,9 +284,13 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           </button>
 
           <button
+            type="button"
             onClick={() => setSocialMenuOpen(!socialMenuOpen)}
+            aria-label={t("nav.social")}
+            aria-expanded={socialMenuOpen}
+            aria-haspopup="dialog"
             className={`flex flex-col items-center justify-center transition-colors relative ${
-              ["friends", "duels", "chat"].includes(currentView)
+              currentView.startsWith("/friends") || currentView.startsWith("/duels") || currentView.startsWith("/chat")
                 ? "text-emerald-600"
                 : "text-gray-600"
             }`}
@@ -513,9 +305,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           </button>
 
           <button
-            onClick={() => onNavigate("leaderboard")}
+            onClick={() => navigate("/leaderboard")}
             className={`flex flex-col items-center justify-center transition-colors ${
-              currentView === "leaderboard"
+              currentView.startsWith("/leaderboard")
                 ? "text-emerald-600"
                 : "text-gray-600"
             }`}
@@ -525,9 +317,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           </button>
 
           <button
-            onClick={() => onNavigate("profile")}
+            onClick={() => navigate("/profile")}
             className={`flex flex-col items-center justify-center transition-colors ${
-              currentView === "profile" ? "text-emerald-600" : "text-gray-600"
+              currentView.startsWith("/profile") ? "text-emerald-600" : "text-gray-600"
             }`}
           >
             <Avatar
@@ -548,6 +340,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           onClick={() => setSocialMenuOpen(false)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("nav.social")}
             className="fixed bottom-16 left-0 right-0 bg-white rounded-t-2xl shadow-2xl p-4 animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
@@ -556,21 +351,24 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 {t("nav.social")}
               </h3>
               <button
+                type="button"
                 onClick={() => setSocialMenuOpen(false)}
+                aria-label={t("common.close")}
+                title={t("common.close")}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5 text-gray-600" aria-hidden="true" />
               </button>
             </div>
 
             <div className="space-y-2">
               <button
                 onClick={() => {
-                  onNavigate("friends");
+                  navigate("/friends");
                   setSocialMenuOpen(false);
                 }}
                 className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  currentView === "friends"
+                  currentView.startsWith("/friends")
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
@@ -588,11 +386,11 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
               <button
                 onClick={() => {
-                  onNavigate("duels");
+                  navigate("/duels");
                   setSocialMenuOpen(false);
                 }}
                 className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  currentView === "duels"
+                  currentView.startsWith("/duels")
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
@@ -625,11 +423,31 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
               <button
                 onClick={() => {
-                  onNavigate("chat");
+                  navigate("/party");
                   setSocialMenuOpen(false);
                 }}
                 className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  currentView === "chat"
+                  currentView.startsWith("/party")
+                    ? "bg-indigo-100 text-indigo-700"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <div className="flex items-center">
+                  <Gamepad2 className="w-5 h-5 mr-3 text-indigo-600" />
+                  <span className="font-medium">{t("party.title") || "Salon Party 🏆"}</span>
+                </div>
+                <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                  Direct
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate("/chat");
+                  setSocialMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
+                  currentView.startsWith("/chat")
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
@@ -644,10 +462,36 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                   </span>
                 )}
               </button>
+
+              <button
+                onClick={() => {
+                  navigate("/atlas");
+                  setSocialMenuOpen(false);
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
+                  currentView.startsWith("/atlas")
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <div className="flex items-center">
+                  <Compass className="w-5 h-5 mr-3 text-emerald-600" />
+                  <span className="font-medium">{t("nav.atlas") || "Atlas / Exploration libre"}</span>
+                </div>
+                <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                  3D
+                </span>
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      <StreakModal
+        isOpen={streakModalOpen}
+        onClose={() => setStreakModalOpen(false)}
+        profile={profile}
+      />
 
       <style>{`
         @media (max-width: 768px) {

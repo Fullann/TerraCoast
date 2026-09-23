@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -10,13 +11,21 @@ import {
   BookOpen,
   Award,
   Dumbbell,
+  Gamepad2,
   AlertTriangle,
   Ban,
-  X,
+  Compass,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
-import { getCountriesByIso3 } from "../../lib/countryGameData";
-import { QuizGlobe, type QuizGlobePoint } from "./QuizGlobe";
+import type { QuizGlobePoint } from "./QuizGlobe";
+import { DailyChallengeCard } from "../daily/DailyChallengeCard";
+import { getDailyQuizForDate } from "../../lib/dailyChallenge";
+import { StreakModal } from "../profile/StreakModal";
+import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
+
+const QuizGlobe = lazy(() =>
+  import("./QuizGlobe").then((m) => ({ default: m.QuizGlobe }))
+);
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"];
@@ -27,11 +36,8 @@ type Warning = {
   created_at: string;
 };
 
-export function HomePage({
-  onNavigate,
-}: {
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
-}) {
+export function HomePage() {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const [, setRecentQuizzes] = useState<Quiz[]>([]);
@@ -39,6 +45,8 @@ export function HomePage({
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [globePoints, setGlobePoints] = useState<QuizGlobePoint[]>([]);
+  const [dailyQuiz, setDailyQuiz] = useState<Quiz | null>(null);
+  const [loadingDailyQuiz, setLoadingDailyQuiz] = useState(true);
   const [stats, setStats] = useState({
     totalPlays: 0,
     averageScore: 0,
@@ -48,14 +56,6 @@ export function HomePage({
 
   const getDayText = (count: number) =>
     count > 1 ? t("common.days") : t("common.day");
-
-  const getStreakStartDate = () => {
-    if (!profile?.current_streak || profile.current_streak === 0) return null;
-    const today = new Date();
-    const streakStartDate = new Date();
-    streakStartDate.setDate(today.getDate() - (profile.current_streak - 1));
-    return streakStartDate;
-  };
 
   useEffect(() => {
     if (!profile) return;
@@ -85,6 +85,10 @@ export function HomePage({
         }
 
         if (allQuizzes && allQuizzes.length > 0) {
+          const pickedDaily = getDailyQuizForDate(allQuizzes);
+          setDailyQuiz(pickedDaily);
+          setLoadingDailyQuiz(false);
+
           const now = Date.now();
           const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
@@ -113,23 +117,31 @@ export function HomePage({
             .in("quiz_id", quizIds)
             .in("question_type", ["puzzle_map", "map_click", "country_multi"]);
 
-          const points = relevantQuizzes.map((quiz: Quiz, idx: number) => {
-            const relatedQuestions = (quizQuestions || []).filter(
-              (q: any) => q.quiz_id === quiz.id
-            );
+          let countryResolver:
+            | ((iso3s: string[]) => { lat: number; lng: number }[])
+            | null = null;
+
+          const points: QuizGlobePoint[] = [];
+          for (let idx = 0; idx < relevantQuizzes.length; idx++) {
+            const quiz = relevantQuizzes[idx];
             if (
               typeof quiz.location_lat === "number" &&
               typeof quiz.location_lng === "number"
             ) {
-              return {
+              points.push({
                 quizId: quiz.id,
                 title: quiz.title,
                 difficulty: quiz.difficulty,
                 totalPlays: quiz.total_plays || 0,
                 lat: quiz.location_lat,
                 lng: quiz.location_lng,
-              } satisfies QuizGlobePoint;
+              });
+              continue;
             }
+
+            const relatedQuestions = (quizQuestions || []).filter(
+              (q: any) => q.quiz_id === quiz.id
+            );
             const selectedIso3s = relatedQuestions.flatMap((q: any) => {
               const mapData = q.map_data as { selectedCountries?: string[] } | null;
               return Array.isArray(mapData?.selectedCountries)
@@ -137,33 +149,46 @@ export function HomePage({
                 : [];
             });
             const uniqueIso3s = [...new Set(selectedIso3s)].slice(0, 5);
-            const countries = getCountriesByIso3(uniqueIso3s);
-            if (countries.length > 0) {
-              const avgLat =
-                countries.reduce((sum, c) => sum + c.lat, 0) / countries.length;
-              const avgLng =
-                countries.reduce((sum, c) => sum + c.lng, 0) / countries.length;
-              return {
-                quizId: quiz.id,
-                title: quiz.title,
-                difficulty: quiz.difficulty,
-                totalPlays: quiz.total_plays || 0,
-                lat: avgLat,
-                lng: avgLng,
-              } satisfies QuizGlobePoint;
+
+            if (uniqueIso3s.length > 0) {
+              if (!countryResolver) {
+                const { getCountriesByIso3 } = await import(
+                  "../../lib/countryGameData"
+                );
+                countryResolver = getCountriesByIso3;
+              }
+              const countries = countryResolver(uniqueIso3s);
+              if (countries.length > 0) {
+                const avgLat =
+                  countries.reduce((sum, c) => sum + c.lat, 0) /
+                  countries.length;
+                const avgLng =
+                  countries.reduce((sum, c) => sum + c.lng, 0) /
+                  countries.length;
+                points.push({
+                  quizId: quiz.id,
+                  title: quiz.title,
+                  difficulty: quiz.difficulty,
+                  totalPlays: quiz.total_plays || 0,
+                  lat: avgLat,
+                  lng: avgLng,
+                });
+                continue;
+              }
             }
+
             // Fallback deterministic spread if quiz has no geographic config.
             const fallbackLat = -40 + idx * 25;
             const fallbackLng = -140 + idx * 90;
-            return {
+            points.push({
               quizId: quiz.id,
               title: quiz.title,
               difficulty: quiz.difficulty,
               totalPlays: quiz.total_plays || 0,
               lat: fallbackLat,
               lng: fallbackLng,
-            } satisfies QuizGlobePoint;
-          });
+            });
+          }
           setGlobePoints(points);
         }
 
@@ -342,6 +367,11 @@ export function HomePage({
         </div>
       )}
 
+      {/* 📅 Quiz du Jour (Daily Challenge) */}
+      <div className="mb-6">
+        <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-white shadow-lg flex flex-col">
           <Target className="w-10 h-10 mb-4" />
@@ -353,10 +383,27 @@ export function HomePage({
         </div>
 
         <div
-          className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-6 text-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow flex flex-col"
+          className={`rounded-xl p-6 text-white shadow-lg cursor-pointer hover:shadow-xl transition-all flex flex-col ${
+            isStreakPlayedToday(profile?.last_activity_date)
+              ? "bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 ring-2 ring-orange-300/40"
+              : isStreakAtRisk(profile?.last_activity_date, profile?.current_streak)
+              ? "bg-gradient-to-br from-red-600 to-rose-700 animate-pulse ring-2 ring-red-400"
+              : "bg-gradient-to-r from-red-600 to-red-700"
+          }`}
           onClick={() => setShowStreakModal(true)}
         >
-          <Flame className="w-10 h-10 mb-4" />
+          <div className="flex items-center justify-between mb-2">
+            <Flame className="w-10 h-10" />
+            {isStreakPlayedToday(profile?.last_activity_date) ? (
+              <span className="text-xs font-bold bg-white/25 px-2.5 py-0.5 rounded-full backdrop-blur-sm">
+                ✅ {t("streak.validated") || "Validée aujourd'hui"}
+              </span>
+            ) : isStreakAtRisk(profile?.last_activity_date, profile?.current_streak) ? (
+              <span className="text-xs font-bold bg-white text-red-700 px-2 py-0.5 rounded-full animate-bounce">
+                ⚠️ {t("streak.inDanger") || "En danger !"}
+              </span>
+            ) : null}
+          </div>
           <div className="flex items-center space-x-2 mb-3">
             <span className="text-3xl font-extrabold">
               {profile?.current_streak || 0}
@@ -368,11 +415,11 @@ export function HomePage({
             />
           </div>
           <h3 className="text-lg font-semibold">{t("home.currentStreak")}</h3>
-          <p className="text-red-200 text-sm mt-auto">
+          <p className="text-red-100 text-sm mt-auto">
             {t("home.record")}: {profile?.longest_streak || 0}{" "}
             {getDayText(profile?.longest_streak || 0)}
           </p>
-          <p className="text-xs text-red-300 mt-2 cursor-pointer hover:underline">
+          <p className="text-xs text-orange-200 mt-2 cursor-pointer hover:underline">
             {t("common.clickForDetails")}
           </p>
         </div>
@@ -406,7 +453,7 @@ export function HomePage({
                 </p>
               </div>
               <button
-                onClick={() => onNavigate("training-mode")}
+                onClick={() => navigate("/quizzes/training")}
                 className="shrink-0 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 {t("home.trainingSpotlightCta")}
@@ -415,7 +462,7 @@ export function HomePage({
           </div>
 
           <button
-            onClick={() => onNavigate("quizzes")}
+            onClick={() => navigate("/quizzes")}
             className="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
@@ -435,7 +482,27 @@ export function HomePage({
           </button>
 
           <button
-            onClick={() => onNavigate("create-quiz")}
+            onClick={() => navigate("/atlas")}
+            className="w-full flex items-center justify-between p-3 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors group mb-3"
+          >
+            <div className="flex items-center space-x-3">
+              <Compass className="w-6 h-6 text-emerald-600" />
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {t("nav.atlas") || "Atlas 3D / Exploration"}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  {t("home.exploreAtlasDesc") || "Explore le monde, capitales, drapeaux et fiches pays"}
+                </p>
+              </div>
+            </div>
+            <span className="text-emerald-600 group-hover:translate-x-1 transition-transform text-2xl">
+              →
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate("/quizzes/create")}
             className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
@@ -455,7 +522,7 @@ export function HomePage({
           </button>
 
           <button
-            onClick={() => onNavigate("training-mode")}
+            onClick={() => navigate("/quizzes/training")}
             className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors group mb-3"
           >
             <div className="flex items-center space-x-3">
@@ -473,7 +540,7 @@ export function HomePage({
           </button>
 
           <button
-            onClick={() => onNavigate("duels")}
+            onClick={() => navigate("/duels")}
             className="w-full flex items-center justify-between p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors group"
           >
             <div className="flex items-center space-x-3">
@@ -488,6 +555,26 @@ export function HomePage({
               </div>
             </div>
             <span className="text-yellow-600 group-hover:translate-x-1 transition-transform text-2xl">
+              →
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate("/party")}
+            className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 rounded-lg transition-colors group mt-3 border border-indigo-100/60"
+          >
+            <div className="flex items-center space-x-3">
+              <Gamepad2 className="w-6 h-6 text-indigo-600" />
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {t("party.title") || "Salon Party en direct 🏆"}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  {t("party.quickDesc") || "Style Kahoot • 4 à 10 amis avec PIN"}
+                </p>
+              </div>
+            </div>
+            <span className="text-indigo-600 group-hover:translate-x-1 transition-transform text-2xl">
               →
             </span>
           </button>
@@ -507,138 +594,38 @@ export function HomePage({
               <p className="text-sm text-gray-600 mb-3">
                 Clique sur un point pour lancer un quiz.
               </p>
-              <QuizGlobe
-                points={globePoints}
-                onPointClick={(quizId) => onNavigate("play-quiz", { quizId })}
-              />
+              <Suspense
+                fallback={
+                  <div className="h-[400px] w-full flex items-center justify-center bg-slate-900 rounded-2xl">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-3"></div>
+                      <p className="text-slate-300 text-sm font-medium">Chargement du globe 3D...</p>
+                    </div>
+                  </div>
+                }
+              >
+                <QuizGlobe
+                  points={globePoints}
+                  onPointClick={(quizId) => navigate(`/quizzes/play/${quizId}`)}
+                />
+              </Suspense>
             </>
           )}
         </div>
       </div>
 
-      {showStreakModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <Flame className="w-6 h-6 mr-2 text-orange-600" />
-                {t("home.currentStreak")}
-              </h3>
-              <button
-                onClick={() => setShowStreakModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-600" />
-              </button>
-            </div>
-
-            {profile?.current_streak && profile.current_streak > 0 ? (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-br from-orange-50 to-red-100 p-6 rounded-lg text-center">
-                  <p className="text-5xl font-bold text-orange-600 mb-2">
-                    {profile.current_streak}
-                  </p>
-                  <p className="text-sm text-orange-700 font-medium">
-                    {t("home.currentStreak")}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">
-                    {t("profile.streakStartedOn")}:
-                  </p>
-                  <p className="text-lg font-bold text-gray-800">
-                    {getStreakStartDate()?.toLocaleDateString(undefined, {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-700 font-medium">
-                    💡 {t("profile.playTodayToKeepStreak")}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <p className="text-xs text-gray-600 mb-1">
-                      {t("home.record")}
-                    </p>
-                    <p className="text-2xl font-bold text-gray-800">
-                      {profile.longest_streak || 0}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {getDayText(profile.longest_streak || 0)}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <p className="text-xs text-gray-600 mb-1">
-                      {(profile.current_streak || 0) >
-                      (profile.longest_streak || 0)
-                        ? t("profile.keepGoing")
-                        : t("profile.daysToBreakRecord")}
-                    </p>
-                    {(profile.current_streak || 0) <=
-                    (profile.longest_streak || 0) ? (
-                      <>
-                        <p className="text-2xl font-bold text-gray-800">
-                          {Math.max(
-                            0,
-                            (profile.longest_streak || 0) -
-                              (profile.current_streak || 0)
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {getDayText(
-                            Math.max(
-                              0,
-                              (profile.longest_streak || 0) -
-                                (profile.current_streak || 0)
-                            )
-                          )}
-                        </p>
-                      </>
-                    ) : (
-                      <div className="mt-2">
-                        <p className="text-3xl">🔥🎉</p>
-                        <p className="text-xs text-emerald-600 font-bold mt-1">
-                          +
-                          {(profile.current_streak || 0) -
-                            (profile.longest_streak || 0)}{" "}
-                          {getDayText(
-                            (profile.current_streak || 0) -
-                              (profile.longest_streak || 0)
-                          )}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Flame className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600">{t("profile.noActiveStreak")}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  {t("profile.playToStartStreak")}
-                </p>
-              </div>
-            )}
-
-            <button
-              onClick={() => setShowStreakModal(false)}
-              className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
-            >
-              {t("common.close")}
-            </button>
-          </div>
-        </div>
-      )}
+      <StreakModal
+        isOpen={showStreakModal}
+        onClose={() => setShowStreakModal(false)}
+        profile={profile}
+        onPlayNow={() => {
+          if (dailyQuiz) {
+            navigate(`/quizzes/play/${dailyQuiz.id}?daily=true`);
+          } else {
+            navigate("/quizzes");
+          }
+        }}
+      />
     </div>
   );
 }

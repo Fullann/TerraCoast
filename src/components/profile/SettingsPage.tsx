@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -17,11 +18,12 @@ import {
   Shield,
 } from "lucide-react";
 
-interface SettingsPageProps {
-  onNavigate: (view: string) => void;
+export interface SettingsPageProps {
+  onNavigate?: (view: string) => void;
 }
 
-export function SettingsPage({ onNavigate }: SettingsPageProps) {
+export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}) {
+  const navigate = useNavigate();
   const { profile, user, refreshProfile } = useAuth();
   const { language, setLanguage, showAllLanguages, setShowAllLanguages, t } =
     useLanguage();
@@ -48,16 +50,6 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
   const EMAIL_UPDATE_COOLDOWN_MS = 60_000;
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [frameSaving, setFrameSaving] = useState(false);
-
-  const isMfaStepUpError = (message?: string) => {
-    const msg = (message || "").toLowerCase();
-    return (
-      msg.includes("mfa") ||
-      msg.includes("factor") ||
-      msg.includes("aal2") ||
-      msg.includes("challenge")
-    );
-  };
 
   const ensureValidAuthSession = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -360,7 +352,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
   };
 
   const updatePseudo = async () => {
-    if (!pseudo.trim()) {
+    if (!pseudo.trim() || !profile?.id) {
       setError(t("settings.pseudoRequired"));
       return;
     }
@@ -372,7 +364,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ pseudo: pseudo.trim() })
-      .eq("id", profile?.id);
+      .eq("id", profile.id);
 
     if (updateError) {
       setError(t("settings.pseudoUpdateError"));
@@ -554,7 +546,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => onNavigate("profile")}
+              onClick={() => navigate("/profile")}
               className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />

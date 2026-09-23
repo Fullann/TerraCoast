@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -6,53 +7,31 @@ import { useNotifications } from "../../contexts/NotificationContext";
 import {
   BookOpen,
   Search,
-  Copy,
-  Trash2,
   Shield,
   AlertTriangle,
-  Edit2,
-  Eye,
-  EyeOff,
-  RotateCcw,
-  User,
-  Flag,
-  BarChart3,
   CheckCircle2,
-  XCircle,
-  MapPin,
+  Download,
+  Upload,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ConfirmModal } from "../common/ConfirmModal";
+import {
+  QuestionPerformanceModal,
+  type QuizWithCreator,
+  type QuizPerformanceSummary,
+  type QuestionPerformance,
+} from "./quiz/QuestionPerformanceModal";
+import { QuizAdminTable } from "./quiz/QuizAdminTable";
+import {
+  useCategoriesQuery,
+  useDifficultiesQuery,
+} from "../../lib/queries/quizMetadataQueries";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Question = Database["public"]["Tables"]["questions"]["Row"];
 
-interface QuizWithCreator extends Quiz {
-  creator?: Profile;
-}
-
-interface QuestionPerformance {
-  questionId: string;
-  questionText: string;
-  orderIndex: number;
-  attempts: number;
-  correct: number;
-  successRate: number;
-  averageTimeSeconds: number;
-}
-
-interface QuizPerformanceSummary {
-  quiz: QuizWithCreator;
-  totalSessions: number;
-  totalAnswers: number;
-  overallSuccessRate: number;
-  averageScore: number;
-  averageAccuracy: number;
-  questionPerformances: QuestionPerformance[];
-}
-
-interface QuizManagementPageProps {
+export interface QuizManagementPageProps {
   onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
@@ -61,16 +40,21 @@ type FilterStatus = "all" | "public" | "private";
 type QuizWithCreatorRaw = Quiz & { creator?: Profile | Profile[] | null };
 type SessionPerfRow = { id: string; score: number | null; accuracy_percentage: number | null };
 
-export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
+export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPageProps = {}) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { showAppNotification } = useNotifications();
+  const { data: categories = [] } = useCategoriesQuery();
+  const { data: difficulties = [] } = useDifficultiesQuery();
   const [quizzes, setQuizzes] = useState<QuizWithCreator[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<QuizWithCreator[]>([]);
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("created");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [filterReported, setFilterReported] = useState(false);
   const [filterMissingLocation, setFilterMissingLocation] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizWithCreator | null>(
@@ -96,9 +80,21 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     onConfirm: null | (() => void | Promise<void>);
   }>({ open: false, message: "", onConfirm: null });
 
+  // Export Modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportQuizData, setExportQuizData] = useState("");
+  const [exportQuizTitle, setExportQuizTitle] = useState("");
+
+  // Import Modal state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJsonText, setImportJsonText] = useState("");
+  const [importLanguage, setImportLanguage] = useState("en");
+  const [importVerificationResult, setImportVerificationResult] = useState<any>(null);
+  const [importing, setImporting] = useState(false);
+
   useEffect(() => {
     loadQuizzes();
-  }, [sortBy, filterStatus, filterReported, filterMissingLocation]);
+  }, [sortBy, filterStatus, filterReported, filterMissingLocation, categoryFilter, difficultyFilter]);
 
   const loadQuizzes = async () => {
     setLoading(true);
@@ -111,6 +107,13 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       query = query.eq("is_public", true);
     } else if (filterStatus === "private") {
       query = query.eq("is_public", false);
+    }
+
+    if (categoryFilter !== "all") {
+      query = query.eq("category", categoryFilter as any);
+    }
+    if (difficultyFilter !== "all") {
+      query = query.eq("difficulty", difficultyFilter as any);
     }
 
     if (filterReported) {
@@ -627,6 +630,130 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     setPerformanceLoading(false);
   };
 
+  const handleExportQuiz = async (quiz: QuizWithCreator) => {
+    try {
+      const { data: questions, error } = await supabase
+        .from("questions")
+        .select("*")
+        .eq("quiz_id", quiz.id)
+        .order("order_index", { ascending: true });
+
+      if (error) throw error;
+
+      const exportData = {
+        title: quiz.title,
+        description: quiz.description,
+        category: quiz.category,
+        difficulty: quiz.difficulty,
+        time_limit_seconds: quiz.time_limit_seconds,
+        cover_image_url: quiz.cover_image_url,
+        randomize_questions: quiz.randomize_questions,
+        randomize_answers: quiz.randomize_answers,
+        location_lat: quiz.location_lat,
+        location_lng: quiz.location_lng,
+        language: quiz.language,
+        tags: quiz.tags,
+        questions: questions.map((q) => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          correct_answer: q.correct_answer,
+          correct_answers: q.correct_answers,
+          options: q.options,
+          points: q.points,
+          complement_if_wrong: q.complement_if_wrong,
+          map_data: q.map_data,
+          image_url: q.image_url,
+          option_images: q.option_images,
+          randomize_options: q.randomize_options,
+        })),
+      };
+
+      setExportQuizData(JSON.stringify(exportData, null, 2));
+      setExportQuizTitle(quiz.title);
+      setShowExportModal(true);
+    } catch (err: any) {
+      showAppNotification({ type: "error", message: "Erreur lors de l'export: " + err.message });
+    }
+  };
+
+  const handleVerifyImport = () => {
+    try {
+      const parsed = JSON.parse(importJsonText);
+      if (!parsed.title || !Array.isArray(parsed.questions)) {
+        throw new Error("Format JSON invalide. Il manque 'title' ou 'questions'.");
+      }
+      setImportVerificationResult(parsed);
+    } catch (err: any) {
+      showAppNotification({ type: "error", message: "Erreur JSON: " + err.message });
+      setImportVerificationResult(null);
+    }
+  };
+
+  const handlePublishImport = async () => {
+    if (!importVerificationResult) return;
+    setImporting(true);
+    try {
+      const newQuiz = {
+        creator_id: profile!.id,
+        title: importVerificationResult.title,
+        description: importVerificationResult.description || null,
+        category: importVerificationResult.category || "mixed",
+        difficulty: importVerificationResult.difficulty || "medium",
+        time_limit_seconds: importVerificationResult.time_limit_seconds || null,
+        is_public: true,
+        is_global: false,
+        language: importLanguage,
+        tags: importVerificationResult.tags || [],
+        cover_image_url: importVerificationResult.cover_image_url || null,
+        randomize_questions: importVerificationResult.randomize_questions ?? null,
+        randomize_answers: importVerificationResult.randomize_answers ?? null,
+        location_lat: importVerificationResult.location_lat ?? null,
+        location_lng: importVerificationResult.location_lng ?? null,
+      };
+
+      const { data: insertedQuiz, error: quizError } = await supabase
+        .from("quizzes")
+        .insert(newQuiz)
+        .select()
+        .single();
+
+      if (quizError) throw quizError;
+
+      const newQuestions = importVerificationResult.questions.map((q: any, idx: number) => ({
+        quiz_id: insertedQuiz.id,
+        question_text: q.question_text,
+        question_type: q.question_type || "mcq",
+        correct_answer: q.correct_answer || "",
+        correct_answers: q.correct_answers || null,
+        options: q.options || null,
+        points: q.points || 10,
+        order_index: idx,
+        complement_if_wrong: q.complement_if_wrong || null,
+        map_data: q.map_data || null,
+        image_url: q.image_url || null,
+        option_images: q.option_images || null,
+        randomize_options: q.randomize_options ?? null,
+      }));
+
+      const { error: questionsError } = await supabase
+        .from("questions")
+        .insert(newQuestions);
+
+      if (questionsError) throw questionsError;
+
+      showAppNotification({ type: "success", message: "Quiz importé et publié avec succès !" });
+      setShowImportModal(false);
+      setImportJsonText("");
+      setImportVerificationResult(null);
+      loadQuizzes();
+    } catch (err: any) {
+      showAppNotification({ type: "error", message: "Erreur lors de l'import: " + err.message });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+
   if (profile?.role !== "admin") {
     return (
       <div className="w-full px-1 py-4">
@@ -652,14 +779,23 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
   return (
     <div className="w-full px-1 py-4">
       {/* En-tête */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
-          <BookOpen className="w-10 h-10 mr-3 text-emerald-600" />
-          Gestion des quiz
-        </h1>
-        <p className="text-gray-600">
-          Gère les quiz, leur visibilité et leurs statistiques
-        </p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center">
+            <BookOpen className="w-10 h-10 mr-3 text-emerald-600" />
+            Gestion des quiz
+          </h1>
+          <p className="text-gray-600">
+            Gère les quiz, leur visibilité et leurs statistiques
+          </p>
+        </div>
+        <button
+          onClick={() => setShowImportModal(true)}
+          className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors font-medium shadow-sm"
+        >
+          <Upload className="w-5 h-5" />
+          <span>Importer un Quiz JSON</span>
+        </button>
       </div>
 
       {/* Filtres et recherche */}
@@ -685,7 +821,7 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {/* Tri */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -718,8 +854,46 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
               </select>
             </div>
 
+            {/* Filtre catégorie */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Catégorie
+              </label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              >
+                <option value="all">Toutes</option>
+                {categories.map((c) => (
+                  <option key={c.id || c.name} value={c.name}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtre difficulté */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Difficulté
+              </label>
+              <select
+                value={difficultyFilter}
+                onChange={(e) => setDifficultyFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              >
+                <option value="all">Toutes</option>
+                {difficulties.map((d) => (
+                  <option key={d.id || d.name} value={d.name}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Filtre signalés */}
-            <div className="flex items-end">
+            <div className="flex items-end pb-2">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -728,13 +902,13 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                   className="w-4 h-4 text-emerald-600 rounded focus:ring-2"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Signalés uniquement
+                  Signalés
                 </span>
               </label>
             </div>
 
             {/* Filtre sans localisation */}
-            <div className="flex items-end">
+            <div className="flex items-end pb-2">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -766,296 +940,36 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
       {/* Liste des quiz */}
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Chargement...</div>
-        ) : displayQuizzes.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Aucun quiz trouvé</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Titre
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Créateur
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Catégorie
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Difficulté
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Parties
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Score moy.
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {displayQuizzes.map((quiz) => (
-                  <Fragment key={`quiz-row-wrap-${quiz.id}`}>
-                  <tr
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-800">
-                        {quiz.title}
-                      </p>
-                      {quiz.description && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {quiz.description.substring(0, 50)}
-                          {quiz.description.length > 50 ? "..." : ""}
-                        </p>
-                      )}
-                      {(quiz.location_lat === null || quiz.location_lng === null) && (
-                        <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          <span>Sans localisation</span>
-                        </span>
-                      )}
-                      {quiz.is_reported && (
-                        <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 mt-1">
-                          <Flag className="w-3 h-3" />
-                          <span>{quiz.report_count} signalement(s)</span>
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {quiz.creator ? (
-                        <button
-                          onClick={() =>
-                            onNavigate?.("view-profile", {
-                              userId: quiz.creator?.id,
-                            })
-                          }
-                          className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-colors"
-                        >
-                          <User className="w-4 h-4" />
-                          <span className="text-sm font-medium">
-                            {quiz.creator.pseudo}
-                          </span>
-                        </button>
-                      ) : (
-                        <span className="text-sm text-gray-400">Inconnu</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600 capitalize">
-                        {quiz.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                          quiz.difficulty === "easy"
-                            ? "bg-green-100 text-green-700"
-                            : quiz.difficulty === "medium"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {quiz.difficulty === "easy"
-                          ? "Facile"
-                          : quiz.difficulty === "medium"
-                          ? "Moyen"
-                          : "Difficile"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-gray-800">
-                        {quiz.total_plays}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-gray-800">
-                        {quiz.average_score
-                          ? quiz.average_score.toFixed(1)
-                          : "N/A"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          quiz.is_global
-                            ? "bg-blue-100 text-blue-700"
-                            : quiz.is_public
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {quiz.is_global
-                          ? "Global"
-                          : quiz.is_public
-                          ? "Public"
-                          : "Privé"}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        {/* Bouton Modifier */}
-                        <button
-                          onClick={() =>
-                            onNavigate?.("edit-quiz", { quizId: quiz.id })
-                          }
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        {/* Bouton Dupliquer */}
-                        <button
-                          onClick={() => duplicateQuiz(quiz)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          title="Dupliquer"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-
-                        {/* Bouton Stats réponses */}
-                        <button
-                          onClick={() => loadQuizPerformance(quiz)}
-                          className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                          title="Analyser les réponses"
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                        </button>
-
-                        {/* Bouton Visibilité */}
-                        <button
-                          onClick={() =>
-                            toggleQuizVisibility(
-                              quiz.id,
-                              quiz.is_public,
-                              quiz.is_global
-                            )
-                          }
-                          className={`p-2 rounded-lg transition-colors ${
-                            quiz.is_global
-                              ? "text-blue-600 hover:bg-blue-50"
-                              : quiz.is_public
-                              ? "text-green-600 hover:bg-green-50"
-                              : "text-gray-600 hover:bg-gray-50"
-                          }`}
-                          title={
-                            quiz.is_global
-                              ? "Global → Privé"
-                              : quiz.is_public
-                              ? "Public → Global"
-                              : "Privé → Public"
-                          }
-                        >
-                          {quiz.is_global ? (
-                            <BookOpen className="w-4 h-4" />
-                          ) : quiz.is_public ? (
-                            <Eye className="w-4 h-4" />
-                          ) : (
-                            <EyeOff className="w-4 h-4" />
-                          )}
-                        </button>
-
-                        {(quiz.location_lat === null || quiz.location_lng === null) && (
-                          <button
-                            onClick={() => openInlineLocationEditor(quiz)}
-                            className="p-2 text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
-                            title="Corriger localisation"
-                          >
-                            <MapPin className="w-4 h-4" />
-                          </button>
-                        )}
-
-                        {/* Bouton Reset Stats */}
-                        <button
-                          onClick={() => resetQuizStats(quiz.id, quiz.title)}
-                          className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Réinitialiser les statistiques"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                        </button>
-
-                        {/* Bouton Supprimer */}
-                        <button
-                          onClick={() => {
-                            setSelectedQuiz(quiz);
-                            setShowDeleteModal(true);
-                          }}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {inlineLocationQuizId === quiz.id && (
-                    <tr key={`${quiz.id}-inline-location`} className="bg-amber-50/60">
-                      <td colSpan={8} className="px-6 py-3">
-                        <div className="flex flex-col md:flex-row md:items-end gap-3">
-                          <div>
-                            <label className="block text-xs text-gray-700 mb-1">Latitude</label>
-                            <input
-                              type="number"
-                              step="0.0001"
-                              min={-90}
-                              max={90}
-                              value={inlineLocationLat}
-                              onChange={(e) => setInlineLocationLat(e.target.value)}
-                              className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
-                              placeholder="Ex: 46.2044"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-700 mb-1">Longitude</label>
-                            <input
-                              type="number"
-                              step="0.0001"
-                              min={-180}
-                              max={180}
-                              value={inlineLocationLng}
-                              onChange={(e) => setInlineLocationLng(e.target.value)}
-                              className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
-                              placeholder="Ex: 6.1432"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={saveInlineLocation}
-                              disabled={savingInlineLocation}
-                              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
-                            >
-                              Enregistrer
-                            </button>
-                            <button
-                              onClick={() => {
-                                setInlineLocationQuizId(null);
-                                setInlineLocationLat("");
-                                setInlineLocationLng("");
-                              }}
-                              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                            >
-                              Annuler
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <QuizAdminTable
+          loading={loading}
+          quizzes={displayQuizzes}
+          categories={categories}
+          difficulties={difficulties}
+          onNavigateEdit={(quizId) => navigate(`/quizzes/edit/${quizId}`)}
+          onNavigateProfile={(userId) => navigate(`/profile/${userId}`)}
+          onDuplicate={duplicateQuiz}
+          onPerformance={loadQuizPerformance}
+          onToggleVisibility={toggleQuizVisibility}
+          onResetStats={resetQuizStats}
+          onExport={handleExportQuiz}
+          onDelete={(quiz) => {
+            setSelectedQuiz(quiz);
+            setShowDeleteModal(true);
+          }}
+          onOpenInlineLocation={openInlineLocationEditor}
+          inlineLocationQuizId={inlineLocationQuizId}
+          inlineLocationLat={inlineLocationLat}
+          inlineLocationLng={inlineLocationLng}
+          onInlineLocationLatChange={setInlineLocationLat}
+          onInlineLocationLngChange={setInlineLocationLng}
+          onSaveInlineLocation={saveInlineLocation}
+          onCancelInlineLocation={() => {
+            setInlineLocationQuizId(null);
+            setInlineLocationLat("");
+            setInlineLocationLng("");
+          }}
+          savingInlineLocation={savingInlineLocation}
+        />
       </div>
 
       {/* Modal Suppression */}
@@ -1129,142 +1043,15 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       )}
 
       {/* Modal Performance Quiz */}
-      {showPerformanceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800">
-                Performance des réponses -{" "}
-                {performanceSummary?.quiz.title || "Quiz"}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowPerformanceModal(false);
-                  setPerformanceSummary(null);
-                }}
-                className="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
-              >
-                Fermer
-              </button>
-            </div>
-
-            <div className="p-5 overflow-auto">
-              {performanceLoading || !performanceSummary ? (
-                <p className="text-gray-500">Chargement des statistiques...</p>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
-                    <div className="rounded-lg border p-3 bg-blue-50">
-                      <p className="text-xs text-blue-700">Parties terminées</p>
-                      <p className="text-2xl font-bold text-blue-800">
-                        {performanceSummary.totalSessions}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-3 bg-emerald-50">
-                      <p className="text-xs text-emerald-700">Réponses total</p>
-                      <p className="text-2xl font-bold text-emerald-800">
-                        {performanceSummary.totalAnswers}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-3 bg-purple-50">
-                      <p className="text-xs text-purple-700">Réussite globale</p>
-                      <p className="text-2xl font-bold text-purple-800">
-                        {performanceSummary.overallSuccessRate.toFixed(1)}%
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-3 bg-amber-50">
-                      <p className="text-xs text-amber-700">Score moyen</p>
-                      <p className="text-2xl font-bold text-amber-800">
-                        {performanceSummary.averageScore.toFixed(1)}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-3 bg-rose-50">
-                      <p className="text-xs text-rose-700">Précision moyenne</p>
-                      <p className="text-2xl font-bold text-rose-800">
-                        {performanceSummary.averageAccuracy.toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto border rounded-lg">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
-                            Q#
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
-                            Question
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
-                            Tentatives
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
-                            Correctes
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
-                            Taux réussite
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
-                            Temps moyen
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">
-                            État
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {performanceSummary.questionPerformances.map((q) => {
-                          const isGood = q.successRate >= 70;
-                          const isBad = q.successRate < 40;
-                          return (
-                            <tr key={q.questionId} className="hover:bg-gray-50">
-                              <td className="px-3 py-2 text-sm text-gray-700">
-                                {q.orderIndex + 1}
-                              </td>
-                              <td className="px-3 py-2 text-sm text-gray-800">
-                                {q.questionText}
-                              </td>
-                              <td className="px-3 py-2 text-sm text-gray-700">
-                                {q.attempts}
-                              </td>
-                              <td className="px-3 py-2 text-sm text-gray-700">
-                                {q.correct}
-                              </td>
-                              <td className="px-3 py-2 text-sm font-semibold text-gray-800">
-                                {q.successRate.toFixed(1)}%
-                              </td>
-                              <td className="px-3 py-2 text-sm text-gray-700">
-                                {q.averageTimeSeconds.toFixed(1)}s
-                              </td>
-                              <td className="px-3 py-2 text-sm">
-                                {isGood ? (
-                                  <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    Fonctionne bien
-                                  </span>
-                                ) : isBad ? (
-                                  <span className="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-1 rounded-full">
-                                    <XCircle className="w-3 h-3" />A améliorer
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
-                                    Moyen
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <QuestionPerformanceModal
+        isOpen={showPerformanceModal}
+        onClose={() => {
+          setShowPerformanceModal(false);
+          setPerformanceSummary(null);
+        }}
+        summary={performanceSummary}
+        loading={performanceLoading}
+      />
 
       {showLocationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1320,6 +1107,168 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
           </div>
         </div>
       )}
+      {/* Modal Export Quiz */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 flex flex-col max-h-[90vh]">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <Download className="w-6 h-6 mr-2 text-indigo-600" />
+              Exporter pour traduction: {exportQuizTitle}
+            </h3>
+            
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4 text-sm text-indigo-800">
+              <p className="font-semibold mb-1">Instruction pour l'IA (ChatGPT, Claude, etc.) :</p>
+              <p className="mb-2">Copie le prompt ci-dessous avec le JSON. L'IA traduira tout le contenu texte et renverra un JSON valide que tu pourras importer.</p>
+              <div className="bg-white p-3 rounded border border-indigo-100 flex justify-between items-start gap-4">
+                <code className="text-xs break-words whitespace-pre-wrap flex-1">
+                  Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs textuels suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), 'complement_if_wrong', et 'countryMultiPrompt' (si présent dans map_data). Ne modifie PAS la structure du JSON, ni les clés, ni les champs techniques ('question_type', 'category', 'difficulty', 'points', 'map_data' sauf les textes éventuels, 'image_url', 'option_images', 'randomize_options', 'location_lat', 'location_lng'). Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs textuels suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), 'complement_if_wrong', et 'countryMultiPrompt' (si présent dans map_data). Ne modifie PAS la structure du JSON, ni les clés, ni les champs techniques ('question_type', 'category', 'difficulty', 'points', 'map_data' sauf les textes éventuels, 'image_url', 'option_images', 'randomize_options', 'location_lat', 'location_lng'). Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :\n\n${exportQuizData}`);
+                    showAppNotification({ type: "success", message: "Prompt + JSON copié !" });
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs whitespace-nowrap"
+                >
+                  Tout copier
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0 mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Données du Quiz (JSON)</label>
+              <textarea 
+                className="w-full flex-1 p-3 border border-gray-300 rounded-lg font-mono text-xs outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                readOnly
+                value={exportQuizData}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowExportModal(false);
+                  setExportQuizData("");
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([exportQuizData], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `quiz_export_${exportQuizTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Télécharger JSON</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Import Quiz */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 flex flex-col max-h-[90vh]">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+              <Upload className="w-6 h-6 mr-2 text-emerald-600" />
+              Importer un Quiz JSON
+            </h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Langue du quiz importé</label>
+              <select
+                value={importLanguage}
+                onChange={(e) => setImportLanguage(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              >
+                <option value="fr">Français (fr)</option>
+                <option value="en">Anglais (en)</option>
+                <option value="es">Espagnol (es)</option>
+                <option value="de">Allemand (de)</option>
+                <option value="it">Italien (it)</option>
+                <option value="pt">Portugais (pt)</option>
+              </select>
+            </div>
+
+            <div className="flex-1 overflow-hidden flex flex-col min-h-[300px] mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Colle le JSON traduit ici
+              </label>
+              <textarea 
+                className="w-full flex-1 p-3 border border-gray-300 rounded-lg font-mono text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                placeholder='{"title": "Mon Quiz", "questions": [...]}'
+                value={importJsonText}
+                onChange={(e) => {
+                  setImportJsonText(e.target.value);
+                  setImportVerificationResult(null);
+                }}
+              />
+            </div>
+
+            {importVerificationResult && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start space-x-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      JSON Valide !
+                    </p>
+                    <p className="text-xs text-green-700 mt-1">
+                      <strong>Titre :</strong> {importVerificationResult.title}<br/>
+                      <strong>Questions :</strong> {importVerificationResult.questions?.length || 0} question(s)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mt-auto">
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportJsonText("");
+                  setImportVerificationResult(null);
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              
+              <div className="flex space-x-3">
+                {!importVerificationResult ? (
+                  <button
+                    onClick={handleVerifyImport}
+                    disabled={!importJsonText.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Vérifier
+                  </button>
+                ) : (
+                  <button
+                    onClick={handlePublishImport}
+                    disabled={importing}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center disabled:opacity-50"
+                  >
+                    {importing ? "Publication..." : "Publier le Quiz"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmModal
         open={confirmModal.open}
         message={confirmModal.message}

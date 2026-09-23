@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -19,21 +20,17 @@ import {
 import { useDuelsData } from "./hooks/useDuelsData";
 import { useMatchmaking } from "./hooks/useMatchmaking";
 import { useDuelNotifications } from "./hooks/useDuelNotifications";
+import { fetchUserFriends } from "../../lib/queries/friendQueries";
 import type {
   DuelWithDetails,
   InvitationWithDetails,
   Difficulty,
-  NavigateFn,
   Profile,
   Quiz,
 } from "./types";
 
-interface DuelsPageProps {
-  onNavigate: NavigateFn;
-  initialTab?: string;
-}
-
-export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
+export function DuelsPage({ initialTab }: { initialTab?: string }) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { refreshNotifications, showDuelNotification } = useNotifications();
@@ -99,7 +96,7 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
     loadDuels,
     loadMatchmakingStatus,
     notifyMatchFound,
-    onNavigate,
+    navigate,
     t,
   });
 
@@ -133,7 +130,7 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
     loadInvitations();
 
     if (duel) {
-      onNavigate("play-duel", { duelId: duel.id, quizId: invitation.quiz_id });
+      navigate(`/duels/play/${duel.id}?quizId=${invitation.quiz_id}`);
     }
   };
 
@@ -148,7 +145,7 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
   };
 
   const joinDuel = async (duel: DuelWithDetails) => {
-    onNavigate("play-duel", { duelId: duel.id, quizId: duel.quiz_id });
+    navigate(`/duels/play/${duel.id}?quizId=${duel.quiz_id}`);
   };
 
   const handleStartRandomMatchmaking = async (matchType: "ranked" | "casual") => {
@@ -184,13 +181,22 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
               {t("duels.subtitle")}
             </p>
           </div>
-          <button
-            onClick={() => setShowCreateInvitation(true)}
-            className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            {t("duels.createDuel")}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => navigate("/party")}
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-lg shadow-md transition-all font-bold flex items-center justify-center gap-2"
+            >
+              <Crown className="w-5 h-5 text-amber-300" />
+              {t("party.buttonTitle") || "Mode Salon / Party 🏆"}
+            </button>
+            <button
+              onClick={() => setShowCreateInvitation(true)}
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              {t("duels.createDuel")}
+            </button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
           <button
@@ -893,16 +899,16 @@ export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
                                 </span>
                                 <span
                                   className={`text-sm font-semibold ${
-                                    (duel.player1_id === profile?.id
+                                    ((duel.player1_id === profile?.id
                                       ? duel.player1_rating_delta
-                                      : duel.player2_rating_delta) >= 0
+                                      : duel.player2_rating_delta) ?? 0) >= 0
                                       ? "text-green-700"
                                       : "text-red-700"
                                   }`}
                                 >
-                                  {(duel.player1_id === profile?.id
+                                  {((duel.player1_id === profile?.id
                                     ? duel.player1_rating_delta
-                                    : duel.player2_rating_delta) >= 0
+                                    : duel.player2_rating_delta) ?? 0) >= 0
                                     ? "+"
                                     : ""}
                                   {duel.player1_id === profile?.id
@@ -1044,33 +1050,8 @@ function CreateDuelInvitation({
   const loadFriendsAndQuizzes = async () => {
     if (!profile) return;
 
-    const { data: friendshipsAsSender } = await supabase
-      .from("friendships")
-      .select("friend_profile:profiles!friendships_friend_id_fkey(*)")
-      .eq("user_id", profile.id)
-      .eq("status", "accepted");
-
-    const { data: friendshipsAsReceiver } = await supabase
-      .from("friendships")
-      .select("user_profile:profiles!friendships_user_id_fkey(*)")
-      .eq("friend_id", profile.id)
-      .eq("status", "accepted");
-
-    type SenderFriendshipRow = { friend_profile: Profile | null };
-    type ReceiverFriendshipRow = { user_profile: Profile | null };
-    const senderRows = (friendshipsAsSender ?? []) as SenderFriendshipRow[];
-    const receiverRows = (friendshipsAsReceiver ?? []) as ReceiverFriendshipRow[];
-
-    const allFriends: Profile[] = [
-      ...senderRows
-        .map((row) => row.friend_profile)
-        .filter((friend): friend is Profile => friend !== null),
-      ...receiverRows
-        .map((row) => row.user_profile)
-        .filter((friend): friend is Profile => friend !== null),
-    ].filter((friend) => !friend.is_banned);
-
-    setFriends(allFriends);
+    const allFriends = await fetchUserFriends(profile.id);
+    setFriends(allFriends as Profile[]);
 
     const { data: quizzesData } = await supabase
       .from("quizzes")

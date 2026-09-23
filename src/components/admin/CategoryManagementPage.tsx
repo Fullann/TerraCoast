@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Tag, Plus, CreditCard as Edit, Trash2, Save, X } from 'lucide-react';
@@ -14,7 +15,7 @@ interface CategoryFormData {
   label: string;
 }
 
-const DEFAULT_CATEGORIES: Category[] = [
+export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'flags', name: 'flags', label: 'Drapeaux' },
   { id: 'capitals', name: 'capitals', label: 'Capitales' },
   { id: 'maps', name: 'maps', label: 'Cartes' },
@@ -24,6 +25,7 @@ const DEFAULT_CATEGORIES: Category[] = [
 ];
 
 export function CategoryManagementPage() {
+  const queryClient = useQueryClient();
   const { profile } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -103,6 +105,7 @@ export function CategoryManagementPage() {
     }
 
     await loadCategories();
+    queryClient.invalidateQueries({ queryKey: ['categories'] });
     cancelEditing();
   };
 
@@ -120,6 +123,7 @@ export function CategoryManagementPage() {
     }
 
     await loadCategories();
+    queryClient.invalidateQueries({ queryKey: ['categories'] });
   };
 
   if (profile?.role !== 'admin') {

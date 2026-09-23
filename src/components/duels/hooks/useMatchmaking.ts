@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { type NavigateFunction } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
 import type {
   Difficulty,
   DuelMatchmakingQueue,
   DuelWithDetails,
   MatchedPreview,
-  NavigateFn,
   Quiz,
 } from "../types";
 
@@ -22,7 +22,7 @@ interface UseMatchmakingParams {
   loadDuels: () => Promise<void>;
   loadMatchmakingStatus: () => Promise<void>;
   notifyMatchFound: (from: string, quizTitle: string) => void;
-  onNavigate: NavigateFn;
+  navigate: NavigateFunction;
   t: (key: string) => string;
 }
 
@@ -35,7 +35,7 @@ export function useMatchmaking({
   loadDuels,
   loadMatchmakingStatus,
   notifyMatchFound,
-  onNavigate,
+  navigate,
   t,
 }: UseMatchmakingParams) {
   const [matchmakingLoading, setMatchmakingLoading] = useState(false);
@@ -50,6 +50,55 @@ export function useMatchmaking({
     null
   );
   const matchmakingAttemptInFlightRef = useRef(false);
+
+  const handleMatchFound = useCallback(
+    async (
+      duelId: string,
+      quizId: string,
+      opponentId?: string | null,
+      matchType: "ranked" | "casual" = "ranked"
+    ) => {
+      await Promise.all([loadDuels(), loadMatchmakingStatus()]);
+      const quizTitle =
+        matchmakingQuizzes.find((quiz) => quiz.id === quizId)?.title ||
+        t("duels.preferredQuizUnknown");
+
+      if (!duelFeatureFlags.show_opponent_mmr) {
+        notifyMatchFound(t("duels.unknownOpponent"), quizTitle);
+        navigate(`/duels/play/${duelId}?quizId=${quizId}`);
+        return;
+      }
+
+      const { data: opponentData } = opponentId
+        ? await supabase
+            .from("profiles")
+            .select("pseudo, duel_rating")
+            .eq("id", opponentId)
+            .maybeSingle()
+        : { data: null };
+
+      setMatchedPreview({
+        duelId,
+        quizId,
+        opponentPseudo: opponentData?.pseudo || t("duels.unknownOpponent"),
+        opponentMmr: opponentData?.duel_rating ?? 1000,
+        matchType,
+      });
+      notifyMatchFound(
+        opponentData?.pseudo || t("duels.unknownOpponent"),
+        quizTitle
+      );
+    },
+    [
+      duelFeatureFlags.show_opponent_mmr,
+      loadDuels,
+      loadMatchmakingStatus,
+      matchmakingQuizzes,
+      notifyMatchFound,
+      navigate,
+      t,
+    ]
+  );
 
   const runMatchmakingAttempt = useCallback(
     async (
@@ -90,52 +139,17 @@ export function useMatchmaking({
         | null;
 
       if (payload?.matched && payload?.duel_id && payload?.quiz_id) {
-        await Promise.all([loadDuels(), loadMatchmakingStatus()]);
-        const quizTitle =
-          matchmakingQuizzes.find((quiz) => quiz.id === payload.quiz_id)?.title ||
-          t("duels.preferredQuizUnknown");
-
-        if (!duelFeatureFlags.show_opponent_mmr) {
-          notifyMatchFound(t("duels.unknownOpponent"), quizTitle);
-          onNavigate("play-duel", {
-            duelId: payload.duel_id,
-            quizId: payload.quiz_id,
-          });
-          return;
-        }
-
-        const { data: opponentData } = payload.opponent_id
-          ? await supabase
-              .from("profiles")
-              .select("pseudo, duel_rating")
-              .eq("id", payload.opponent_id)
-              .maybeSingle()
-          : { data: null };
-
-        setMatchedPreview({
-          duelId: payload.duel_id,
-          quizId: payload.quiz_id,
-          opponentPseudo: opponentData?.pseudo || t("duels.unknownOpponent"),
-          opponentMmr: opponentData?.duel_rating ?? 1000,
-          matchType: matchType,
-        });
-        notifyMatchFound(
-          opponentData?.pseudo || t("duels.unknownOpponent"),
-          quizTitle
+        await handleMatchFound(
+          payload.duel_id,
+          payload.quiz_id,
+          payload.opponent_id,
+          matchType
         );
       } else {
         await loadMatchmakingStatus();
       }
     },
-    [
-      duelFeatureFlags.show_opponent_mmr,
-      loadDuels,
-      loadMatchmakingStatus,
-      matchmakingQuizzes,
-      notifyMatchFound,
-      onNavigate,
-      t,
-    ]
+    [handleMatchFound, loadMatchmakingStatus]
   );
 
   const startRandomMatchmaking = useCallback(
@@ -163,12 +177,9 @@ export function useMatchmaking({
 
   const launchMatchedDuel = useCallback(() => {
     if (!matchedPreview) return;
-    onNavigate("play-duel", {
-      duelId: matchedPreview.duelId,
-      quizId: matchedPreview.quizId,
-    });
+    navigate(`/duels/play/${matchedPreview.duelId}?quizId=${matchedPreview.quizId}`);
     setMatchedPreview(null);
-  }, [matchedPreview, onNavigate]);
+  }, [matchedPreview, navigate]);
 
   const togglePreferredQuiz = useCallback((quizId: string) => {
     setPreferredQuizIds((prev) => {
@@ -181,7 +192,7 @@ export function useMatchmaking({
   }, []);
 
   useEffect(() => {
-    if (!matchmakingQueueEntry || matchedPreview) return;
+    if (!profileId || !matchmakingQueueEntry || matchedPreview) return;
     const hasJoinableActiveDuel = activeDuels.some((duel) => {
       const isPlayer1 = duel.player1_id === profileId;
       const hasPlayed = isPlayer1
@@ -191,7 +202,60 @@ export function useMatchmaking({
     });
     if (hasJoinableActiveDuel) return;
 
-    const interval = setInterval(() => {
+    // 1. Canal Realtime Supabase pour notification instantanée dès qu'un adversaire est apparié
+    const channel = supabase
+      .channel(`matchmaking_${profileId}_${matchmakingQueueEntry.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "duels",
+        },
+        async (payload) => {
+          const newDuel = payload.new as {
+            id: string;
+            quiz_id: string;
+            player1_id: string;
+            player2_id: string;
+            status: string;
+          };
+          if (
+            newDuel &&
+            (newDuel.player1_id === profileId || newDuel.player2_id === profileId) &&
+            newDuel.status === "in_progress"
+          ) {
+            const opponentId =
+              newDuel.player1_id === profileId
+                ? newDuel.player2_id
+                : newDuel.player1_id;
+            await handleMatchFound(
+              newDuel.id,
+              newDuel.quiz_id,
+              opponentId,
+              (matchmakingQueueEntry.match_type as "ranked" | "casual") || "ranked"
+            );
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "duel_matchmaking_queue",
+          filter: `user_id=eq.${profileId}`,
+        },
+        async () => {
+          await loadMatchmakingStatus();
+          await loadDuels();
+        }
+      )
+      .subscribe();
+
+    // 2. Battement de secours lent (30 secondes au lieu de 3 secondes agressives)
+    // Sécurité uniquement en cas de coupure websocket
+    const fallbackTimer = setInterval(() => {
       runMatchmakingAttempt(
         matchmakingQueueEntry.match_type as "ranked" | "casual",
         (matchmakingQueueEntry.preferred_quiz_ids as string[] | null) || null,
@@ -199,11 +263,17 @@ export function useMatchmaking({
         (matchmakingQueueEntry.queue_mode as "targeted" | "random_bonus") ||
           "targeted"
       );
-    }, 3000);
+    }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(fallbackTimer);
+    };
   }, [
     activeDuels,
+    handleMatchFound,
+    loadDuels,
+    loadMatchmakingStatus,
     matchedPreview,
     matchmakingQueueEntry,
     profileId,

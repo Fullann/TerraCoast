@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { Tag, Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
@@ -6,6 +7,7 @@ import type { Database } from '../../lib/database.types';
 type QuizType = Database['public']['Tables']['quiz_types']['Row'];
 
 export function QuizTypeManagementPage() {
+  const queryClient = useQueryClient();
   const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingType, setEditingType] = useState<QuizType | null>(null);
@@ -50,6 +52,7 @@ export function QuizTypeManagementPage() {
     setFormData({ name: '', description: '', color: '#3B82F6' });
     setShowCreateModal(false);
     loadQuizTypes();
+    queryClient.invalidateQueries({ queryKey: ['quiz_types'] });
   };
 
   const handleUpdate = async () => {
@@ -72,6 +75,7 @@ export function QuizTypeManagementPage() {
     setEditingType(null);
     setFormData({ name: '', description: '', color: '#3B82F6' });
     loadQuizTypes();
+    queryClient.invalidateQueries({ queryKey: ['quiz_types'] });
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -88,6 +92,7 @@ export function QuizTypeManagementPage() {
     }
 
     loadQuizTypes();
+    queryClient.invalidateQueries({ queryKey: ['quiz_types'] });
   };
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
@@ -102,6 +107,7 @@ export function QuizTypeManagementPage() {
     }
 
     loadQuizTypes();
+    queryClient.invalidateQueries({ queryKey: ['quiz_types'] });
   };
 
   const openEditModal = (type: QuizType) => {

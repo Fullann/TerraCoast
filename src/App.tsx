@@ -1,344 +1,207 @@
-import { useState, useEffect } from "react";
+import { useEffect, Suspense } from "react";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { NotificationProvider } from "./contexts/NotificationContext";
+import { NotificationProvider, useNotifications } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+
+// Auth & Layout (statiques - chargés immédiatement, sans Suspense)
 import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
-import { Navbar } from "./components/layout/Navbar";
-import { HomePage } from "./components/home/HomePage";
-import { ProfilePage } from "./components/profile/ProfilePage";
-import { SettingsPage } from "./components/profile/SettingsPage";
-import { QuizzesPage } from "./components/quizzes/QuizzesPage";
-import { CreateQuizPage } from "./components/quizzes/CreateQuizPage";
-import { EditQuizPage } from "./components/quizzes/EditQuizPage";
-import { PlayQuizPage } from "./components/quizzes/PlayQuizPage";
-import { TrainingModePage } from "./components/quizzes/TrainingModePage";
-import { LeaderboardPage } from "./components/leaderboard/LeaderboardPage";
-import { FriendsPage } from "./components/friends/FriendsPage";
-import { AdminPage } from "./components/admin/AdminPage";
-import { BadgeManagementPage } from "./components/admin/BadgeManagementPage";
-import { TitleManagementPage } from "./components/admin/TitleManagementPage";
-import { CategoryManagementPage } from "./components/admin/CategoryManagementPage";
-import { DifficultyManagementPage } from "./components/admin/DifficultyManagementPage";
-import { QuizValidationPage } from "./components/admin/QuizValidationPage";
-import { WarningsManagementPage } from "./components/admin/WarningsManagementPage";
-import { QuizTypeManagementPage } from "./components/admin/QuizTypeManagementPage";
-import { UserManagementPage } from "./components/admin/UserManagementPage";
-import { QuizManagementPage } from "./components/admin/QuizManagementPage";
-import { DuelFeaturesPage } from "./components/admin/DuelFeaturesPage";
-import { GeoJsonMapsManagementPage } from "./components/admin/GeoJsonMapsManagementPage";
-import { AdminAnalyticsPage } from "./components/admin/AdminAnalyticsPage";
-import { HomepageTestimonialsManagementPage } from "./components/admin/HomepageTestimonialsManagementPage";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AdminDashboardLayout } from "./components/admin/layout/AdminDashboardLayout";
-import { DuelsPage } from "./components/duels/DuelsPage";
-import { ChatPage } from "./components/chat/ChatPage";
-import { LandingPage } from "./components/landing/LandingPage";
-import { BannedPage } from "./components/auth/BannedPage";
-import { ForceUsernamePage } from "./components/auth/ForceUsernamePage";
-import { AccountDetailsPage } from "./components/profile/AccountDetailsPage";
 import { LegalDocumentPage } from "./components/legal/LegalDocumentPage";
-import { useNotifications } from "./contexts/NotificationContext";
+import { PageTransition } from "./components/ui/PageTransition";
+import { ToastContainer } from "./components/common/ToastContainer";
+import { OfflineIndicator } from "./components/common/OfflineIndicator";
+import { ConfettiContainer } from "./components/common/Confetti";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 
-function AppContent() {
-  interface ViewData {
-    userId?: string;
-    quizId?: string;
-    duelId?: string;
-    questionCount?: number;
-    friendId?: string;
-    tab?: string;
-    challengeId?: string;
-    resetKey?: string | number;
-  }
+import { lazyWithRetry } from "./lib/lazyWithRetry";
 
-  const { user, profile, loading, refreshProfile, mfaRequired } = useAuth();
-  const { setNavigationCallback } = useNotifications();
-  const [authView, setAuthView] = useState<
-    "login" | "register" | "landing" | "terms" | "privacy"
-  >("landing");
-  const [authViewBeforeLegal, setAuthViewBeforeLegal] = useState<
-    "login" | "register" | "landing"
-  >("landing");
-  const [currentView, setCurrentView] = useState<string>("home");
-  const [viewData, setViewData] = useState<ViewData | null>(null);
+// Pages avec Lazy Loading et reprise automatique en cas de mise à jour (stale chunk)
+const LandingPage = lazyWithRetry(() => import("./components/landing/LandingPage").then(m => ({ default: m.LandingPage })));
+const HomePage = lazyWithRetry(() => import("./components/home/HomePage").then(m => ({ default: m.HomePage })));
+const ProfilePage = lazyWithRetry(() => import("./components/profile/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const SettingsPage = lazyWithRetry(() => import("./components/profile/SettingsPage").then(m => ({ default: m.SettingsPage })));
+const AccountDetailsPage = lazyWithRetry(() => import("./components/profile/AccountDetailsPage").then(m => ({ default: m.AccountDetailsPage })));
+const QuizzesPage = lazyWithRetry(() => import("./components/quizzes/QuizzesPage").then(m => ({ default: m.QuizzesPage })));
+const CreateQuizPage = lazyWithRetry(() => import("./components/quizzes/CreateQuizPage").then(m => ({ default: m.CreateQuizPage })));
+const EditQuizPage = lazyWithRetry(() => import("./components/quizzes/EditQuizPage").then(m => ({ default: m.EditQuizPage })));
+const PlayQuizPage = lazyWithRetry(() => import("./components/quizzes/PlayQuizPage").then(m => ({ default: m.PlayQuizPage })));
+const TrainingModePage = lazyWithRetry(() => import("./components/quizzes/TrainingModePage").then(m => ({ default: m.TrainingModePage })));
+const LeaderboardPage = lazyWithRetry(() => import("./components/leaderboard/LeaderboardPage").then(m => ({ default: m.LeaderboardPage })));
+const FriendsPage = lazyWithRetry(() => import("./components/friends/FriendsPage").then(m => ({ default: m.FriendsPage })));
+const DuelsPage = lazyWithRetry(() => import("./components/duels/DuelsPage").then(m => ({ default: m.DuelsPage })));
+const PartyPage = lazyWithRetry(() => import("./components/party/PartyPage").then(m => ({ default: m.PartyPage })));
+const AtlasPage = lazyWithRetry(() => import("./components/atlas/AtlasPage").then(m => ({ default: m.AtlasPage })));
+const ChatPage = lazyWithRetry(() => import("./components/chat/ChatPage").then(m => ({ default: m.ChatPage })));
 
-  const openLegal = (view: "terms" | "privacy") => {
-    if (authView !== "terms" && authView !== "privacy") {
-      setAuthViewBeforeLegal(authView);
-    }
-    setAuthView(view);
-  };
+// Admin Pages (Lazy Loading avec reprise automatique)
+const AdminPage = lazyWithRetry(() => import("./components/admin/AdminPage").then(m => ({ default: m.AdminPage })));
+const BadgeManagementPage = lazyWithRetry(() => import("./components/admin/BadgeManagementPage").then(m => ({ default: m.BadgeManagementPage })));
+const TitleManagementPage = lazyWithRetry(() => import("./components/admin/TitleManagementPage").then(m => ({ default: m.TitleManagementPage })));
+const CategoryManagementPage = lazyWithRetry(() => import("./components/admin/CategoryManagementPage").then(m => ({ default: m.CategoryManagementPage })));
+const DifficultyManagementPage = lazyWithRetry(() => import("./components/admin/DifficultyManagementPage").then(m => ({ default: m.DifficultyManagementPage })));
+const QuizValidationPage = lazyWithRetry(() => import("./components/admin/QuizValidationPage").then(m => ({ default: m.QuizValidationPage })));
+const WarningsManagementPage = lazyWithRetry(() => import("./components/admin/WarningsManagementPage").then(m => ({ default: m.WarningsManagementPage })));
+const QuizTypeManagementPage = lazyWithRetry(() => import("./components/admin/QuizTypeManagementPage").then(m => ({ default: m.QuizTypeManagementPage })));
+const UserManagementPage = lazyWithRetry(() => import("./components/admin/UserManagementPage").then(m => ({ default: m.UserManagementPage })));
+const QuizManagementPage = lazyWithRetry(() => import("./components/admin/QuizManagementPage").then(m => ({ default: m.QuizManagementPage })));
+const DuelFeaturesPage = lazyWithRetry(() => import("./components/admin/DuelFeaturesPage").then(m => ({ default: m.DuelFeaturesPage })));
+const GeoJsonMapsManagementPage = lazyWithRetry(() => import("./components/admin/GeoJsonMapsManagementPage").then(m => ({ default: m.GeoJsonMapsManagementPage })));
+const AdminAnalyticsPage = lazyWithRetry(() => import("./components/admin/AdminAnalyticsPage").then(m => ({ default: m.AdminAnalyticsPage })));
 
-  const handleNavigate = (view: string, data?: ViewData) => {
-    setCurrentView(view);
-    setViewData(data);
-  };
-  useEffect(() => {
-    setNavigationCallback(handleNavigate);
-  }, []);
-
-  // Si on a un user mais pas de profil (ex. délai après inscription), réessayer de charger le profil
-  useEffect(() => {
-    if (!user || profile) return;
-    const t = setTimeout(() => refreshProfile(), 500);
-    return () => clearTimeout(t);
-  }, [user, profile, refreshProfile]);
-  const hideNavbarViews = ["play-quiz", "play-training", "play-duel"];
-  const shouldShowNavbar = !hideNavbarViews.includes(currentView);
-  const adminViews = new Set([
-    "admin",
-    "badge-management",
-    "title-management",
-    "category-management",
-    "difficulty-management",
-    "quiz-validation",
-    "warnings-management",
-    "quiz-type-management",
-    "user-management",
-    "account-details",
-    "quiz-management",
-    "duel-features",
-    "geojson-maps-management",
-    "admin-analytics",
-    "homepage-testimonials-management",
-  ]);
-  const isAdminView = adminViews.has(currentView);
-
-  const renderAdminView = () => {
-    if (currentView === "admin") return <AdminPage onNavigate={handleNavigate} />;
-    if (currentView === "badge-management") return <BadgeManagementPage />;
-    if (currentView === "title-management") return <TitleManagementPage />;
-    if (currentView === "category-management") return <CategoryManagementPage />;
-    if (currentView === "difficulty-management") return <DifficultyManagementPage />;
-    if (currentView === "quiz-validation") return <QuizValidationPage />;
-    if (currentView === "warnings-management") return <WarningsManagementPage />;
-    if (currentView === "quiz-type-management") return <QuizTypeManagementPage />;
-    if (currentView === "user-management")
-      return <UserManagementPage onNavigate={handleNavigate} />;
-    if (currentView === "account-details")
-      return (
-        <AccountDetailsPage userId={viewData?.userId} onNavigate={handleNavigate} />
-      );
-    if (currentView === "quiz-management")
-      return <QuizManagementPage onNavigate={handleNavigate} />;
-    if (currentView === "duel-features") return <DuelFeaturesPage />;
-    if (currentView === "geojson-maps-management") return <GeoJsonMapsManagementPage />;
-    if (currentView === "admin-analytics") return <AdminAnalyticsPage />;
-    if (currentView === "homepage-testimonials-management")
-      return <HomepageTestimonialsManagementPage />;
-    return null;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 text-lg font-medium">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (user && mfaRequired) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-        <div className="w-full">
-          <div className="max-w-md mx-auto mb-4">
-            <button
-              onClick={() => setAuthView("landing")}
-              className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
-            >
-              ← Retour à l'accueil
-            </button>
-          </div>
-          <LoginForm
-            onSwitchToRegister={() => setAuthView("register")}
-            forceMfa={true}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (user && profile) {
-    const now = new Date();
-    const isBanned = profile.is_banned;
-    const banUntil = profile.ban_until ? new Date(profile.ban_until) : null;
-    const isStillBanned = isBanned && (!banUntil || banUntil > now);
-
-    if (isStillBanned) {
-      return <BannedPage />;
-    }
-
-    if (profile.force_username_change) {
-      return <ForceUsernamePage />;
-    }
-  }
-
-  // Utilisateur connecté mais profil pas encore chargé (ex. juste après inscription)
-  if (user && !profile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 text-lg font-medium">Préparation de votre compte...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    if (authView === "landing") {
-      return (
-        <LandingPage
-          onNavigate={(view) => {
-            if (view === "terms" || view === "privacy") openLegal(view);
-            else
-              setAuthView(
-                view as "login" | "register" | "landing" | "terms" | "privacy"
-              );
-          }}
-        />
-      );
-    }
-
-    if (authView === "terms" || authView === "privacy") {
-      return (
-        <LegalDocumentPage
-          type={authView}
-          onBack={() => setAuthView(authViewBeforeLegal)}
-        />
-      );
-    }
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-        <div className="w-full">
-          <div className="max-w-md mx-auto mb-4">
-            <button
-              onClick={() => setAuthView("landing")}
-              className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
-            >
-              ← Retour à l'accueil
-            </button>
-          </div>
-          {authView === "login" ? (
-            <LoginForm onSwitchToRegister={() => setAuthView("register")} />
-          ) : (
-            <RegisterForm
-              onSwitchToLogin={() => setAuthView("login")}
-              onShowTerms={() => openLegal("terms")}
-              onShowPrivacy={() => openLegal("privacy")}
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
-
+// Loader affiché pendant le chargement des pages lazy
+function PageLoader() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {shouldShowNavbar && (
-        <Navbar currentView={currentView} onNavigate={handleNavigate} />
-      )}
-
-      <main className={shouldShowNavbar ? "pb-8" : ""}>
-        {currentView === "home" && <HomePage onNavigate={handleNavigate} />}
-        {currentView === "profile" && (
-          <ProfilePage onNavigate={handleNavigate} />
-        )}
-        {currentView === "view-profile" && viewData?.userId && (
-          <ProfilePage userId={viewData.userId} onNavigate={handleNavigate} />
-        )}
-        {currentView === "settings" && (
-          <SettingsPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "quizzes" && (
-          <QuizzesPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "create-quiz" && (
-          <CreateQuizPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "edit-quiz" && viewData?.quizId && (
-          <EditQuizPage quizId={viewData.quizId} onNavigate={handleNavigate} />
-        )}
-        {currentView === "training-mode" && (
-          <TrainingModePage onNavigate={handleNavigate} />
-        )}
-        {currentView === "play-quiz" && viewData?.quizId && (
-          <PlayQuizPage
-            key={
-              viewData.resetKey
-                ? `play-${viewData.quizId}-${viewData.resetKey}`
-                : `play-${viewData.quizId}`
-            }
-            quizId={viewData.quizId}
-            challengeId={viewData.challengeId}
-            onNavigate={handleNavigate}
-          />
-        )}
-        {currentView === "play-training" && viewData?.quizId && (
-          <PlayQuizPage
-            key={
-              viewData.resetKey
-                ? `training-${viewData.quizId}-${viewData.resetKey}`
-                : `training-${viewData.quizId}`
-            }
-            quizId={viewData.quizId}
-            trainingMode={true}
-            questionCount={viewData.questionCount}
-            onNavigate={handleNavigate}
-          />
-        )}
-        {currentView === "play-duel" && viewData?.duelId && (
-          <PlayQuizPage
-            key={
-              viewData.resetKey
-                ? `duel-${viewData.duelId}-${viewData.resetKey}`
-                : `duel-${viewData.duelId}`
-            }
-            quizId={viewData.quizId}
-            mode="duel"
-            duelId={viewData.duelId}
-            onNavigate={handleNavigate}
-          />
-        )}
-        {currentView === "leaderboard" && (
-          <LeaderboardPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "friends" && (
-          <FriendsPage onNavigate={handleNavigate} />
-        )}
-        {currentView === "duels" && (
-          <DuelsPage onNavigate={handleNavigate} initialTab={viewData?.tab} />
-        )}
-        {currentView === "chat" && (
-          <ChatPage friendId={viewData?.friendId} onNavigate={handleNavigate} />
-        )}
-        {isAdminView && (
-          <AdminDashboardLayout
-            currentView={currentView}
-            onNavigate={handleNavigate}
-          >
-            {renderAdminView()}
-          </AdminDashboardLayout>
-        )}
-      </main>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4"></div>
+        <p className="text-gray-700 text-lg font-medium">Chargement...</p>
+      </div>
     </div>
   );
 }
 
-function App() {
+// Wrapper Suspense pour chaque page lazy individuelle
+function Lazy({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <NotificationProvider>
-          <AppContent />
-        </NotificationProvider>
-      </LanguageProvider>
-    </AuthProvider>
+    <Suspense fallback={<PageLoader />}>
+      <PageTransition>{children}</PageTransition>
+    </Suspense>
   );
 }
 
-export default App;
+function AppContent() {
+  const { user } = useAuth();
+  const { setNavigationCallback } = useNotifications();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    setNavigationCallback((view: string, data?: any) => {
+      if (view === "duels") {
+        navigate("/duels", { state: data });
+      } else if (view === "chat" && data?.friendId) {
+        navigate(`/chat/${data.friendId}`);
+      } else {
+        navigate(`/${view}`);
+      }
+    });
+  }, [navigate, setNavigationCallback]);
+
+  return (
+    // PAS de Suspense global ici - chaque route lazy a le sien
+    <ErrorBoundary>
+      <ToastContainer />
+      <OfflineIndicator />
+      <ConfettiContainer />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+      {/* ── Routes publiques ── statiques, transition immédiate */}
+      <Route path="/" element={!user ? <Lazy><LandingPage /></Lazy> : <Navigate to="/terra" replace />} />
+
+      <Route path="/login" element={!user ? (
+        <PageTransition>
+          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+            <div className="w-full max-w-md mx-auto">
+              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
+                ← Retour à l'accueil
+              </button>
+              <LoginForm onSwitchToRegister={() => navigate("/register")} />
+            </div>
+          </div>
+        </PageTransition>
+      ) : <Navigate to="/terra" replace />} />
+
+      <Route path="/register" element={!user ? (
+        <PageTransition>
+          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
+            <div className="w-full max-w-md mx-auto">
+              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
+                ← Retour à l'accueil
+              </button>
+              <RegisterForm
+                onSwitchToLogin={() => navigate("/login")}
+                onShowTerms={() => navigate("/terms")}
+                onShowPrivacy={() => navigate("/privacy")}
+              />
+            </div>
+          </div>
+        </PageTransition>
+      ) : <Navigate to="/terra" replace />} />
+
+      <Route path="/terms" element={<LegalDocumentPage type="terms" onBack={() => navigate(-1)} />} />
+      <Route path="/privacy" element={<LegalDocumentPage type="privacy" onBack={() => navigate(-1)} />} />
+
+      {/* ── Route Party Multijoueur (Accessible aux joueurs connectés et invités sur smartphone) ── */}
+      <Route path="/party" element={<Lazy><PartyPage /></Lazy>} />
+      <Route path="/party/:code" element={<Lazy><PartyPage /></Lazy>} />
+
+      {/* ── Routes protégées ── chaque page lazy a son propre Suspense */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/terra" element={<Lazy><HomePage /></Lazy>} />
+        <Route path="/profile" element={<Lazy><ProfilePage /></Lazy>} />
+        <Route path="/profile/:userId" element={<Lazy><ProfilePage /></Lazy>} />
+        <Route path="/settings" element={<Lazy><SettingsPage /></Lazy>} />
+        <Route path="/account-details" element={<Lazy><AccountDetailsPage /></Lazy>} />
+
+        <Route path="/quizzes" element={<Lazy><QuizzesPage /></Lazy>} />
+        <Route path="/atlas" element={<Lazy><AtlasPage /></Lazy>} />
+        <Route path="/quizzes/create" element={<Lazy><CreateQuizPage /></Lazy>} />
+        <Route path="/quizzes/edit/:quizId" element={<Lazy><EditQuizPage /></Lazy>} />
+        <Route path="/quizzes/play/:quizId" element={<Lazy><PlayQuizPage /></Lazy>} />
+        <Route path="/quizzes/training" element={<Lazy><TrainingModePage /></Lazy>} />
+        <Route path="/quizzes/training/:quizId" element={<Lazy><PlayQuizPage trainingMode={true} /></Lazy>} />
+
+        <Route path="/leaderboard" element={<Lazy><LeaderboardPage /></Lazy>} />
+        <Route path="/friends" element={<Lazy><FriendsPage /></Lazy>} />
+        <Route path="/duels" element={<Lazy><DuelsPage /></Lazy>} />
+        <Route path="/duels/play/:duelId" element={<Lazy><PlayQuizPage mode="duel" /></Lazy>} />
+        <Route path="/chat" element={<Lazy><ChatPage /></Lazy>} />
+        <Route path="/chat/:friendId" element={<Lazy><ChatPage /></Lazy>} />
+      </Route>
+
+      {/* ── Routes Admin ── */}
+      <Route path="/admin" element={<ProtectedRoute requireAdmin={true} />}>
+        <Route element={<AdminDashboardLayout />}>
+          <Route index element={<Lazy><AdminPage /></Lazy>} />
+          <Route path="users" element={<Lazy><UserManagementPage /></Lazy>} />
+          <Route path="quizzes" element={<Lazy><QuizManagementPage /></Lazy>} />
+          <Route path="badges" element={<Lazy><BadgeManagementPage /></Lazy>} />
+          <Route path="titles" element={<Lazy><TitleManagementPage /></Lazy>} />
+          <Route path="categories" element={<Lazy><CategoryManagementPage /></Lazy>} />
+          <Route path="difficulties" element={<Lazy><DifficultyManagementPage /></Lazy>} />
+          <Route path="validation" element={<Lazy><QuizValidationPage /></Lazy>} />
+          <Route path="warnings" element={<Lazy><WarningsManagementPage /></Lazy>} />
+          <Route path="types" element={<Lazy><QuizTypeManagementPage /></Lazy>} />
+          <Route path="duels" element={<Lazy><DuelFeaturesPage /></Lazy>} />
+          <Route path="geojson" element={<Lazy><GeoJsonMapsManagementPage /></Lazy>} />
+          <Route path="analytics" element={<Lazy><AdminAnalyticsPage /></Lazy>} />
+        </Route>
+      </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AnimatePresence>
+    </ErrorBoundary>
+  );
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <LanguageProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}

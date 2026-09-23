@@ -505,7 +505,7 @@ export function GeoJsonMapsManagementPage() {
                 <RowPresetEditor
                   key={row.id}
                   row={row}
-                  onSave={(preset) => updatePreset(row, preset)}
+                  onSave={(preset) => { void updatePreset(row, preset); }}
                 />
                 <CatalogueRowFeatureLabelsEditor
                   row={row}
@@ -744,7 +744,7 @@ function CatalogueRowFeatureLabelsEditor({
         centerLat={Number(pr.centerLat)}
         centerLng={Number(pr.centerLng)}
         zoom={Math.max(1, Math.min(8, pr.zoom))}
-        idProperty={pr.idProperty}
+        idProperty={pr.idProperty || ""}
         featureLabels={labels}
         onFeatureLabelsChange={setLabels}
         summaries={fcData.summaries}

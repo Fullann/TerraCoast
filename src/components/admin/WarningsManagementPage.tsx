@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { AlertTriangle, Check, X, Eye, Ban, AlertOctagon } from 'lucide-react';
-import type { Database } from '../../lib/database.types';
+import { AlertTriangle, Check, X, Eye, AlertOctagon } from 'lucide-react';
+import type { Database } from '../../lib/supabase';
 
 type Warning = Database['public']['Tables']['warnings']['Row'] & {
   reported_user?: { pseudo: string };
@@ -216,7 +216,7 @@ export function WarningsManagementPage() {
     return styles[status as keyof typeof styles] || styles.pending;
   };
 
-  const getActionBadge = (action: string) => {
+  const getActionBadge = (action?: string | null) => {
     const styles = {
       none: 'bg-gray-100 text-gray-800',
       warning: 'bg-yellow-100 text-yellow-800',
@@ -224,7 +224,7 @@ export function WarningsManagementPage() {
       permanent_ban: 'bg-red-100 text-red-800',
       force_username_change: 'bg-purple-100 text-purple-800',
     };
-    return styles[action as keyof typeof styles] || styles.none;
+    return (action ? styles[action as keyof typeof styles] : undefined) || styles.none;
   };
 
   return (

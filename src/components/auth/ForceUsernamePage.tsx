@@ -15,6 +15,10 @@ export function ForceUsernamePage() {
     e.preventDefault();
     setError("");
 
+    if (!profile?.id) {
+      return;
+    }
+
     if (!newUsername.trim()) {
       setError(t("forceUsername.errorEmpty"));
       return;
@@ -51,7 +55,7 @@ export function ForceUsernamePage() {
           pseudo: newUsername.trim(),
           force_username_change: false,
         })
-        .eq("id", profile?.id);
+        .eq("id", profile.id);
 
       if (updateError) {
         console.error("Error updating username:", updateError);

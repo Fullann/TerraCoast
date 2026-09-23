@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -29,11 +30,12 @@ interface FriendData extends Friendship {
   user_profile?: Profile;
 }
 
-interface FriendsPageProps {
+export interface FriendsPageProps {
   onNavigate?: (view: string, data?: any) => void;
 }
 
-export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
+export function FriendsPage({ onNavigate: _onNavigate }: FriendsPageProps = {}) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { showAppNotification } = useNotifications();
@@ -127,7 +129,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
       .limit(50);
 
     if (data) {
-      const shuffled = data.sort(() => Math.random() - 0.5).slice(0, 4);
+      const shuffled = (data as Profile[]).sort(() => Math.random() - 0.5).slice(0, 4);
       setSuggestions(shuffled);
     }
   };
@@ -158,7 +160,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
       .eq("id", challenge.id)
       .eq("to_user_id", profile.id);
     await loadChallenges();
-    onNavigate?.("play-quiz", { quizId: challenge.quiz_id, challengeId: challenge.id });
+    navigate(`/quizzes/play/${challenge.quiz_id}?challengeId=${challenge.id}`);
   };
 
   const declineChallenge = async (challenge: QuizScoreChallenge) => {
@@ -431,9 +433,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                 >
                   <div
                     className="flex items-center space-x-3 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() =>
-                      onNavigate?.("view-profile", { userId: friendProfile.id })
-                    }
+                    onClick={() => navigate(`/profile/${friendProfile.id}`)}
                   >
                     <Avatar
                       url={friendProfile.avatar_url}
@@ -452,9 +452,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() =>
-                        onNavigate?.("chat", { friendId: friendProfile.id })
-                      }
+                      onClick={() => navigate(`/chat/${friendProfile.id}`)}
                       className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                       title={t("friends.sendMessage")}
                     >

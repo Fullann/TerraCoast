@@ -35,7 +35,7 @@ export function DuelFeaturesPage() {
       p_action: action,
       p_entity_type: entityType,
       p_entity_id: entityId,
-      p_details: details,
+      p_details: details as any,
     });
   };
 

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import imageCompression from "browser-image-compression";
 
 interface ImageDropzoneProps {
@@ -99,7 +99,7 @@ export function ImageDropzone({
       const filePath = `${fileName}`;
 
       // Upload vers Supabase Storage avec le fichier compressé
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(filePath, compressedFile, {
           cacheControl: "3600",

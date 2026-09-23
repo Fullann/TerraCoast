@@ -325,6 +325,8 @@ export function countryEntriesFromGeoJson(
       iso3: id,
       numericCode: null,
       name,
+      capital: "",
+      flagEmoji: "",
       continent: "Custom",
       lat: c?.lat ?? 0,
       lng: c?.lng ?? 0,

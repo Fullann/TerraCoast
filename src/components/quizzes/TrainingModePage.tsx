@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Dumbbell, ArrowLeft, Play, Search, X } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
@@ -8,11 +8,11 @@ import type { Database } from '../../lib/database.types';
 type Quiz = Database['public']['Tables']['quizzes']['Row'];
 
 interface TrainingModePageProps {
-  onNavigate: (view: string, data?: any) => void;
+  onNavigate?: (view: string, data?: unknown) => void;
 }
 
-export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
-  const { profile } = useAuth();
+export function TrainingModePage(_props: TrainingModePageProps = {}) {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
@@ -54,10 +54,7 @@ export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
   const startTraining = () => {
     if (!selectedQuiz) return;
 
-    onNavigate('play-training', {
-      quizId: selectedQuiz.id,
-      questionCount: questionCount,
-    });
+    navigate(`/quizzes/training/${selectedQuiz.id}?count=${questionCount}`);
   };
 
   const normalizedQuery = searchTerm.trim().toLowerCase();
@@ -110,7 +107,7 @@ export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
         <button
-          onClick={() => onNavigate('home')}
+          onClick={() => navigate("/terra")}
           className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
