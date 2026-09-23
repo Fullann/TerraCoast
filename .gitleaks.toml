@@ -1,0 +1,48 @@
+# Configuration Gitleaks pour TerraCoast
+# Référence : https://github.com/gitleaks/gitleaks
+
+title = "TerraCoast Gitleaks Security Policy"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlists for safe files, documentation and mock test data"
+paths = [
+  '''(?i)^\.env\.example$''',
+  '''(?i)^package-lock\.json$''',
+  '''(?i)^.*\.test\.(ts|tsx|js)$''',
+  '''(?i)^.*__tests__/.*$''',
+  '''(?i)^docs/.*$''',
+  '''(?i)^dist/.*$'''
+]
+
+regexes = [
+  # Mock tokens explicitly used in unit tests or documentation examples
+  '''(?i)test_token_[a-z0-9_-]+''',
+  '''(?i)mock_secret_[a-z0-9_-]+''',
+  '''(?i)example_api_key_[a-z0-9_-]+'''
+]
+
+# Règle personnalisée pour détecter les clés secrètes Supabase Service Role
+[[rules]]
+id = "supabase-service-role-key"
+description = "Détection d'une clé secrète Supabase Service Role (privilèges administrateur)"
+regex = '''(?i)supabase[_-]?(?:service[_-]?role[_-]?(?:key)?|admin[_-]?key)\s*[:=]\s*["']?([a-zA-Z0-9_\-\.]{100,})["']?'''
+keywords = ["supabase", "service_role", "admin_key"]
+severity = "critical"
+
+# Règle pour empêcher la fuite d'un fichier .env en dur dans le dépôt
+[[rules]]
+id = "committed-env-file"
+description = "Détection d'un fichier .env sensible ajouté au suivi Git"
+path = '''(?i)^\.env(\.(local|production|staging|test))?$'''
+severity = "high"
+
+# Règle pour détecter les clés privées (RSA, SSH, PGP)
+[[rules]]
+id = "private-cryptographic-key"
+description = "Détection d'une clé cryptographique privée non chiffrée"
+regex = '''-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'''
+keywords = ["PRIVATE KEY"]
+severity = "critical"
