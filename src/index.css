@@ -50,4 +50,98 @@
       transform: translateY(-6px);
     }
   }
+
+  /* 🎮 Duolingo 3D Tactile Design Tokens & Buttons */
+  .btn-duo {
+    @apply font-black tracking-wide rounded-2xl transition-all duration-100 flex items-center justify-center select-none active:translate-y-1 active:border-b-0 cursor-pointer;
+  }
+
+  .btn-duo-green {
+    @apply bg-[#58cc02] text-white border-b-4 border-[#46a302] hover:bg-[#61e002] active:bg-[#46a302];
+  }
+
+  .btn-duo-blue {
+    @apply bg-[#1cb0f6] text-white border-b-4 border-[#1899d6] hover:bg-[#2bc0ff] active:bg-[#1899d6];
+  }
+
+  .btn-duo-amber {
+    @apply bg-[#ffc800] text-amber-950 border-b-4 border-[#e5a500] hover:bg-[#ffd21f] active:bg-[#e5a500];
+  }
+
+  .btn-duo-rose {
+    @apply bg-[#ff4b4b] text-white border-b-4 border-[#ea2b2b] hover:bg-[#ff5e5e] active:bg-[#ea2b2b];
+  }
+
+  .btn-duo-purple {
+    @apply bg-[#ce82ff] text-white border-b-4 border-[#a855f7] hover:bg-[#d89eff] active:bg-[#a855f7];
+  }
+
+  .btn-duo-teal {
+    @apply bg-[#14b8a6] text-white border-b-4 border-[#0f766e] hover:bg-[#2dd4bf] active:bg-[#0f766e];
+  }
+
+  .btn-duo-white {
+    @apply bg-white text-slate-700 border-2 border-slate-200 border-b-4 hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100;
+  }
+
+  .btn-duo-gray {
+    @apply bg-[#e5e5e5] text-slate-400 border-b-4 border-[#afafaf] cursor-not-allowed active:translate-y-0 active:border-b-4;
+  }
+
+  /* 🃏 Tactile Duolingo Cards */
+  .card-duo {
+    @apply bg-white rounded-3xl border-2 border-slate-200 border-b-4 transition-all duration-150 hover:border-slate-300;
+  }
+
+  .card-duo-interactive {
+    @apply cursor-pointer active:translate-y-0.5 active:border-b-2;
+  }
+
+  /* 🌟 Duolingo Micro-Animations */
+  @keyframes duo-bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  @keyframes duo-wiggle {
+    0%, 100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(-6deg) scale(1.05);
+    }
+    75% {
+      transform: rotate(6deg) scale(1.05);
+    }
+  }
+
+  @keyframes duo-pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(88, 204, 2, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 12px rgba(88, 204, 2, 0);
+    }
+  }
+
+  .animate-duo-bounce {
+    animation: duo-bounce 1.6s ease-in-out infinite;
+  }
+
+  .animate-duo-wiggle {
+    animation: duo-wiggle 1.2s ease-in-out infinite;
+  }
+
+  .animate-duo-pulse-glow {
+    animation: duo-pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* 📱 Safe-area mobile spacing helper */
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+  }
 }

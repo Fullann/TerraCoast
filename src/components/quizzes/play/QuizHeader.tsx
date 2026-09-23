@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { ArrowLeft, Clock, Trophy, Flag, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Clock, Trophy, Flag, Volume2, VolumeX, Radio } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { useRadioGlobe } from "../../../contexts/RadioGlobeContext";
 import { isSoundEnabled, toggleSound } from "../../../lib/soundManager";
 import type { QuizChallenge } from "./types";
 
@@ -31,6 +32,7 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
 }) => {
   const { t } = useLanguage();
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+  const { isPlaying, togglePlay, currentStation, currentCountry } = useRadioGlobe();
 
   const handleToggleSound = () => {
     const newState = toggleSound();
@@ -43,6 +45,7 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={onQuit}
               className="flex items-center text-gray-600 hover:text-gray-800"
             >
@@ -64,12 +67,36 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
               type="button"
               onClick={handleToggleSound}
               className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 transition-colors"
-              title={soundOn ? (t("sound.mute") || "Couper le son") : (t("sound.unmute") || "Activer le son")}
+              title={soundOn ? t("sound.mute") : t("sound.unmute")}
             >
               {soundOn ? (
                 <Volume2 className="w-4 h-4 text-emerald-600" />
               ) : (
                 <VolumeX className="w-4 h-4 text-gray-400" />
+              )}
+            </button>
+
+            {/* Radio Globe Toggle */}
+            <button
+              type="button"
+              onClick={togglePlay}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+                isPlaying
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-500"
+              }`}
+              title={
+                isPlaying
+                  ? `Radio active : ${currentStation.name} (${currentCountry?.name})`
+                  : "Activer la Radio Globe & Ambiances"
+              }
+            >
+              <Radio className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">
+                {isPlaying ? currentCountry?.flag || "📻" : "Radio"}
+              </span>
+              {isPlaying && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               )}
             </button>
           </div>

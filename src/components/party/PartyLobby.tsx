@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Play, Copy, Check, ArrowLeft, Clock, Sparkles } from "lucide-react";
+import { Users, Play, Copy, Check, ArrowLeft, Clock, Sparkles, Tv, X, Skull } from "lucide-react";
 import type { PartyPlayer, PartyRoom } from "./types";
 import { PartyQRCode } from "./PartyQRCode";
 
@@ -23,6 +23,7 @@ export const PartyLobby: React.FC<PartyLobbyProps> = ({
   onSendEmote,
 }) => {
   const [copied, setCopied] = React.useState(false);
+  const [projectionMode, setProjectionMode] = React.useState(false);
 
   const handleCopyCode = async () => {
     try {
@@ -35,11 +36,14 @@ export const PartyLobby: React.FC<PartyLobbyProps> = ({
   };
 
   const isHost = currentPlayer.isHost;
+  const joinUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/party?code=${encodeURIComponent(room.code)}`
+    : `https://terracoast.app/party?code=${encodeURIComponent(room.code)}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white p-4 md:p-8 flex flex-col justify-between">
       {/* Top Bar */}
-      <div className="max-w-6xl w-full mx-auto flex items-center justify-between">
+      <div className="max-w-6xl w-full mx-auto flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onLeave}
@@ -49,9 +53,28 @@ export const PartyLobby: React.FC<PartyLobbyProps> = ({
           Quitter le salon
         </button>
 
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-sm font-semibold">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-          Salon en direct
+        <div className="flex items-center gap-2">
+          {room.gameMode === "battle_royale" && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-300 text-xs md:text-sm font-bold animate-pulse">
+              <Skull className="w-4 h-4 text-rose-400" />
+              <span>Mort Subite ({room.eliminatedPerRound || 1} éliminé/tour)</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setProjectionMode(true)}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-300 text-xs md:text-sm font-bold transition shadow-md"
+            title="Affichage optimisé pour vidéoprojecteur / grand écran"
+          >
+            <Tv className="w-4 h-4" />
+            <span className="hidden sm:inline">Grand Écran</span>
+          </button>
+
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-sm font-semibold">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+            Salon en direct
+          </div>
         </div>
       </div>
 
@@ -236,6 +259,131 @@ export const PartyLobby: React.FC<PartyLobbyProps> = ({
       <div className="max-w-6xl w-full mx-auto text-center text-xs text-indigo-300/60">
         TerraCoast Live Party • Répondez le plus vite possible pour accumuler un maximum de points !
       </div>
+
+      {/* Projection Mode Fullscreen Overlay */}
+      {projectionMode && (
+        <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col justify-between p-6 md:p-10 animate-in fade-in duration-300 overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🌍</span>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500">
+                  TerraCoast Party • Grand Écran
+                </h1>
+                <p className="text-xs md:text-sm text-indigo-300">
+                  Quiz : <strong className="text-white">{room.quizTitle}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {room.gameMode === "battle_royale" && (
+                <span className="px-3.5 py-1.5 rounded-full bg-rose-500/30 border border-rose-400 text-rose-300 text-sm font-bold flex items-center gap-2">
+                  <Skull className="w-4 h-4" />
+                  Battle Royale (Mort Subite)
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setProjectionMode(false)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition border border-white/15"
+              >
+                <X className="w-5 h-5" />
+                <span>Quitter le plein écran</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Main 2-Column Projection Body */}
+          <div className="my-auto py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-7xl w-full mx-auto">
+            {/* Left: Giant QR Code & Direct instructions */}
+            <div className="lg:col-span-5 flex flex-col items-center text-center bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 shadow-2xl">
+              <span className="text-xs md:text-sm font-bold uppercase tracking-widest text-indigo-300 mb-4">
+                Scannez pour rejoindre instantanément 📱
+              </span>
+
+              <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-emerald-400/40 inline-block mb-4">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(
+                    joinUrl
+                  )}&bgcolor=ffffff&color=0f172a&margin=2`}
+                  alt={`QR code pour ${room.code}`}
+                  className="w-56 h-56 sm:w-64 sm:h-64 md:w-80 md:h-80 object-contain rounded-2xl"
+                />
+              </div>
+
+              <p className="text-sm md:text-base font-semibold text-emerald-300">
+                Aucun compte nécessaire • Rejoignez depuis n'importe quel smartphone !
+              </p>
+              <p className="text-xs text-indigo-300/80 mt-1 font-mono">
+                Ou naviguez sur <span className="text-white underline">{joinUrl}</span>
+              </p>
+            </div>
+
+            {/* Right: Giant PIN & Live Players */}
+            <div className="lg:col-span-7 flex flex-col gap-6">
+              <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 shadow-2xl text-center">
+                <span className="text-xs md:text-sm uppercase tracking-widest font-extrabold text-indigo-300">
+                  Code PIN du Salon
+                </span>
+                <div className="text-5xl sm:text-6xl md:text-7xl font-mono font-black text-amber-300 tracking-wider my-3 drop-shadow-lg">
+                  {room.code}
+                </div>
+                <p className="text-sm text-indigo-200">
+                  {room.totalQuestions} questions • {room.timeLimitSeconds}s par question
+                </p>
+              </div>
+
+              {/* Connected Players in Projector */}
+              <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 shadow-2xl">
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
+                  <span className="text-base md:text-lg font-bold flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-300" />
+                    Joueurs dans la salle ({players.length})
+                  </span>
+                  {isHost && (
+                    <button
+                      type="button"
+                      onClick={onStartGame}
+                      disabled={players.length === 0}
+                      className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-base shadow-xl shadow-emerald-500/30 transition transform hover:scale-105 active:scale-95 disabled:opacity-40"
+                    >
+                      <Play className="w-5 h-5 fill-current" />
+                      Lancer la partie !
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto pr-1">
+                  {players.map((p) => (
+                    <div
+                      key={p.guestId}
+                      className="p-3 rounded-2xl bg-white/10 border border-white/10 flex items-center gap-2.5 animate-in fade-in"
+                    >
+                      <span className="text-2xl">{p.avatarUrl || "🌍"}</span>
+                      <span className="font-bold text-sm truncate">{p.pseudo}</span>
+                    </div>
+                  ))}
+                  {players.length === 0 && (
+                    <div className="col-span-full text-center py-8 text-indigo-300 text-sm">
+                      En attente des premiers joueurs... Scannez le QR Code à gauche !
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer in Projector */}
+          <div className="border-t border-white/10 pt-4 flex items-center justify-between text-xs text-indigo-300/60">
+            <span>TerraCoast Party • Mode Projection Grand Écran</span>
+            {isHost && (
+              <span>Prêt ? Appuyez sur « Lancer la partie » dès que tout le monde est connecté !</span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

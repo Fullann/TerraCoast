@@ -1,6 +1,8 @@
-import { X, Clock, Award, Flame } from "lucide-react";
+import { X, Clock, Award, Flame, Share2 } from "lucide-react";
+import { useState } from "react";
 import { Avatar } from "../common/Avatar";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { VisualShareModal } from "../common/VisualShareModal";
 import type { DailyLeaderboardEntry } from "../../lib/dailyChallenge";
 
 interface DailyLeaderboardModalProps {
@@ -21,10 +23,12 @@ export function DailyLeaderboardModal({
   quizTitle,
 }: DailyLeaderboardModalProps) {
   const { t } = useLanguage();
+  const [showShareModal, setShowShareModal] = useState(false);
 
   if (!isOpen) return null;
 
   const topThree = entries.slice(0, 3);
+  const myEntry = currentUserId ? entries.find((e) => e.playerId === currentUserId) : null;
 
   return (
     <div
@@ -207,7 +211,7 @@ export function DailyLeaderboardModal({
                               </span>
                               {isCurrentUser && (
                                 <span className="text-[10px] bg-orange-500 text-white font-bold px-1.5 py-0.2 rounded-full">
-                                  {t("common.you") || "Moi"}
+                                  {t("common.you")}
                                 </span>
                               )}
                             </div>
@@ -236,7 +240,19 @@ export function DailyLeaderboardModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+        <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-3">
+          {myEntry ? (
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-md transition-all active:scale-98"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Partager ma perf' 📲</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
           <button
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-sm transition-colors"
@@ -245,6 +261,24 @@ export function DailyLeaderboardModal({
           </button>
         </div>
       </div>
+
+      {myEntry && (
+        <VisualShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          data={{
+            title: "Défi du Jour",
+            subtitle: quizTitle,
+            playerPseudo: myEntry.pseudo,
+            playerAvatar: myEntry.avatarUrl,
+            scoreDisplay: `${myEntry.score} pts (#${myEntry.rank})`,
+            accuracyPercent: myEntry.accuracyPercentage,
+            timeTakenSeconds: myEntry.timeTakenSeconds,
+            emojiGrid: "🌍 🎯 ⚡ 🔥",
+            url: typeof window !== "undefined" ? window.location.origin : undefined,
+          }}
+        />
+      )}
     </div>
   );
 }

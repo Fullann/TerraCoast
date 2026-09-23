@@ -1,0 +1,134 @@
+name: DevSecOps Security Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Audit de sécurité planifié chaque lundi à 08:00 UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # ============================================================================
+  # 1. DÉTECTION DES FUITES DE SECRETS (Gitleaks + TruffleHog)
+  # ============================================================================
+  secrets-scanning:
+    name: "Secrets Scanning (Gitleaks & TruffleHog)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (historique complet requis pour scanner les commits)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks (Scan des secrets selon .gitleaks.toml)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+      - name: Run TruffleHog (Vérification cryptographique des clés compromises)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  # ============================================================================
+  # 2. ANALYSE STATIQUE DU CODE (SAST - Semgrep OWASP Top 10)
+  # ============================================================================
+  sast-semgrep:
+    name: "SAST Code Analysis (Semgrep OWASP Top 10)"
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep scan (OWASP Top 10, React & JavaScript Security)
+        run: |
+          semgrep scan \
+            --config "p/owasp-top-ten" \
+            --config "p/javascript" \
+            --config "p/react" \
+            --config "p/security-audit" \
+            --sarif \
+            --output semgrep-results.sarif \
+            --error \
+            src/
+
+      - name: Upload Semgrep SARIF report to GitHub Security Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep-results.sarif
+        continue-on-error: true
+
+  # ============================================================================
+  # 3. ANALYSE DE COMPOSITION LOGICIELLE (SCA - Snyk & npm audit)
+  # ============================================================================
+  sca-dependencies:
+    name: "SCA Dependency Security (Snyk & npm audit)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (clean install)
+        run: npm ci
+
+      - name: Run Snyk Security Scan (si SNYK_TOKEN configuré)
+        if: env.SNYK_TOKEN != ''
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Run npm audit check (Audit strict des vulnérabilités critiques)
+        run: |
+          echo "### 🛡️ Rapport d'Audit des Dépendances (SCA)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npm audit --audit-level=critical || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # 4. CONTRÔLE DE QUALITÉ & TESTS (Quality Gate)
+  # ============================================================================
+  quality-gate:
+    name: "Quality Gate (Typecheck & Unit Tests)"
+    runs-on: ubuntu-latest
+    needs: [secrets-scanning, sast-semgrep]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Static Typecheck (TypeScript)
+        run: npm run typecheck
+
+      - name: Run Unit Tests (Vitest)
+        run: npm test

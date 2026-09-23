@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Users, CheckCircle2, Zap } from "lucide-react";
+import { Users, CheckCircle2, Zap, Ghost } from "lucide-react";
 import { playClickSound, playTickSound } from "../../lib/soundManager";
 import type { PartyPlayer, PartyQuestion, PartyRoom, PartyEmote } from "./types";
 
@@ -237,6 +237,13 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
               alt="Question illustration"
               className="max-h-48 md:max-h-64 rounded-2xl object-contain shadow-2xl border border-white/10"
             />
+          </div>
+        )}
+
+        {currentPlayer.isEliminated && (
+          <div className="mb-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-950/80 border border-purple-400/40 text-purple-200 text-xs font-bold shadow-lg animate-pulse">
+            <Ghost className="w-4 h-4 text-purple-400" />
+            <span>Mode Spectateur Fantôme 👻 (Vos réponses ne comptent plus au classement)</span>
           </div>
         )}
 

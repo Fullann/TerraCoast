@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Trophy,
@@ -8,9 +8,16 @@ import {
   CheckCircle,
   XCircle,
   Brain,
+  Sparkles,
+  Check,
+  Share2,
 } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import { triggerConfetti } from "../../common/Confetti";
+import { addCardToSrs } from "../../../lib/srsManager";
+import { recordConqueredCountries } from "../../../lib/conquestManager";
+import { VisualShareModal } from "../../common/VisualShareModal";
 import type { Question, QuizAnswer, PuzzleState } from "./types";
 import { normalizeAnswer } from "./utils";
 
@@ -47,16 +54,50 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
 }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const [addedErrorsToSrs, setAddedErrorsToSrs] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const correctAnswers = answers.filter((a) => a.is_correct).length;
   const accuracy = questions.length > 0 ? (correctAnswers / questions.length) * 100 : 0;
   const wrongAnswersCount = answers.filter((a) => !a.is_correct).length;
+  const [conquestResult, setConquestResult] = useState<{
+    newlyConquered: string[];
+    totalConquered: number;
+  } | null>(null);
 
   useEffect(() => {
     if (accuracy === 100 || totalScore === 100 || isDailyChallenge) {
       triggerConfetti();
     }
   }, [accuracy, totalScore, isDailyChallenge]);
+
+  useEffect(() => {
+    if (accuracy >= 80 && questions.length > 0) {
+      const isos: string[] = [];
+      for (const q of questions) {
+        const mapData = q.map_data as any;
+        if (Array.isArray(mapData?.selectedCountries)) {
+          isos.push(...mapData.selectedCountries);
+        }
+        if (mapData?.targetCountry && typeof mapData.targetCountry === "string") {
+          isos.push(mapData.targetCountry);
+        }
+        if (mapData?.iso3 && typeof mapData.iso3 === "string") {
+          isos.push(mapData.iso3);
+        }
+      }
+      if (isos.length > 0) {
+        const res = recordConqueredCountries(
+          isos,
+          accuracy,
+          user?.id,
+          isDailyChallenge ? "daily" : "quiz"
+        );
+        setConquestResult(res);
+      }
+    }
+  }, [accuracy, questions, user?.id, isDailyChallenge]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
@@ -127,6 +168,35 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                   className="shrink-0 px-4 py-2 bg-white text-orange-600 font-bold rounded-xl text-xs sm:text-sm shadow hover:bg-amber-50 transition-colors"
                 >
                   {t("daily.viewLeaderboard") || "Classement"}
+                </button>
+              </div>
+            )}
+
+            {/* BANNIÈRE CONQUÊTE & POKÉDEX */}
+            {conquestResult && conquestResult.newlyConquered.length > 0 && (
+              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in border border-emerald-500/30">
+                <div className="flex items-center gap-3.5">
+                  <span className="text-3xl sm:text-4xl filter drop-shadow">🗺️✨</span>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-black text-base sm:text-lg">
+                        {conquestResult.newlyConquered.length} Nouveau(x) Territoire(s) Conquis !
+                      </h3>
+                      <span className="bg-emerald-400 text-slate-950 text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                        Pokédex Débloqué
+                      </span>
+                    </div>
+                    <p className="text-emerald-100 text-xs sm:text-sm mt-0.5">
+                      Le brouillard s'est dissipé sur : <strong>{conquestResult.newlyConquered.join(", ")}</strong>. Nouvelles fiches de collection prêtes !
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/conquest")}
+                  className="shrink-0 px-4 py-2.5 bg-white text-emerald-900 font-extrabold rounded-xl text-xs sm:text-sm shadow-md hover:bg-emerald-50 transition transform active:scale-95 flex items-center gap-1.5"
+                >
+                  <span>Voir ma Carte 🗺️</span>
                 </button>
               </div>
             )}
@@ -421,19 +491,73 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
               </div>
             </div>
 
-            {/* Bouton Réviser mes erreurs */}
-            {wrongAnswersCount > 0 && onReviewMistakes && mode !== "duel" && (
+            {/* Boutons Réviser mes erreurs & Carnet SRS */}
+            {wrongAnswersCount > 0 && mode !== "duel" && (
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                {onReviewMistakes && (
+                  <button
+                    type="button"
+                    onClick={onReviewMistakes}
+                    className="flex-1 py-3.5 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-md shadow-amber-500/25 transition transform hover:scale-[1.01] active:scale-98 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Brain className="w-5 h-5 text-white" />
+                    <span>
+                      {t("playQuiz.reviewMistakes")} ({wrongAnswersCount}) 🧠
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const wrongQuestions = questions.filter((_, idx) => {
+                      const ans = answers[idx];
+                      return ans && !ans.is_correct;
+                    });
+                    const isos: string[] = [];
+                    for (const q of wrongQuestions) {
+                      const mapData = q.map_data as any;
+                      if (mapData?.selectedCountries) {
+                        isos.push(...mapData.selectedCountries);
+                      }
+                    }
+                    if (isos.length > 0) {
+                      isos.forEach((iso) => addCardToSrs(iso, "capital", user?.id || null));
+                    }
+                    setAddedErrorsToSrs(true);
+                  }}
+                  className={`py-3.5 px-5 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm border ${
+                    addedErrorsToSrs
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                      : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200"
+                  }`}
+                >
+                  {addedErrorsToSrs ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      <span>{t("playQuiz.srsAdded")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                      <span>{t("playQuiz.addToSrs")}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Bouton Partage Visuel */}
+            <div className="mb-4">
               <button
                 type="button"
-                onClick={onReviewMistakes}
-                className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-lg shadow-amber-500/25 transition transform hover:scale-[1.01] active:scale-98 flex items-center justify-center gap-2 mb-4 text-base"
+                onClick={() => setShowShareModal(true)}
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-bold shadow-lg shadow-emerald-600/20 transition-all transform hover:scale-[1.01] active:scale-98 flex items-center justify-center gap-3 text-base"
               >
-                <Brain className="w-5 h-5 text-white" />
-                <span>
-                  {t("playQuiz.reviewMistakes") || "Réviser mes erreurs"} ({wrongAnswersCount} question{wrongAnswersCount > 1 ? "s" : ""}) 🧠
-                </span>
+                <Share2 className="w-5 h-5 text-emerald-100" />
+                <span>{t("playQuiz.shareResult")}</span>
               </button>
-            )}
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <button
@@ -463,6 +587,26 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
           </div>
         </div>
       </div>
+
+      <VisualShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        data={{
+          title: isDailyChallenge ? "Défi du Jour" : "Quiz Géo",
+          subtitle: trainingMode ? "Mode Entraînement" : undefined,
+          playerPseudo:
+            user?.user_metadata?.username ||
+            user?.user_metadata?.full_name ||
+            user?.email?.split("@")[0] ||
+            "Explorateur",
+          playerAvatar: user?.user_metadata?.avatar_url,
+          scoreDisplay: `${totalScore} pts`,
+          accuracyPercent: Math.round(accuracy),
+          timeTakenSeconds: answers.reduce((acc, a) => acc + (a.time_taken || 0), 0),
+          emojiGrid: answers.map((a) => (a.is_correct ? "🟩" : "🟥")).join(""),
+          url: typeof window !== "undefined" ? window.location.origin : undefined,
+        }}
+      />
     </div>
   );
 };

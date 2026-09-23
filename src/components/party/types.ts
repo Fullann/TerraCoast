@@ -22,6 +22,8 @@ export interface PartyPlayer {
   lastAnswerTimeMs?: number | null;
   lastPointsEarned?: number;
   rank?: number;
+  isEliminated?: boolean;
+  eliminatedAtRound?: number;
 }
 
 export interface PartyQuestion {
@@ -50,6 +52,8 @@ export interface PartyRoom {
   timeLimitSeconds: number;
   questionStartTime?: number | null;
   questions?: PartyQuestion[];
+  gameMode?: "classic" | "battle_royale";
+  eliminatedPerRound?: number;
 }
 
 export interface PartyAnswerSubmission {
@@ -106,9 +110,12 @@ export type PartyRealtimeEvent =
           pointsEarned: number;
           totalScore: number;
           streak: number;
+          isEliminated?: boolean;
         }
       >;
       leaderboard: PartyPlayer[];
+      eliminatedPlayerIds?: string[];
+      remainingPlayersCount?: number;
     }
   | {
       type: "NEXT_QUESTION";
@@ -122,3 +129,64 @@ export type PartyRealtimeEvent =
       type: "EMOTE";
       emote: PartyEmote;
     };
+
+/**
+ * Calcule les éliminations pour le mode Battle Royale (Mort Subite).
+ * Élimine les N joueurs actifs ayant le score le plus bas ce tour-ci,
+ * tout en garantissant qu'au moins un joueur actif (survivant) reste en jeu.
+ */
+export function computeBattleRoyaleEliminations(
+  players: PartyPlayer[],
+  eliminatedPerRound: number = 1,
+  currentRoundIndex: number = 0
+): {
+  updatedPlayers: PartyPlayer[];
+  newlyEliminatedIds: string[];
+  remainingCount: number;
+} {
+  const activePlayers = players.filter((p) => !p.isEliminated);
+
+  // Si 2 joueurs ou moins sont actifs, on ne force pas l'élimination pour garder la finale
+  if (activePlayers.length <= 2) {
+    return {
+      updatedPlayers: [...players],
+      newlyEliminatedIds: [],
+      remainingCount: activePlayers.length,
+    };
+  }
+
+  // Ne pas éliminer plus que ce qui laisserait au moins 1 survivant
+  const countToEliminate = Math.min(
+    Math.max(1, eliminatedPerRound),
+    activePlayers.length - 1
+  );
+
+  // Trier les actifs par score croissant (les plus bas scores en premier)
+  const sortedActive = [...activePlayers].sort((a, b) => {
+    if (a.score !== b.score) return a.score - b.score;
+    return a.guestId.localeCompare(b.guestId);
+  });
+
+  const toEliminate = sortedActive.slice(0, countToEliminate);
+  const newlyEliminatedIds = toEliminate.map((p) => p.guestId);
+  const newlyElimSet = new Set(newlyEliminatedIds);
+
+  const updatedPlayers = players.map((p) => {
+    if (newlyElimSet.has(p.guestId)) {
+      return {
+        ...p,
+        isEliminated: true,
+        eliminatedAtRound: currentRoundIndex,
+      };
+    }
+    return p;
+  });
+
+  const remainingCount = activePlayers.length - newlyEliminatedIds.length;
+
+  return {
+    updatedPlayers,
+    newlyEliminatedIds,
+    remainingCount,
+  };
+}

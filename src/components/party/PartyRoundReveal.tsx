@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { CheckCircle2, XCircle, Trophy, Flame, Users, Sparkles } from "lucide-react";
+import { CheckCircle2, XCircle, Trophy, Flame, Users, Sparkles, Skull, Ghost } from "lucide-react";
 import { playCorrectSound, playIncorrectSound } from "../../lib/soundManager";
 import type { PartyPlayer, PartyQuestion, PartyRoom } from "./types";
 
@@ -21,10 +21,12 @@ interface PartyRoundRevealProps {
   >;
   leaderboard: PartyPlayer[];
   currentPlayer: PartyPlayer;
+  eliminatedPlayerIds?: string[];
   onNextQuestion: () => void;
 }
 
 export const PartyRoundReveal: React.FC<PartyRoundRevealProps> = ({
+  room,
   question,
   questionIndex,
   totalQuestions,
@@ -33,6 +35,7 @@ export const PartyRoundReveal: React.FC<PartyRoundRevealProps> = ({
   playerResults,
   leaderboard,
   currentPlayer,
+  eliminatedPlayerIds = [],
   onNextQuestion,
 }) => {
   const isHost = currentPlayer.isHost;
@@ -77,6 +80,40 @@ export const PartyRoundReveal: React.FC<PartyRoundRevealProps> = ({
       <div className="max-w-5xl w-full mx-auto my-auto grid grid-cols-1 lg:grid-cols-12 gap-6 py-4">
         {/* Left Column: Result & Breakdown (7 cols) */}
         <div className="lg:col-span-7 flex flex-col gap-4">
+          {/* Battle Royale Elimination Notice */}
+          {room.gameMode === "battle_royale" && eliminatedPlayerIds.length > 0 && (
+            <div className="p-4 rounded-3xl bg-gradient-to-r from-red-950/90 to-rose-950/90 border-2 border-rose-500/50 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in zoom-in-95">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0">
+                  <Skull className="w-6 h-6 text-rose-400 animate-bounce" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-rose-300 uppercase tracking-widest">
+                    Mort Subite • Éliminé(s) ce tour
+                  </h4>
+                  <p className="text-sm font-bold text-white">
+                    {eliminatedPlayerIds
+                      .map((id) => leaderboard.find((p) => p.guestId === id)?.pseudo || "Joueur")
+                      .join(", ")}
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1.5 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-400/30 shrink-0">
+                {leaderboard.filter((p) => !p.isEliminated).length} survivants
+              </span>
+            </div>
+          )}
+
+          {/* Ghost Mode banner if current player is eliminated */}
+          {currentPlayer.isEliminated && (
+            <div className="p-3.5 rounded-2xl bg-purple-950/60 border border-purple-400/30 text-purple-200 text-xs flex items-center gap-3 shadow-lg">
+              <Ghost className="w-5 h-5 text-purple-400 shrink-0 animate-pulse" />
+              <span>
+                Vous avez été éliminé(e) de la course au podium, mais vous continuez en <strong>Mode Spectateur Fantôme 👻</strong> !
+              </span>
+            </div>
+          )}
+
           {/* Personal Feedback Banner */}
           {myResult && (
             <div
@@ -180,34 +217,51 @@ export const PartyRoundReveal: React.FC<PartyRoundRevealProps> = ({
                 <div
                   key={player.guestId}
                   className={`flex items-center justify-between p-3 rounded-2xl transition border ${
-                    isMe
+                    player.isEliminated
+                      ? "bg-rose-950/20 border-rose-900/30 opacity-60"
+                      : isMe
                       ? "bg-indigo-500/30 border-amber-400/80 shadow-md"
                       : "bg-white/5 border-white/5 hover:bg-white/10"
                   }`}
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
                     <span className="w-7 text-center font-bold text-sm shrink-0">
-                      {medal}
+                      {player.isEliminated ? "💀" : medal}
                     </span>
                     <span className="text-lg shrink-0">
                       {player.avatarUrl && player.avatarUrl.length <= 4
                         ? player.avatarUrl
                         : "🌍"}
                     </span>
-                    <span className="font-bold text-sm truncate text-white">
-                      {player.pseudo}
-                      {isMe && <span className="text-xs text-indigo-300 ml-1">(Vous)</span>}
-                    </span>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span
+                        className={`font-bold text-sm truncate ${
+                          player.isEliminated ? "line-through text-gray-400" : "text-white"
+                        }`}
+                      >
+                        {player.pseudo}
+                      </span>
+                      {isMe && <span className="text-xs text-indigo-300 ml-1 shrink-0">(Vous)</span>}
+                      {player.isEliminated && (
+                        <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 text-[10px] font-bold uppercase shrink-0">
+                          Éliminé
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0 ml-2">
-                    {player.streak >= 2 && (
+                    {player.streak >= 2 && !player.isEliminated && (
                       <span className="flex items-center text-xs text-amber-300 font-bold" title={`Série de ${player.streak}`}>
                         <Flame className="w-3.5 h-3.5 fill-current" />
                         {player.streak}
                       </span>
                     )}
-                    <span className="font-mono font-black text-amber-300 text-sm">
+                    <span
+                      className={`font-mono font-black text-sm ${
+                        player.isEliminated ? "text-gray-500" : "text-amber-300"
+                      }`}
+                    >
                       {player.score}
                     </span>
                   </div>

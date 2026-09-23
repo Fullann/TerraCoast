@@ -75,3 +75,25 @@ Toutes les fonctionnalités demandées ont été développées, testées et vali
   - `npm run typecheck` : 0 erreur TypeScript.
   - `npm test` : 14 suites de tests, 105 tests passés avec succès.
   - `npm run build` : Bundle de production optimisé et PWA généré en ~7 secondes.
+
+---
+
+## 7. 🎮 Pack Gameplay & Nouveaux Modes Addictifs
+- **Mode « Silhouette Mystère » (Blind Map / Style Worldle) (`/games/silhouette`)** :
+  - Rendu vectoriel SVG TopoJSON de la frontière du pays sans repères, avec zoom +/-.
+  - 5 essais max avec calcul géodésique Haversine (distance en km) et direction boussole (`⬆️ N`, `↘️ SE`...).
+  - Déblocage d'indices progressifs (Continent, Première lettre, Capitale, Drapeau) et partage viral émojis (`🟩 🟨 🟥`).
+  - Défi quotidien déterministe et mode entraînement infini.
+- **Mode « Plus Grand / Plus Petit » (Higher or Lower) (`/games/higher-lower`)** :
+  - Comparaison en duel de cartes : Population 👥, Superficie 📐 ou Aléatoire 🎲.
+  - Révélation animée, enchaînement fluide et suivi de série avec record personnel persistant.
+- **Mode « Chrono Rush / Survie » (`/games/chrono-rush`)** :
+  - Compte à rebours de 45 secondes sous haute tension.
+  - Questions ultra rapides (capitales, drapeaux, continents, frontières).
+  - Système de bonus/malus (+3s / -5s) et multiplicateurs de combos (x2, x3, x4 🔥).
+- **Répétition Espacée Intelligente (SRS / Leitner) (`/games/srs`)** :
+  - Algorithme en 5 boîtes de mémorisation à long terme avec flashcards 3D recto/verso.
+  - Intégré directement dans l'Atlas (`CountryDetailDrawer.tsx`) et l'écran de fin de quiz (`QuizResultsScreen.tsx`).
+- **Hub des Modes (`/games`) & Navigation** :
+  - Page vitrine `/games` accessible depuis la barre de navigation et le tableau de bord d'accueil.
+  - 18 suites de tests passées (127 tests), 0 erreur TypeScript.

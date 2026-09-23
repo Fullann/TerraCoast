@@ -19,6 +19,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ── Contrôle de sécurité DevSecOps pré-déploiement ──
+      - name: Secret scan check (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+      - name: Dependency vulnerability audit (SCA Gate)
+        run: npm audit --audit-level=critical
+
       - name: Run unit tests
         run: npm test
 

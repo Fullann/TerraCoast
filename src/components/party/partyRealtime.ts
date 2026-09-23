@@ -147,6 +147,8 @@ export class PartyRealtimeService {
                 isHost: !!p.isHost,
                 isConnected: true,
                 rank: p.rank,
+                isEliminated: !!p.isEliminated,
+                eliminatedAtRound: p.eliminatedAtRound,
               });
             }
           });
@@ -178,6 +180,8 @@ export class PartyRealtimeService {
           score: currentPlayer.score,
           streak: currentPlayer.streak,
           isHost: currentPlayer.isHost,
+          isEliminated: currentPlayer.isEliminated,
+          eliminatedAtRound: currentPlayer.eliminatedAtRound,
         });
       }
     });
@@ -198,6 +202,8 @@ export class PartyRealtimeService {
         streak: player.streak,
         isHost: player.isHost,
         rank: player.rank,
+        isEliminated: player.isEliminated,
+        eliminatedAtRound: player.eliminatedAtRound,
       });
     } catch (err) {
       console.warn("Failed to update presence:", err);
