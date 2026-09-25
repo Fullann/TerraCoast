@@ -1,5 +1,6 @@
 import countries from "world-countries";
 import type { Language } from "../i18n/translations";
+import { COUNTRY_POPULATIONS_BY_ISO3 } from "./countryPopulations";
 
 export type CountryMetric = "population" | "area_km2";
 
@@ -49,6 +50,7 @@ const rawByIso3 = new Map<string, WorldCountry>(
 );
 
 export const estimatedPopulationsByIso3: Record<string, number> = {
+  ...COUNTRY_POPULATIONS_BY_ISO3,
   IND: 1428627000,
   CHN: 1425671000,
   USA: 339996000,

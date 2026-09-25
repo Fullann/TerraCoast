@@ -1,6 +1,7 @@
 import countries from "world-countries";
 import type { Language } from "../i18n/translations";
 import { estimatedPopulationsByIso3 } from "./countryGameData";
+import { COUNTRY_POPULATIONS_BY_ISO3 } from "./countryPopulations";
 
 export interface AtlasCountry {
   iso3: string;
@@ -149,7 +150,7 @@ function normalizeAtlasCountry(raw: WorldCountryRaw, lang: Language): AtlasCount
     flagEmoji: raw.flag || "🏳️",
     continent,
     subregion: raw.subregion || continent,
-    population: estimatedPopulationsByIso3[iso3] || Number(raw.population || 0),
+    population: COUNTRY_POPULATIONS_BY_ISO3[iso3] ?? (estimatedPopulationsByIso3[iso3] || Number(raw.population || 0)),
     areaKm2: Number(raw.area || 0),
     lat: Array.isArray(raw.latlng) ? Number(raw.latlng[0] || 0) : 0,
     lng: Array.isArray(raw.latlng) ? Number(raw.latlng[1] || 0) : 0,

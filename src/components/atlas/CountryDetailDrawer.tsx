@@ -125,9 +125,11 @@ export function CountryDetailDrawer({
                 {t("atlas.population") || "Population"}
               </span>
               <p className="text-base font-black text-gray-900">
-                {formatNumber(country.population)}
+                {country.population > 0 ? formatNumber(country.population) : "Inhabité (0)"}
               </p>
-              <span className="text-[10px] text-gray-500">habitants</span>
+              <span className="text-[10px] text-gray-500">
+                {country.population > 0 ? "habitants" : "territoire polaire / scientifique"}
+              </span>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-100">

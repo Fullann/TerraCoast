@@ -506,7 +506,9 @@ export function AtlasPage() {
                   <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
                     <span className="flex items-center gap-1">
                       <Users className="w-3 h-3" />
-                      {new Intl.NumberFormat(language, { notation: "compact" }).format(c.population)}
+                      {c.population > 0
+                        ? new Intl.NumberFormat(language, { notation: "compact" }).format(c.population)
+                        : "Inhabité"}
                     </span>
                     <span className="flex items-center gap-1">
                       <Maximize2 className="w-3 h-3" />
