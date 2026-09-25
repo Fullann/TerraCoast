@@ -16,6 +16,7 @@ export interface SatelliteLocation {
   lng: number;
   category: SatelliteCategory;
   satelliteImageUrl: string;
+  secondaryImageUrl?: string;
   zoomLevelHint?: number; // Niveau de zoom indicatif
   clues: [string, string]; // 2 indices progressifs
   funFact: string; // Anecdote vue du ciel / satellite
@@ -53,6 +54,20 @@ export interface GeoDetectiveRank {
   description: string;
 }
 
+/**
+ * Calcule l'URL de la dalle satellite directe (Esri World Imagery / Sentinel / Landsat)
+ * pour n'importe quelles coordonnées géographiques mondiales.
+ */
+export function getSatelliteTileUrl(lat: number, lng: number, zoom: number = 14): string {
+  const n = Math.pow(2, zoom);
+  const x = Math.floor(((lng + 180) / 360) * n);
+  const latRad = (lat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n
+  );
+  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${y}/${x}`;
+}
+
 export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
   {
     id: "giza-pyramids",
@@ -65,7 +80,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 31.1342,
     category: "monument",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1568322445389-f64ac2515020?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Situé à la limite exacte entre une immense métropole et un désert infini.",
       "Le plus long fleuve d'Afrique coule à quelques kilomètres à l'est.",
@@ -85,9 +102,11 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 55.139,
     category: "urban_island",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=1600&q=85",
     clues: [
-      "Un archipel artificiel gigantesque en forme d'arbre posé dans un golfe très chaud.",
+      "Un archipel artificiel gigantesque en forme de palmier posé dans un golfe très chaud.",
       "Cette mégalopole abrite le plus haut gratte-ciel du monde (Burj Khalifa).",
     ],
     funFact:
@@ -105,7 +124,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 12.3359,
     category: "urban_island",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1514890547357-a9ee288728e0?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1514890547357-a9ee288728e0?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Une cité bâtie sur 118 îles reliées par plus de 400 ponts.",
       "Située au fond de la mer Adriatique, le Grand Canal y serpente comme un grand S inversé.",
@@ -125,7 +146,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 138.7274,
     category: "volcano_crater",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un cône volcanique à la symétrie quasi parfaite culminant à 3 776 mètres.",
       "Montagne sacrée entourée de 5 lacs sur l'île principale de Honshu.",
@@ -145,7 +168,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -73.9654,
     category: "urban_island",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un rectangle de verdure géant de 341 hectares encadré par des gratte-ciels.",
       "Flanqué par l'Hudson River à l'ouest et l'East River à l'est.",
@@ -165,7 +190,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -11.4016,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1547234935-80c7145ec969?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un dôme géologique circulaire spectaculaire de 40 km de diamètre au milieu des dunes.",
       "Longtemps utilisé comme point de repère visuel par les premières missions spatiales Gemini.",
@@ -185,7 +212,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -79.5936,
     category: "canal_port",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Le point de passage artificiel le plus stratégique reliant l'Océan Pacifique et l'Océan Atlantique.",
       "Un isthme tropical montagneux traversé par le lac Gatún.",
@@ -205,7 +234,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 78.0421,
     category: "monument",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Mausolée en marbre blanc d'une symétrie parfaite bordé par une boucle de rivière.",
       "Situé dans l'État de l'Uttar Pradesh, au cœur du sous-continent indien.",
@@ -225,7 +256,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 131.0369,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1529108190281-9a4f620bc2d7?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1529108190281-9a4f620bc2d7?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un inselberg de grès ocre isolé au milieu du désert rouge de l'Outback.",
       "Site sacré pour les peuples autochtones Anangu du Territoire du Nord.",
@@ -245,7 +278,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 25.4316,
     category: "volcano_crater",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un anneau d'îles déchiquetées entourant un cratère sous-marin englouti dans la mer Égée.",
       "Célèbre pour ses falaises noires couronnées de villages aux coupoles bleues.",
@@ -265,7 +300,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -1.5115,
     category: "monument",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1509024644558-2f56ce76c490?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un monticule rocheux couronné par une abbaye médiévale cerné par d'immenses bancs de sable.",
       "Le théâtre des plus fortes marées d'Europe continentale (marnage jusqu'à 15 mètres).",
@@ -285,7 +322,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -112.1129,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1527333656061-ca7adf608ae1?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Une faille géologique spectaculaire de 446 km de long sculptée dans les plateaux de l'Arizona.",
       "Des strates rocheuses rouges exposant près de 2 milliards d'années d'histoire de la Terre.",
@@ -305,7 +344,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 25.8572,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1603565816030-6b389eeb23cb?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Le fleuve Zambèze s'engouffre dans une faille étroite de basalte de plus de 1 700 m de large.",
       "Frontière naturelle spectaculaire entre la Zambie et le Zimbabwe.",
@@ -325,7 +366,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 28.9784,
     category: "canal_port",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "L'unique bras de mer reliant la Mer Noire à la Mer de Marmara.",
       "Sépare la partie européenne et la partie asiatique d'une cité millénaire.",
@@ -345,7 +388,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -54.4367,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1589802829985-817e51171b92?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1589802829985-817e51171b92?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1518638150340-f706e86654de?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un amphithéâtre naturel en demi-cercle de 275 cascades au cœur de la forêt subtropicale.",
       "Frontière entre la province de Misiones et l'État brésilien du Paraná.",
@@ -356,7 +401,7 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
   },
   {
     id: "machu-picchu",
-    name: "Citadelle Perché de Machu Picchu",
+    name: "Citadelle Perchée de Machu Picchu",
     country: "Pérou",
     iso3: "PER",
     flagEmoji: "🇵🇪",
@@ -365,7 +410,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -72.545,
     category: "monument",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1509299349698-dd22323b5963?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Une citadelle de terrasses suspendue sur une crête rocheuse à 2 430 m d'altitude.",
       "Enlacée par les méandres vertigineux de la rivière Urubamba.",
@@ -385,7 +432,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 139.7686,
     category: "volcano_crater",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Une île volcanique isolée en plein océan Pacifique avec une caldeira emboîtée dans une caldeira.",
       "L'un des villages les plus isolés du Japon, à plus de 350 km au sud de Tokyo.",
@@ -405,7 +454,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 32.2654,
     category: "canal_port",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Une voie maritime artificielle de 193 km reliant directement Port-Saïd à la Mer Rouge.",
       "Évite à tous les navires marchands de contourner l'Afrique par le Cap de Bonne-Espérance.",
@@ -425,7 +476,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -67.4891,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Le plus vaste désert de sel au monde (plus de 10 500 km²) perché à 3 650 m d'altitude.",
       "Situé sur l'Altiplano andin, il devient un miroir géant parfait pendant la saison des pluies.",
@@ -445,7 +498,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -111.0225,
     category: "volcano_crater",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Le cratère d'impact météoritique le mieux conservé de la planète (1 200 m de diamètre).",
       "Perché sur le plateau du Colorado près de Flagstaff en Arizona.",
@@ -465,7 +520,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 18.4967,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un promontoire rocheux mythique s'avançant dans l'océan à l'extrémité australe de l'Afrique.",
       "Franchie pour la première fois en 1488 par le navigateur portugais Bartolomeu Dias.",
@@ -485,7 +542,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -151.7415,
     category: "urban_island",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1532408840957-031d8034aeef?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un volcan éteint ceinturé par une barrière de corail turquoise et des motus de sable blanc.",
       "Situé dans l'archipel des îles Sous-le-Vent en Polynésie française.",
@@ -505,7 +564,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: -109.3497,
     category: "volcano_crater",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "L'une des terres habitées les plus isolées du monde, au cœur du Pacifique Sud-Est.",
       "Célèbre pour ses centaines de statues monumentales en tuf volcanique (Moaï).",
@@ -525,7 +586,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 22.9197,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un éventail luxuriant de canaux et de marécages au milieu du désert du Kalahari.",
       "L'un des très rares fleuves endoréiques de la planète : ses eaux s'évaporent entièrement dans le sable.",
@@ -545,7 +608,9 @@ export const SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lng: 108.165,
     category: "natural_wonder",
     satelliteImageUrl:
-      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=85",
+      "https://images.unsplash.com/photo-1508873696983-2df57046475a?auto=format&fit=crop&w=1600&q=85",
+    secondaryImageUrl:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85",
     clues: [
       "Un croissant d'eau géant et mystique de 636 km de long enchâssé entre les montagnes de Sibérie.",
       "Le lac le plus profond du monde (1 642 mètres).",
