@@ -339,14 +339,9 @@ export function HomePage() {
           {/* Composant Parcours Sinueux Duolingo */}
           <DuolingoQuestPath
             userId={profile?.id}
-            onNodeStart={(node) => {
-              if (node.category === "flags") {
-                navigate("/games");
-              } else if (dailyQuiz && node.isBoss) {
-                navigate(`/quizzes/play/${dailyQuiz.id}`);
-              } else {
-                navigate(`/quizzes?search=${encodeURIComponent(node.category)}`);
-              }
+            onNodeStart={(node, chosenQuizId) => {
+              const targetQuizId = chosenQuizId || node.id;
+              navigate(`/quizzes/play/${targetQuizId}?pathNodeId=${node.id}`);
             }}
           />
 

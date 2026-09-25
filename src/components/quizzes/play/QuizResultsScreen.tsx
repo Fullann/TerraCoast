@@ -35,6 +35,12 @@ interface QuizResultsScreenProps {
   onRetrySync: () => void;
   onReviewMistakes?: () => void;
   isDailyChallenge?: boolean;
+  pathNodeResult?: {
+    nodeId: string;
+    stars: number;
+    gemsAwarded: number;
+    score: number;
+  } | null;
 }
 
 export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
@@ -51,6 +57,7 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
   onRetrySync,
   onReviewMistakes,
   isDailyChallenge,
+  pathNodeResult,
 }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -197,6 +204,35 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                   className="shrink-0 px-4 py-2.5 bg-white text-emerald-900 font-extrabold rounded-xl text-xs sm:text-sm shadow-md hover:bg-emerald-50 transition transform active:scale-95 flex items-center gap-1.5"
                 >
                   <span>Voir ma Carte 🗺️</span>
+                </button>
+              </div>
+            )}
+
+            {/* BANNIÈRE VALIDATION DU PARCOURS D'AVENTURE */}
+            {pathNodeResult && (
+              <div className="mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border-2 border-emerald-400/40 animate-scaleUp">
+                <div className="flex items-center gap-3.5">
+                  <span className="text-4xl filter drop-shadow">🌟</span>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-black text-base sm:text-lg">
+                        Étape du Parcours Validée ! {pathNodeResult.stars === 3 ? "⭐⭐⭐" : pathNodeResult.stars === 2 ? "⭐⭐" : "⭐"}
+                      </h3>
+                      <span className="bg-amber-300 text-amber-950 text-[10px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                        Niveau Réussi
+                      </span>
+                    </div>
+                    <p className="text-emerald-100 text-xs sm:text-sm mt-0.5">
+                      +{pathNodeResult.gemsAwarded} 💎 TerraGems gagnées • Le palier suivant de ton aventure est débloqué !
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/terra")}
+                  className="shrink-0 px-5 py-2.5 bg-white text-emerald-900 font-black rounded-2xl text-xs sm:text-sm shadow-md hover:bg-emerald-50 transition transform active:scale-95 flex items-center gap-1.5"
+                >
+                  <span>Continuer le Parcours ➔</span>
                 </button>
               </div>
             )}

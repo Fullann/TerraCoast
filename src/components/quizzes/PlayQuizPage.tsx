@@ -68,6 +68,11 @@ export function PlayQuizPage({
       ? parseInt(searchParams.get("count")!, 10)
       : undefined);
 
+  const pathNodeId =
+    searchParams.get("pathNodeId") ||
+    (location.state as any)?.pathNodeId ||
+    (params.quizId && params.quizId.startsWith("u") ? params.quizId : undefined);
+
   const initialQuizId =
     propQuizId ||
     params.quizId ||
@@ -130,6 +135,7 @@ export function PlayQuizPage({
     completeGame,
     syncSessionProgress,
     restartReviewMistakes,
+    pathNodeResult,
   } = usePlayQuiz({
     quizId,
     mode,
@@ -137,6 +143,7 @@ export function PlayQuizPage({
     challengeId,
     trainingMode,
     questionCount,
+    pathNodeId,
   });
 
   const textInputRef = useRef<HTMLInputElement>(null);
@@ -347,6 +354,7 @@ export function PlayQuizPage({
         onRetrySync={() => syncSessionProgress()}
         onReviewMistakes={restartReviewMistakes}
         isDailyChallenge={searchParams.get("daily") === "true"}
+        pathNodeResult={pathNodeResult}
       />
     );
   }

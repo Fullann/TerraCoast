@@ -10,6 +10,8 @@ import {
   playVictoryFanfare,
 } from "../../../lib/soundManager";
 import { triggerConfetti } from "../../common/Confetti";
+import { getPathNodeQuiz } from "../../../lib/pathQuizzesData";
+import { completePathNode } from "../../../lib/gamificationManager";
 import type {
   Quiz,
   Question,
@@ -57,6 +59,7 @@ interface UsePlayQuizOptions {
   challengeId?: string;
   trainingMode: boolean;
   questionCount?: number;
+  pathNodeId?: string;
 }
 
 export function usePlayQuiz({
@@ -66,6 +69,7 @@ export function usePlayQuiz({
   challengeId,
   trainingMode,
   questionCount,
+  pathNodeId,
 }: UsePlayQuizOptions) {
   const { profile, refreshProfile } = useAuth();
   const { t, language } = useLanguage();
@@ -88,6 +92,12 @@ export function usePlayQuiz({
   const [xpGained, setXpGained] = useState(0);
   const [isOfflinePendingSync, setIsOfflinePendingSync] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [pathNodeResult, setPathNodeResult] = useState<{
+    nodeId: string;
+    stars: number;
+    gemsAwarded: number;
+    score: number;
+  } | null>(null);
 
   const pendingSessionPayloadRef = useRef<PendingSessionPayload | null>(null);
 
@@ -127,7 +137,8 @@ export function usePlayQuiz({
   };
 
   const createSession = useCallback(async () => {
-    if (trainingMode) {
+    if (trainingMode || quizId.startsWith("u") || quizId.startsWith("path-")) {
+      setSessionId(`path_session_${Date.now()}`);
       isCreatingSessionRef.current = false;
       return;
     }
@@ -163,21 +174,44 @@ export function usePlayQuiz({
   const loadQuiz = useCallback(async () => {
     if (!quizId) return;
 
-    const { data: quizData } = await supabase
-      .from("quizzes")
-      .select("*")
-      .eq("id", quizId)
-      .single();
+    let quizData: Quiz | null = null;
+    let questionsData: Question[] | null = null;
+
+    if (quizId.startsWith("u") || quizId.startsWith("path-")) {
+      const bundle = getPathNodeQuiz(quizId);
+      if (bundle) {
+        quizData = bundle.quiz;
+        questionsData = bundle.questions;
+      }
+    }
+
+    if (!quizData) {
+      const { data: dbQuiz } = await supabase
+        .from("quizzes")
+        .select("*")
+        .eq("id", quizId)
+        .single();
+
+      if (dbQuiz) {
+        quizData = dbQuiz;
+        const { data: dbQuestions } = await supabase
+          .from("questions")
+          .select("*")
+          .eq("quiz_id", quizId)
+          .order("order_index");
+        questionsData = dbQuestions;
+      } else {
+        const bundle = getPathNodeQuiz(quizId);
+        if (bundle) {
+          quizData = bundle.quiz;
+          questionsData = bundle.questions;
+        }
+      }
+    }
 
     if (quizData) {
       setQuiz(quizData);
       setTimeLeft(quizData.time_limit_seconds || 30);
-
-      const { data: questionsData } = await supabase
-        .from("questions")
-        .select("*")
-        .eq("quiz_id", quizId)
-        .order("order_index");
 
       if (questionsData) {
         let processedQuestions = [...questionsData];
@@ -632,6 +666,30 @@ export function usePlayQuiz({
       100,
       Math.round((totalScore / (questions.length * 150)) * 100)
     );
+
+    const activePathNodeId = pathNodeId || (quizId.startsWith("u") ? quizId : null);
+    if (activePathNodeId) {
+      const res = completePathNode(profile?.id, activePathNodeId, normalizedScore);
+      setPathNodeResult({
+        nodeId: activePathNodeId,
+        stars: res.stars,
+        gemsAwarded: res.gemsAwarded,
+        score: normalizedScore,
+      });
+    }
+
+    if (sessionId?.startsWith("path_session_")) {
+      const calculatedXp = Math.max(15, Math.round(normalizedScore * 0.5));
+      setXpGained(calculatedXp);
+      if (normalizedScore >= 70) {
+        playVictoryFanfare();
+      }
+      if (normalizedScore === 100) {
+        triggerConfetti();
+      }
+      isCompletingRef.current = false;
+      return;
+    }
 
     const payload: PendingSessionPayload = {
       sessionId,
@@ -1311,5 +1369,6 @@ export function usePlayQuiz({
     completeGame,
     syncSessionProgress,
     restartReviewMistakes,
+    pathNodeResult,
   };
 }
