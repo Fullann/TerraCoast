@@ -65,6 +65,7 @@ const QuizManagementPage = lazyWithRetry(() => import("./components/admin/QuizMa
 const DuelFeaturesPage = lazyWithRetry(() => import("./components/admin/DuelFeaturesPage").then(m => ({ default: m.DuelFeaturesPage })));
 const GeoJsonMapsManagementPage = lazyWithRetry(() => import("./components/admin/GeoJsonMapsManagementPage").then(m => ({ default: m.GeoJsonMapsManagementPage })));
 const AdminAnalyticsPage = lazyWithRetry(() => import("./components/admin/AdminAnalyticsPage").then(m => ({ default: m.AdminAnalyticsPage })));
+const HomepageTestimonialsManagementPage = lazyWithRetry(() => import("./components/admin/HomepageTestimonialsManagementPage").then(m => ({ default: m.HomepageTestimonialsManagementPage })));
 
 // Loader affiché pendant le chargement des pages lazy
 function PageLoader() {
@@ -200,6 +201,7 @@ function AppContent() {
           <Route path="duels" element={<Lazy><DuelFeaturesPage /></Lazy>} />
           <Route path="geojson" element={<Lazy><GeoJsonMapsManagementPage /></Lazy>} />
           <Route path="analytics" element={<Lazy><AdminAnalyticsPage /></Lazy>} />
+          <Route path="homepage-testimonials-management" element={<Lazy><HomepageTestimonialsManagementPage /></Lazy>} />
         </Route>
       </Route>
 
