@@ -250,7 +250,27 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
                 shadow: "shadow-rose-500/30",
                 pathLine: "stroke-rose-400",
               },
-            }[unit.themeColor];
+              teal: {
+                headerBg: "bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700",
+                border: "border-teal-400",
+                btnActive: "bg-[#00cd9c] border-[#009b76] text-white",
+                shadow: "shadow-teal-500/30",
+                pathLine: "stroke-teal-400",
+              },
+              sky: {
+                headerBg: "bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-700",
+                border: "border-blue-400",
+                btnActive: "bg-[#1cb0f6] border-[#1899d6] text-white",
+                shadow: "shadow-blue-500/30",
+                pathLine: "stroke-blue-400",
+              },
+            }[unit.themeColor] || {
+              headerBg: "bg-gradient-to-r from-emerald-600 via-green-600 to-teal-700",
+              border: "border-green-500",
+              btnActive: "bg-[#58cc02] border-[#46a302] text-white",
+              shadow: "shadow-green-600/30",
+              pathLine: "stroke-emerald-400",
+            };
 
             return (
               <section key={unit.id} className="relative">

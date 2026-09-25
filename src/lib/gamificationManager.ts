@@ -7,43 +7,15 @@
  * - 🗺️ Parcours d'Apprentissage (Unités, Nœuds oscillants, Étoiles ⭐⭐⭐, Coffres au trésor 🎁)
  */
 
-import { getAllPathAssignments } from "./pathConfigManager";
+import {
+  getAllPathAssignments,
+  getCustomUnits,
+  type PathNode,
+  type PathChest,
+  type PathUnit,
+} from "./pathConfigManager";
 
-export interface PathNode {
-  id: string;
-  title: string;
-  subtitle: string;
-  category: string;
-  xpReward: number;
-  gemReward: number;
-  stars: number; // 0, 1, 2, 3
-  status: "locked" | "active" | "completed";
-  isBoss?: boolean;
-  quizIdOrFilter?: string; // fallback query param for quiz selection
-  assignedQuizId?: string;
-  assignedQuizTitle?: string;
-  hasCustomQuiz?: boolean;
-}
-
-export interface PathChest {
-  id: string;
-  title: string;
-  gemReward: number;
-  xpReward: number;
-  claimed: boolean;
-  unlocked: boolean;
-}
-
-export interface PathUnit {
-  id: string;
-  unitNumber: number;
-  title: string;
-  description: string;
-  themeColor: "green" | "blue" | "amber" | "purple" | "rose";
-  badgeIcon: string;
-  nodes: PathNode[];
-  chest: PathChest;
-}
+export type { PathNode, PathChest, PathUnit };
 
 export interface PlayerGamificationState {
   gems: number;
@@ -338,15 +310,7 @@ export function getLeagueForXp(xp: number = 0): LeagueTier {
   return DUOLINGO_LEAGUES[0];
 }
 
-/**
- * Retourne la structure complète des unités du parcours d'apprentissage
- * avec l'état dynamique de chaque niveau (verrouillé, actif, complété, étoiles)
- */
-export function getQuestPath(userId?: string): PathUnit[] {
-  const state = getPlayerGamificationState(userId);
-  const assignments = getAllPathAssignments();
-
-  const baseUnits: PathUnit[] = [
+export const DEFAULT_BASE_UNITS: PathUnit[] = [
     {
       id: "unit-1",
       unitNumber: 1,
@@ -590,12 +554,34 @@ export function getQuestPath(userId?: string): PathUnit[] {
     },
   ];
 
+/**
+ * Retourne la structure complète des unités du parcours d'apprentissage
+ * avec l'état dynamique de chaque niveau (verrouillé, actif, complété, étoiles)
+ */
+export function getQuestPath(userId?: string): PathUnit[] {
+  const state = getPlayerGamificationState(userId);
+  const assignments = getAllPathAssignments();
+  const customUnits = getCustomUnits();
+
+  // Cloner les unités de base
+  const defaultClones: PathUnit[] = JSON.parse(JSON.stringify(DEFAULT_BASE_UNITS));
+  const unitMap = new Map<string, PathUnit>();
+
+  // 1. Ajouter les unités de base
+  defaultClones.forEach((u) => unitMap.set(u.id, u));
+
+  // 2. Fusionner avec les customUnits créées ou modifiées par l'administrateur
+  customUnits.forEach((u) => {
+    unitMap.set(u.id, JSON.parse(JSON.stringify(u)));
+  });
+
+  const allUnits = Array.from(unitMap.values()).sort((a, b) => a.unitNumber - b.unitNumber);
+
   // Calcul dynamique des statuts débloqués / actifs en cascade séquentielle
   let previousNodeCompleted = true; // Le premier nœud de l'unité 1 est toujours accessible
 
-  for (const unit of baseUnits) {
+  for (const unit of allUnits) {
     unit.chest.claimed = state.claimedChests.includes(unit.chest.id);
-
     let unitNodesCompletedCount = 0;
 
     for (const node of unit.nodes) {
@@ -627,9 +613,9 @@ export function getQuestPath(userId?: string): PathUnit[] {
       }
     }
 
-    // Le coffre se débloque dès que 2 nœuds de l'unité sont réussis
+    // Le coffre se débloque dès que 2 nœuds de l'unité sont réussis (ou tous les nœuds si moins de 2)
     unit.chest.unlocked = unitNodesCompletedCount >= Math.min(2, unit.nodes.length);
   }
 
-  return baseUnits;
+  return allUnits;
 }
