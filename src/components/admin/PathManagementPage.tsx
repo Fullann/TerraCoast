@@ -20,6 +20,12 @@ import {
   Palette,
   Gift,
   HelpCircle,
+  AlertTriangle,
+  TrendingUp,
+  Users,
+  Target,
+  BarChart2,
+  Activity,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useNotifications } from "../../contexts/NotificationContext";
@@ -40,7 +46,13 @@ import {
   addStageToUnit,
   removeStageFromUnit,
   resetCustomUnits,
+  getAllPathAnalytics,
+  getPathStageAnalytics,
+  resetPathStageAnalytics,
   PathNodeAssignment,
+  StageAnalytics,
+  StageDifficultyRating,
+  PATH_CONFIG_EVENT,
 } from "../../lib/pathConfigManager";
 import { PATH_QUIZZES } from "../../lib/pathQuizzesData";
 import { ConfirmModal } from "../common/ConfirmModal";
@@ -87,6 +99,12 @@ export function PathManagementPage() {
   // Filtre / recherche pour les nœuds
   const [selectedUnitId, setSelectedUnitId] = useState<string>("all");
   const [nodeSearch, setNodeSearch] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<"all" | StageDifficultyRating>("all");
+
+  // Données analytiques des étapes (taux de réussite, tentatives, diagnostic de difficulté)
+  const [analytics, setAnalytics] = useState<Record<string, StageAnalytics>>(() =>
+    getAllPathAnalytics()
+  );
 
   // Modale de sélection de quiz pour un nœud donné
   const [assigningNode, setAssigningNode] = useState<{
@@ -155,11 +173,21 @@ export function PathManagementPage() {
     node: PathNode;
   } | null>(null);
 
-  // Recharger l'état complet du parcours
+  // Recharger l'état complet du parcours et des analytiques
   const reloadData = () => {
     setUnits(getQuestPath());
     setAssignments(getAllPathAssignments());
+    setAnalytics(getAllPathAnalytics());
   };
+
+  // Écouter les mises à jour en direct du parcours et de la télémétrie des quiz
+  useEffect(() => {
+    const handleUpdate = () => {
+      reloadData();
+    };
+    window.addEventListener(PATH_CONFIG_EVENT, handleUpdate);
+    return () => window.removeEventListener(PATH_CONFIG_EVENT, handleUpdate);
+  }, []);
 
   // Charger tous les quiz (depuis Supabase + les quiz officiels intégrés)
   useEffect(() => {
@@ -216,21 +244,45 @@ export function PathManagementPage() {
     });
   }, [allQuizzes, modalSearch, modalCategory, modalDifficulty]);
 
-  // Statistiques du parcours
+  // Statistiques du parcours & indicateurs analytiques de difficulté
   const stats = useMemo(() => {
     let totalNodes = 0;
+    let totalAttempts = 0;
+    let totalCompletions = 0;
+    let tooHardCount = 0;
+    let balancedCount = 0;
+    let tooEasyCount = 0;
+
     units.forEach((u) => {
       totalNodes += u.nodes.length;
+      u.nodes.forEach((n) => {
+        const a = analytics[n.id] || getPathStageAnalytics(n.id);
+        totalAttempts += a.attempts;
+        totalCompletions += a.completions;
+        if (a.difficultyRating === "too_hard") tooHardCount++;
+        else if (a.difficultyRating === "too_easy") tooEasyCount++;
+        else balancedCount++;
+      });
     });
+
+    const avgSuccessRate =
+      totalAttempts > 0 ? Math.round((totalCompletions / totalAttempts) * 100) : 0;
     const customUnitsCount = getCustomUnits().length;
     const customAssignmentsCount = Object.keys(assignments).length;
+
     return {
       totalUnits: units.length,
       totalNodes,
       customUnitsCount,
       customAssignmentsCount,
+      totalAttempts,
+      totalCompletions,
+      avgSuccessRate,
+      tooHardCount,
+      balancedCount,
+      tooEasyCount,
     };
-  }, [units, assignments]);
+  }, [units, assignments, analytics]);
 
   // Numéro de la prochaine unité suggérée
   const nextUnitNumber = useMemo(() => {
@@ -550,108 +602,216 @@ export function PathManagementPage() {
         </div>
       </div>
 
-      {/* 📊 Cartes d'indicateurs rapides */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between">
+      {/* 📊 Cartes d'indicateurs rapides & Télémétrie du parcours */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-8">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Unités au total
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Structure
             </span>
-            <p className="text-3xl font-black text-slate-900 mt-1">{stats.totalUnits}</p>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">
+              {stats.totalUnits} <span className="text-xs font-semibold text-slate-400">Unités</span>
+            </p>
             <p className="text-xs text-slate-500 mt-0.5">
-              {stats.customUnitsCount > 0 ? `${stats.customUnitsCount} personnalisée(s)` : "4 unités d'origine"}
+              {stats.totalNodes} étapes au total
             </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-xl">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-lg">
             📚
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Étapes au total
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Tentatives Joueurs
             </span>
-            <p className="text-3xl font-black text-slate-900 mt-1">{stats.totalNodes}</p>
-            <p className="text-xs text-slate-500 mt-0.5">Niveaux & Boss du parcours</p>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">
+              {stats.totalAttempts.toLocaleString()}
+            </p>
+            <p className="text-xs text-emerald-600 font-bold mt-0.5">
+              {stats.totalCompletions.toLocaleString()} réussites (≥70%)
+            </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
-            🗺️
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50/50 to-white p-5 shadow-sm flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white p-4 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">
-              Quiz Personnalisés
+            <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+              Réussite Globale
             </span>
-            <p className="text-3xl font-black text-purple-700 mt-1">
+            <p className="text-2xl font-black text-emerald-700 mt-0.5">
+              {stats.avgSuccessRate}%
+            </p>
+            <p className="text-xs text-emerald-600/80 mt-0.5">Moyenne du parcours</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Équilibrage Parcours
+            </span>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span
+                className="text-xs font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-800"
+                title={`${stats.tooHardCount} étape(s) trop difficile(s) (<50%)`}
+              >
+                🔴 {stats.tooHardCount}
+              </span>
+              <span
+                className="text-xs font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800"
+                title={`${stats.balancedCount} étape(s) équilibrée(s) (50-85%)`}
+              >
+                🟢 {stats.balancedCount}
+              </span>
+              <span
+                className="text-xs font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800"
+                title={`${stats.tooEasyCount} étape(s) trop facile(s) (>85%)`}
+              >
+                🟡 {stats.tooEasyCount}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">Diagnostic des niveaux</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <BarChart2 className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50/50 to-white p-4 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">
+              Attributions
+            </span>
+            <p className="text-2xl font-black text-purple-700 mt-0.5">
               {stats.customAssignmentsCount}
             </p>
-            <p className="text-xs text-purple-600/80 mt-0.5">Attribués manuellement</p>
+            <p className="text-xs text-purple-600/80 mt-0.5">{allQuizzes.length} quiz disponibles</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl">
-            ⚙️
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50/50 to-white p-5 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-sky-600 uppercase tracking-wider">
-              Catalogue Disponible
-            </span>
-            <p className="text-3xl font-black text-sky-700 mt-1">{allQuizzes.length}</p>
-            <p className="text-xs text-sky-600/80 mt-0.5">Quiz sélectionnables</p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center text-xl">
-            💡
+          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+            <Settings className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      {/* 🔍 Barre de filtres par unité & Recherche */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-          <button
-            type="button"
-            onClick={() => setSelectedUnitId("all")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-black transition whitespace-nowrap ${
-              selectedUnitId === "all"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            Toutes les unités ({stats.totalUnits})
-          </button>
-          {units.map((unit) => (
+      {/* 🔍 Barre de filtres par unité, difficulté & Recherche */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-6 shadow-sm space-y-3">
+        {/* Ligne 1 : Onglets par Unité + Recherche */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
             <button
-              key={unit.id}
               type="button"
-              onClick={() => setSelectedUnitId(unit.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black transition whitespace-nowrap flex items-center gap-1.5 ${
-                selectedUnitId === unit.id
+              onClick={() => setSelectedUnitId("all")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap ${
+                selectedUnitId === "all"
                   ? "bg-emerald-600 text-white shadow-sm"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              <span>{unit.badgeIcon}</span>
-              <span>Unité {unit.unitNumber}</span>
-              {unit.isCustom && (
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-              )}
+              Toutes les unités ({stats.totalUnits})
             </button>
-          ))}
+            {units.map((unit) => (
+              <button
+                key={unit.id}
+                type="button"
+                onClick={() => setSelectedUnitId(unit.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap flex items-center gap-1.5 ${
+                  selectedUnitId === unit.id
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                <span>{unit.badgeIcon}</span>
+                <span>Unité {unit.unitNumber}</span>
+                {unit.isCustom && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative min-w-[240px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={nodeSearch}
+              onChange={(e) => setNodeSearch(e.target.value)}
+              placeholder="Rechercher une étape, un quiz..."
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
         </div>
 
-        <div className="relative min-w-[240px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={nodeSearch}
-            onChange={(e) => setNodeSearch(e.target.value)}
-            placeholder="Rechercher une étape, un quiz..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
+        {/* Ligne 2 : Filtres de diagnostic par Taux de Réussite / Difficulté */}
+        <div className="pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto">
+          <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1 shrink-0">
+            <Activity className="w-3.5 h-3.5 text-slate-500" />
+            Difficulté :
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setDifficultyFilter("all")}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+              difficultyFilter === "all"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            Toutes ({stats.totalNodes})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDifficultyFilter("too_hard")}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+              difficultyFilter === "too_hard"
+                ? "bg-rose-600 text-white shadow-xs"
+                : "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
+            }`}
+          >
+            <span>🔴 Trop difficile (&lt;50%)</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-200/60 font-black">
+              {stats.tooHardCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDifficultyFilter("balanced")}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+              difficultyFilter === "balanced"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+            }`}
+          >
+            <span>🟢 Équilibré (50-85%)</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-200/60 font-black">
+              {stats.balancedCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDifficultyFilter("too_easy")}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+              difficultyFilter === "too_easy"
+                ? "bg-amber-600 text-white shadow-xs"
+                : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
+            }`}
+          >
+            <span>🟡 Trop facile (&gt;85%)</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-200/60 font-black">
+              {stats.tooEasyCount}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -660,15 +820,21 @@ export function PathManagementPage() {
         {units
           .filter((unit) => selectedUnitId === "all" || unit.id === selectedUnitId)
           .map((unit) => {
-            const filteredNodes = unit.nodes.filter(
-              (n) =>
+            const filteredNodes = unit.nodes.filter((n) => {
+              const stageStats = analytics[n.id] || getPathStageAnalytics(n.id);
+              const matchesDifficulty =
+                difficultyFilter === "all" || stageStats.difficultyRating === difficultyFilter;
+
+              const matchesSearch =
                 nodeSearch.trim() === "" ||
                 n.title.toLowerCase().includes(nodeSearch.toLowerCase()) ||
                 (n.subtitle && n.subtitle.toLowerCase().includes(nodeSearch.toLowerCase())) ||
                 (n.assignedQuizTitle &&
                   n.assignedQuizTitle.toLowerCase().includes(nodeSearch.toLowerCase())) ||
-                n.id.toLowerCase().includes(nodeSearch.toLowerCase())
-            );
+                n.id.toLowerCase().includes(nodeSearch.toLowerCase());
+
+              return matchesDifficulty && matchesSearch;
+            });
 
             return (
               <div
@@ -744,13 +910,14 @@ export function PathManagementPage() {
                 <div className="divide-y divide-slate-100">
                   {filteredNodes.length === 0 ? (
                     <div className="p-8 text-center text-slate-400 text-xs">
-                      Aucune étape ne correspond à votre filtre dans cette unité.
+                      Aucune étape ne correspond à vos critères de filtrage dans cette unité.
                     </div>
                   ) : (
                     filteredNodes.map((node, nodeIdx) => {
                       const custom = assignments[node.id];
                       const activeQuizId = custom ? custom.quizId : node.id;
                       const isBoss = node.isBoss === true;
+                      const stageStats = analytics[node.id] || getPathStageAnalytics(node.id);
 
                       return (
                         <div
@@ -759,7 +926,7 @@ export function PathManagementPage() {
                             custom ? "bg-purple-50/20" : ""
                           }`}
                         >
-                          {/* Infos étape */}
+                          {/* Infos étape & Analytiques */}
                           <div className="flex items-start gap-3.5 flex-1">
                             <div
                               className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-base shrink-0 shadow-sm ${
@@ -823,6 +990,83 @@ export function PathManagementPage() {
                                     ).toLocaleDateString()})`
                                   : node.subtitle || "Quiz officiel du parcours d'apprentissage"}
                               </p>
+
+                              {/* 📊 Analytiques Administrateur de l'étape : Taux de réussite & Tentatives */}
+                              <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-2.5">
+                                {/* Diagnostic de difficulté immédiat */}
+                                {stageStats.difficultyRating === "too_hard" && (
+                                  <div
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black bg-rose-50 text-rose-700 border border-rose-200"
+                                    title="Taux de réussite inférieur à 50% : étape trop difficile qui bloque les joueurs"
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                                    <span>🔴 Trop difficile (&lt;50%)</span>
+                                  </div>
+                                )}
+                                {stageStats.difficultyRating === "balanced" && (
+                                  <div
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    title="Taux de réussite entre 50% et 85% : étape équilibrée"
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    <span>🟢 Équilibré (50-85%)</span>
+                                  </div>
+                                )}
+                                {stageStats.difficultyRating === "too_easy" && (
+                                  <div
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black bg-amber-50 text-amber-700 border border-amber-200"
+                                    title="Taux de réussite supérieur à 85% : étape très facile"
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                    <span>🟡 Trop facile (&gt;85%)</span>
+                                  </div>
+                                )}
+
+                                {/* Taux de réussite avec barre de progression */}
+                                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+                                  <span className="text-xs font-bold text-slate-500">Taux de réussite :</span>
+                                  <div className="w-16 sm:w-24 h-2 rounded-full bg-slate-200 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-500 ${
+                                        stageStats.difficultyRating === "too_hard"
+                                          ? "bg-rose-500"
+                                          : stageStats.difficultyRating === "too_easy"
+                                          ? "bg-amber-500"
+                                          : "bg-emerald-500"
+                                      }`}
+                                      style={{ width: `${Math.min(100, Math.max(0, stageStats.successRate))}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`text-xs font-black font-mono ${
+                                      stageStats.difficultyRating === "too_hard"
+                                        ? "text-rose-700"
+                                        : stageStats.difficultyRating === "too_easy"
+                                        ? "text-amber-700"
+                                        : "text-emerald-700"
+                                    }`}
+                                  >
+                                    {stageStats.successRate}%
+                                  </span>
+                                </div>
+
+                                {/* Nombre de tentatives & réussites des joueurs */}
+                                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg font-medium">
+                                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                                  <span className="font-bold text-slate-900">{stageStats.attempts}</span>
+                                  <span>tentative{stageStats.attempts > 1 ? "s" : ""}</span>
+                                  <span className="text-slate-400 text-[11px]">
+                                    ({stageStats.completions} réussie{stageStats.completions > 1 ? "s" : ""})
+                                  </span>
+                                </div>
+
+                                {/* Score moyen */}
+                                <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg font-medium">
+                                  <Target className="w-3.5 h-3.5 text-indigo-500" />
+                                  <span>Score moy. :</span>
+                                  <span className="font-bold text-slate-900">{stageStats.averageScore}%</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
 

@@ -12,6 +12,7 @@ import {
 import { triggerConfetti } from "../../common/Confetti";
 import { getPathNodeQuiz } from "../../../lib/pathQuizzesData";
 import { completePathNode } from "../../../lib/gamificationManager";
+import { recordPathStageAttempt } from "../../../lib/pathConfigManager";
 import type {
   Quiz,
   Question,
@@ -650,6 +651,7 @@ export function usePlayQuiz({
     const activePathNodeId = pathNodeId || (quizId.startsWith("u") ? quizId : null);
     if (activePathNodeId) {
       const res = completePathNode(profile?.id, activePathNodeId, normalizedScore);
+      recordPathStageAttempt(activePathNodeId, normalizedScore, normalizedScore >= 70);
       setPathNodeResult({
         nodeId: activePathNodeId,
         stars: res.stars,

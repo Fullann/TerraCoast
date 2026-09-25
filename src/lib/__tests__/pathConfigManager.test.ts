@@ -11,6 +11,11 @@ import {
   removeStageFromUnit,
   resetCustomUnits,
   resetPathConfigMemory,
+  getPathStageAnalytics,
+  getAllPathAnalytics,
+  recordPathStageAttempt,
+  computeDifficultyRating,
+  resetPathStageAnalytics,
   PathUnit,
   PathNode,
 } from "../pathConfigManager";
@@ -150,5 +155,62 @@ describe("pathConfigManager", () => {
     // Resetting custom units restores original 4 units
     resetCustomUnits();
     expect(getQuestPath().length).toBe(4);
+  });
+
+  it("should compute correct difficulty ratings according to success rate thresholds", () => {
+    expect(computeDifficultyRating(30)).toBe("too_hard");
+    expect(computeDifficultyRating(49)).toBe("too_hard");
+    expect(computeDifficultyRating(50)).toBe("balanced");
+    expect(computeDifficultyRating(75)).toBe("balanced");
+    expect(computeDifficultyRating(85)).toBe("balanced");
+    expect(computeDifficultyRating(86)).toBe("too_easy");
+    expect(computeDifficultyRating(99)).toBe("too_easy");
+  });
+
+  it("should provide baseline stage analytics for built-in path stages", () => {
+    const statsU1N1 = getPathStageAnalytics("u1-n1");
+    expect(statsU1N1).toBeDefined();
+    expect(statsU1N1.attempts).toBeGreaterThan(100);
+    expect(statsU1N1.successRate).toBeGreaterThan(85);
+    expect(statsU1N1.difficultyRating).toBe("too_easy");
+
+    const statsU1Boss = getPathStageAnalytics("u1-boss");
+    expect(statsU1Boss.difficultyRating).toBe("too_hard");
+    expect(statsU1Boss.successRate).toBeLessThan(50);
+  });
+
+  it("should record stage attempt, update success rate and difficulty rating dynamically", () => {
+    // Record for custom node
+    const testNodeId = "custom-test-node";
+    const initial = getPathStageAnalytics(testNodeId);
+    expect(initial.attempts).toBe(0);
+
+    // 1st attempt: success with 90%
+    const run1 = recordPathStageAttempt(testNodeId, 90, true);
+    expect(run1.attempts).toBe(1);
+    expect(run1.completions).toBe(1);
+    expect(run1.successRate).toBe(100);
+    expect(run1.averageScore).toBe(90);
+    expect(run1.difficultyRating).toBe("too_easy");
+
+    // 2nd attempt: failure with 40%
+    const run2 = recordPathStageAttempt(testNodeId, 40, false);
+    expect(run2.attempts).toBe(2);
+    expect(run2.completions).toBe(1);
+    expect(run2.successRate).toBe(50);
+    expect(run2.averageScore).toBe(65);
+    expect(run2.difficultyRating).toBe("balanced");
+
+    // 3rd attempt: failure with 30% -> successRate becomes 33% (too_hard)
+    const run3 = recordPathStageAttempt(testNodeId, 30, false);
+    expect(run3.attempts).toBe(3);
+    expect(run3.completions).toBe(1);
+    expect(run3.successRate).toBe(33);
+    expect(run3.difficultyRating).toBe("too_hard");
+
+    // Resetting analytics restores baseline
+    resetPathStageAnalytics();
+    const afterReset = getPathStageAnalytics(testNodeId);
+    expect(afterReset.attempts).toBe(0);
   });
 });

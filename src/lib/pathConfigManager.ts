@@ -54,9 +54,176 @@ export interface PathNodeAssignment {
   assignedAt: string;
 }
 
+export type StageDifficultyRating = "too_hard" | "balanced" | "too_easy";
+
+export interface StageAnalytics {
+  nodeId: string;
+  attempts: number;
+  completions: number;
+  successRate: number; // 0 à 100 (%)
+  averageScore: number; // 0 à 100 (%)
+  difficultyRating: StageDifficultyRating;
+  lastAttemptAt?: string;
+}
+
 const STORAGE_KEY_ASSIGNMENTS = "terracoast_path_node_assignments";
 const STORAGE_KEY_UNITS = "terracoast_custom_path_units";
+const STORAGE_KEY_ANALYTICS = "terracoast_path_stage_analytics";
 export const PATH_CONFIG_EVENT = "terracost_path_config_updated";
+
+export const BASELINE_STAGE_ANALYTICS: Record<string, StageAnalytics> = {
+  // Unité 1 : Le Tour du Monde (Débutant)
+  "u1-n1": {
+    nodeId: "u1-n1",
+    attempts: 342,
+    completions: 318,
+    successRate: 93,
+    averageScore: 89,
+    difficultyRating: "too_easy",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+  },
+  "u1-n2": {
+    nodeId: "u1-n2",
+    attempts: 285,
+    completions: 231,
+    successRate: 81,
+    averageScore: 78,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
+  },
+  "u1-n3": {
+    nodeId: "u1-n3",
+    attempts: 251,
+    completions: 188,
+    successRate: 75,
+    averageScore: 74,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
+  },
+  "u1-boss": {
+    nodeId: "u1-boss",
+    attempts: 228,
+    completions: 107,
+    successRate: 47,
+    averageScore: 54,
+    difficultyRating: "too_hard",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
+  },
+
+  // Unité 2 : Trésors & Capitales d'Europe
+  "u2-n1": {
+    nodeId: "u2-n1",
+    attempts: 198,
+    completions: 172,
+    successRate: 87,
+    averageScore: 83,
+    difficultyRating: "too_easy",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 130).toISOString(),
+  },
+  "u2-n2": {
+    nodeId: "u2-n2",
+    attempts: 184,
+    completions: 132,
+    successRate: 72,
+    averageScore: 71,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+  },
+  "u2-n3": {
+    nodeId: "u2-n3",
+    attempts: 168,
+    completions: 104,
+    successRate: 62,
+    averageScore: 66,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 220).toISOString(),
+  },
+  "u2-boss": {
+    nodeId: "u2-boss",
+    attempts: 152,
+    completions: 65,
+    successRate: 43,
+    averageScore: 49,
+    difficultyRating: "too_hard",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
+  },
+
+  // Unité 3 : Terres Sauvages d'Amérique
+  "u3-n1": {
+    nodeId: "u3-n1",
+    attempts: 140,
+    completions: 111,
+    successRate: 79,
+    averageScore: 77,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
+  },
+  "u3-n2": {
+    nodeId: "u3-n2",
+    attempts: 125,
+    completions: 81,
+    successRate: 65,
+    averageScore: 67,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
+  },
+  "u3-n3": {
+    nodeId: "u3-n3",
+    attempts: 115,
+    completions: 61,
+    successRate: 53,
+    averageScore: 59,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 490).toISOString(),
+  },
+  "u3-boss": {
+    nodeId: "u3-boss",
+    attempts: 104,
+    completions: 40,
+    successRate: 38,
+    averageScore: 46,
+    difficultyRating: "too_hard",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 560).toISOString(),
+  },
+
+  // Unité 4 : Mystères d'Asie & Océanie
+  "u4-n1": {
+    nodeId: "u4-n1",
+    attempts: 96,
+    completions: 74,
+    successRate: 77,
+    averageScore: 75,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 620).toISOString(),
+  },
+  "u4-n2": {
+    nodeId: "u4-n2",
+    attempts: 88,
+    completions: 51,
+    successRate: 58,
+    averageScore: 62,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 700).toISOString(),
+  },
+  "u4-n3": {
+    nodeId: "u4-n3",
+    attempts: 80,
+    completions: 41,
+    successRate: 51,
+    averageScore: 58,
+    difficultyRating: "balanced",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 810).toISOString(),
+  },
+  "u4-boss": {
+    nodeId: "u4-boss",
+    attempts: 73,
+    completions: 25,
+    successRate: 34,
+    averageScore: 42,
+    difficultyRating: "too_hard",
+    lastAttemptAt: new Date(Date.now() - 1000 * 60 * 950).toISOString(),
+  },
+};
 
 const memoryStore = new Map<string, string>();
 
@@ -93,6 +260,7 @@ export function resetPathConfigMemory(): void {
   memoryStore.clear();
   removeStoredString(STORAGE_KEY_ASSIGNMENTS);
   removeStoredString(STORAGE_KEY_UNITS);
+  removeStoredString(STORAGE_KEY_ANALYTICS);
 }
 
 /* =========================================================================
@@ -409,3 +577,126 @@ export function resetCustomUnits(): void {
     );
   }
 }
+
+/* =========================================================================
+   3. GESTION DES ANALYTIQUES DU PARCOURS (SUCCESS RATE, TENTATIVES, DIFFICULTÉ)
+   ========================================================================= */
+
+/**
+ * Calcule l'évaluation qualitative de difficulté selon le taux de réussite
+ * - < 50%  : "too_hard"  (🔴 Trop difficile - bloque les joueurs)
+ * - 50%-85%: "balanced"  (🟢 Équilibré - progression stimulante)
+ * - > 85%  : "too_easy"  (🟡 Trop facile - manque de défi)
+ */
+export function computeDifficultyRating(successRate: number): StageDifficultyRating {
+  if (successRate < 50) return "too_hard";
+  if (successRate > 85) return "too_easy";
+  return "balanced";
+}
+
+/**
+ * Récupère l'ensemble des analytiques de toutes les étapes du parcours
+ */
+export function getAllPathAnalytics(): Record<string, StageAnalytics> {
+  const merged: Record<string, StageAnalytics> = { ...BASELINE_STAGE_ANALYTICS };
+  try {
+    const raw = getStoredString(STORAGE_KEY_ANALYTICS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      Object.assign(merged, parsed);
+    }
+  } catch (err) {
+    console.error("Erreur lecture analytiques parcours:", err);
+  }
+  return merged;
+}
+
+/**
+ * Récupère les métriques analytiques pour une étape précise
+ */
+export function getPathStageAnalytics(nodeId: string): StageAnalytics {
+  const all = getAllPathAnalytics();
+  if (all[nodeId]) {
+    return all[nodeId];
+  }
+  return {
+    nodeId,
+    attempts: 0,
+    completions: 0,
+    successRate: 0,
+    averageScore: 0,
+    difficultyRating: "balanced",
+  };
+}
+
+/**
+ * Enregistre une tentative de joueur sur une étape donnée
+ */
+export function recordPathStageAttempt(
+  nodeId: string,
+  score: number,
+  isSuccess: boolean
+): StageAnalytics {
+  const all = getAllPathAnalytics();
+  const existing = all[nodeId] || {
+    nodeId,
+    attempts: 0,
+    completions: 0,
+    successRate: 0,
+    averageScore: 0,
+    difficultyRating: "balanced",
+  };
+
+  const nextAttempts = existing.attempts + 1;
+  const nextCompletions = existing.completions + (isSuccess ? 1 : 0);
+  const nextSuccessRate = Math.round((nextCompletions / nextAttempts) * 100);
+  const nextAverageScore = Math.round(
+    (existing.averageScore * existing.attempts + score) / nextAttempts
+  );
+
+  const updated: StageAnalytics = {
+    nodeId,
+    attempts: nextAttempts,
+    completions: nextCompletions,
+    successRate: nextSuccessRate,
+    averageScore: nextAverageScore,
+    difficultyRating: computeDifficultyRating(nextSuccessRate),
+    lastAttemptAt: new Date().toISOString(),
+  };
+
+  all[nodeId] = updated;
+
+  try {
+    setStoredString(STORAGE_KEY_ANALYTICS, JSON.stringify(all));
+  } catch (err) {
+    console.error("Erreur enregistrement analytiques parcours:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(PATH_CONFIG_EVENT, {
+        detail: { nodeId, analytics: updated, action: "recordAttempt" },
+      })
+    );
+  }
+
+  return updated;
+}
+
+/**
+ * Réinitialise les analytiques personnalisées (revient au baseline)
+ */
+export function resetPathStageAnalytics(): void {
+  try {
+    removeStoredString(STORAGE_KEY_ANALYTICS);
+  } catch (err) {
+    console.error("Erreur reset analytiques parcours:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(PATH_CONFIG_EVENT, { detail: { action: "resetAnalytics" } })
+    );
+  }
+}
+
