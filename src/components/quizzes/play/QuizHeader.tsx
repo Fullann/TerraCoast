@@ -40,39 +40,42 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
   };
 
   return (
-    <div className="bg-white shadow-sm px-4 py-3">
+    <div className="bg-white/95 backdrop-blur-md border-b-2 border-slate-200/80 sticky top-0 z-30 px-4 py-3 shadow-xs">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between mb-3 gap-2">
+          {/* Action buttons (Quit, Report, Sound, Radio) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <button
               type="button"
               onClick={onQuit}
-              className="flex items-center text-gray-600 hover:text-gray-800"
+              className="btn-duo btn-duo-white px-3 py-1.5 text-xs font-black text-slate-600 hover:text-slate-800 shadow-xs"
             >
-              <ArrowLeft className="w-5 h-5 mr-2" />
+              <ArrowLeft className="w-4 h-4 mr-1.5 text-slate-500" />
               <span className="hidden sm:inline">{t("playQuiz.quit")}</span>
             </button>
+
             {onReport && (
               <button
                 type="button"
                 onClick={onReport}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-amber-700 bg-gray-100 hover:bg-amber-50 transition-colors"
+                className="btn-duo btn-duo-white px-2.5 py-1.5 text-xs font-black text-amber-700 hover:text-amber-800 border-amber-200/80 hover:bg-amber-50 shadow-xs"
                 title={t("playQuiz.report.buttonTitle") || "Signaler un problème"}
               >
                 <Flag className="w-3.5 h-3.5 text-amber-500" />
                 <span className="hidden md:inline">{t("playQuiz.report.button") || "Signaler"}</span>
               </button>
             )}
+
             <button
               type="button"
               onClick={handleToggleSound}
-              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="btn-duo btn-duo-white p-1.5 text-slate-600 hover:text-slate-800 shadow-xs"
               title={soundOn ? t("sound.mute") : t("sound.unmute")}
             >
               {soundOn ? (
                 <Volume2 className="w-4 h-4 text-emerald-600" />
               ) : (
-                <VolumeX className="w-4 h-4 text-gray-400" />
+                <VolumeX className="w-4 h-4 text-slate-400" />
               )}
             </button>
 
@@ -80,10 +83,10 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
             <button
               type="button"
               onClick={togglePlay}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`btn-duo px-2.5 py-1.5 text-xs font-black shadow-xs transition-all ${
                 isPlaying
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
-                  : "bg-gray-100 hover:bg-gray-200 text-gray-500"
+                  ? "btn-duo-teal bg-teal-500 text-white border-b-4 border-teal-700"
+                  : "btn-duo-white text-slate-600"
               }`}
               title={
                 isPlaying
@@ -91,40 +94,40 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
                   : "Activer la Radio Globe & Ambiances"
               }
             >
-              <Radio className="w-3.5 h-3.5 text-emerald-600" />
+              <Radio className={`w-3.5 h-3.5 ${isPlaying ? "text-white" : "text-emerald-600"}`} />
               <span className="hidden sm:inline">
                 {isPlaying ? currentCountry?.flag || "📻" : "Radio"}
               </span>
               {isPlaying && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               )}
             </button>
           </div>
 
-          <div className="flex items-center space-x-2 md:space-x-4">
+          {/* Right counters: Score & Timer */}
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
             {!trainingMode && (
               <>
-                <div className="flex items-center space-x-2 px-3 py-2 bg-blue-100 rounded-lg">
-                  <Trophy className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
-                  <span className="font-bold text-blue-600 text-sm md:text-base">
-                    {totalScore}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-950 rounded-2xl border-2 border-amber-300 border-b-4 shadow-xs">
+                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <span className="font-black text-sm md:text-base">
+                    {totalScore} <span className="text-xs font-bold text-amber-700">pts</span>
                   </span>
                 </div>
+
                 <div
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
-                    timeLeft <= 5 ? "bg-red-100" : "bg-gray-100"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border-2 border-b-4 transition-all shadow-xs ${
+                    timeLeft <= 5
+                      ? "bg-rose-50 text-rose-700 border-rose-400 border-b-rose-600 animate-duo-bounce"
+                      : "bg-sky-50 text-sky-900 border-sky-300 border-b-sky-500"
                   }`}
                 >
                   <Clock
-                    className={`w-4 h-4 md:w-5 md:h-5 ${
-                      timeLeft <= 5 ? "text-red-600" : "text-gray-600"
+                    className={`w-4 h-4 ${
+                      timeLeft <= 5 ? "text-rose-600" : "text-sky-600"
                     }`}
                   />
-                  <span
-                    className={`font-bold text-sm md:text-base ${
-                      timeLeft <= 5 ? "text-red-600" : "text-gray-600"
-                    }`}
-                  >
+                  <span className="font-black text-sm md:text-base">
                     {timeLeft}s
                   </span>
                 </div>
@@ -134,13 +137,13 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
         </div>
 
         {!trainingMode && challenge && (
-          <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <div className="mb-3 rounded-2xl border-2 border-emerald-300 border-b-4 bg-emerald-50/90 px-4 py-3 shadow-xs">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-bold text-emerald-900">
+                <p className="text-xs font-black uppercase tracking-wider text-emerald-900">
                   {t("challenge.title")}
                 </p>
-                <p className="text-sm text-emerald-800">
+                <p className="text-sm font-bold text-emerald-800">
                   {t("challenge.subtitle")
                     .replace("{title}", quizTitle || "")
                     .replace("{score}", String(challenge.target_score))}
@@ -149,24 +152,34 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
                     : ""}
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white text-emerald-700 border border-emerald-200">
+              <span className="text-xs font-black px-2.5 py-1 rounded-xl bg-white text-emerald-700 border border-emerald-200 shadow-xs">
                 {challenge.status}
               </span>
             </div>
           </div>
         )}
 
-        <div className="flex justify-between text-xs md:text-sm text-gray-600 mb-2">
-          <span>
-            {t("playQuiz.question")} {currentQuestionIndex + 1} / {totalQuestions}
-          </span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-emerald-600 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
+        {/* Tactile Progress bar and Question Counter */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center text-xs font-black text-slate-600">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>
+                {t("playQuiz.question")} {currentQuestionIndex + 1} / {totalQuestions}
+              </span>
+            </span>
+            <span className="text-emerald-700 font-extrabold">{Math.round(progress)}%</span>
+          </div>
+
+          <div className="h-3.5 bg-slate-200/90 rounded-full p-0.5 border border-slate-300 shadow-inner relative overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-teal-400 via-emerald-500 to-[#58cc02] shadow-[0_0_10px_rgba(88,204,2,0.4)] transition-all duration-300 relative"
+              style={{ width: `${Math.max(5, progress)}%` }}
+            >
+              {/* Glossy shine reflex */}
+              <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/35 rounded-t-full" />
+            </div>
+          </div>
         </div>
       </div>
     </div>

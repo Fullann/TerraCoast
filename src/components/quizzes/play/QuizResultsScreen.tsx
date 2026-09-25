@@ -107,18 +107,25 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
   }, [accuracy, questions, user?.id, isDailyChallenge]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-slate-50 via-sky-50/20 to-emerald-50/20">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
-            <div className="text-center mb-8">
-              <Trophy className="w-16 h-16 md:w-20 md:h-20 text-yellow-500 mx-auto mb-4" />
-              <h1 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2">
+          <div className="card-duo p-6 sm:p-8 md:p-10 bg-white shadow-xl rounded-3xl">
+            {/* HERO TROPHY & CELEBRATION */}
+            <div className="text-center mb-8 relative">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto mb-4 rounded-full bg-gradient-to-b from-amber-100 to-amber-200/60 border-2 border-amber-300 border-b-4 flex items-center justify-center shadow-md animate-duo-bounce relative">
+                <Trophy className="w-14 h-14 sm:w-16 sm:h-16 text-amber-500 drop-shadow-sm" />
+                <Sparkles className="w-6 h-6 text-amber-400 absolute -top-1 -right-1 animate-pulse" />
+              </div>
+
+              <h1 className="text-2xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
                 {trainingMode
-                  ? t("playQuiz.trainingComplete")
-                  : t("playQuiz.quizComplete")}
+                  ? t("playQuiz.trainingComplete") || "Entraînement Terminé !"
+                  : accuracy >= 80
+                  ? "Incroyable Performance ! 🎉"
+                  : t("playQuiz.quizComplete") || "Quiz Terminé !"}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-slate-600 font-bold text-sm sm:text-base max-w-lg mx-auto">
                 {trainingMode
                   ? t("playQuiz.trainingMessage")
                   : t("playQuiz.congratsMessage")}
@@ -129,12 +136,12 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
               <div
                 role="status"
                 aria-live="polite"
-                className="mb-8 p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm"
+                className="mb-8 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 border-b-4 text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs"
               >
                 <div className="flex items-center gap-3">
                   <WifiOff className="w-6 h-6 text-amber-600 shrink-0" aria-hidden="true" />
                   <div className="text-left">
-                    <h3 className="font-semibold text-sm">{t("offline.title")}</h3>
+                    <h3 className="font-black text-sm">{t("offline.title")}</h3>
                     <p className="text-xs text-amber-800 mt-0.5">
                       {t("offline.savePending")}
                     </p>
@@ -144,12 +151,12 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                   type="button"
                   onClick={onRetrySync}
                   disabled={isSyncing}
-                  className="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shrink-0 shadow-sm"
+                  className="btn-duo btn-duo-amber px-4 py-2 text-xs font-black shrink-0"
                 >
                   {isSyncing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                    <Loader2 className="w-4 h-4 animate-spin mr-1.5" aria-hidden="true" />
                   ) : (
-                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                    <RefreshCw className="w-4 h-4 mr-1.5" aria-hidden="true" />
                   )}
                   {t("offline.retrySave")}
                 </button>
@@ -158,21 +165,21 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
 
             {/* BANNIÈRE DÉFI DU JOUR */}
             {isDailyChallenge && (
-              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between gap-4">
+              <div className="mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white shadow-lg flex items-center justify-between gap-4 border-2 border-amber-400 border-b-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">📅🔥</span>
+                  <span className="text-3xl sm:text-4xl">📅🔥</span>
                   <div>
-                    <h3 className="font-extrabold text-base sm:text-lg">
+                    <h3 className="font-black text-base sm:text-lg">
                       {t("daily.challengeCompletedTitle") || "Défi Quotidien Validé !"}
                     </h3>
-                    <p className="text-amber-100 text-xs sm:text-sm">
+                    <p className="text-amber-100 text-xs sm:text-sm font-medium">
                       {t("daily.challengeCompletedDesc") || "Ton score est enregistré au classement du jour et ta flamme est alimentée !"}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => navigate("/terra")}
-                  className="shrink-0 px-4 py-2 bg-white text-orange-600 font-bold rounded-xl text-xs sm:text-sm shadow hover:bg-amber-50 transition-colors"
+                  className="btn-duo btn-duo-white shrink-0 px-4 py-2 text-xs sm:text-sm font-black text-orange-600"
                 >
                   {t("daily.viewLeaderboard") || "Classement"}
                 </button>
@@ -181,7 +188,7 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
 
             {/* BANNIÈRE CONQUÊTE & POKÉDEX */}
             {conquestResult && conquestResult.newlyConquered.length > 0 && (
-              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in border border-emerald-500/30">
+              <div className="mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border-2 border-emerald-500 border-b-4 animate-slide-in-right">
                 <div className="flex items-center gap-3.5">
                   <span className="text-3xl sm:text-4xl filter drop-shadow">🗺️✨</span>
                   <div>
@@ -189,19 +196,19 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                       <h3 className="font-black text-base sm:text-lg">
                         {conquestResult.newlyConquered.length} Nouveau(x) Territoire(s) Conquis !
                       </h3>
-                      <span className="bg-emerald-400 text-slate-950 text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                      <span className="bg-emerald-400 text-slate-950 text-[10px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
                         Pokédex Débloqué
                       </span>
                     </div>
-                    <p className="text-emerald-100 text-xs sm:text-sm mt-0.5">
-                      Le brouillard s'est dissipé sur : <strong>{conquestResult.newlyConquered.join(", ")}</strong>. Nouvelles fiches de collection prêtes !
+                    <p className="text-emerald-100 text-xs sm:text-sm mt-0.5 font-medium">
+                      Le brouillard s'est dissipé sur : <strong>{conquestResult.newlyConquered.join(", ")}</strong>. Nouvelles fiches prêtes !
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate("/conquest")}
-                  className="shrink-0 px-4 py-2.5 bg-white text-emerald-900 font-extrabold rounded-xl text-xs sm:text-sm shadow-md hover:bg-emerald-50 transition transform active:scale-95 flex items-center gap-1.5"
+                  className="btn-duo btn-duo-white shrink-0 px-4 py-2.5 text-xs sm:text-sm font-black text-emerald-900"
                 >
                   <span>Voir ma Carte 🗺️</span>
                 </button>
@@ -210,19 +217,19 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
 
             {/* BANNIÈRE VALIDATION DU PARCOURS D'AVENTURE */}
             {pathNodeResult && (
-              <div className="mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border-2 border-emerald-400/40 animate-scaleUp">
+              <div className="mb-6 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border-2 border-emerald-400 border-b-4 animate-slide-in-right">
                 <div className="flex items-center gap-3.5">
-                  <span className="text-4xl filter drop-shadow">🌟</span>
+                  <span className="text-4xl sm:text-5xl filter drop-shadow animate-duo-bounce">🌟</span>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-black text-base sm:text-lg">
+                      <h3 className="font-black text-lg sm:text-xl">
                         Étape du Parcours Validée ! {pathNodeResult.stars === 3 ? "⭐⭐⭐" : pathNodeResult.stars === 2 ? "⭐⭐" : "⭐"}
                       </h3>
                       <span className="bg-amber-300 text-amber-950 text-[10px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
                         Niveau Réussi
                       </span>
                     </div>
-                    <p className="text-emerald-100 text-xs sm:text-sm mt-0.5">
+                    <p className="text-emerald-100 text-xs sm:text-sm mt-1 font-medium">
                       +{pathNodeResult.gemsAwarded} 💎 TerraGems gagnées • Le palier suivant de ton aventure est débloqué !
                     </p>
                   </div>
@@ -230,50 +237,57 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => navigate("/terra")}
-                  className="shrink-0 px-5 py-2.5 bg-white text-emerald-900 font-black rounded-2xl text-xs sm:text-sm shadow-md hover:bg-emerald-50 transition transform active:scale-95 flex items-center gap-1.5"
+                  className="btn-duo btn-duo-white shrink-0 px-5 py-3 text-xs sm:text-sm font-black text-emerald-900"
                 >
                   <span>Continuer le Parcours ➔</span>
                 </button>
               </div>
             )}
 
-            {/* GRILLE RESPONSIVE STATS */}
+            {/* GRILLE TACTILE STATS 3D */}
             <div
-              className={`grid gap-4 mb-8 ${
+              className={`grid gap-3.5 sm:gap-4 mb-8 ${
                 trainingMode
-                  ? "grid-cols-2 sm:grid-cols-2 max-w-2xl mx-auto"
+                  ? "grid-cols-2 max-w-2xl mx-auto"
                   : "grid-cols-2 lg:grid-cols-4"
               }`}
             >
               {!trainingMode && (
                 <>
-                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 md:p-6 text-white text-center">
-                    <p className="text-emerald-100 text-xs sm:text-sm mb-2">
+                  <div className="card-duo p-4 sm:p-5 text-center bg-emerald-50/80 border-emerald-200 border-b-emerald-400">
+                    <p className="text-emerald-800 text-xs font-black uppercase tracking-wider mb-1">
                       {t("playQuiz.totalScore")}
                     </p>
-                    <p className="text-2xl md:text-4xl font-bold">{totalScore}</p>
+                    <p className="text-2xl sm:text-4xl font-black text-emerald-950">
+                      {totalScore} <span className="text-xs sm:text-sm font-bold text-emerald-700">pts</span>
+                    </p>
                   </div>
-                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 md:p-6 text-white text-center">
-                    <p className="text-purple-100 text-xs sm:text-sm mb-2">
+
+                  <div className="card-duo p-4 sm:p-5 text-center bg-purple-50/80 border-purple-200 border-b-purple-400">
+                    <p className="text-purple-800 text-xs font-black uppercase tracking-wider mb-1">
                       {t("playQuiz.xpGained")}
                     </p>
-                    <p className="text-2xl md:text-4xl font-bold">+{xpGained}</p>
+                    <p className="text-2xl sm:text-4xl font-black text-purple-950">
+                      +{xpGained} <span className="text-xs sm:text-sm font-bold text-purple-700">XP</span>
+                    </p>
                   </div>
                 </>
               )}
 
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 md:p-6 text-white text-center">
-                <p className="text-blue-100 text-xs sm:text-sm mb-2">
+              <div className="card-duo p-4 sm:p-5 text-center bg-sky-50/80 border-sky-200 border-b-sky-400">
+                <p className="text-sky-800 text-xs font-black uppercase tracking-wider mb-1">
                   {t("playQuiz.accuracy")}
                 </p>
-                <p className="text-2xl md:text-4xl font-bold">{Math.round(accuracy)}%</p>
+                <p className="text-2xl sm:text-4xl font-black text-sky-950">
+                  {Math.round(accuracy)}%
+                </p>
               </div>
 
-              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 md:p-6 text-white text-center">
-                <p className="text-amber-100 text-xs sm:text-sm mb-2">
+              <div className="card-duo p-4 sm:p-5 text-center bg-amber-50/80 border-amber-200 border-b-amber-400">
+                <p className="text-amber-800 text-xs font-black uppercase tracking-wider mb-1">
                   {t("playQuiz.correctAnswers")}
                 </p>
-                <p className="text-2xl md:text-4xl font-bold">
+                <p className="text-2xl sm:text-4xl font-black text-amber-950">
                   {correctAnswers}/{questions.length}
                 </p>
               </div>
@@ -562,20 +576,20 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                     }
                     setAddedErrorsToSrs(true);
                   }}
-                  className={`py-3.5 px-5 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm border ${
+                  className={`py-3.5 px-5 btn-duo text-sm font-black transition-all flex items-center justify-center gap-2 ${
                     addedErrorsToSrs
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                      : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200"
+                      ? "btn-duo-green"
+                      : "btn-duo-purple"
                   }`}
                 >
                   {addedErrorsToSrs ? (
                     <>
-                      <Check className="w-4 h-4 text-emerald-600" />
+                      <Check className="w-4 h-4" />
                       <span>{t("playQuiz.srsAdded")}</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                      <Sparkles className="w-4 h-4" />
                       <span>{t("playQuiz.addToSrs")}</span>
                     </>
                   )}
@@ -588,24 +602,24 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setShowShareModal(true)}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-bold shadow-lg shadow-emerald-600/20 transition-all transform hover:scale-[1.01] active:scale-98 flex items-center justify-center gap-3 text-base"
+                className="w-full py-4 px-6 btn-duo btn-duo-teal text-base font-black shadow-md flex items-center justify-center gap-2.5"
               >
-                <Share2 className="w-5 h-5 text-emerald-100" />
-                <span>{t("playQuiz.shareResult")}</span>
+                <Share2 className="w-5 h-5" />
+                <span>{t("playQuiz.shareResult") || "PARTAGER MON RÉSULTAT 📤"}</span>
               </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3.5 sm:gap-4">
               <button
                 onClick={() => navigate("/quizzes")}
-                className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                className="flex-1 py-3.5 px-5 btn-duo btn-duo-white text-sm sm:text-base font-black shadow-xs"
               >
-                {t("playQuiz.exploreOtherQuizzes")}
+                {t("playQuiz.exploreOtherQuizzes") || "Explorer d'autres quiz 📚"}
               </button>
               {mode === "duel" ? (
                 <button
                   onClick={() => navigate("/duels")}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="flex-1 py-3.5 px-5 btn-duo btn-duo-blue text-sm sm:text-base font-black shadow-md"
                 >
                   {t("duels.viewResults")}
                 </button>
@@ -614,9 +628,9 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                   onClick={() => {
                     navigate(`/quizzes/play/${quizId}`);
                   }}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="flex-1 py-3.5 px-5 btn-duo btn-duo-green text-sm sm:text-base font-black shadow-md"
                 >
-                  {t("playQuiz.playAgain")}
+                  {t("playQuiz.playAgain") || "Rejouer ce Quiz 🔄"}
                 </button>
               )}
             </div>

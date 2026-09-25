@@ -423,7 +423,7 @@ export function PlayQuizPage({
     currentMapData.requiredFields || ["name", "capital", "map_click"];
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-slate-50 via-sky-50/20 to-emerald-50/20">
       <QuizHeader
         onQuit={handleQuit}
         onReport={() => setShowReportModal(true)}
@@ -439,53 +439,70 @@ export function PlayQuizPage({
 
       {/* ZONE DE CONTENU SCROLLABLE */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          {/* IMAGE DE LA QUESTION */}
-          {currentQuestion.image_url && (
-            <div className="mb-6 flex justify-center">
-              <img
-                src={currentQuestion.image_url}
-                alt={t("playQuiz.questionImage")}
-                className="max-w-full max-h-64 rounded-lg shadow-md object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            </div>
-          )}
-
-          {/* TEXTE DE LA QUESTION */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <p className="text-sm text-gray-500 truncate">{quiz.title}</p>
+        <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
+          {/* CARTE HERO DE LA QUESTION */}
+          <div className="card-duo p-5 sm:p-7 md:p-8 bg-white shadow-md relative overflow-hidden mb-6">
+            {/* EN-TÊTE QUESTION : TITRE DU QUIZ & SIGNALEMENT */}
+            <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  {pathNodeId ? "🗺️ Niveau du Parcours" : "📚 Quiz"}
+                </span>
+                <span className="text-xs font-extrabold text-slate-500 truncate max-w-[200px] sm:max-w-md">
+                  {quiz.title}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowReportModal(true)}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-600 transition-colors px-2 py-1 rounded-md hover:bg-amber-50 shrink-0"
+                className="btn-duo btn-duo-white px-2 py-1 text-xs font-black text-slate-400 hover:text-amber-700 hover:border-amber-200 shrink-0"
                 title={t("playQuiz.report.buttonTitle") || "Signaler un problème sur cette question"}
               >
                 <Flag className="w-3.5 h-3.5 text-amber-500" />
-                <span className="hidden sm:inline">{t("playQuiz.report.button") || "Signaler"}</span>
+                <span className="hidden sm:inline ml-1">{t("playQuiz.report.button") || "Signaler"}</span>
               </button>
             </div>
-            <h3 className="text-xl md:text-2xl font-bold text-gray-800">
+
+            {/* IMAGE DE LA QUESTION */}
+            {currentQuestion.image_url && (
+              <div className="mb-6 flex justify-center">
+                <div className="p-2 bg-slate-50 rounded-2xl border-2 border-slate-200/80 shadow-xs max-w-full">
+                  <img
+                    src={currentQuestion.image_url}
+                    alt={t("playQuiz.questionImage")}
+                    className="max-w-full max-h-56 sm:max-h-64 rounded-xl object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* TEXTE PRINCIPAL DE LA QUESTION */}
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 leading-snug tracking-tight">
               {currentQuestion.question_text ||
                 currentMapData.countryMultiPrompt ||
                 ""}
             </h3>
+
+            {/* INSTRUCTION COMPLÉMENTAIRE POUR LES MODES SPÉCIAUX */}
             {(currentQuestion.question_type === "puzzle_map" ||
               currentQuestion.question_type === "map_click" ||
               currentQuestion.question_type === "top10_order" ||
               currentQuestion.question_type === "country_multi") && (
-              <p className="mt-2 text-sm text-gray-600 bg-gray-100 border border-gray-200 rounded px-3 py-2">
-                {currentQuestion.question_type === "top10_order"
-                  ? t("playQuiz.objective.top10Order")
-                  : currentQuestion.question_type === "map_click"
-                  ? t("playQuiz.objective.mapClick")
-                  : currentQuestion.question_type === "country_multi"
-                  ? t("playQuiz.countryMulti.objective")
-                  : t("playQuiz.objective.puzzleMap")}
-              </p>
+              <div className="mt-3 text-xs sm:text-sm font-bold text-slate-600 bg-sky-50/80 border-2 border-sky-200/80 rounded-2xl px-4 py-2.5 flex items-center gap-2">
+                <span>💡</span>
+                <span>
+                  {currentQuestion.question_type === "top10_order"
+                    ? t("playQuiz.objective.top10Order")
+                    : currentQuestion.question_type === "map_click"
+                    ? t("playQuiz.objective.mapClick")
+                    : currentQuestion.question_type === "country_multi"
+                    ? t("playQuiz.countryMulti.objective")
+                    : t("playQuiz.objective.puzzleMap")}
+                </span>
+              </div>
             )}
           </div>
 
@@ -659,31 +676,39 @@ export function PlayQuizPage({
         </div>
       </div>
 
-      {/* FOOTER FIXE AVEC BOUTONS */}
-      <div className="bg-white border-t border-gray-200 px-4 py-4 shadow-lg">
+      {/* FOOTER FIXE AVEC BOUTONS TACTILES 3D DUOLINGO */}
+      <div className="bg-white/95 backdrop-blur-md border-t-2 border-slate-200/90 px-4 py-4 shadow-[0_-10px_25px_rgba(0,0,0,0.04)] safe-area-bottom">
         <div className="max-w-4xl mx-auto">
           {!isAnswered ? (
             <button
               onClick={() => handleSubmitAnswer()}
               disabled={isValidateDisabled}
-              className="w-full py-3 md:py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-lg flex items-center justify-center gap-2"
+              className={`w-full py-4 rounded-2xl text-base sm:text-lg font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm ${
+                isValidateDisabled
+                  ? "btn-duo btn-duo-gray"
+                  : "btn-duo btn-duo-green"
+              }`}
             >
-              <span>{t("playQuiz.validate")}</span>
-              <kbd className="hidden sm:inline-flex items-center text-xs bg-emerald-700/60 text-emerald-100 px-2 py-0.5 rounded border border-emerald-500/50 font-sans font-medium">
+              <span>{t("playQuiz.validate") || "VALIDER"}</span>
+              <kbd className="hidden sm:inline-flex items-center text-xs bg-black/15 text-white px-2 py-0.5 rounded-lg border border-white/20 font-mono font-bold">
                 {t("playQuiz.keyboard.enter") || "Entrée ↵"}
               </kbd>
             </button>
           ) : (
             <button
               onClick={moveToNextQuestion}
-              className="w-full py-3 md:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg flex items-center justify-center gap-2"
+              className={`w-full py-4 rounded-2xl text-base sm:text-lg font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm ${
+                currentQuestionIndex < questions.length - 1
+                  ? "btn-duo btn-duo-blue"
+                  : "btn-duo btn-duo-amber"
+              }`}
             >
               <span>
                 {currentQuestionIndex < questions.length - 1
-                  ? t("playQuiz.nextQuestion")
-                  : t("playQuiz.finishQuiz")}
+                  ? t("playQuiz.nextQuestion") || "QUESTION SUIVANTE ➔"
+                  : t("playQuiz.finishQuiz") || "TERMINER LE QUIZ 🎉"}
               </span>
-              <kbd className="hidden sm:inline-flex items-center text-xs bg-blue-700/60 text-blue-100 px-2 py-0.5 rounded border border-blue-500/50 font-sans font-medium">
+              <kbd className="hidden sm:inline-flex items-center text-xs bg-black/15 text-white px-2 py-0.5 rounded-lg border border-white/20 font-mono font-bold">
                 {t("playQuiz.keyboard.space") || "Espace ␣"}
               </kbd>
             </button>

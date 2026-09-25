@@ -377,53 +377,64 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          {t("quizzes.title")}
-        </h1>
-        <p className="text-gray-600">{t("quizzes.subtitle")}</p>
+      {/* HEADER AVEC TITRE ET BADGE */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-black uppercase tracking-wider">
+              Bibliothèque Officielle 📚
+            </span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            {t("quizzes.title")}
+          </h1>
+          <p className="text-slate-600 font-bold mt-1">{t("quizzes.subtitle")}</p>
+        </div>
+
+        <button
+          onClick={() => navigate("/quizzes/create")}
+          className="btn-duo btn-duo-teal py-3 px-5 text-sm font-black flex items-center gap-2 shadow-sm self-start md:self-auto"
+        >
+          <Plus className="w-4 h-4 stroke-[3]" />
+          <span>{t("quiz.create") || "Créer un Quiz"}</span>
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+      <div className="card-duo p-5 sm:p-6 mb-8 bg-white shadow-sm">
         {/* Recherche + Bouton filtres */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2.5 mb-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               type="text"
-              placeholder={t("quizzes.searchPlaceholder")}
+              placeholder={t("quizzes.searchPlaceholder") || "Rechercher par titre, continent, tag..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-emerald-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 transition-all text-sm sm:text-base focus:ring-4 focus:ring-emerald-100"
             />
           </div>
 
           {/* Bouton pour afficher/masquer les filtres */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center ${
+            className={`px-4 py-3 btn-duo text-sm font-black transition-all flex items-center gap-2 shadow-xs ${
               showFilters
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "btn-duo-green"
+                : "btn-duo-white"
             }`}
           >
             <Filter className="w-5 h-5" />
+            <span className="hidden sm:inline">Filtres</span>
           </button>
         </div>
 
         {/* Filtres (cachables) */}
         {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 animate-slide-down">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5 animate-slide-down">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
-              style={{
-                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0.5rem center",
-                backgroundSize: "1.5em 1.5em",
-              }}
+              className="px-4 py-3 pr-8 border-2 border-slate-200 border-b-4 rounded-2xl font-bold text-slate-700 focus:border-emerald-500 focus:bg-white outline-none appearance-none bg-slate-50 cursor-pointer text-sm shadow-2xs"
             >
               <option value="all">{t("quizzes.allCategories")}</option>
               {categories.map((category) => (
@@ -436,13 +447,7 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
             <select
               value={difficultyFilter}
               onChange={(e) => setDifficultyFilter(e.target.value)}
-              className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
-              style={{
-                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0.5rem center",
-                backgroundSize: "1.5em 1.5em",
-              }}
+              className="px-4 py-3 pr-8 border-2 border-slate-200 border-b-4 rounded-2xl font-bold text-slate-700 focus:border-emerald-500 focus:bg-white outline-none appearance-none bg-slate-50 cursor-pointer text-sm shadow-2xs"
             >
               <option value="all">{t("quizzes.allDifficulties")}</option>
               {difficulties.map((difficulty) => (
@@ -455,13 +460,7 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
-              style={{
-                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 0.5rem center",
-                backgroundSize: "1.5em 1.5em",
-              }}
+              className="px-4 py-3 pr-8 border-2 border-slate-200 border-b-4 rounded-2xl font-bold text-slate-700 focus:border-emerald-500 focus:bg-white outline-none appearance-none bg-slate-50 cursor-pointer text-sm shadow-2xs"
             >
               <option value="all">{t("quizzes.allTypes")}</option>
               {quizTypes.map((type) => (
@@ -473,55 +472,47 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
           </div>
         )}
 
-        {/* Onglets */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Onglets Tactiles */}
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
           <button
             onClick={() => setActiveTab("public")}
-            className={`flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium transition-all ${
+            className={`btn-duo py-3 px-3 sm:px-4 text-xs sm:text-sm font-black flex items-center justify-center gap-2 ${
               activeTab === "public"
-                ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "btn-duo-green"
+                : "btn-duo-white text-slate-600"
             }`}
           >
-            <BookOpen className="w-5 h-5 mb-1" />
-            <span className="text-xs">{t("quiz.publicQuizzes")}</span>
+            <BookOpen className="w-4 h-4" />
+            <span>{t("quiz.publicQuizzes")}</span>
           </button>
 
           <button
             onClick={() => setActiveTab("my")}
-            className={`flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium transition-all ${
+            className={`btn-duo py-3 px-3 sm:px-4 text-xs sm:text-sm font-black flex items-center justify-center gap-2 ${
               activeTab === "my"
-                ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "btn-duo-blue"
+                : "btn-duo-white text-slate-600"
             }`}
           >
-            <Edit className="w-5 h-5 mb-1" />
-            <span className="text-xs">{t("quiz.myQuizzes")}</span>
+            <Edit className="w-4 h-4" />
+            <span>{t("quiz.myQuizzes")}</span>
           </button>
 
           <button
             onClick={() => setActiveTab("shared")}
-            className={`flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium transition-all relative ${
+            className={`btn-duo py-3 px-3 sm:px-4 text-xs sm:text-sm font-black flex items-center justify-center gap-2 relative ${
               activeTab === "shared"
-                ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "btn-duo-purple"
+                : "btn-duo-white text-slate-600"
             }`}
           >
-            <Share2 className="w-5 h-5 mb-1" />
-            <span className="text-xs">{t("quiz.sharedQuizzes")}</span>
+            <Share2 className="w-4 h-4" />
+            <span>{t("quiz.sharedQuizzes")}</span>
             {sharedQuizzes.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+              <span className="ml-1 bg-rose-500 text-white text-[10px] rounded-full px-1.5 py-0.2 font-black shadow-xs">
                 {sharedQuizzes.length}
               </span>
             )}
-          </button>
-
-          <button
-            onClick={() => navigate("/quizzes/create")}
-            className="flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium bg-gradient-to-br from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md"
-          >
-            <Plus className="w-5 h-5 mb-1" />
-            <span className="text-xs">{t("quiz.create")}</span>
           </button>
         </div>
       </div>
@@ -618,41 +609,47 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
             <div
               key={quiz.id}
               onClick={() => navigate(`/quizzes/play/${quiz.id }`)}
-              className="bg-white cursor-pointer rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden flex flex-col h-full"
+              className="card-duo card-duo-interactive group overflow-hidden flex flex-col h-full bg-white shadow-sm hover:shadow-lg transition-all duration-150 rounded-3xl"
             >
-              {quiz.cover_image_url ? (
-                <img
-                  src={quiz.cover_image_url}
-                  alt={quiz.title}
-                  className="w-full h-48 object-cover"
-                />
-              ) : (
-                <div className="w-full h-48 bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                  <BookOpen className="w-20 h-20 text-white opacity-50" />
-                </div>
-              )}
-              <div className="p-6 flex flex-col h-full">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-xl font-bold text-gray-800 flex-1">
-                    {quiz.title}
-                  </h3>
+              {/* IMAGE / COUVERTURE AVEC BADGE */}
+              <div className="relative w-full h-48 overflow-hidden bg-slate-100">
+                {quiz.cover_image_url ? (
+                  <img
+                    src={quiz.cover_image_url}
+                    alt={quiz.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                    <BookOpen className="w-16 h-16 text-white/70" />
+                  </div>
+                )}
+
+                {/* BADGE GLOBAL / CATÉGORIE EN OVERLAY */}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-800 px-2.5 py-1 rounded-full shadow-xs border border-slate-200/80 backdrop-blur-xs">
+                    {getCategoryLabel(quiz.category)}
+                  </span>
                   {quiz.is_global && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                      {t("quizzes.global")}
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-sky-500 text-white px-2 py-0.5 rounded-full shadow-xs">
+                      {t("quizzes.global") || "Officiel"}
                     </span>
                   )}
                 </div>
+              </div>
 
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {quiz.description || ""}
+              <div className="p-5 sm:p-6 flex flex-col flex-1">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-tight group-hover:text-emerald-700 transition-colors mb-2">
+                  {quiz.title}
+                </h3>
+
+                <p className="text-slate-600 font-medium text-xs sm:text-sm mb-4 line-clamp-2 leading-relaxed">
+                  {quiz.description || "Testez vos connaissances géographiques sur ce quiz !"}
                 </p>
 
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                    {getCategoryLabel(quiz.category)}
-                  </span>
+                <div className="flex flex-wrap gap-1.5 mb-4">
                   <span
-                    className={`text-xs px-3 py-1 rounded-full ${getDifficultyColor(
+                    className={`text-[11px] font-black px-2.5 py-1 rounded-xl border ${getDifficultyColor(
                       quiz.difficulty
                     )}`}
                   >
@@ -660,10 +657,11 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
                   </span>
                   {quiz.quiz_types && (
                     <span
-                      className="text-xs px-3 py-1 rounded-full font-medium"
+                      className="text-[11px] font-black px-2.5 py-1 rounded-xl"
                       style={{
-                        backgroundColor: `${quiz.quiz_types.color}20`,
+                        backgroundColor: `${quiz.quiz_types.color}15`,
                         color: quiz.quiz_types.color,
+                        border: `1px solid ${quiz.quiz_types.color}30`,
                       }}
                     >
                       {quiz.quiz_types.name}
@@ -671,14 +669,14 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
                   )}
                 </div>
 
-                <div className="mt-auto space-y-3">
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="mt-auto space-y-3 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                     <span>
                       {quiz.total_plays} {getGamesText(quiz.total_plays)}
                     </span>
                     {quiz.average_score > 0 && (
-                      <span>
-                        {t("quizzes.average")}: {Math.round(quiz.average_score)}
+                      <span className="text-emerald-700 font-black">
+                        Moy. {Math.round(quiz.average_score)} pts
                       </span>
                     )}
                   </div>
@@ -689,17 +687,18 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
                         e.stopPropagation();
                         navigate(`/quizzes/play/${quiz.id }`);
                       }}
-                      className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
+                      className="flex-1 py-3 px-4 btn-duo btn-duo-green text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 shadow-sm"
                     >
-                      <Play className="w-4 h-4 mr-2" />
-                      {t("quiz.play")}
+                      <Play className="w-4 h-4 fill-white stroke-none" />
+                      <span>{t("quiz.play") || "JOUER"}</span>
                     </button>
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/quizzes/training/${quiz.id}?count=${10 }`);
                       }}
-                      className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-medium flex items-center justify-center"
+                      className="btn-duo btn-duo-white px-3 py-3 text-xs font-black text-purple-700 hover:bg-purple-50"
                       title={t("quizzes.trainNow")}
                     >
                       <Dumbbell className="w-4 h-4" />
@@ -712,7 +711,7 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
                             e.stopPropagation();
                             navigate(`/quizzes/edit/${quiz.id }`);
                           }}
-                          className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                          className="btn-duo btn-duo-white px-3 py-3 text-xs text-slate-600"
                           title={t("quiz.edit")}
                         >
                           <Edit className="w-4 h-4" />
@@ -724,7 +723,7 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
                                 e.stopPropagation();
                                 setShareQuiz({ id: quiz.id, title: quiz.title });
                               }}
-                              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              className="btn-duo btn-duo-white px-3 py-3 text-xs text-sky-700"
                               title={t("quizzes.shareWithFriends")}
                             >
                               <Share2 className="w-4 h-4" />
@@ -736,7 +735,7 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
                                   ? publishQuizDirectly(quiz.id)
                                   : requestPublish(quiz.id, quiz.title);
                               }}
-                              className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                              className="btn-duo btn-duo-white px-3 py-3 text-xs text-emerald-700"
                               title={
                                 profile?.role === "admin"
                                   ? t("quizzes.publishDirectly")
@@ -750,7 +749,7 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
                                 e.stopPropagation();
                                 deleteQuiz(quiz.id, quiz.title);
                               }}
-                              className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                              className="btn-duo btn-duo-rose px-3 py-3 text-xs shadow-xs"
                               title={t("quizzes.deleteQuiz")}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -765,7 +764,7 @@ export function QuizzesPage({ onNavigate: _onNavigate }: QuizzesPageProps = {}) 
                           e.stopPropagation();
                           removeSharedQuiz(quiz.id);
                         }}
-                        className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        className="btn-duo btn-duo-rose px-3 py-3 text-xs shadow-xs"
                         title={t("quizzes.removeFromList")}
                       >
                         <Trash2 className="w-4 h-4" />
