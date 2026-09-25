@@ -99,30 +99,30 @@ export function Navbar() {
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-18 py-2">
             {/* 🌍 Logo & Brand */}
-            <div className="flex items-center space-x-3 sm:space-x-6">
+            <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 shrink-0 mr-1 sm:mr-3">
               <button
                 type="button"
                 onClick={() => {
                   setOpenDropdown(null);
                   navigate("/terra");
                 }}
-                className="flex items-center hover:scale-105 active:scale-95 transition-transform"
+                className="flex items-center shrink-0 hover:scale-105 active:scale-95 transition-transform"
               >
                 <img
                   src="/logo.png"
                   alt="TerraCoast Logo"
-                  className="h-11 w-auto drop-shadow-sm"
+                  className="h-10 sm:h-11 w-auto shrink-0 drop-shadow-sm"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
-                <span className="ml-2.5 text-2xl font-black tracking-tight text-emerald-600">
+                <span className="ml-2 text-xl xl:text-2xl font-black tracking-tight text-emerald-600 whitespace-nowrap shrink-0">
                   TerraCoast
                 </span>
               </button>
 
               {/* 🎮 Duolingo Desktop Tactile 5-Tab System */}
-              <div className="hidden md:flex items-center space-x-1 lg:space-x-1.5">
+              <div className="hidden md:flex items-center gap-1 lg:gap-1.5 shrink-0">
                 {/* 1. 🗺️ PARCOURS */}
                 <button
                   type="button"
@@ -130,13 +130,13 @@ export function Navbar() {
                     setOpenDropdown(null);
                     navigate("/terra");
                   }}
-                  className={`flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-3.5 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 ${
+                  className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
                     currentView === "/terra" || currentView === "/"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-400 border-b-emerald-600 shadow-sm"
                       : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-200"
                   }`}
                 >
-                  <MapIcon className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <MapIcon className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>PARCOURS</span>
                 </button>
 
@@ -147,19 +147,19 @@ export function Navbar() {
                     onClick={() =>
                       setOpenDropdown(openDropdown === "arcade" ? null : "arcade")
                     }
-                    className={`flex items-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 ${
+                    className={`flex items-center gap-1 lg:gap-1.5 px-2 lg:px-2.5 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
                       currentView.startsWith("/games") || currentView.startsWith("/quizzes")
                         ? "bg-amber-50 text-amber-900 border-amber-400 border-b-amber-500 shadow-sm"
                         : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-200"
                     }`}
                   >
-                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
                     <span>ARCADE & QUIZ</span>
-                    <span className="text-[9px] uppercase px-1.5 py-0.2 bg-rose-500 text-white rounded-full font-black">
+                    <span className="hidden xl:inline-block text-[9px] uppercase px-1.5 py-0.2 bg-rose-500 text-white rounded-full font-black">
                       Nouveau
                     </span>
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                      className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${
                         openDropdown === "arcade" ? "rotate-180 text-amber-600" : ""
                       }`}
                     />
@@ -559,7 +559,7 @@ export function Navbar() {
               </button>
 
               {/* 👑 Niveau Capsule (visible sur grand écran) */}
-              <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-purple-50 text-purple-800 border-2 border-purple-200 border-b-4 border-b-purple-300 shadow-sm">
+              <div className="hidden xl:flex items-center gap-1 px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-purple-50 text-purple-800 border-2 border-purple-200 border-b-4 border-b-purple-300 shadow-sm shrink-0">
                 <span>👑</span>
                 <span>Niv. {profile?.level || 1}</span>
               </div>

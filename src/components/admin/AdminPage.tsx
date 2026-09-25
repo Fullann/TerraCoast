@@ -15,6 +15,7 @@ import {
   UserCheck,
   BarChart3,
   Flame,
+  Compass,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -420,6 +421,7 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
     const viewToPath: Record<string, string> = {
       "admin": "/admin",
       "admin-analytics": "/admin/analytics",
+      "path-management": "/admin/path",
       "quiz-management": "/admin/quizzes",
       "quiz-validation": "/admin/validation",
       "geojson-maps-management": "/admin/geojson",
@@ -578,12 +580,12 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
           <p className="text-2xl font-bold text-gray-900">{stats.missingLocations}</p>
         </button>
         <button
-          onClick={() => goToSection("badge-management", "badges")}
-          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+          onClick={() => goToSection("path-management", "parcours")}
+          className="bg-white rounded-xl border border-emerald-200 p-4 text-left hover:shadow-md transition-shadow bg-gradient-to-br from-emerald-50/40 to-white"
         >
-          <UserCheck className="w-5 h-5 text-purple-600 mb-2" />
-          <p className="text-xs text-gray-500">{t("admin.dashboard.badges")}</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.totalBadges}</p>
+          <Compass className="w-5 h-5 text-emerald-600 mb-2" />
+          <p className="text-xs text-gray-500">Parcours</p>
+          <p className="text-2xl font-bold text-gray-900">14 étapes</p>
         </button>
       </div>
 

@@ -12,6 +12,7 @@ import {
   Map,
   BarChart3,
   MessageSquareQuote,
+  Compass,
 } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
 
@@ -33,6 +34,7 @@ export function AdminDashboardLayout() {
     const path = location.pathname;
     if (path === '/admin') return 'admin';
     if (path.includes('/admin/analytics')) return 'admin-analytics';
+    if (path.includes('/admin/path')) return 'path-management';
     if (path.includes('/admin/quizzes')) return 'quiz-management';
     if (path.includes('/admin/validation')) return 'quiz-validation';
     if (path.includes('/admin/geojson')) return 'geojson-maps-management';
@@ -66,6 +68,11 @@ export function AdminDashboardLayout() {
     {
       title: t("admin.nav.quizOps"),
       items: [
+        {
+          view: "path-management",
+          label: "Parcours d'apprentissage",
+          icon: <Compass className="w-4 h-4" />,
+        },
         {
           view: "quiz-management",
           label: t("admin.nav.quizManagement"),
@@ -160,6 +167,7 @@ export function AdminDashboardLayout() {
                           const viewToPath: Record<string, string> = {
                             'admin': '/admin',
                             'admin-analytics': '/admin/analytics',
+                            'path-management': '/admin/path',
                             'quiz-management': '/admin/quizzes',
                             'quiz-validation': '/admin/validation',
                             'geojson-maps-management': '/admin/geojson',

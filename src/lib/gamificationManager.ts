@@ -7,6 +7,8 @@
  * - 🗺️ Parcours d'Apprentissage (Unités, Nœuds oscillants, Étoiles ⭐⭐⭐, Coffres au trésor 🎁)
  */
 
+import { getAllPathAssignments } from "./pathConfigManager";
+
 export interface PathNode {
   id: string;
   title: string;
@@ -18,6 +20,9 @@ export interface PathNode {
   status: "locked" | "active" | "completed";
   isBoss?: boolean;
   quizIdOrFilter?: string; // fallback query param for quiz selection
+  assignedQuizId?: string;
+  assignedQuizTitle?: string;
+  hasCustomQuiz?: boolean;
 }
 
 export interface PathChest {
@@ -339,6 +344,7 @@ export function getLeagueForXp(xp: number = 0): LeagueTier {
  */
 export function getQuestPath(userId?: string): PathUnit[] {
   const state = getPlayerGamificationState(userId);
+  const assignments = getAllPathAssignments();
 
   const baseUnits: PathUnit[] = [
     {
@@ -593,6 +599,16 @@ export function getQuestPath(userId?: string): PathUnit[] {
     let unitNodesCompletedCount = 0;
 
     for (const node of unit.nodes) {
+      const customAssignment = assignments[node.id];
+      if (customAssignment) {
+        node.assignedQuizId = customAssignment.quizId;
+        node.assignedQuizTitle = customAssignment.quizTitle;
+        node.hasCustomQuiz = true;
+        if (customAssignment.quizTitle) {
+          node.title = customAssignment.quizTitle;
+        }
+      }
+
       const completedInfo = state.completedNodes[node.id];
 
       if (completedInfo) {

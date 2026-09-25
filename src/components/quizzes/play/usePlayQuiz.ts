@@ -131,10 +131,6 @@ export function usePlayQuiz({
     [questions]
   );
 
-  const getPostAnswerDelayMs = (question: Question, _isCorrect?: boolean) => {
-    if (trainingMode) return 0;
-    return (question.complement_if_wrong || "").trim() ? 5000 : 1500;
-  };
 
   const createSession = useCallback(async () => {
     if (trainingMode || quizId.startsWith("u") || quizId.startsWith("path-")) {
@@ -613,26 +609,6 @@ export function usePlayQuiz({
     });
   };
 
-  const moveToNextQuestion = useCallback(() => {
-    if (gameComplete) return;
-
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-      setUserAnswer("");
-      setSelectedOption("");
-      setShowResult(false);
-      setIsAnswered(false);
-      setTimeLeft(quiz?.time_limit_seconds || 30);
-      setQuestionStartTime(Date.now());
-      hasTimedOutRef.current = false;
-      return;
-    }
-
-    if (trainingMode) {
-      setGameComplete(true);
-    }
-  }, [gameComplete, currentQuestionIndex, questions.length, quiz?.time_limit_seconds, trainingMode]);
-
   const updateDuel = useCallback(async () => {
     if (!duelId || !sessionId) return;
     const { error } = await supabase.rpc("link_duel_session_and_finalize", {
@@ -647,7 +623,11 @@ export function usePlayQuiz({
   const completeGame = useCallback(async () => {
     if (gameComplete || isCompletingRef.current) return;
 
-    if (trainingMode) return;
+    if (trainingMode) {
+      setGameComplete(true);
+      return;
+    }
+
     if (!sessionId) {
       setTimeout(() => {
         completeGame();
@@ -790,6 +770,39 @@ export function usePlayQuiz({
     duelId,
     updateDuel,
     refreshProfile,
+    pathNodeId,
+    quizId,
+    profile?.id,
+  ]);
+
+  const moveToNextQuestion = useCallback(() => {
+    if (gameComplete) return;
+
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
+      setUserAnswer("");
+      setSelectedOption("");
+      setShowResult(false);
+      setIsAnswered(false);
+      setTimeLeft(quiz?.time_limit_seconds || 30);
+      setQuestionStartTime(Date.now());
+      hasTimedOutRef.current = false;
+      return;
+    }
+
+    // Dernière question atteinte : finalisation de la partie
+    if (trainingMode) {
+      setGameComplete(true);
+    } else {
+      completeGame();
+    }
+  }, [
+    gameComplete,
+    currentQuestionIndex,
+    questions.length,
+    quiz?.time_limit_seconds,
+    trainingMode,
+    completeGame,
   ]);
 
   const syncSessionProgress = useCallback(async (payloadOverride?: PendingSessionPayload) => {
@@ -859,28 +872,6 @@ export function usePlayQuiz({
     return () => window.removeEventListener("online", handleOnline);
   }, [isOfflinePendingSync, syncSessionProgress]);
 
-  // Fin de partie : laisser le temps d'afficher le feedback de la dernière question
-  useEffect(() => {
-    if (
-      answers.length !== questions.length ||
-      answers.length === 0 ||
-      gameComplete ||
-      trainingMode ||
-      isCompletingRef.current
-    ) {
-      return;
-    }
-    const lastAnswer = answers[answers.length - 1];
-    const answeredQuestion = questions.find((q) => q.id === lastAnswer.question_id);
-    const delayMs = getPostAnswerDelayMs(
-      answeredQuestion || questions[questions.length - 1],
-      lastAnswer.is_correct
-    );
-    const tTimer = window.setTimeout(() => {
-      completeGame();
-    }, delayMs);
-    return () => clearTimeout(tTimer);
-  }, [answers, questions, gameComplete, trainingMode, completeGame]);
 
   const handleSubmitAnswer = useCallback(
     (forcedAnswer?: string, options?: { fromTimeout?: boolean }) => {
@@ -971,13 +962,6 @@ export function usePlayQuiz({
           });
         }
 
-        if (!trainingMode) {
-          const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
-          setTimeout(() => {
-            hasTimedOutRef.current = false;
-            moveToNextQuestion();
-          }, delayMs);
-        }
         return;
       }
 
@@ -1028,13 +1012,6 @@ export function usePlayQuiz({
         if (isCorrect) playCorrectSound();
         else playIncorrectSound();
 
-        if (!trainingMode) {
-          const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
-          setTimeout(() => {
-            hasTimedOutRef.current = false;
-            moveToNextQuestion();
-          }, delayMs);
-        }
         return;
       }
 
@@ -1195,13 +1172,6 @@ export function usePlayQuiz({
         if (isCorrect) playCorrectSound();
         else playIncorrectSound();
 
-        if (!trainingMode) {
-          const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
-          setTimeout(() => {
-            hasTimedOutRef.current = false;
-            moveToNextQuestion();
-          }, delayMs);
-        }
         return;
       }
 
@@ -1248,13 +1218,6 @@ export function usePlayQuiz({
       if (isCorrect) playCorrectSound();
       else playIncorrectSound();
 
-      if (!trainingMode) {
-        const delayMs = getPostAnswerDelayMs(currentQuestion, isCorrect);
-        setTimeout(() => {
-          hasTimedOutRef.current = false;
-          moveToNextQuestion();
-        }, delayMs);
-      }
     },
     [
       isAnswered,

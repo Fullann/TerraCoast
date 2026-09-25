@@ -23,6 +23,7 @@ import {
   PathChest,
 } from "../../lib/gamificationManager";
 import { PATH_QUIZZES } from "../../lib/pathQuizzesData";
+import { PATH_CONFIG_EVENT } from "../../lib/pathConfigManager";
 import { supabase } from "../../lib/supabase";
 import { triggerConfetti } from "../common/Confetti";
 import type { Database } from "../../lib/database.types";
@@ -73,8 +74,10 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
       refreshUnits();
     };
     window.addEventListener("terracost_gamification_updated", handleGamificationUpdated);
+    window.addEventListener(PATH_CONFIG_EVENT, handleGamificationUpdated);
     return () => {
       window.removeEventListener("terracost_gamification_updated", handleGamificationUpdated);
+      window.removeEventListener(PATH_CONFIG_EVENT, handleGamificationUpdated);
     };
   }, [userId]);
 
@@ -123,7 +126,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
       return;
     }
 
-    const targetQuizId = chosenQuizId || node.id;
+    const targetQuizId = chosenQuizId || node.assignedQuizId || node.id;
     navigate(`/quizzes/play/${targetQuizId}?pathNodeId=${node.id}`);
   };
 
@@ -671,27 +674,41 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               </div>
             </div>
 
-            {/* 🎯 OPTION 1 : DÉFI OFFICIEL DU NIVEAU (RECOMMANDÉ) */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-300/80 mb-4 shadow-sm">
+            {/* 🎯 OPTION 1 : DÉFI DU NIVEAU */}
+            <div className={`p-4 rounded-2xl border-2 mb-4 shadow-sm ${
+              selectedNode.node.hasCustomQuiz
+                ? "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-indigo-300"
+                : "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-300/80"
+            }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-black uppercase text-emerald-800 tracking-wider flex items-center gap-1">
-                  ⭐ DÉFI OFFICIEL RECOMMANDÉ
+                <span className={`text-xs font-black uppercase tracking-wider flex items-center gap-1 ${
+                  selectedNode.node.hasCustomQuiz ? "text-indigo-800" : "text-emerald-800"
+                }`}>
+                  {selectedNode.node.hasCustomQuiz ? "⚙️ QUIZ ATTRIBUÉ PAR L'ADMIN" : "⭐ DÉFI OFFICIEL RECOMMANDÉ"}
                 </span>
-                <span className="text-[11px] font-bold bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded-full">
-                  5 Questions • 30s
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                  selectedNode.node.hasCustomQuiz
+                    ? "bg-indigo-200/80 text-indigo-900"
+                    : "bg-emerald-200/70 text-emerald-900"
+                }`}>
+                  {selectedNode.node.hasCustomQuiz ? "Quiz personnalisé" : "5 Questions • 30s"}
                 </span>
               </div>
               <h4 className="text-base font-extrabold text-slate-900 mb-1">
-                {selectedNode.node.title}
+                {selectedNode.node.assignedQuizTitle || selectedNode.node.title}
               </h4>
               <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-                Ce quiz a été spécialement conçu pour tester tes compétences sur cette étape géographique.
+                {selectedNode.node.hasCustomQuiz
+                  ? "Ce questionnaire a été configuré spécifiquement par l'administration pour cette étape du parcours."
+                  : "Ce quiz a été spécialement conçu pour tester tes compétences sur cette étape géographique."}
               </p>
 
               <button
                 type="button"
                 onClick={() => handleStartLevel(selectedNode.node)}
-                className="w-full py-3.5 px-4 btn-duo btn-duo-green text-sm font-black flex items-center justify-center gap-2 shadow-md hover:brightness-105 active:scale-98"
+                className={`w-full py-3.5 px-4 btn-duo text-sm font-black flex items-center justify-center gap-2 shadow-md hover:brightness-105 active:scale-98 ${
+                  selectedNode.node.hasCustomQuiz ? "btn-duo-purple" : "btn-duo-green"
+                }`}
               >
                 <span>
                   {selectedNode.node.status === "completed"

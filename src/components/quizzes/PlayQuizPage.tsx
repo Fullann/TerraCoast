@@ -696,7 +696,17 @@ export function PlayQuizPage({
             </button>
           ) : (
             <button
-              onClick={moveToNextQuestion}
+              onClick={() => {
+                if (currentQuestionIndex < questions.length - 1) {
+                  moveToNextQuestion();
+                } else {
+                  if (trainingMode) {
+                    moveToNextQuestion();
+                  } else {
+                    completeGame();
+                  }
+                }
+              }}
               className={`w-full py-4 rounded-2xl text-base sm:text-lg font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm ${
                 currentQuestionIndex < questions.length - 1
                   ? "btn-duo btn-duo-blue"
