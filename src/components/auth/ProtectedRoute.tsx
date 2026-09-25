@@ -66,9 +66,9 @@ export function ProtectedRoute({ requireAdmin = false }: { requireAdmin?: boolea
   const shouldShowNavbar = !hideNavbarPaths.some(path => location.pathname.startsWith(path));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-emerald-50/20 flex flex-col">
       {shouldShowNavbar && <Navbar />}
-      <main className={`flex-1 ${shouldShowNavbar ? "pb-8" : ""}`}>
+      <main className={`flex-1 ${shouldShowNavbar ? "pb-20 md:pb-8" : ""}`}>
         <Outlet />
       </main>
     </div>

@@ -8,16 +8,18 @@ import {
   Loader2,
   Gamepad2,
   Crown,
+  Skull,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
-import type {
-  PartyPlayer,
-  PartyQuestion,
-  PartyRealtimeEvent,
-  PartyRoom,
-  PartyEmote,
+import {
+  type PartyPlayer,
+  type PartyQuestion,
+  type PartyRealtimeEvent,
+  type PartyRoom,
+  type PartyEmote,
+  computeBattleRoyaleEliminations,
 } from "./types";
 import {
   PartyRealtimeService,
@@ -78,6 +80,8 @@ export function PartyPage() {
   const [searchQuizQuery, setSearchQuizQuery] = useState("");
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number>(15);
+  const [gameMode, setGameMode] = useState<"classic" | "battle_royale">("classic");
+  const [eliminatedPerRound, setEliminatedPerRound] = useState<number>(1);
   const [loadingQuizzes, setLoadingQuizzes] = useState(false);
 
   // Game execution state
@@ -111,6 +115,7 @@ export function PartyPage() {
       }
     >
   >({});
+  const [roundEliminatedIds, setRoundEliminatedIds] = useState<string[]>([]);
   const [finalPodium, setFinalPodium] = useState<PartyPlayer[]>([]);
 
   // Refs for tracking async state across broadcast events
@@ -232,19 +237,23 @@ export function PartyPage() {
           setRoundDistribution(event.answersDistribution);
           setRoundPlayerResults(event.playerResults);
           setConnectedPlayers(event.leaderboard);
+          setRoundEliminatedIds(event.eliminatedPlayerIds || []);
 
-          // Update current player's personal score and streak
+          // Update current player's personal score, streak and elimination status
           const myId = currentPlayerRef.current?.guestId;
-          if (myId && event.playerResults[myId]) {
+          if (myId) {
+            const isElim = event.eliminatedPlayerIds?.includes(myId);
             const myRes = event.playerResults[myId];
             setCurrentPlayer((prev) =>
               prev
                 ? {
                     ...prev,
-                    score: myRes.totalScore,
-                    streak: myRes.streak,
-                    lastAnswerCorrect: myRes.isCorrect,
-                    lastPointsEarned: myRes.pointsEarned,
+                    score: myRes ? myRes.totalScore : prev.score,
+                    streak: myRes ? myRes.streak : prev.streak,
+                    lastAnswerCorrect: myRes ? myRes.isCorrect : prev.lastAnswerCorrect,
+                    lastPointsEarned: myRes ? myRes.pointsEarned : prev.lastPointsEarned,
+                    isEliminated: isElim ? true : prev.isEliminated,
+                    eliminatedAtRound: isElim ? event.questionIndex : prev.eliminatedAtRound,
                   }
                 : null
             );
@@ -349,13 +358,35 @@ export function PartyPage() {
         rank: idx + 1,
       }));
 
+      let finalLeaderboard = rankedPlayers;
+      let eliminatedIds: string[] = [];
+      let remainingCount = rankedPlayers.length;
+
+      if (currentRoomRef.current?.gameMode === "battle_royale") {
+        const elimResult = computeBattleRoyaleEliminations(
+          rankedPlayers,
+          currentRoomRef.current.eliminatedPerRound || 1,
+          qIndex
+        );
+        finalLeaderboard = elimResult.updatedPlayers.map((p, idx) => ({
+          ...p,
+          rank: p.rank ?? (idx + 1),
+          lastAnswerCorrect: Boolean(p.lastAnswerCorrect),
+          lastPointsEarned: p.lastPointsEarned ?? 0,
+        }));
+        eliminatedIds = elimResult.newlyEliminatedIds;
+        remainingCount = elimResult.remainingCount;
+      }
+
       realtimeRef.current.sendEvent({
         type: "ROUND_REVEAL",
         questionIndex: qIndex,
         correctAnswer,
         answersDistribution: distribution,
         playerResults,
-        leaderboard: rankedPlayers,
+        leaderboard: finalLeaderboard,
+        eliminatedPlayerIds: eliminatedIds,
+        remainingPlayersCount: remainingCount,
       });
     },
     [timeLimitSeconds]
@@ -554,6 +585,8 @@ export function PartyPage() {
         currentQuestionIndex: 0,
         timeLimitSeconds,
         questions: questionsData as PartyQuestion[],
+        gameMode,
+        eliminatedPerRound,
       };
 
       // Try persist in DB if available
@@ -692,6 +725,7 @@ export function PartyPage() {
         playerResults={roundPlayerResults}
         leaderboard={connectedPlayers}
         currentPlayer={currentPlayer}
+        eliminatedPlayerIds={roundEliminatedIds}
         onNextQuestion={handleHostNextQuestion}
       />
     );
@@ -921,6 +955,71 @@ export function PartyPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Game Mode Selector: Classic vs Battle Royale */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-indigo-200 mb-2">
+                  Mode de Jeu Multijoueur
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setGameMode("classic")}
+                    className={`p-3 rounded-2xl text-left transition border flex flex-col gap-1 ${
+                      gameMode === "classic"
+                        ? "bg-gradient-to-br from-indigo-600/60 to-purple-600/60 border-amber-400 text-white shadow-lg ring-1 ring-amber-400"
+                        : "bg-white/5 border-white/10 text-indigo-200 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="font-extrabold text-sm flex items-center gap-1.5 text-white">
+                      🏆 Mode Classique
+                    </span>
+                    <span className="text-[11px] opacity-75">
+                      Tous les joueurs jouent l'intégralité du quiz jusqu'au podium final.
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setGameMode("battle_royale")}
+                    className={`p-3 rounded-2xl text-left transition border flex flex-col gap-1 ${
+                      gameMode === "battle_royale"
+                        ? "bg-gradient-to-br from-rose-600/60 to-red-700/60 border-rose-400 text-white shadow-lg ring-1 ring-rose-400"
+                        : "bg-white/5 border-white/10 text-indigo-200 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="font-extrabold text-sm flex items-center gap-1.5 text-white">
+                      <Skull className="w-4 h-4 text-rose-400" />
+                      💀 Battle Royale (Mort Subite)
+                    </span>
+                    <span className="text-[11px] opacity-75">
+                      Les derniers sont éliminés à chaque tour et deviennent spectateurs !
+                    </span>
+                  </button>
+                </div>
+
+                {gameMode === "battle_royale" && (
+                  <div className="mt-2 p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-200 text-xs flex items-center justify-between animate-in fade-in">
+                    <span className="font-medium">Éliminés à chaque tour :</span>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3].map((count) => (
+                        <button
+                          key={count}
+                          type="button"
+                          onClick={() => setEliminatedPerRound(count)}
+                          className={`w-7 h-7 rounded-lg font-bold text-xs transition ${
+                            eliminatedPerRound === count
+                              ? "bg-rose-500 text-white shadow-md scale-110"
+                              : "bg-white/10 text-rose-200 hover:bg-white/20"
+                          }`}
+                        >
+                          {count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Quiz Selector */}

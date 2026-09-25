@@ -9,7 +9,10 @@ import { StreakModal } from "./modals/StreakModal";
 import { DayDetailsModal } from "./modals/DayDetailsModal";
 import { WarnModal } from "./modals/WarnModal";
 import { WarningHistoryModal } from "./modals/WarningHistoryModal";
+import { FederationSelectModal } from "./modals/FederationSelectModal";
 import { ProfileScoreChart } from "./ProfileScoreChart";
+import { getUserFederation, type Federation } from "../../lib/federations";
+import { getConquestStats } from "../../lib/conquestManager";
 import {
   Trophy,
   Award,
@@ -84,6 +87,15 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
   const isOwnProfile = !userId || userId === currentUserProfile?.id;
   const targetUserId = userId || currentUserProfile?.id;
   const isAdmin = currentUserProfile?.role === "admin";
+
+  const [showFederationModal, setShowFederationModal] = useState(false);
+  const [currentFed, setCurrentFed] = useState<Federation>(() =>
+    getUserFederation(targetUserId)
+  );
+
+  useEffect(() => {
+    setCurrentFed(getUserFederation(targetUserId));
+  }, [targetUserId]);
 
   const getDayText = (count?: number | null) => {
     return (count ?? 0) > 1 ? t("common.days") : t("common.day");
@@ -533,12 +545,30 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
               <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
                 {profile.pseudo}
               </h1>
-              {activeTitle && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold mb-2">
-                  <Star className="w-4 h-4" />
-                  {activeTitle.titles?.name}
-                </div>
-              )}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-3">
+                {activeTitle && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
+                    <Star className="w-3.5 h-3.5" />
+                    {activeTitle.titles?.name}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => isOwnProfile && setShowFederationModal(true)}
+                  disabled={!isOwnProfile}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition ${
+                    isOwnProfile
+                      ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm cursor-pointer"
+                      : "bg-gray-100 text-gray-700 border-gray-200"
+                  }`}
+                  title={isOwnProfile ? "Changer de Fédération / Blason" : undefined}
+                >
+                  <span className="text-sm">{currentFed.flagEmoji}</span>
+                  <span>{currentFed.name}</span>
+                  {isOwnProfile && <span className="text-[10px] text-emerald-600 ml-0.5 font-normal">✎</span>}
+                </button>
+              </div>
 
               {/* ✅ BARRE DE PROGRESSION DU NIVEAU */}
               <div className="bg-gray-100 rounded-full p-1 mb-4">
@@ -619,6 +649,42 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                   </span>
                 </button>
               )}
+
+              {/* 🗺️ WIDGET CARTE DE CONQUÊTE & POKÉDEX */}
+              {(() => {
+                const cStats = getConquestStats(targetUserId);
+                return (
+                  <div
+                    onClick={() => navigate("/conquest")}
+                    className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/30 text-white shadow-lg cursor-pointer hover:border-emerald-400 hover:shadow-emerald-900/30 transition-all flex flex-col sm:flex-row items-center justify-between gap-4 group"
+                  >
+                    <div className="flex items-center gap-3.5 w-full sm:w-auto">
+                      <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-2xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                        🗺️
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-sm sm:text-base font-black text-white group-hover:text-emerald-300 transition-colors">
+                            Brouillard de Guerre & Pokédex
+                          </h4>
+                          <span className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
+                            {cStats.conquestPercentage}% Conquis
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          {cStats.conqueredCount} / {cStats.totalCountries} pays explorés • {cStats.legendaryCount} cartes légendaires débloquées
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="shrink-0 px-3.5 py-2 bg-emerald-600 group-hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 self-end sm:self-auto"
+                    >
+                      <span>Voir ma Carte 🗺️</span>
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -1024,6 +1090,14 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
         isOpen={showWarningHistory}
         onClose={() => setShowWarningHistory(false)}
         warnings={warningHistory}
+      />
+
+      <FederationSelectModal
+        isOpen={showFederationModal}
+        onClose={() => setShowFederationModal(false)}
+        currentFederationId={currentFed.id}
+        userId={targetUserId}
+        onFederationChanged={(fed) => setCurrentFed(fed)}
       />
     </div>
   );

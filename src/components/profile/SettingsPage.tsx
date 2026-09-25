@@ -56,9 +56,7 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
     const currentSession = sessionData?.session;
 
     if (!currentSession) {
-      throw new Error(
-        t("settings.logoutError") || "Session invalide, reconnecte-toi."
-      );
+      throw new Error(t("settings.sessionInvalid"));
     }
 
     const expiresSoon =
@@ -69,9 +67,7 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
       const { data: refreshed, error: refreshError } =
         await supabase.auth.refreshSession();
       if (refreshError || !refreshed?.session) {
-        throw new Error(
-          t("settings.logoutError") || "Session expirée, reconnecte-toi."
-        );
+        throw new Error(t("settings.sessionExpired"));
       }
     }
   };
@@ -511,7 +507,7 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      setError(t("settings.logoutError") || "Erreur lors de la déconnexion");
+      setError(t("settings.logoutError"));
       setLoading(false);
     }
     // L'utilisateur sera automatiquement redirigé vers la page de connexion

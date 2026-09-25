@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Trophy, Crown, ArrowLeft, RefreshCw, Sparkles } from "lucide-react";
+import { Trophy, Crown, ArrowLeft, RefreshCw, Sparkles, Skull } from "lucide-react";
 import { playVictoryFanfare } from "../../lib/soundManager";
 import { triggerConfetti } from "../common/Confetti";
 import type { PartyPlayer, PartyRoom } from "./types";
@@ -57,8 +57,16 @@ export const PartyPodium: React.FC<PartyPodiumProps> = ({
             <Sparkles className="w-4 h-4 text-amber-400" />
             Partie terminée sur « {room.quizTitle} »
           </div>
+          {room.gameMode === "battle_royale" && (
+            <div className="mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-rose-500/30 border border-rose-400 text-rose-300 text-xs font-bold animate-pulse">
+                <Skull className="w-3.5 h-3.5" />
+                Dernier Survivant du Battle Royale
+              </span>
+            </div>
+          )}
           <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 tracking-tight">
-            Félicitations aux champions ! 🏆
+            {room.gameMode === "battle_royale" ? "Victoire Royale ! 👑" : "Félicitations aux champions ! 🏆"}
           </h1>
         </div>
 

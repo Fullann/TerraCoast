@@ -1,31 +1,24 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import {
-  Trophy,
-  Target,
-  Flame,
-  Users,
   BookOpen,
-  Award,
-  Dumbbell,
-  Gamepad2,
   AlertTriangle,
   Ban,
-  Compass,
+  CheckCircle2,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
-import type { QuizGlobePoint } from "./QuizGlobe";
 import { DailyChallengeCard } from "../daily/DailyChallengeCard";
 import { getDailyQuizForDate } from "../../lib/dailyChallenge";
 import { StreakModal } from "../profile/StreakModal";
-import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
-
-const QuizGlobe = lazy(() =>
-  import("./QuizGlobe").then((m) => ({ default: m.QuizGlobe }))
-);
+import { isStreakPlayedToday } from "../../lib/streakUtils";
+import { getConquestStats } from "../../lib/conquestManager";
+import { DuolingoQuestPath } from "./DuolingoQuestPath";
+import {
+  getLeagueForXp,
+} from "../../lib/gamificationManager";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"];
@@ -44,7 +37,6 @@ export function HomePage() {
   const [, setRecentSessions] = useState<GameSession[]>([]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [showStreakModal, setShowStreakModal] = useState(false);
-  const [globePoints, setGlobePoints] = useState<QuizGlobePoint[]>([]);
   const [dailyQuiz, setDailyQuiz] = useState<Quiz | null>(null);
   const [loadingDailyQuiz, setLoadingDailyQuiz] = useState(true);
   const [stats, setStats] = useState({
@@ -53,9 +45,6 @@ export function HomePage() {
     dailyPoints: 0,
     maxDailyPoints: 0,
   });
-
-  const getDayText = (count: number) =>
-    count > 1 ? t("common.days") : t("common.day");
 
   useEffect(() => {
     if (!profile) return;
@@ -109,87 +98,6 @@ export function HomePage() {
             .slice(0, 20);
 
           setRecentQuizzes(relevantQuizzes);
-
-          const quizIds = relevantQuizzes.map((q: Quiz) => q.id);
-          const { data: quizQuestions } = await supabase
-            .from("questions")
-            .select("quiz_id, map_data")
-            .in("quiz_id", quizIds)
-            .in("question_type", ["puzzle_map", "map_click", "country_multi"]);
-
-          let countryResolver:
-            | ((iso3s: string[]) => { lat: number; lng: number }[])
-            | null = null;
-
-          const points: QuizGlobePoint[] = [];
-          for (let idx = 0; idx < relevantQuizzes.length; idx++) {
-            const quiz = relevantQuizzes[idx];
-            if (
-              typeof quiz.location_lat === "number" &&
-              typeof quiz.location_lng === "number"
-            ) {
-              points.push({
-                quizId: quiz.id,
-                title: quiz.title,
-                difficulty: quiz.difficulty,
-                totalPlays: quiz.total_plays || 0,
-                lat: quiz.location_lat,
-                lng: quiz.location_lng,
-              });
-              continue;
-            }
-
-            const relatedQuestions = (quizQuestions || []).filter(
-              (q: any) => q.quiz_id === quiz.id
-            );
-            const selectedIso3s = relatedQuestions.flatMap((q: any) => {
-              const mapData = q.map_data as { selectedCountries?: string[] } | null;
-              return Array.isArray(mapData?.selectedCountries)
-                ? mapData.selectedCountries
-                : [];
-            });
-            const uniqueIso3s = [...new Set(selectedIso3s)].slice(0, 5);
-
-            if (uniqueIso3s.length > 0) {
-              if (!countryResolver) {
-                const { getCountriesByIso3 } = await import(
-                  "../../lib/countryGameData"
-                );
-                countryResolver = getCountriesByIso3;
-              }
-              const countries = countryResolver(uniqueIso3s);
-              if (countries.length > 0) {
-                const avgLat =
-                  countries.reduce((sum, c) => sum + c.lat, 0) /
-                  countries.length;
-                const avgLng =
-                  countries.reduce((sum, c) => sum + c.lng, 0) /
-                  countries.length;
-                points.push({
-                  quizId: quiz.id,
-                  title: quiz.title,
-                  difficulty: quiz.difficulty,
-                  totalPlays: quiz.total_plays || 0,
-                  lat: avgLat,
-                  lng: avgLng,
-                });
-                continue;
-              }
-            }
-
-            // Fallback deterministic spread if quiz has no geographic config.
-            const fallbackLat = -40 + idx * 25;
-            const fallbackLng = -140 + idx * 90;
-            points.push({
-              quizId: quiz.id,
-              title: quiz.title,
-              difficulty: quiz.difficulty,
-              totalPlays: quiz.total_plays || 0,
-              lat: fallbackLat,
-              lng: fallbackLng,
-            });
-          }
-          setGlobePoints(points);
         }
 
         const { data: sessions, count: totalSessionsCount } = await supabase
@@ -292,20 +200,52 @@ export function HomePage() {
     };
   }, [profile]);
 
+  const userLeague = getLeagueForXp(profile?.experience_points || 0);
+  const conquest = getConquestStats(profile?.id);
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight text-gray-900 mb-2">
-          {t("home.welcome")},{" "}
-          <span className="text-indigo-600">{profile?.pseudo}</span>!
-        </h1>
-        <p className="text-gray-600 text-base sm:text-lg">
-          {t("home.readyToTest")}
-        </p>
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-24 md:pb-10 select-none">
+      {/* 👑 En-tête de Bienvenue Gamifié */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
+            <span>{t("home.welcome")},</span>
+            <span className="text-emerald-600 underline decoration-emerald-300 decoration-wavy decoration-2">
+              {profile?.pseudo}
+            </span>
+            <span>👋</span>
+          </h1>
+          <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1">
+            Parcours d'apprentissage géographique • Progressez étape par étape !
+          </p>
+        </div>
+
+        {/* Badges statut compacts sur mobile & tablette */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div
+            onClick={() => setShowStreakModal(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-black cursor-pointer shadow-sm border ${
+              isStreakPlayedToday(profile?.last_activity_date)
+                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-600"
+                : "bg-orange-50 text-orange-800 border-orange-200"
+            }`}
+          >
+            <span>🔥</span>
+            <span>{profile?.current_streak || 0} jours de série</span>
+          </div>
+
+          <div
+            onClick={() => navigate("/conquest")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer shadow-sm hover:bg-emerald-100"
+          >
+            <span>🗺️</span>
+            <span>{conquest.conquestPercentage}% du Monde</span>
+          </div>
+        </div>
       </div>
 
       {profile?.is_banned && (
-        <div className="bg-red-50 border-red-400 border-2 rounded-lg p-5 mb-8 flex items-start space-x-4">
+        <div className="bg-red-50 border-red-400 border-2 rounded-2xl p-5 mb-8 flex items-start space-x-4">
           <Ban className="w-8 h-8 text-red-600 flex-shrink-0" />
           <div className="text-red-700">
             <h3 className="text-xl font-semibold mb-2">
@@ -329,7 +269,7 @@ export function HomePage() {
       )}
 
       {warnings.length > 0 && !profile?.is_banned && (
-        <div className="bg-yellow-50 border-yellow-400 border-2 rounded-lg p-5 mb-8 flex items-start space-x-4">
+        <div className="bg-yellow-50 border-yellow-400 border-2 rounded-2xl p-5 mb-8 flex items-start space-x-4">
           <AlertTriangle className="w-8 h-8 text-yellow-600 flex-shrink-0" />
           <div>
             <h3 className="text-yellow-800 text-xl font-semibold mb-4">
@@ -339,7 +279,7 @@ export function HomePage() {
               {warnings.map((warning, idx) => (
                 <div
                   key={warning.id}
-                  className="bg-white rounded-lg p-4 border border-yellow-200"
+                  className="bg-white rounded-xl p-4 border border-yellow-200"
                 >
                   <div className="flex justify-between mb-2">
                     <span className="text-gray-800 font-semibold text-sm">
@@ -367,250 +307,275 @@ export function HomePage() {
         </div>
       )}
 
-      {/* 📅 Quiz du Jour (Daily Challenge) */}
-      <div className="mb-6">
-        <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-white shadow-lg flex flex-col">
-          <Target className="w-10 h-10 mb-4" />
-          <span className="text-3xl font-extrabold">{stats.totalPlays}</span>
-          <h3 className="text-lg font-semibold mt-auto">
-            {t("home.gamesPlayed")}
-          </h3>
-          <p className="text-green-200 text-sm">{t("home.totalSessions")}</p>
-        </div>
-
-        <div
-          className={`rounded-xl p-6 text-white shadow-lg cursor-pointer hover:shadow-xl transition-all flex flex-col ${
-            isStreakPlayedToday(profile?.last_activity_date)
-              ? "bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 ring-2 ring-orange-300/40"
-              : isStreakAtRisk(profile?.last_activity_date, profile?.current_streak)
-              ? "bg-gradient-to-br from-red-600 to-rose-700 animate-pulse ring-2 ring-red-400"
-              : "bg-gradient-to-r from-red-600 to-red-700"
-          }`}
-          onClick={() => setShowStreakModal(true)}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <Flame className="w-10 h-10" />
-            {isStreakPlayedToday(profile?.last_activity_date) ? (
-              <span className="text-xs font-bold bg-white/25 px-2.5 py-0.5 rounded-full backdrop-blur-sm">
-                ✅ {t("streak.validated") || "Validée aujourd'hui"}
-              </span>
-            ) : isStreakAtRisk(profile?.last_activity_date, profile?.current_streak) ? (
-              <span className="text-xs font-bold bg-white text-red-700 px-2 py-0.5 rounded-full animate-bounce">
-                ⚠️ {t("streak.inDanger") || "En danger !"}
-              </span>
-            ) : null}
-          </div>
-          <div className="flex items-center space-x-2 mb-3">
-            <span className="text-3xl font-extrabold">
-              {profile?.current_streak || 0}
-            </span>
-            <Flame
-              className={`w-8 h-8 ${
-                profile?.current_streak ? "animate-pulse" : "opacity-50"
-              }`}
-            />
-          </div>
-          <h3 className="text-lg font-semibold">{t("home.currentStreak")}</h3>
-          <p className="text-red-100 text-sm mt-auto">
-            {t("home.record")}: {profile?.longest_streak || 0}{" "}
-            {getDayText(profile?.longest_streak || 0)}
-          </p>
-          <p className="text-xs text-orange-200 mt-2 cursor-pointer hover:underline">
-            {t("common.clickForDetails")}
-          </p>
-        </div>
-
-        <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 rounded-xl p-6 text-white shadow-lg flex flex-col">
-          <Trophy className="w-10 h-10 mb-4" />
-          <span className="text-3xl font-extrabold">{stats.dailyPoints}</span>
-          <h3 className="text-lg font-semibold mt-auto">
-            {t("home.dailyPoints")}
-          </h3>
-          <p className="text-yellow-200 text-sm">
-            {t("home.record")}: {stats.maxDailyPoints} {t("home.pts")}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-stretch">
-        <div className="bg-white rounded-xl shadow-md p-4 lg:col-span-1 h-full flex flex-col">
-          <h2 className="text-xl font-extrabold text-gray-900 mb-4">
-            {t("home.quickActions")}
-          </h2>
-
-          <div className="mb-3 p-3 rounded-xl border border-purple-200 bg-purple-50">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-semibold text-purple-900">
-                  {t("home.trainingSpotlightTitle")}
-                </p>
-                <p className="text-sm text-purple-700 mt-1">
-                  {t("home.trainingSpotlightDesc")}
-                </p>
+      {/* 🎮 2-Column Responsive Layout (Duolingo Web & Mobile Style) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* 🗺️ Colonne Centrale : Le Parcours d'Apprentissage (Winding Quest Path) */}
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col items-center">
+          {/* Bannière d'accueil mobile compacte avec raccourcis */}
+          <div className="w-full lg:hidden mb-4 space-y-3">
+            <div className="flex items-center justify-between p-3.5 bg-gradient-to-r from-emerald-500/10 via-sky-500/10 to-amber-500/10 rounded-2xl border border-emerald-200/60">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{userLeague.icon}</span>
+                <div>
+                  <div className="text-xs font-black text-slate-800">{userLeague.name}</div>
+                  <div className="text-[11px] text-slate-500 font-bold">{profile?.experience_points || 0} XP au total</div>
+                </div>
               </div>
               <button
-                onClick={() => navigate("/quizzes/training")}
-                className="shrink-0 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                type="button"
+                onClick={() => navigate("/leaderboard")}
+                className="text-xs font-black text-emerald-700 bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-sm active:scale-95"
               >
-                {t("home.trainingSpotlightCta")}
+                Ligues 🏆
+              </button>
+            </div>
+
+            {/* Mini Défi du Jour sur mobile */}
+            <div className="mb-4">
+              <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
+            </div>
+          </div>
+
+          {/* Composant Parcours Sinueux Duolingo */}
+          <DuolingoQuestPath
+            userId={profile?.id}
+            onNodeStart={(node) => {
+              if (node.category === "flags") {
+                navigate("/games");
+              } else if (dailyQuiz && node.isBoss) {
+                navigate(`/quizzes/play/${dailyQuiz.id}`);
+              } else {
+                navigate(`/quizzes?search=${encodeURIComponent(node.category)}`);
+              }
+            }}
+          />
+
+          {/* Bouton tactile pour explorer l'ensemble des quiz */}
+          <div className="w-full max-w-md my-8 text-center px-4">
+            <button
+              type="button"
+              onClick={() => navigate("/quizzes")}
+              className="w-full py-3.5 px-6 btn-duo btn-duo-white text-sm font-black flex items-center justify-center gap-2 shadow-sm"
+            >
+              <BookOpen className="w-4 h-4 text-emerald-600" />
+              <span>EXPLORER LE CATALOGUE DES 200+ QUIZ 📚</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 🏆 Colonne Latérale : Widgets Gamifiés & Compétition (Desktop Sidebar) */}
+        <div className="hidden lg:flex lg:col-span-5 xl:col-span-4 flex-col space-y-6 sticky top-20">
+          {/* 1. Défi du Jour */}
+          <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
+
+          {/* 2. Ligue Duolingo Hebdomadaire */}
+          <div className={`card-duo p-5 bg-gradient-to-b ${userLeague.bgGradient}`}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-600">
+                Compétition Hebdomadaire
+              </span>
+              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white/80 shadow-sm text-slate-800">
+                Saison en cours ⚡
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3.5 mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center text-3xl border border-slate-200/80">
+                {userLeague.icon}
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 leading-tight">
+                  {userLeague.name}
+                </h3>
+                <p className="text-xs font-bold text-slate-600 mt-0.5">
+                  {profile?.experience_points || 0} XP • Zone de promotion ⬆️
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white/80 rounded-2xl p-3 text-xs mb-4 border border-slate-200/60 flex items-center justify-between">
+              <span className="text-slate-600 font-bold">Prochaine ligue :</span>
+              <span className="font-black text-purple-700">
+                {userLeague.tier < 6 ? `Ligue Supérieure (${userLeague.minXp + 500} XP)` : "Palier Maximum 👑"}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate("/leaderboard")}
+              className="w-full py-2.5 px-4 btn-duo btn-duo-amber text-xs font-black"
+            >
+              VOIR LE CLASSEMENT DE LA LIGUE 🏆
+            </button>
+          </div>
+
+          {/* 3. Quêtes du Jour (3/3 Objectifs Gamifiés) */}
+          <div className="card-duo p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <span>🎯</span>
+                <span>Quêtes du Jour</span>
+              </h3>
+              <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {isStreakPlayedToday(profile?.last_activity_date) ? "2/3" : "1/3"} Complétées
+              </span>
+            </div>
+
+            <div className="space-y-3.5">
+              {/* Quête 1 */}
+              <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="text-xl shrink-0 mt-0.5">⚡</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
+                    <span>Gagner 40 XP aujourd'hui</span>
+                    <span className="text-emerald-600 font-black">
+                      {Math.min(40, stats.dailyPoints || 25)} / 40 XP
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, Math.round(((stats.dailyPoints || 25) / 40) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Quête 2 */}
+              <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="text-xl shrink-0 mt-0.5">🗺️</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
+                    <span>Franchir 1 étape du parcours</span>
+                    <span className="text-emerald-600 font-black flex items-center gap-0.5">
+                      1 / 1 <CheckCircle2 className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                  <div className="w-full bg-emerald-500 rounded-full h-2" />
+                </div>
+              </div>
+
+              {/* Quête 3 */}
+              <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="text-xl shrink-0 mt-0.5">🔥</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
+                    <span>Valider la série du jour</span>
+                    <span
+                      className={`text-xs font-black ${
+                        isStreakPlayedToday(profile?.last_activity_date)
+                          ? "text-emerald-600"
+                          : "text-amber-600"
+                      }`}
+                    >
+                      {isStreakPlayedToday(profile?.last_activity_date) ? "Validée ✅" : "À faire ⏳"}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        isStreakPlayedToday(profile?.last_activity_date)
+                          ? "bg-emerald-500 w-full"
+                          : "bg-amber-400 w-1/4"
+                      }`}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Carte de Conquête & Pokédex Géographique */}
+          <div
+            onClick={() => navigate("/conquest")}
+            className="card-duo p-5 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-950 text-white border-emerald-800/40 shadow-xl cursor-pointer hover:border-emerald-500 transition-all group"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                Pokédex Géographique
+              </span>
+              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">
+                {conquest.conquestPercentage}% Conquis
+              </span>
+            </div>
+
+            <h3 className="text-base font-black text-white group-hover:text-emerald-300 transition-colors">
+              Carte de Conquête Mondiale 🗺️
+            </h3>
+            <p className="text-xs text-slate-300 mt-1 mb-3">
+              {conquest.conqueredCount} pays explorés sur {conquest.totalCountries} • Dissipez le brouillard et complétez votre collection !
+            </p>
+
+            <div className="w-full bg-slate-800 rounded-full h-2.5 p-0.5 mb-4">
+              <div
+                className="bg-emerald-400 h-full rounded-full transition-all duration-700"
+                style={{ width: `${Math.max(4, conquest.conquestPercentage)}%` }}
+              />
+            </div>
+
+            <button
+              type="button"
+              className="w-full py-2.5 px-4 btn-duo btn-duo-teal text-xs font-black"
+            >
+              EXPLORER LA CARTE EN 3D 🧭
+            </button>
+          </div>
+
+          {/* 5. Arcade & Nouveaux Modes de Jeu */}
+          <div className="card-duo p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">
+                Arcade Rapide 🕹️
+              </h3>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-500 text-white">
+                Nouveautés
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => navigate("/games/geo-detective")}
+                className="p-3 rounded-2xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-left transition-all active:scale-95"
+              >
+                <div className="text-xl mb-1">🛰️</div>
+                <div className="text-xs font-black text-slate-800">Geo-Detective</div>
+                <div className="text-[10px] text-slate-500 font-bold">Vue Satellite</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/games/silhouette")}
+                className="p-3 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-left transition-all active:scale-95"
+              >
+                <div className="text-xl mb-1">👤</div>
+                <div className="text-xs font-black text-slate-800">Silhouette</div>
+                <div className="text-[10px] text-slate-500 font-bold">Blind Map</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/games/chrono-rush")}
+                className="p-3 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-left transition-all active:scale-95"
+              >
+                <div className="text-xl mb-1">⚡</div>
+                <div className="text-xs font-black text-slate-800">Chrono Rush</div>
+                <div className="text-[10px] text-slate-500 font-bold">45 secondes</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/games/higher-lower")}
+                className="p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-left transition-all active:scale-95"
+              >
+                <div className="text-xl mb-1">⚖️</div>
+                <div className="text-xs font-black text-slate-800">Plus Grand / Petit</div>
+                <div className="text-[10px] text-slate-500 font-bold">Duels de stats</div>
               </button>
             </div>
           </div>
-
-          <button
-            onClick={() => navigate("/quizzes")}
-            className="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group mb-3"
-          >
-            <div className="flex items-center space-x-3">
-              <BookOpen className="w-6 h-6 text-green-600" />
-              <div>
-                <p className="font-semibold text-gray-900">
-                  {t("home.exploreQuizzes")}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {t("home.discoverNewChallenges")}
-                </p>
-              </div>
-            </div>
-            <span className="text-green-600 group-hover:translate-x-1 transition-transform text-2xl">
-              →
-            </span>
-          </button>
-
-          <button
-            onClick={() => navigate("/atlas")}
-            className="w-full flex items-center justify-between p-3 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors group mb-3"
-          >
-            <div className="flex items-center space-x-3">
-              <Compass className="w-6 h-6 text-emerald-600" />
-              <div>
-                <p className="font-semibold text-gray-900">
-                  {t("nav.atlas") || "Atlas 3D / Exploration"}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {t("home.exploreAtlasDesc") || "Explore le monde, capitales, drapeaux et fiches pays"}
-                </p>
-              </div>
-            </div>
-            <span className="text-emerald-600 group-hover:translate-x-1 transition-transform text-2xl">
-              →
-            </span>
-          </button>
-
-          <button
-            onClick={() => navigate("/quizzes/create")}
-            className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group mb-3"
-          >
-            <div className="flex items-center space-x-3">
-              <Award className="w-6 h-6 text-blue-600" />
-              <div>
-                <p className="font-semibold text-gray-900">
-                  {t("quiz.create")}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {t("home.shareKnowledge")}
-                </p>
-              </div>
-            </div>
-            <span className="text-blue-600 group-hover:translate-x-1 transition-transform text-2xl">
-              →
-            </span>
-          </button>
-
-          <button
-            onClick={() => navigate("/quizzes/training")}
-            className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors group mb-3"
-          >
-            <div className="flex items-center space-x-3">
-              <Dumbbell className="w-6 h-6 text-purple-600" />
-              <div>
-                <p className="font-semibold text-gray-900">
-                  {t("home.trainingMode")}
-                </p>
-                <p className="text-gray-600 text-sm">{t("home.noTimeLimit")}</p>
-              </div>
-            </div>
-            <span className="text-purple-600 group-hover:translate-x-1 transition-transform text-2xl">
-              →
-            </span>
-          </button>
-
-          <button
-            onClick={() => navigate("/duels")}
-            className="w-full flex items-center justify-between p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors group"
-          >
-            <div className="flex items-center space-x-3">
-              <Users className="w-6 h-6 text-yellow-600" />
-              <div>
-                <p className="font-semibold text-gray-900">
-                  {t("home.challengeFriend")}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {t("home.realTimeDuel")}
-                </p>
-              </div>
-            </div>
-            <span className="text-yellow-600 group-hover:translate-x-1 transition-transform text-2xl">
-              →
-            </span>
-          </button>
-
-          <button
-            onClick={() => navigate("/party")}
-            className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 rounded-lg transition-colors group mt-3 border border-indigo-100/60"
-          >
-            <div className="flex items-center space-x-3">
-              <Gamepad2 className="w-6 h-6 text-indigo-600" />
-              <div>
-                <p className="font-semibold text-gray-900">
-                  {t("party.title") || "Salon Party en direct 🏆"}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {t("party.quickDesc") || "Style Kahoot • 4 à 10 amis avec PIN"}
-                </p>
-              </div>
-            </div>
-            <span className="text-indigo-600 group-hover:translate-x-1 transition-transform text-2xl">
-              →
-            </span>
-          </button>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-6 lg:col-span-2 overflow-hidden h-full">
-          <h2 className="text-2xl font-extrabold text-gray-900 mb-6 flex items-center justify-between">
-            <span>{t("home.trendingQuizzes")}</span>
-            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              Top 20 pertinents
-            </span>
-          </h2>
-          {globePoints.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">{t("quiz.noQuizzes")}</p>
-          ) : (
-            <>
-              <p className="text-sm text-gray-600 mb-3">
-                Clique sur un point pour lancer un quiz.
-              </p>
-              <Suspense
-                fallback={
-                  <div className="h-[400px] w-full flex items-center justify-center bg-slate-900 rounded-2xl">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-3"></div>
-                      <p className="text-slate-300 text-sm font-medium">Chargement du globe 3D...</p>
-                    </div>
-                  </div>
-                }
-              >
-                <QuizGlobe
-                  points={globePoints}
-                  onPointClick={(quizId) => navigate(`/quizzes/play/${quizId}`)}
-                />
-              </Suspense>
-            </>
-          )}
         </div>
       </div>
 
@@ -629,3 +594,4 @@ export function HomePage() {
     </div>
   );
 }
+

@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ComposableMap,
   Geographies,
@@ -18,14 +19,17 @@ import {
   Users,
   Maximize2,
   MapPin,
+  Sparkles,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   getAllAtlasCountries,
   getAtlasCountryByIso3,
   getLocalizedContinent,
   type AtlasCountry,
 } from "../../lib/atlasData";
+import { isCountryConquered } from "../../lib/conquestManager";
 import { CountryDetailDrawer } from "./CountryDetailDrawer";
 
 const GlobeComponent = lazy(() => import("react-globe.gl"));
@@ -43,8 +47,11 @@ const CONTINENT_CENTERS: Record<string, { center: [number, number]; zoom: number
 
 export function AtlasPage() {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [viewMode, setViewMode] = useState<ViewMode>("map");
+  const [fogOfWarActive, setFogOfWarActive] = useState(false);
   const [selectedContinent, setSelectedContinent] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<AtlasCountry | null>(null);
@@ -202,6 +209,15 @@ export function AtlasPage() {
               <List className="w-4 h-4" />
               <span>{t("atlas.viewList") || "Fiches"}</span>
             </button>
+
+            <button
+              onClick={() => navigate("/conquest")}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-amber-400/20 text-amber-200 hover:bg-amber-400/30 border border-amber-300/30"
+              title="Ouvrir la Carte de Conquête & Pokédex Géographique"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Conquête 🗺️</span>
+            </button>
           </div>
         </div>
       </div>
@@ -252,9 +268,27 @@ export function AtlasPage() {
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
         {/* VIEW 1: MAP 2D */}
         {viewMode === "map" && (
-          <div className="relative flex-1 bg-sky-50 rounded-2xl overflow-hidden border border-gray-200 shadow-inner min-h-[550px] flex flex-col">
-            {/* Map Zoom Controls */}
+          <div
+            className={`relative flex-1 rounded-2xl overflow-hidden border transition-colors shadow-inner min-h-[550px] flex flex-col ${
+              fogOfWarActive
+                ? "bg-[#0b1120] border-emerald-900/60"
+                : "bg-sky-50 border-gray-200"
+            }`}
+          >
+            {/* Map Controls & Fog of War Toggle */}
             <div className="absolute top-4 right-4 z-20 flex flex-col gap-1.5 bg-white/90 backdrop-blur-sm rounded-xl p-1.5 shadow-md border border-gray-200">
+              <button
+                onClick={() => setFogOfWarActive(!fogOfWarActive)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 border mb-1 ${
+                  fogOfWarActive
+                    ? "bg-emerald-600 text-white border-emerald-500 shadow-sm"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200"
+                }`}
+                title="Activer/Désactiver le Brouillard de Guerre"
+              >
+                <span>🌫️ {fogOfWarActive ? "Brouillard ON" : "Brouillard"}</span>
+              </button>
+
               <button
                 onClick={handleZoomIn}
                 className="p-2 hover:bg-gray-100 rounded-lg text-gray-700 transition-colors"
@@ -314,6 +348,33 @@ export function AtlasPage() {
                       const country = findCountryForGeography(geo);
                       const isSelected = country && selectedCountry?.iso3 === country.iso3;
                       const isHovered = country && hoveredCountry?.iso3 === country.iso3;
+                      const isConquered = country
+                        ? isCountryConquered(country.iso3, user?.id)
+                        : false;
+
+                      const defaultFill = fogOfWarActive
+                        ? isSelected
+                          ? "#F59E0B"
+                          : isHovered
+                          ? isConquered
+                            ? "#34D399"
+                            : "#475569"
+                          : isConquered
+                          ? "#10B981"
+                          : "#1E293B"
+                        : isSelected
+                        ? "#059669"
+                        : isHovered
+                        ? "#34D399"
+                        : country
+                        ? "#E2E8F0"
+                        : "#CBD5E1";
+
+                      const defaultStroke = fogOfWarActive
+                        ? isConquered
+                          ? "#6EE7B7"
+                          : "#334155"
+                        : "#94A3B8";
 
                       return (
                         <Geography
@@ -330,21 +391,19 @@ export function AtlasPage() {
                           }}
                           style={{
                             default: {
-                              fill: isSelected
-                                ? "#059669"
-                                : isHovered
-                                ? "#34D399"
-                                : country
-                                ? "#E2E8F0"
-                                : "#CBD5E1",
-                              stroke: "#94A3B8",
-                              strokeWidth: 0.4,
+                              fill: defaultFill,
+                              stroke: defaultStroke,
+                              strokeWidth: fogOfWarActive && isConquered ? 0.6 : 0.4,
                               outline: "none",
                               transition: "all 150ms ease",
                               cursor: country ? "pointer" : "default",
                             },
                             hover: {
-                              fill: "#10B981",
+                              fill: fogOfWarActive
+                                ? isConquered
+                                  ? "#34D399"
+                                  : "#64748B"
+                                : "#10B981",
                               stroke: "#047857",
                               strokeWidth: 0.8,
                               outline: "none",

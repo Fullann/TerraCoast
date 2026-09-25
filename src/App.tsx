@@ -18,6 +18,9 @@ import { OfflineIndicator } from "./components/common/OfflineIndicator";
 import { ConfettiContainer } from "./components/common/Confetti";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
+import { RadioGlobeProvider } from "./contexts/RadioGlobeContext";
+import { RadioGlobeFloatingPlayer } from "./components/audio/RadioGlobeFloatingPlayer";
+import { RadioAnecdoteBanner } from "./components/audio/RadioAnecdoteBanner";
 
 import { lazyWithRetry } from "./lib/lazyWithRetry";
 
@@ -37,7 +40,16 @@ const FriendsPage = lazyWithRetry(() => import("./components/friends/FriendsPage
 const DuelsPage = lazyWithRetry(() => import("./components/duels/DuelsPage").then(m => ({ default: m.DuelsPage })));
 const PartyPage = lazyWithRetry(() => import("./components/party/PartyPage").then(m => ({ default: m.PartyPage })));
 const AtlasPage = lazyWithRetry(() => import("./components/atlas/AtlasPage").then(m => ({ default: m.AtlasPage })));
+const ConquestPage = lazyWithRetry(() => import("./components/conquest/ConquestPage").then(m => ({ default: m.ConquestPage })));
 const ChatPage = lazyWithRetry(() => import("./components/chat/ChatPage").then(m => ({ default: m.ChatPage })));
+
+// Nouveaux Modes de Jeu (Gameplay & Arcade)
+const GamesHubPage = lazyWithRetry(() => import("./components/games/GamesHubPage").then(m => ({ default: m.GamesHubPage })));
+const SilhouetteGamePage = lazyWithRetry(() => import("./components/games/silhouette/SilhouetteGamePage").then(m => ({ default: m.SilhouetteGamePage })));
+const HigherLowerGamePage = lazyWithRetry(() => import("./components/games/higher-lower/HigherLowerGamePage").then(m => ({ default: m.HigherLowerGamePage })));
+const ChronoRushGamePage = lazyWithRetry(() => import("./components/games/chrono-rush/ChronoRushGamePage").then(m => ({ default: m.ChronoRushGamePage })));
+const GeoDetectiveGamePage = lazyWithRetry(() => import("./components/games/geo-detective/GeoDetectiveGamePage").then(m => ({ default: m.GeoDetectiveGamePage })));
+const SrsStudyPage = lazyWithRetry(() => import("./components/games/srs/SrsStudyPage").then(m => ({ default: m.SrsStudyPage })));
 
 // Admin Pages (Lazy Loading avec reprise automatique)
 const AdminPage = lazyWithRetry(() => import("./components/admin/AdminPage").then(m => ({ default: m.AdminPage })));
@@ -151,6 +163,13 @@ function AppContent() {
 
         <Route path="/quizzes" element={<Lazy><QuizzesPage /></Lazy>} />
         <Route path="/atlas" element={<Lazy><AtlasPage /></Lazy>} />
+        <Route path="/conquest" element={<Lazy><ConquestPage /></Lazy>} />
+        <Route path="/games" element={<Lazy><GamesHubPage /></Lazy>} />
+        <Route path="/games/silhouette" element={<Lazy><SilhouetteGamePage /></Lazy>} />
+        <Route path="/games/higher-lower" element={<Lazy><HigherLowerGamePage /></Lazy>} />
+        <Route path="/games/chrono-rush" element={<Lazy><ChronoRushGamePage /></Lazy>} />
+        <Route path="/games/geo-detective" element={<Lazy><GeoDetectiveGamePage /></Lazy>} />
+        <Route path="/games/srs" element={<Lazy><SrsStudyPage /></Lazy>} />
         <Route path="/quizzes/create" element={<Lazy><CreateQuizPage /></Lazy>} />
         <Route path="/quizzes/edit/:quizId" element={<Lazy><EditQuizPage /></Lazy>} />
         <Route path="/quizzes/play/:quizId" element={<Lazy><PlayQuizPage /></Lazy>} />
@@ -198,7 +217,11 @@ export default function App() {
       <AuthProvider>
         <LanguageProvider>
           <NotificationProvider>
-            <AppContent />
+            <RadioGlobeProvider>
+              <AppContent />
+              <RadioGlobeFloatingPlayer />
+              <RadioAnecdoteBanner />
+            </RadioGlobeProvider>
           </NotificationProvider>
         </LanguageProvider>
       </AuthProvider>

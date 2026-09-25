@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -9,8 +10,16 @@ import {
   Languages,
   BookOpen,
   Compass,
+  Brain,
+  Check,
+  Headphones,
+  Play,
+  Pause,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { useRadioGlobe } from "../../contexts/RadioGlobeContext";
+import { addCardToSrs } from "../../lib/srsManager";
 import {
   AtlasCountry,
   getLocalizedContinent,
@@ -29,9 +38,13 @@ export function CountryDetailDrawer({
   onSelectCountry,
 }: CountryDetailDrawerProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { t, language } = useLanguage();
+  const [addedToSrs, setAddedToSrs] = useState(false);
+  const { tuneToCountry, play, pause, setMode, isPlaying, currentCountry } = useRadioGlobe();
 
   if (!country) return null;
+
 
   const formatNumber = (n: number) => {
     return new Intl.NumberFormat(language).format(n);
@@ -129,6 +142,55 @@ export function CountryDetailDrawer({
             </div>
           </div>
 
+          {/* Audio Immersion : Radio & Ambiances */}
+          <div className="mt-4 bg-gradient-to-br from-slate-900 via-slate-950 to-teal-950 text-white p-4 rounded-2xl border border-slate-800 shadow-md">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <Headphones className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white flex items-center gap-1.5">
+                    Immersion Sonore
+                    <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Live
+                    </span>
+                  </h4>
+                  <p className="text-[10px] text-slate-400">Radio FM & Ambiances locales</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  const isCurrentCountryPlaying = isPlaying && currentCountry?.iso3 === country.iso3;
+                  if (isCurrentCountryPlaying) {
+                    pause();
+                  } else {
+                    setMode("radio");
+                    tuneToCountry(country.iso3, country.name, country.flagEmoji);
+                    play();
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                {isPlaying && currentCountry?.iso3 === country.iso3 ? (
+                  <>
+                    <Pause className="w-3.5 h-3.5" />
+                    <span>Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Écouter {country.name}</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-snug">
+              Voyagez en musique avec les ondes radio en direct et paysages sonores traditionnels de {country.name}.
+            </p>
+          </div>
+
           {/* Currencies & Languages */}
           <div className="space-y-4 pt-2">
             {/* Currencies */}
@@ -223,7 +285,7 @@ export function CountryDetailDrawer({
         </div>
 
         {/* Drawer Footer CTA */}
-        <div className="p-4 bg-gray-50 border-t border-gray-200 shrink-0">
+        <div className="p-4 bg-gray-50 border-t border-gray-200 shrink-0 space-y-2">
           <button
             onClick={handleTestKnowledge}
             className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all hover:scale-101 active:scale-99"
@@ -232,6 +294,31 @@ export function CountryDetailDrawer({
             <span>
               {t("atlas.playQuizOnCountry") || `Tester mes connaissances sur ${country.name}`}
             </span>
+          </button>
+
+          <button
+            onClick={() => {
+              addCardToSrs(country.iso3, "capital", user?.id || null);
+              setAddedToSrs(true);
+              setTimeout(() => setAddedToSrs(false), 2000);
+            }}
+            className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border ${
+              addedToSrs
+                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                : "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+            }`}
+          >
+            {addedToSrs ? (
+              <>
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>Ajouté à mon Carnet de Révision !</span>
+              </>
+            ) : (
+              <>
+                <Brain className="w-4 h-4 text-indigo-600" />
+                <span>Ajouter à mon Carnet de Révision (SRS)</span>
+              </>
+            )}
           </button>
         </div>
       </div>

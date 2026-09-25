@@ -6,6 +6,8 @@ const fr: Record<string, string> = {
     // Navigation
     "nav.home": "Accueil",
     "nav.quizzes": "Quiz",
+    "nav.games": "Modes",
+    "nav.arcade": "Arcade",
     "nav.leaderboard": "Classement",
     "nav.friends": "Amis",
     "nav.duels": "Duels",
@@ -15,6 +17,21 @@ const fr: Record<string, string> = {
     "nav.admin": "Admin",
     "nav.logout": "Déconnexion",
     "nav.social": "Social",
+
+    // Nouveaux Modes de Jeu
+    "games.title": "Modes de Jeu & Arcade",
+    "games.silhouette.title": "Silhouette Mystère",
+    "games.silhouette.desc": "Devine le pays par sa frontière",
+    "games.higherLower.title": "Plus Grand ou Plus Petit",
+    "games.higherLower.desc": "Le duel des chiffres mondiaux",
+    "games.chronoRush.title": "Chrono Rush",
+    "games.chronoRush.desc": "45 secondes sous haute tension",
+    "games.srs.title": "Carnet de Révision",
+    "games.srs.desc": "Répétition espacée de Leitner",
+
+    // Sound
+    "sound.mute": "Couper le son",
+    "sound.unmute": "Activer le son",
 
     // Authentification
     "auth.login": "Connexion",
@@ -43,6 +60,7 @@ const fr: Record<string, string> = {
     "common.day": "jour",
     "common.days": "jours",
     "common.clickForDetails": "Clique pour plus de détails",
+    "common.you": "Moi",
 
     // Home
     "home.welcome": "Bienvenue",
@@ -346,6 +364,7 @@ const fr: Record<string, string> = {
       "Chaque question puzzle doit contenir au moins un pays sélectionné.",
     "editQuiz.errors.mapClickMinCountries":
       "Chaque question « clic sur carte » doit avoir au moins une zone cible.",
+    "editQuiz.errors.notFound": "Quiz introuvable",
 
     // Play Quiz
     "playQuiz.selectAnswer": "Merci de sélectionner ou d'entrer une réponse",
@@ -489,6 +508,11 @@ const fr: Record<string, string> = {
     "playQuiz.acceptedVariants": "Variantes acceptées",
     "playQuiz.nextQuestion": "Question suivante",
     "playQuiz.finishQuiz": "Terminer le quiz",
+    "playQuiz.reviewMistakes": "Réviser mes erreurs",
+    "playQuiz.explanation": "Explication",
+    "playQuiz.addToSrs": "Ajouter au Carnet (SRS) 📌",
+    "playQuiz.srsAdded": "Ajouté au Carnet SRS !",
+    "playQuiz.shareResult": "Partager mon résultat 📲",
     "playQuiz.report.button": "Signaler",
     "playQuiz.report.buttonTitle": "Signaler un problème sur cette question",
     "playQuiz.report.title": "Signaler un problème",
@@ -854,6 +878,9 @@ const fr: Record<string, string> = {
     "settings.twoFactorNoActiveFactor": "Aucun facteur MFA actif trouvé.",
     "settings.logout": "Se déconnecter",
     "settings.logoutConfirmation": "Es-tu sûr de vouloir te déconnecter ?",
+    "settings.logoutError": "Erreur lors de la déconnexion",
+    "settings.sessionInvalid": "Session invalide, reconnecte-toi.",
+    "settings.sessionExpired": "Session expirée, reconnecte-toi.",
     "settings.twoFactorConfirmActivation": "Se connecter",
 
     // Image Dropzone

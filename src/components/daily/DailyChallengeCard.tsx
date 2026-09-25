@@ -102,135 +102,133 @@ export function DailyChallengeCard({ quiz, loading }: DailyChallengeCardProps) {
 
   return (
     <>
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-6 sm:p-7 text-white shadow-xl hover:shadow-2xl transition-all duration-300">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 p-5 sm:p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-orange-400/30">
         {/* Background decorative glow effects */}
-        <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-        <div className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-amber-300/20 blur-2xl pointer-events-none" />
+        <div className="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+        <div className="absolute -left-10 -bottom-10 w-44 h-44 rounded-full bg-amber-300/20 blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          {/* Main Info */}
-          <div className="space-y-3 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-xs font-black uppercase tracking-wider shadow-sm">
+        <div className="relative z-10 flex flex-col gap-3.5">
+          {/* Top Bar: Header pill + Countdown */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-xs font-black uppercase tracking-wider shadow-sm text-white shrink-0">
                 <Calendar className="w-3.5 h-3.5 text-amber-200" />
                 {t("daily.title") || "Quiz du Jour"}
               </span>
-
-              <span className="text-amber-100 text-xs font-medium capitalize">
+              <span className="text-amber-100 text-xs font-medium capitalize truncate hidden sm:inline">
                 • {todayFormatted}
               </span>
-
-              <div className="ml-auto lg:ml-0 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/25 backdrop-blur-sm text-xs font-semibold text-amber-100">
-                <Clock className="w-3.5 h-3.5 text-amber-300" />
-                <span>{countdown}</span>
-              </div>
             </div>
 
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm line-clamp-1">
-                {quiz.title}
-              </h2>
-              {quiz.description && (
-                <p className="text-amber-100/90 text-sm mt-1 line-clamp-2 leading-relaxed">
-                  {quiz.description}
-                </p>
-              )}
-            </div>
-
-            {/* Quiz Badges / Meta */}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span
-                className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
-                  difficultyColors[difficultyKey] || "bg-white/20 text-white border-white/30"
-                }`}
-              >
-                {quiz.difficulty.toUpperCase()}
-              </span>
-
-              {quiz.category && (
-                <span className="inline-flex items-center gap-1 text-xs bg-white/15 px-2.5 py-0.5 rounded-full backdrop-blur-sm text-white font-medium capitalize">
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  {quiz.category}
-                </span>
-              )}
-
-              <span className="inline-flex items-center gap-1 text-xs bg-white/15 px-2.5 py-0.5 rounded-full backdrop-blur-sm text-white font-medium">
-                <Flame className="w-3.5 h-3.5 text-amber-300" />
-                {t("daily.streakBonus") || "+ Bonus Flamme 🔥"}
-              </span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/25 backdrop-blur-sm text-xs font-bold text-amber-200 border border-white/10 shadow-inner shrink-0">
+              <Clock className="w-3.5 h-3.5 text-amber-300" />
+              <span>{countdown}</span>
             </div>
           </div>
 
-          {/* Right Action & User Status Section */}
-          <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end justify-between gap-3 shrink-0">
-            {/* User Daily Status Card */}
-            {userDailyEntry ? (
-              <div className="w-full sm:w-auto bg-black/20 backdrop-blur-md rounded-xl p-3 border border-white/20 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">
-                    {userDailyEntry.rank === 1
-                      ? "🥇"
-                      : userDailyEntry.rank === 2
-                      ? "🥈"
-                      : userDailyEntry.rank === 3
-                      ? "🥉"
-                      : "🎯"}
-                  </span>
-                  <div>
-                    <span className="text-[11px] text-amber-200 uppercase font-bold block">
-                      {t("daily.completedToday") || "Défi Réussi !"}
-                    </span>
-                    <span className="text-sm font-black text-white">
-                      {userDailyEntry.score} pts (Rang #{userDailyEntry.rank})
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setLeaderboardOpen(true)}
-                  className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-lg transition-colors font-semibold"
-                >
-                  Voir
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-xs text-amber-100 font-medium">
-                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                <span>
-                  {t("daily.challengeCommunityPrompt") || "Toute la communauté s'affronte aujourd'hui !"}
-                </span>
-              </div>
+          {/* Quiz Title & Description */}
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-sm leading-snug line-clamp-2">
+              {quiz.title}
+            </h2>
+            {quiz.description && (
+              <p className="text-amber-100/90 text-xs sm:text-sm mt-1 line-clamp-2 leading-relaxed">
+                {quiz.description}
+              </p>
+            )}
+          </div>
+
+          {/* Quiz Badges */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span
+              className={`text-[11px] px-2.5 py-0.5 rounded-full font-black border ${
+                difficultyColors[difficultyKey] || "bg-white/20 text-white border-white/30"
+              }`}
+            >
+              {quiz.difficulty.toUpperCase()}
+            </span>
+
+            {quiz.category && (
+              <span className="inline-flex items-center gap-1 text-[11px] bg-white/15 px-2.5 py-0.5 rounded-full backdrop-blur-sm text-white font-bold capitalize">
+                <HelpCircle className="w-3 h-3 text-amber-200" />
+                {quiz.category}
+              </span>
             )}
 
-            {/* CTA Buttons */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => setLeaderboardOpen(true)}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-sm backdrop-blur-md border border-white/25 transition-all"
-                title={t("daily.viewLeaderboard") || "Classement du Jour"}
-              >
-                <Trophy className="w-4 h-4 text-amber-200" />
-                <span className="hidden sm:inline">
-                  {t("daily.todayRanking") || "Classement"}
-                </span>
-                {leaderboardEntries.length > 0 && (
-                  <span className="text-xs px-1.5 py-0.2 bg-white/25 rounded-full">
-                    {leaderboardEntries.length}
-                  </span>
-                )}
-              </button>
+            <span className="inline-flex items-center gap-1 text-[11px] bg-white/15 px-2.5 py-0.5 rounded-full backdrop-blur-sm text-amber-200 font-bold">
+              <Flame className="w-3 h-3 text-amber-300 fill-amber-300" />
+              {t("daily.streakBonus") || "+ Bonus Flamme 🔥"}
+            </span>
+          </div>
 
-              <button
-                onClick={() => navigate(`/quizzes/play/${quiz.id}?daily=true`)}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-amber-50 text-orange-600 font-black text-sm shadow-lg hover:shadow-xl hover:scale-102 active:scale-98 transition-all"
-              >
-                <span>
-                  {userDailyEntry
-                    ? t("daily.replayChallenge") || "Rejouer"
-                    : t("daily.playChallenge") || "Relever le Défi"}
+          {/* User Score or Community Prompt */}
+          {userDailyEntry ? (
+            <div className="bg-black/25 backdrop-blur-md rounded-2xl p-3 border border-white/20 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-2xl shrink-0">
+                  {userDailyEntry.rank === 1
+                    ? "🥇"
+                    : userDailyEntry.rank === 2
+                    ? "🥈"
+                    : userDailyEntry.rank === 3
+                    ? "🥉"
+                    : "🎯"}
                 </span>
-                <ArrowRight className="w-4 h-4" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-amber-200 uppercase font-black tracking-wide block">
+                    {t("daily.completedToday") || "Défi Réussi !"}
+                  </span>
+                  <span className="text-sm font-black text-white truncate block">
+                    {userDailyEntry.score} pts • Rang #{userDailyEntry.rank}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLeaderboardOpen(true)}
+                className="text-xs bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-xl transition-all font-black border border-white/20 active:scale-95 shrink-0"
+              >
+                Voir
               </button>
             </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-amber-100 font-bold bg-black/15 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/10">
+              <Sparkles className="w-4 h-4 text-amber-300 shrink-0 animate-pulse" />
+              <span className="truncate">
+                {t("daily.challengeCommunityPrompt") || "Toute la communauté s'affronte aujourd'hui !"}
+              </span>
+            </div>
+          )}
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={() => navigate(`/quizzes/play/${quiz.id}?daily=true`)}
+              className="flex-1 py-3 px-4 rounded-2xl bg-white hover:bg-amber-50 text-orange-600 font-black text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-2 border-white border-b-4 border-b-amber-200 active:translate-y-0.5 active:border-b-2"
+            >
+              <span>
+                {userDailyEntry
+                  ? t("daily.replayChallenge") || "Rejouer le Défi"
+                  : t("daily.playChallenge") || "RELEVER LE DÉFI"}
+              </span>
+              <ArrowRight className="w-4 h-4 stroke-[3]" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLeaderboardOpen(true)}
+              className="py-3 px-3.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-black text-xs sm:text-sm backdrop-blur-md border-2 border-white/20 border-b-4 border-b-black/20 transition-all flex items-center justify-center gap-1.5 active:translate-y-0.5 active:border-b-2 shrink-0"
+              title={t("daily.viewLeaderboard") || "Classement du Jour"}
+            >
+              <Trophy className="w-4 h-4 text-amber-200" />
+              <span>{t("daily.todayRanking") || "Classement"}</span>
+              {leaderboardEntries.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 bg-white/30 text-white font-black rounded-full">
+                  {leaderboardEntries.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </div>
