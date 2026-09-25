@@ -25,6 +25,7 @@ export interface PlayerGamificationState {
   nextLifeRefillMs: number; // ms until next life
   claimedChests: string[];
   completedNodes: Record<string, { stars: number; completedAt: number }>;
+  _v2Cleaned?: boolean;
 }
 
 export interface LeagueTier {
@@ -154,9 +155,8 @@ export function getPlayerGamificationState(userId?: string): PlayerGamificationS
     lastLifeLostAt: null,
     nextLifeRefillMs: 0,
     claimedChests: [],
-    completedNodes: {
-      "u1-n1": { stars: 3, completedAt: Date.now() - 86400000 },
-    },
+    completedNodes: {},
+    _v2Cleaned: true,
   };
 
   try {
@@ -164,6 +164,15 @@ export function getPlayerGamificationState(userId?: string): PlayerGamificationS
     if (raw) {
       const parsed = JSON.parse(raw);
       state = { ...state, ...parsed };
+
+      // Nettoyage automatique du bouchon par défaut où u1-n1 était pré-validé
+      if (!parsed._v2Cleaned) {
+        if (state.completedNodes) {
+          delete state.completedNodes["u1-n1"];
+        }
+        state._v2Cleaned = true;
+        savePlayerGamificationState(userId, state);
+      }
     }
   } catch (err) {
     console.warn("Could not read gamification state:", err);

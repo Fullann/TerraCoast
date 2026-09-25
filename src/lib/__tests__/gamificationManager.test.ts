@@ -19,12 +19,12 @@ describe("gamificationManager", () => {
     vi.restoreAllMocks();
   });
 
-  it("should initialize default state for a player", () => {
+  it("should initialize default state for a player with no pre-completed nodes", () => {
     const state = getPlayerGamificationState(testUserId);
     expect(state.lives).toBe(5);
     expect(state.maxLives).toBe(5);
     expect(state.gems).toBeGreaterThan(0);
-    expect(state.completedNodes["u1-n1"]).toBeDefined();
+    expect(Object.keys(state.completedNodes).length).toBe(0);
   });
 
   it("should deduct lives and support refill", () => {
@@ -74,11 +74,19 @@ describe("gamificationManager", () => {
     expect(getLeagueForXp(9000).name).toBe("Ligue Diamant");
   });
 
-  it("should generate quest path with active and unlocked nodes", () => {
+  it("should generate quest path with first node active and subsequent nodes locked", () => {
     const path = getQuestPath(testUserId);
     expect(path.length).toBe(4);
-    expect(path[0].nodes[0].status).toBe("completed"); // u1-n1 is completed by default
-    expect(path[0].nodes[1].status).toBe("active"); // u1-n2 is the next active node
+    expect(path[0].nodes[0].status).toBe("active"); // u1-n1 is active and ready to play
+    expect(path[0].nodes[0].stars).toBe(0);
+    expect(path[0].nodes[1].status).toBe("locked"); // u1-n2 is locked until u1-n1 is completed
     expect(path[0].nodes[2].status).toBe("locked"); // u1-n3 is locked
+
+    // When player completes u1-n1
+    completePathNode(testUserId, "u1-n1", 90);
+    const updatedPath = getQuestPath(testUserId);
+    expect(updatedPath[0].nodes[0].status).toBe("completed");
+    expect(updatedPath[0].nodes[0].stars).toBe(3);
+    expect(updatedPath[0].nodes[1].status).toBe("active");
   });
 });
