@@ -132,6 +132,11 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
                   </span>
                 </div>
               </>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border-2 border-emerald-300 border-b-4 bg-emerald-50 text-emerald-800 font-black text-xs sm:text-sm shadow-xs animate-fade-in">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Mode Zen 🧘</span>
+              </div>
             )}
           </div>
         </div>
