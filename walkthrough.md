@@ -62,38 +62,103 @@ Toutes les fonctionnalités demandées ont été développées, testées et vali
   - Drapeau émoji et codes ISO.
   - Noms usuels et officiels traduits dans la langue de l'utilisateur.
   - Capitale, continent, sous-région, coordonnées GPS.
-  - Population (chiffres réels et lisibles) et superficie (km²).
+  - Population (chiffres réels et lisibles basés sur données ONU/Banque Mondiale 2023) et superficie (km²).
   - Monnaies (avec symboles) et langues officielles parlées.
   - **Pays frontaliers interactifs** : chips cliquables permettant de naviguer d'un pays à son voisin en un clic !
   - Bouton d'action directe : **« Tester mes connaissances sur ce pays 🧠 »**.
+- **Comparateur de Pays & TrueSize Overlay (`CountryComparisonModal.tsx`)** :
+  - Comparaison multi-indicateurs (superficie, population, densité) et superposition vectorielle des contours sans la déformation cartographique de Mercator.
 
 ---
 
 ## 6. 🌐 Internationalisation (i18n) & Tests
 - **100% traduit** dans les 6 langues supportées : Français (`fr`), Anglais (`en`), Allemand (`de`), Espagnol (`es`), Italien (`it`), Portugais (`pt`).
 - **Tests unitaires et vérification** :
-  - `npm run typecheck` : 0 erreur TypeScript.
-  - `npm test` : 14 suites de tests, 105 tests passés avec succès.
-  - `npm run build` : Bundle de production optimisé et PWA généré en ~7 secondes.
+  - `npx tsc --noEmit` : 0 erreur TypeScript.
+  - `npm test -- --run` : 32 suites de tests, 205 tests unitaires passés avec succès.
+  - `npm run build` : Bundle de production optimisé et PWA généré en ~8 secondes.
 
 ---
 
-## 7. 🎮 Pack Gameplay & Nouveaux Modes Addictifs
-- **Mode « Silhouette Mystère » (Blind Map / Style Worldle) (`/games/silhouette`)** :
+## 7. 🎮 Pack Gameplay & Mini-Jeux Dédiés
+- **Mode « Silhouette Mystère » (Style Worldle) (`/games/silhouette`)** :
   - Rendu vectoriel SVG TopoJSON de la frontière du pays sans repères, avec zoom +/-.
   - 5 essais max avec calcul géodésique Haversine (distance en km) et direction boussole (`⬆️ N`, `↘️ SE`...).
   - Déblocage d'indices progressifs (Continent, Première lettre, Capitale, Drapeau) et partage viral émojis (`🟩 🟨 🟥`).
-  - Défi quotidien déterministe et mode entraînement infini.
 - **Mode « Plus Grand / Plus Petit » (Higher or Lower) (`/games/higher-lower`)** :
   - Comparaison en duel de cartes : Population 👥, Superficie 📐 ou Aléatoire 🎲.
   - Révélation animée, enchaînement fluide et suivi de série avec record personnel persistant.
 - **Mode « Chrono Rush / Survie » (`/games/chrono-rush`)** :
   - Compte à rebours de 45 secondes sous haute tension.
-  - Questions ultra rapides (capitales, drapeaux, continents, frontières).
-  - Système de bonus/malus (+3s / -5s) et multiplicateurs de combos (x2, x3, x4 🔥).
+  - Questions ultra rapides avec multiplicateurs de combos (x2, x3, x4 🔥).
+- **Mode « Geo Detective » (`/games/geo-detective`)** :
+  - Observation d'imagerie satellite et photos de précision avec mini-carte zoomable pour placer une épingle.
+- **Mode « Map Blitz » (`/games/map-blitz`)** & **« Physical Geo » (`/games/physical-geo`)** :
+  - Localisation sur carte chronométrée et reconnaissance des reliefs/fleuves/montagnes.
+- **Mode « Travle » (`/games/travle`)** :
+  - Traversée de pays frontière par frontière avec le nombre d'étapes minimal.
 - **Répétition Espacée Intelligente (SRS / Leitner) (`/games/srs`)** :
   - Algorithme en 5 boîtes de mémorisation à long terme avec flashcards 3D recto/verso.
-  - Intégré directement dans l'Atlas (`CountryDetailDrawer.tsx`) et l'écran de fin de quiz (`QuizResultsScreen.tsx`).
-- **Hub des Modes (`/games`) & Navigation** :
-  - Page vitrine `/games` accessible depuis la barre de navigation et le tableau de bord d'accueil.
-  - 18 suites de tests passées (127 tests), 0 erreur TypeScript.
+
+---
+
+## 8. ⚔️ Refonte Complète de la Page des Duels 1v1 (`/duels`)
+- **Clarté Absolue du Tour de Jeu** :
+  - Fini la confusion entre joueur actif et passif :
+    - Si c'est au tour de l'utilisateur : encadré vert émeraude vibrant, message d'action `🔥 C'est ton tour !` et gros bouton 3D tactile `🎮 Jouer mon tour maintenant !`.
+    - Si le tour a été joué : carte ambrée indiquant `⏳ Ton score est enregistré ! En attente de l'adversaire`.
+- **Navigation Tactile Simplifiée (Style Duolingo)** :
+  - 5 onglets tactiles (`border-b-4`) avec indicateurs de statut et compteurs :
+    - `⚔️ En cours` (badge rouge si un tour attend le joueur)
+    - `⚡ Matchmaking 1v1` (radar clignotant quand le joueur est en file)
+    - `📨 Invitations`
+    - `🏆 Historique`
+    - `👻 Ghost Runs`
+- **Matchmaking Radar Moderne** :
+  - Deux grandes cartes attractives : **Match Classé 🏆** (points MMR/ELO) et **Match Amical 🎮** (détente).
+  - Écran radar animé (*pulsing sonar*) avec chronomètre d'attente et bouton d'annulation direct.
+  - Préférences de difficulté en un clic et recherche textuelle instantanée parmi les quiz du catalogue.
+- **Modal de Défi Tactile** :
+  - Recherche instantanée d'amis avec affichage des avatars et niveaux.
+  - Recherche instantanée de quiz avec badges de difficulté.
+
+---
+
+## 9. 👑 Mode Salon Multijoueur / Party (Kahoot) : Mode Hôte Grand Écran & Quiz Privés
+- **Option Hôte Écran Seul (`isSpectatorOnly = true`)** :
+  - Permet à l'organisateur (enseignant, animateur, créateur d'événement) de projeter le jeu sur un vidéoprojecteur ou un grand écran sans être forcé de participer ni fausser le classement.
+- **Prise en Charge des Quiz Privés de l'Hôte** :
+  - L'hôte peut désormais lancer ses propres créations privées sans obligation de les rendre publiques.
+- **Sélection et Recherche Fluide** :
+  - Liste organisée avec recherche textuelle instantanée et indicateur clair du nombre de questions.
+
+---
+
+## 10. 🎨 Refonte DA Accueil, Connexion & Inscription (Style Duolingo Chaleureux)
+- **Fin de l'esthétique générique "IA-like"** :
+  - Remplacement des dégradés sombres futuristes par la vraie identité visuelle chaleureuse de TerraCoast.
+  - Intégration du logo officiel TerraCoast dans la bannière et la barre de navigation.
+- **Nouvelles Pages d'Authentification (`AuthLayout.tsx`)** :
+  - Cartes d'accueil conviviales rappelant les bénéfices du jeu gratuit (flammes, ligues, sauvegarde des scores).
+  - Formulaires épurés avec bascule fluide entre connexion et création de compte.
+- **Page d'Accueil Vitrine (`LandingPage.tsx`)** :
+  - Présentation moderne des fonctionnalités, aperçus interactifs, avis de la communauté et boutons tactiles d'appel à l'action.
+
+---
+
+## 11. 🧭 Correction de la Barre de Navigation & Menu Mobile
+- Résolution des problèmes d'affichage et de chevauchement sur petits et grands écrans.
+- Menu tiroir latéral responsive avec accès fluide à toutes les rubriques.
+- Intégration de l'indicateur cliquable de flamme quotidienne avec calendrier et du commutateur audio sonore.
+
+---
+
+## 12. 📚 Mise à Jour Complète de la Documentation Technique
+- Réécriture et enrichissement de l'ensemble du dossier [`docs/`](./docs/README.md) :
+  - `docs/01-overview.md` : vue d'ensemble produit et inventaire fonctionnel complet.
+  - `docs/02-architecture.md` : architecture SPA, découpage `react-router-dom`, Supabase Realtime et moteur audio natif.
+  - `docs/06-frontend.md` : design system tactile Duolingo, hiérarchie des composants et layouts.
+  - `docs/08-gameplay.md` : typologies de quiz et guides techniques des 7+ mini-jeux.
+  - `docs/09-social-duels.md` : duels 1v1 tactiles, matchmaking radar, Ghost Runs et mode Party.
+  - `docs/10-admin-dashboard.md` : console d'administration, KPI, configuration du site et suivi géographique.
+  - `readme.md` : page d'accueil GitHub enrichie et à jour.
