@@ -51,13 +51,6 @@ export function QuestionEditor({
     false: t("createQuiz.trueFalse.false"),
   };
 
-  const getQuestionTypeLabel = (type: string) => {
-    if (type === "puzzle_map") return t("editQuiz.questionType.puzzle_map");
-    if (type === "top10_order") return t("editQuiz.questionType.top10_order");
-    if (type === "country_multi") return t("createQuiz.countryMulti.typeLabel");
-    return t(`editQuiz.questionType.${type}` as any);
-  };
-
   const mapEditorStorageMode: "puzzle_map" | "map_click" =
     question.question_type === "map_click" ? "map_click" : "puzzle_map";
   const isMapClickEditor = question.question_type === "map_click";
@@ -215,10 +208,17 @@ export function QuestionEditor({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Énoncé de la question */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {t("editQuiz.question")} *
+        <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <span>❓</span>
+            <span>{t("editQuiz.question")} *</span>
+          </span>
+          <span className="text-[11px] font-bold text-slate-400">
+            Énoncé clair & captivant
+          </span>
         </label>
         <input
           type="text"
@@ -226,11 +226,12 @@ export function QuestionEditor({
           onChange={(e) =>
             onChange({ ...question, question_text: e.target.value })
           }
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+          className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-sm sm:text-base text-slate-800 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all placeholder:font-normal placeholder:text-slate-400"
           placeholder={t("createQuiz.questionPlaceholder")}
         />
       </div>
 
+      {/* Image optionnelle */}
       <div>
         <div className="flex space-x-2">
           <ImageDropzone
@@ -253,104 +254,255 @@ export function QuestionEditor({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t("editQuiz.questionType.label")} *
-          </label>
-          <select
-            value={question.question_type}
-            onChange={(e) =>
-              handleTypeChange(e.target.value as QuestionType)
-            }
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-          >
-            <option value="mcq">{getQuestionTypeLabel("mcq")}</option>
-            <option value="single_answer">
-              {getQuestionTypeLabel("single_answer")}
-            </option>
-            <option value="true_false">{t("createQuiz.trueFalse.type")}</option>
-            <option value="puzzle_map">
-              {t("editQuiz.questionType.puzzle_map")}
-            </option>
-            <option value="map_click">
-              {t("editQuiz.questionType.map_click")}
-            </option>
-            <option value="top10_order">
-              {t("editQuiz.questionType.top10_order")}
-            </option>
-            <option value="country_multi">
-              {t("createQuiz.countryMulti.typeLabel")}
-            </option>
-            <option value="text_free">{getQuestionTypeLabel("text_free")}</option>
-          </select>
+      {/* 🧩 Sélecteur Visuel du Type de Question */}
+      <div>
+        <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <span>🧩</span>
+            <span>{t("editQuiz.questionType.label")} *</span>
+          </span>
+          <span className="text-emerald-700 font-black text-xs bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+            Format Interactif
+          </span>
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+          {[
+            {
+              type: "mcq" as QuestionType,
+              title: "QCM 4 Choix",
+              emoji: "🎯",
+              badge: "Classique",
+              desc: "4 options avec texte ou photos",
+            },
+            {
+              type: "true_false" as QuestionType,
+              title: "Vrai ou Faux",
+              emoji: "⚖️",
+              badge: "Duel Rapide",
+              desc: "Deux boutons binaire vert / rouge",
+            },
+            {
+              type: "text_free" as QuestionType,
+              title: "Saisie Libre",
+              emoji: "✍️",
+              badge: "Clavier",
+              desc: "Le joueur tape la réponse",
+            },
+            {
+              type: "puzzle_map" as QuestionType,
+              title: "Carte Puzzle",
+              emoji: "🧩",
+              badge: "Interactif",
+              desc: "Placer les territoires sur le globe",
+            },
+            {
+              type: "map_click" as QuestionType,
+              title: "Clic sur Carte",
+              emoji: "📍",
+              badge: "Pointer",
+              desc: "Cliquer sur le bon territoire",
+            },
+            {
+              type: "top10_order" as QuestionType,
+              title: "Top 10 à Classer",
+              emoji: "🏆",
+              badge: "Ordre",
+              desc: "Ranger du 1er au dernier",
+            },
+            {
+              type: "country_multi" as QuestionType,
+              title: "Multi-Pays",
+              emoji: "🌍",
+              badge: "Défi Complet",
+              desc: "Questions combinées nom, capitale & carte",
+            },
+          ].map((item) => {
+            const isSelected = question.question_type === item.type;
+            return (
+              <button
+                type="button"
+                key={item.type}
+                onClick={() => handleTypeChange(item.type)}
+                className={`p-3 rounded-2xl border-2 text-left transition-all flex flex-col justify-between gap-1 active:scale-95 ${
+                  isSelected
+                    ? "bg-emerald-50 border-emerald-500 border-b-4 text-emerald-950 shadow-sm ring-2 ring-emerald-400/20"
+                    : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-2xl">{item.emoji}</span>
+                  <span
+                    className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full ${
+                      isSelected
+                        ? "bg-emerald-200 text-emerald-900"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-black text-xs leading-tight mt-1">{item.title}</p>
+                  <p className="text-[10px] text-slate-400 font-medium line-clamp-1 mt-0.5">
+                    {item.desc}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t("editQuiz.points")}
-          </label>
+      {/* ⭐ Sélecteur de Points Ludique */}
+      <div>
+        <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <span>⭐</span>
+            <span>{t("editQuiz.points")}</span>
+          </span>
+          <span className="text-amber-800 font-black text-xs bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+            +{question.points} XP en jeu
+          </span>
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+          {[
+            { pts: 50, label: "⭐ 50 pts", sub: "Facile" },
+            { pts: 100, label: "⭐ 100 pts", sub: "Standard" },
+            { pts: 200, label: "⭐ 200 pts", sub: "Défi" },
+            { pts: 500, label: "🔥 500 pts", sub: "Boss Final" },
+          ].map((preset) => (
+            <button
+              type="button"
+              key={preset.pts}
+              onClick={() => onChange({ ...question, points: preset.pts })}
+              className={`py-2 px-2.5 rounded-xl border-2 transition-all active:scale-95 text-center ${
+                question.points === preset.pts
+                  ? "bg-amber-50 border-amber-500 text-amber-900 border-b-4 font-black shadow-sm"
+                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 font-bold"
+              }`}
+            >
+              <p className="text-xs">{preset.label}</p>
+              <p className="text-[10px] text-slate-400">{preset.sub}</p>
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
           <input
-            type="number"
-            value={question.points}
-            onChange={(e) => {
-              let value = parseInt(e.target.value) || 10;
-              if (value > 500) value = 500;
-              if (value < 10) value = 10;
-              onChange({ ...question, points: value });
-            }}
+            type="range"
             min="10"
             max="500"
             step="10"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+            value={question.points}
+            onChange={(e) =>
+              onChange({ ...question, points: parseInt(e.target.value) || 100 })
+            }
+            className="flex-1 accent-amber-500 cursor-pointer"
           />
+          <span className="text-xs font-black text-slate-600 w-16 text-right">
+            {question.points} pts
+          </span>
         </div>
       </div>
 
       {question.question_type === "true_false" && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-700">
-            {t("createQuiz.trueFalse.description")}
-          </p>
+        <div className="bg-emerald-50/70 border-2 border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
+          <span className="text-2xl">⚖️</span>
+          <div>
+            <p className="text-xs font-black text-emerald-950">Mode Vrai ou Faux</p>
+            <p className="text-xs text-emerald-800">
+              {t("createQuiz.trueFalse.description")}
+            </p>
+          </div>
         </div>
       )}
 
+      {/* 🎯 Options QCM Colorées (Style Kahoot / Arcade) */}
       {question.question_type === "mcq" && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t("createQuiz.optionsMinTwo")}
+          <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <span>🎯</span>
+              <span>{t("createQuiz.optionsMinTwo")}</span>
+            </span>
+            <span className="text-[11px] font-bold text-slate-400">
+              Remplissez au moins 2 options
+            </span>
           </label>
-          <div className="space-y-3">
-            {(Array.isArray(question.options)
-              ? question.options
-              : ["", "", "", ""]
-            ).map((option, index) => (
-              <div key={index} className="space-y-1">
-                <input
-                  type="text"
-                  value={option}
-                  onChange={(e) => updateOption(index, e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                  placeholder={`${t("editQuiz.option")} ${index + 1}`}
-                />
-                {option.trim() && (
-                  <ImageDropzone
-                    label={t("editQuiz.imageForOption").replace(
-                      "{option}",
-                      option
-                    )}
-                    currentImageUrl={question.option_images?.[option] || ""}
-                    onImageUploaded={(url) =>
-                      updateOptionImage(option, url)
-                    }
-                    bucketName="quiz-images"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              {
+                symbol: "▲",
+                label: "Option A",
+                badgeBg: "bg-rose-500 text-white",
+                inputBorder: "border-rose-300 focus:border-rose-500 focus:ring-rose-100",
+                bg: "bg-rose-50/40",
+              },
+              {
+                symbol: "◆",
+                label: "Option B",
+                badgeBg: "bg-sky-500 text-white",
+                inputBorder: "border-sky-300 focus:border-sky-500 focus:ring-sky-100",
+                bg: "bg-sky-50/40",
+              },
+              {
+                symbol: "●",
+                label: "Option C",
+                badgeBg: "bg-amber-500 text-white",
+                inputBorder: "border-amber-300 focus:border-amber-500 focus:ring-amber-100",
+                bg: "bg-amber-50/40",
+              },
+              {
+                symbol: "■",
+                label: "Option D",
+                badgeBg: "bg-emerald-500 text-white",
+                inputBorder: "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-100",
+                bg: "bg-emerald-50/40",
+              },
+            ].map((theme, index) => {
+              const currentVal = Array.isArray(question.options)
+                ? question.options[index] || ""
+                : "";
+              return (
+                <div
+                  key={index}
+                  className={`p-3.5 rounded-2xl border-2 ${theme.bg} border-slate-200 space-y-2 transition-all`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`w-6 h-6 rounded-lg ${theme.badgeBg} flex items-center justify-center text-xs font-black shadow-sm shrink-0`}
+                    >
+                      {theme.symbol}
+                    </span>
+                    <span className="text-xs font-black text-slate-700">
+                      {theme.label}
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={currentVal}
+                    onChange={(e) => updateOption(index, e.target.value)}
+                    className={`w-full px-3.5 py-2.5 bg-white border-2 rounded-xl text-xs font-bold text-slate-800 ${theme.inputBorder} focus:ring-4 outline-none transition-all placeholder:text-slate-300`}
+                    placeholder={`Saisir la réponse ${index + 1}...`}
                   />
-                )}
-              </div>
-            ))}
+                  {currentVal.trim() && (
+                    <ImageDropzone
+                      label={t("editQuiz.imageForOption").replace(
+                        "{option}",
+                        currentVal
+                      )}
+                      currentImageUrl={question.option_images?.[currentVal] || ""}
+                      onImageUploaded={(url) =>
+                        updateOptionImage(currentVal, url)
+                      }
+                      bucketName="quiz-images"
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            {t("createQuiz.optionImageDesc")}
+          <p className="text-[11px] text-slate-500 font-medium mt-2">
+            💡 Astuce : Vous pouvez associer des photos aux réponses pour créer un quiz visuel captivant.
           </p>
         </div>
       )}
@@ -963,13 +1115,15 @@ export function QuestionEditor({
                   correct_answer: trueFalseLabels.true,
                 })
               }
-              className={`p-4 rounded-lg border-2 transition-all font-medium ${
+              className={`p-4 sm:p-5 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 active:scale-95 ${
                 question.correct_answer === trueFalseLabels.true
-                  ? "border-green-500 bg-green-50 text-green-700"
-                  : "border-gray-200 hover:border-green-300"
+                  ? "border-emerald-500 bg-emerald-50 text-emerald-900 border-b-4 shadow-md font-black"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
-              ✓ {trueFalseLabels.true}
+              <span className="text-3xl">✓</span>
+              <span className="text-base font-black">{trueFalseLabels.true}</span>
+              <span className="text-[11px] text-emerald-600 font-bold">Réponse Vraie</span>
             </button>
             <button
               type="button"
@@ -979,18 +1133,20 @@ export function QuestionEditor({
                   correct_answer: trueFalseLabels.false,
                 })
               }
-              className={`p-4 rounded-lg border-2 transition-all font-medium ${
+              className={`p-4 sm:p-5 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 active:scale-95 ${
                 question.correct_answer === trueFalseLabels.false
-                  ? "border-red-500 bg-red-50 text-red-700"
-                  : "border-gray-200 hover:border-red-300"
+                  ? "border-rose-500 bg-rose-50 text-rose-900 border-b-4 shadow-md font-black"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
-              ✗ {trueFalseLabels.false}
+              <span className="text-3xl">✗</span>
+              <span className="text-base font-black">{trueFalseLabels.false}</span>
+              <span className="text-[11px] text-rose-600 font-bold">Réponse Fausse</span>
             </button>
           </div>
         ) : question.question_type === "mcq" ? (
-          <div className="space-y-2">
-            <div className="space-y-2">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {(Array.isArray(question.options)
                 ? question.options
                 : []
@@ -1000,14 +1156,21 @@ export function QuestionEditor({
                   const isSelected = (
                     question.correct_answers || []
                   ).includes(option);
+                  const shapes = [
+                    { symbol: "▲", bg: "bg-red-500", text: "text-red-500" },
+                    { symbol: "◆", bg: "bg-sky-500", text: "text-sky-500" },
+                    { symbol: "●", bg: "bg-amber-500", text: "text-amber-500" },
+                    { symbol: "■", bg: "bg-emerald-500", text: "text-emerald-500" },
+                  ];
+                  const shape = shapes[index % shapes.length];
 
                   return (
                     <label
                       key={index}
-                      className={`flex items-center space-x-2 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                      className={`flex items-center gap-3 p-3.5 border-2 rounded-2xl cursor-pointer transition-all active:scale-[0.99] select-none ${
                         isSelected
-                          ? "border-emerald-500 bg-emerald-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-emerald-500 bg-emerald-50/90 text-emerald-950 border-b-4 shadow-sm"
+                          : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-300"
                       }`}
                     >
                       <input
@@ -1032,24 +1195,25 @@ export function QuestionEditor({
                             });
                           }
                         }}
-                        className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                        className="w-5 h-5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
                       />
-                      <span
-                        className={`font-medium ${
-                          isSelected
-                            ? "text-emerald-700"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {option}
-                        {isSelected && " ✓"}
+                      <span className={`w-6 h-6 rounded-lg ${shape.bg} text-white text-xs font-black flex items-center justify-center shadow-xs shrink-0`}>
+                        {shape.symbol}
                       </span>
+                      <span className="font-bold text-sm flex-1 break-words">
+                        {option}
+                      </span>
+                      {isSelected && (
+                        <span className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-800 shrink-0">
+                          ✓ Bonne
+                        </span>
+                      )}
                     </label>
                   );
                 })}
             </div>
-            <p className="text-xs text-gray-500">
-              {t("createQuiz.multipleCorrect")}
+            <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+              <span>💡</span> {t("createQuiz.multipleCorrect")}
             </p>
           </div>
         ) : (
@@ -1063,23 +1227,31 @@ export function QuestionEditor({
                   correct_answer: e.target.value,
                 })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl focus:border-emerald-500 focus:bg-emerald-50/20 text-slate-800 font-bold outline-none transition-all shadow-xs"
               placeholder={t("createQuiz.answerPlaceholder")}
             />
 
             {(question.question_type === "text_free" ||
               question.question_type === "single_answer") && (
-              <>
-                <p className="text-xs text-gray-600 font-medium">
-                  {t("createQuiz.variants")}
-                </p>
+              <div className="mt-3 p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-600 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span>🔤</span> {t("createQuiz.variants")}
+                  </p>
+                  <span className="text-[11px] text-slate-400">
+                    Synonymes acceptés
+                  </span>
+                </div>
                 {(question.correct_answers || []).map((variant, index) => (
                   <div key={index} className="flex items-center space-x-2">
+                    <span className="text-xs font-black text-slate-400 w-5 text-center">
+                      #{index + 1}
+                    </span>
                     <input
                       type="text"
                       value={variant}
                       onChange={(e) => updateVariant(index, e.target.value)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                      className="flex-1 px-3.5 py-2 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none font-medium text-sm"
                       placeholder={t(
                         "createQuiz.variantPlaceholder"
                       ).replace("{number}", String(index + 1))}
@@ -1089,32 +1261,37 @@ export function QuestionEditor({
                       onClick={() => removeVariant(index)}
                       title={t("quiz.delete")}
                       aria-label={`${t("quiz.delete")} (${variant || index + 1})`}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"
                     >
-                      <Trash2 className="w-5 h-5" aria-hidden="true" />
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 ))}
                 <button
                   type="button"
                   onClick={addVariant}
-                  className="px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center"
+                  className="px-3.5 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-100/60 bg-emerald-50 rounded-xl transition-colors flex items-center gap-1.5 border border-emerald-200"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
+                  <Plus className="w-4 h-4" />
                   {t("createQuiz.addVariant")}
                 </button>
-                <p className="text-xs text-gray-500">
+                <p className="text-[11px] text-slate-500">
                   {t("createQuiz.variantsDesc")}
                 </p>
-              </>
+              </div>
             )}
           </div>
         )}
 
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t("createQuiz.complementIfWrong")}
+        <div className="mt-5 p-4 bg-gradient-to-br from-amber-50 to-orange-50/60 rounded-2xl border-2 border-amber-200/80 shadow-xs">
+          <label className="block text-sm font-black text-amber-950 mb-1 flex items-center gap-2">
+            <span className="text-lg">💡</span>
+            <span>{t("createQuiz.complementIfWrong")}</span>
+            <span className="text-[11px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full ml-auto">Optionnel</span>
           </label>
+          <p className="text-xs text-amber-800/80 mb-2.5 font-medium">
+            Une explication ou anecdote amusante affichée aux joueurs pour les aider à progresser !
+          </p>
           <textarea
             value={question.complement_if_wrong || ""}
             onChange={(e) =>
@@ -1124,21 +1301,21 @@ export function QuestionEditor({
               })
             }
             placeholder={t("createQuiz.complementIfWrongPlaceholder")}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+            className="w-full px-3.5 py-2.5 bg-white border border-amber-300/80 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-slate-800 text-sm font-medium"
             rows={3}
           />
         </div>
       </div>
 
       {showSaveCancelButtons && (
-        <div className="flex space-x-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-3">
           {onCancel && (
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium flex items-center justify-center"
+              className="sm:w-1/3 py-3.5 px-5 bg-slate-100 text-slate-700 rounded-2xl hover:bg-slate-200 transition-all font-black text-sm border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 flex items-center justify-center gap-2"
             >
-              <X className="w-5 h-5 mr-2" />
+              <X className="w-5 h-5" />
               {cancelButtonLabel || t("common.cancel")}
             </button>
           )}
@@ -1146,16 +1323,16 @@ export function QuestionEditor({
             <button
               type="button"
               onClick={onSave}
-              className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
+              className="flex-1 py-3.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl hover:from-emerald-600 hover:to-teal-700 transition-all font-black text-base border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
             >
               {isEditing ? (
                 <>
-                  <Save className="w-5 h-5 mr-2" />
+                  <Save className="w-5 h-5" />
                   {saveButtonLabel || t("createQuiz.updateQuestion")}
                 </>
               ) : (
                 <>
-                  <Plus className="w-5 h-5 mr-2" />
+                  <Plus className="w-5 h-5" />
                   {saveButtonLabel || t("createQuiz.addThisQuestion")}
                 </>
               )}

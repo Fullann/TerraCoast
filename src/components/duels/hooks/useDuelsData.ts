@@ -13,7 +13,7 @@ import type {
 
 interface UseDuelsDataParams {
   profile: Profile | null;
-  activeTab: "invitations" | "active" | "completed" | "matchmaking";
+  activeTab: "invitations" | "active" | "completed" | "matchmaking" | "ghost";
   rankedOnlyHistory: boolean;
 }
 

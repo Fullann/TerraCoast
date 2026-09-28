@@ -23,13 +23,19 @@ import {
   User,
   Dumbbell,
   Award,
+  ShoppingBag,
 } from "lucide-react";
 import { StreakModal } from "../profile/StreakModal";
+import { ShopModal } from "../shop/ShopModal";
 import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
 import {
   getPlayerGamificationState,
   refillAllLives,
+  adminGrantResources,
+  getUserLeagueProgress,
 } from "../../lib/gamificationManager";
+import { toast } from "../common/ToastContainer";
+import { playSound } from "../../lib/soundManager";
 import { MobileBottomNav } from "./MobileBottomNav";
 
 export function Navbar() {
@@ -47,11 +53,15 @@ export function Navbar() {
   const [socialMenuOpen, setSocialMenuOpen] = useState(false);
   const [streakModalOpen, setStreakModalOpen] = useState(false);
   const [livesModalOpen, setLivesModalOpen] = useState(false);
+  const [shopModalOpen, setShopModalOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<"arcade" | "atlas" | "social" | "profile" | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const [gamification, setGamification] = useState(() =>
     getPlayerGamificationState(profile?.id)
   );
+  const [adminCustomGems, setAdminCustomGems] = useState("");
+  const [adminCustomLives, setAdminCustomLives] = useState("");
+  const [adminCustomPanelOpen, setAdminCustomPanelOpen] = useState(false);
 
   useEffect(() => {
     setGamification(getPlayerGamificationState(profile?.id));
@@ -96,10 +106,10 @@ export function Navbar() {
         ref={navRef}
         className="bg-white/95 backdrop-blur-md border-b-2 border-slate-200 shadow-sm sticky top-0 z-40 select-none"
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-18 py-2">
+        <div className="w-full max-w-[1720px] mx-auto px-2 sm:px-4 lg:px-6">
+          <div className="flex justify-between items-center h-16 sm:h-18 py-1.5 gap-2 lg:gap-3">
             {/* 🌍 Logo & Brand */}
-            <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 shrink-0 mr-1 sm:mr-3">
+            <div className="flex items-center gap-1 sm:gap-2 xl:gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -111,18 +121,18 @@ export function Navbar() {
                 <img
                   src="/logo.png"
                   alt="TerraCoast Logo"
-                  className="h-10 sm:h-11 w-auto shrink-0 drop-shadow-sm"
+                  className="h-8 sm:h-9 md:h-10 w-auto shrink-0 drop-shadow-sm"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
-                <span className="ml-2 text-xl xl:text-2xl font-black tracking-tight text-emerald-600 whitespace-nowrap shrink-0">
+                <span className="ml-1.5 sm:ml-2 text-base lg:text-lg xl:text-xl font-black tracking-tight text-emerald-600 whitespace-nowrap shrink-0">
                   TerraCoast
                 </span>
               </button>
 
               {/* 🎮 Duolingo Desktop Tactile 5-Tab System */}
-              <div className="hidden md:flex items-center gap-1 lg:gap-1.5 shrink-0">
+              <div className="hidden md:flex items-center gap-1 lg:gap-1.5 xl:gap-2 shrink-0">
                 {/* 1. 🗺️ PARCOURS */}
                 <button
                   type="button"
@@ -130,34 +140,36 @@ export function Navbar() {
                     setOpenDropdown(null);
                     navigate("/terra");
                   }}
-                  className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
+                  title="Parcours & Missions"
+                  className={`flex items-center gap-1 xl:gap-1.5 px-2 lg:px-2.5 xl:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
                     currentView === "/terra" || currentView === "/"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-400 border-b-emerald-600 shadow-sm"
                       : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-200"
                   }`}
                 >
                   <MapIcon className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>PARCOURS</span>
+                  <span className="hidden lg:inline">PARCOURS</span>
                 </button>
 
                 {/* 2. 🕹️ ARCADE & QUIZ (Dropdown) */}
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     type="button"
                     onClick={() =>
                       setOpenDropdown(openDropdown === "arcade" ? null : "arcade")
                     }
-                    className={`flex items-center gap-1 lg:gap-1.5 px-2 lg:px-2.5 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
+                    title="Modes Arcade & Quiz"
+                    className={`flex items-center gap-1 xl:gap-1.5 px-2 lg:px-2.5 xl:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
                       currentView.startsWith("/games") || currentView.startsWith("/quizzes")
                         ? "bg-amber-50 text-amber-900 border-amber-400 border-b-amber-500 shadow-sm"
                         : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-200"
                     }`}
                   >
-                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span>ARCADE & QUIZ</span>
-                    <span className="hidden xl:inline-block text-[9px] uppercase px-1.5 py-0.2 bg-rose-500 text-white rounded-full font-black">
-                      Nouveau
-                    </span>
+                    <div className="relative shrink-0">
+                      <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse ring-1 ring-white" />
+                    </div>
+                    <span className="hidden lg:inline">ARCADE</span>
                     <ChevronDown
                       className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${
                         openDropdown === "arcade" ? "rotate-180 text-amber-600" : ""
@@ -255,27 +267,54 @@ export function Navbar() {
                           </p>
                         </div>
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenDropdown(null);
+                          setShopModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-emerald-50 transition-all text-left group mt-1 border-t border-slate-100"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg">
+                          <ShoppingBag className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-sm text-slate-800 group-hover:text-emerald-700">
+                              Boutique TerraGems
+                            </span>
+                            <span className="text-[9px] bg-emerald-500 text-white font-black px-1 rounded">
+                              💎 SHOP
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-semibold">
+                            Gels de flamme, thèmes de globe, cadres
+                          </p>
+                        </div>
+                      </button>
                     </div>
                   )}
                 </div>
 
                 {/* 3. 🧭 ATLAS & CONQUÊTE (Dropdown) */}
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     type="button"
                     onClick={() =>
                       setOpenDropdown(openDropdown === "atlas" ? null : "atlas")
                     }
-                    className={`flex items-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 ${
+                    title="Atlas 3D & Conquête"
+                    className={`flex items-center gap-1 xl:gap-1.5 px-2 lg:px-2.5 xl:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
                       currentView.startsWith("/atlas") || currentView.startsWith("/conquest")
                         ? "bg-teal-50 text-teal-900 border-teal-400 border-b-teal-500 shadow-sm"
                         : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-200"
                     }`}
                   >
-                    <Compass className="w-4 h-4 text-teal-600" />
-                    <span>ATLAS & MONDE</span>
+                    <Compass className="w-4 h-4 text-teal-600 shrink-0" />
+                    <span className="hidden lg:inline">ATLAS</span>
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                      className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${
                         openDropdown === "atlas" ? "rotate-180 text-teal-600" : ""
                       }`}
                     />
@@ -340,24 +379,26 @@ export function Navbar() {
                     setOpenDropdown(null);
                     navigate("/leaderboard");
                   }}
-                  className={`flex items-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 ${
+                  title="Ligues & Classements"
+                  className={`flex items-center gap-1 xl:gap-1.5 px-2 lg:px-2.5 xl:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
                     currentView.startsWith("/leaderboard")
                       ? "bg-amber-50 text-amber-900 border-amber-400 border-b-amber-500 shadow-sm"
                       : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-200"
                   }`}
                 >
-                  <Trophy className="w-4 h-4 text-amber-500" />
-                  <span>LIGUES</span>
+                  <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="hidden lg:inline">LIGUES</span>
                 </button>
 
                 {/* 5. 👥 COMMUNAUTÉ & MULTIJOUEUR (Dropdown) */}
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     type="button"
                     onClick={() =>
                       setOpenDropdown(openDropdown === "social" ? null : "social")
                     }
-                    className={`relative flex items-center gap-1 lg:gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 ${
+                    title="Communauté & Multijoueur"
+                    className={`relative flex items-center gap-1 xl:gap-1.5 px-2 lg:px-2.5 xl:px-3 py-1.5 lg:py-2 rounded-2xl text-xs xl:text-sm font-black transition-all duration-100 border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
                       currentView.startsWith("/duels") ||
                       currentView.startsWith("/party") ||
                       currentView.startsWith("/friends") ||
@@ -366,15 +407,18 @@ export function Navbar() {
                         : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-200"
                     }`}
                   >
-                    <Users className="w-4 h-4 text-indigo-600" />
-                    <span>COMMUNAUTÉ</span>
-                    {totalSocialNotifications > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] font-black rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center animate-pulse">
-                        {totalSocialNotifications}
-                      </span>
-                    )}
+                    <div className="relative shrink-0">
+                      <Users className="w-4 h-4 text-indigo-600 shrink-0" />
+                      {totalSocialNotifications > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center animate-pulse">
+                          {totalSocialNotifications}
+                        </span>
+                      )}
+                    </div>
+                    <span className="hidden 2xl:inline">COMMUNAUTÉ</span>
+                    <span className="hidden lg:inline 2xl:hidden">SOCIAL</span>
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                      className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${
                         openDropdown === "social" ? "rotate-180 text-indigo-600" : ""
                       }`}
                     />
@@ -500,44 +544,69 @@ export function Navbar() {
             </div>
 
             {/* 🎮 Duolingo Gamified Status Bar & Profile Dropdown */}
-            <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="flex items-center gap-1 sm:gap-1.5 xl:gap-2 shrink-0">
               {/* 🔥 Streak Flame Capsule */}
               {profile && (
-                <button
-                  type="button"
-                  onClick={() => setStreakModalOpen(true)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-black transition-all shadow-sm border-2 border-b-4 active:translate-y-0.5 active:border-b-2 ${
-                    isStreakPlayedToday(profile.last_activity_date)
-                      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:brightness-105 border-orange-400 border-b-orange-600 shadow-orange-500/20"
-                      : isStreakAtRisk(profile.last_activity_date, profile.current_streak)
-                      ? "bg-gradient-to-r from-red-600 to-orange-500 text-white animate-pulse border-red-500 border-b-red-700 shadow-red-500/30"
-                      : "bg-orange-50 text-orange-800 border-orange-200 border-b-orange-300 hover:bg-orange-100"
-                  }`}
-                  title={
-                    isStreakPlayedToday(profile.last_activity_date)
-                      ? `${profile.current_streak || 0} jours • Série validée aujourd'hui ! 🔥`
-                      : isStreakAtRisk(profile.last_activity_date, profile.current_streak)
-                      ? `${profile.current_streak || 0} jours • Série en danger ! Joue aujourd'hui`
-                      : `${profile.current_streak || 0} jours consécutifs`
-                  }
-                >
-                  <span
-                    className={`text-sm sm:text-base ${
-                      isStreakPlayedToday(profile.last_activity_date) ? "animate-bounce" : ""
+                <div className="relative flex items-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setStreakModalOpen(true)}
+                    className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-2xl text-xs xl:text-sm font-black transition-all shadow-sm border-2 border-b-4 active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 ${
+                      isStreakPlayedToday(profile.last_activity_date)
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:brightness-105 border-orange-400 border-b-orange-600 shadow-orange-500/20"
+                        : isStreakAtRisk(profile.last_activity_date, profile.current_streak)
+                        ? "bg-gradient-to-r from-red-600 to-orange-500 text-white animate-pulse border-red-500 border-b-red-700 shadow-red-500/30"
+                        : "bg-orange-50 text-orange-800 border-orange-200 border-b-orange-300 hover:bg-orange-100"
                     }`}
+                    title={
+                      isStreakPlayedToday(profile.last_activity_date)
+                        ? `${profile.current_streak || 0} jours • Série validée aujourd'hui ! 🔥`
+                        : isStreakAtRisk(profile.last_activity_date, profile.current_streak)
+                        ? `${profile.current_streak || 0} jours • Série en danger ! Joue aujourd'hui`
+                        : `${profile.current_streak || 0} jours consécutifs`
+                    }
                   >
-                    🔥
-                  </span>
-                  <span>{profile.current_streak || 0}</span>
-                </button>
+                    <span
+                      className={`text-sm sm:text-base ${
+                        isStreakPlayedToday(profile.last_activity_date) ? "animate-bounce" : ""
+                      }`}
+                    >
+                      🔥
+                    </span>
+                    <span>{profile.current_streak || 0}</span>
+                  </button>
+
+                  {/* 🧊 Booster Gel de Flamme actif */}
+                  {gamification.streakFreezes > 0 && (
+                    <span
+                      className="absolute -top-1.5 -right-1.5 bg-sky-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full border-2 border-white shadow-xs flex items-center cursor-pointer"
+                      title={`${gamification.streakFreezes} Gel(s) de Flamme actif(s) pour protéger votre série !`}
+                      onClick={() => setShopModalOpen(true)}
+                    >
+                      🧊
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* ⚡ Booster Double XP actif */}
+              {Boolean(gamification.doubleXpUntil && gamification.doubleXpUntil > Date.now()) && (
+                <div
+                  className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-2xl text-xs font-black bg-amber-400 text-amber-950 border-2 border-amber-300 border-b-4 border-b-amber-600 shadow-sm animate-pulse whitespace-nowrap shrink-0"
+                  title="Booster Double XP actif !"
+                >
+                  <span>⚡</span>
+                  <span className="hidden xl:inline">2X XP</span>
+                  <span className="xl:hidden">2X</span>
+                </div>
               )}
 
               {/* 💎 TerraGems Capsule */}
               <button
                 type="button"
-                onClick={() => setLivesModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-sky-50 text-sky-800 border-2 border-sky-200 border-b-4 border-b-sky-300 hover:bg-sky-100 transition-all shadow-sm active:translate-y-0.5 active:border-b-2"
-                title={`${gamification.gems} TerraGems 💎`}
+                onClick={() => setShopModalOpen(true)}
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-2xl text-xs xl:text-sm font-black bg-sky-50 text-sky-800 border-2 border-sky-200 border-b-4 border-b-sky-300 hover:bg-sky-100 transition-all shadow-sm active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0"
+                title={`${gamification.gems} TerraGems 💎 - Ouvrir la Boutique`}
               >
                 <span className="text-sm sm:text-base">💎</span>
                 <span>{gamification.gems}</span>
@@ -547,31 +616,67 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setLivesModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-rose-50 text-rose-700 border-2 border-rose-200 border-b-4 border-b-rose-300 hover:bg-rose-100 transition-all shadow-sm active:translate-y-0.5 active:border-b-2"
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-2xl text-xs xl:text-sm font-black bg-rose-50 text-rose-700 border-2 border-rose-200 border-b-4 border-b-rose-300 hover:bg-rose-100 transition-all shadow-sm active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0"
                 title={`${gamification.lives}/${gamification.maxLives} Vies`}
               >
                 <Heart
-                  className={`w-4 h-4 text-rose-500 fill-rose-500 ${
+                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-500 fill-rose-500 ${
                     gamification.lives < 5 ? "animate-pulse" : ""
                   }`}
                 />
                 <span>{gamification.lives}</span>
               </button>
 
-              {/* 👑 Niveau Capsule (visible sur grand écran) */}
-              <div className="hidden xl:flex items-center gap-1 px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-purple-50 text-purple-800 border-2 border-purple-200 border-b-4 border-b-purple-300 shadow-sm shrink-0">
+              {/* 🏆 Ligue Duolingo Capsule en direct */}
+              {profile && (() => {
+                const leagueProgress = getUserLeagueProgress(profile.experience_points || 0);
+                return (
+                  <button
+                    type="button"
+                    onClick={() => navigate("/leaderboard")}
+                    className="hidden xl:flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-2.5 py-1 rounded-2xl bg-amber-50/90 hover:bg-amber-100 text-amber-950 border-2 border-amber-200 border-b-4 border-b-amber-400 shadow-2xs transition-all active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 group"
+                    title={`${leagueProgress.rankLabel} • ${leagueProgress.statusText} • ${leagueProgress.progressPercent}% vers ${leagueProgress.nextLeague?.name || "Palier Max"}`}
+                  >
+                    <span className="text-sm 2xl:text-base group-hover:scale-110 transition-transform shrink-0">
+                      {leagueProgress.currentLeague.icon}
+                    </span>
+                    <div className="hidden 2xl:flex flex-col text-left leading-none">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] font-black text-slate-800">
+                          {leagueProgress.currentLeague.name}
+                        </span>
+                        <span className="text-[10px] font-bold text-amber-700">
+                          • #{leagueProgress.divisionRank}
+                        </span>
+                      </div>
+                      <div className="w-16 h-1.5 bg-amber-200/80 rounded-full overflow-hidden mt-1">
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500"
+                          style={{ width: `${leagueProgress.progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="2xl:hidden text-xs font-black text-slate-800">
+                      #{leagueProgress.divisionRank}
+                    </span>
+                  </button>
+                );
+              })()}
+
+              {/* 👑 Niveau Capsule (visible sur très grand écran 2xl) */}
+              <div className="hidden 2xl:flex items-center gap-1 px-2.5 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-purple-50 text-purple-800 border-2 border-purple-200 border-b-4 border-b-purple-300 shadow-sm shrink-0 whitespace-nowrap">
                 <span>👑</span>
                 <span>Niv. {profile?.level || 1}</span>
               </div>
 
               {/* 👤 Profil Avatar & Dropdown */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() =>
                     setOpenDropdown(openDropdown === "profile" ? null : "profile")
                   }
-                  className={`p-1 rounded-2xl border-2 transition-all flex items-center gap-1 active:scale-95 ${
+                  className={`p-1 rounded-2xl border-2 transition-all flex items-center gap-0.5 sm:gap-1 active:scale-95 shrink-0 ${
                     openDropdown === "profile"
                       ? "border-emerald-500 bg-emerald-50 shadow-sm"
                       : "border-transparent hover:bg-slate-100"
@@ -583,7 +688,7 @@ export function Navbar() {
                     frameStyle={(profile as any)?.frame_style}
                     size="sm"
                   />
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block shrink-0" />
                 </button>
 
                 {openDropdown === "profile" && (
@@ -597,6 +702,52 @@ export function Navbar() {
                         {t("profile.level")} {profile?.level || 1} • {profile?.experience_points || 0} XP
                       </p>
                     </div>
+
+                    {/* 🏆 Badge & Jauge de Ligue en direct dans le profil */}
+                    {(() => {
+                      const lp = getUserLeagueProgress(profile?.experience_points || 0);
+                      return (
+                        <div
+                          onClick={() => {
+                            setOpenDropdown(null);
+                            navigate("/leaderboard");
+                          }}
+                          className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl mb-2.5 border border-amber-200/80 cursor-pointer hover:border-amber-300 shadow-2xs group transition-all text-left"
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl group-hover:scale-110 transition-transform">
+                                {lp.currentLeague.icon}
+                              </span>
+                              <div>
+                                <p className="font-black text-slate-900 text-xs leading-tight">
+                                  {lp.currentLeague.name}
+                                </p>
+                                <p className="text-[10px] font-bold text-amber-700">
+                                  Rang #{lp.divisionRank} • {lp.statusText}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900">
+                              {lp.progressPercent}%
+                            </span>
+                          </div>
+
+                          {/* Jauge vers la ligue suivante */}
+                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mt-1">
+                            <div
+                              className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500"
+                              style={{ width: `${lp.progressPercent}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-bold mt-1 text-right">
+                            {lp.nextLeague
+                              ? `Encore ${lp.xpToNext} XP vers ${lp.nextLeague.name} ⬆️`
+                              : "Palier de Ligue Maximum 👑"}
+                          </p>
+                        </div>
+                      );
+                    })()}
 
                     <button
                       type="button"
@@ -749,6 +900,143 @@ export function Navbar() {
                 FERMER
               </button>
             </div>
+
+            {/* 👑 Console Administrateur : Recharges & Ressources */}
+            {profile?.role === "admin" && (
+              <div className="mt-4 pt-3.5 border-t-2 border-dashed border-amber-200 bg-amber-50/80 -mx-6 -mb-6 p-4 rounded-b-3xl text-left">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">👑</span>
+                    <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                      Outils Admin : Gemmes & Cœurs
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-black">
+                    ADMIN
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      adminGrantResources(profile?.id, { gemsDelta: 500 });
+                      playSound("success");
+                      toast.success("+500 TerraGems 💎 ajoutées !");
+                    }}
+                    className="py-1.5 px-2 bg-white hover:bg-sky-50 text-sky-800 text-xs font-black rounded-xl border border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95"
+                  >
+                    <span>💎</span>
+                    <span>+500 Gems</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      adminGrantResources(profile?.id, { gemsDelta: 2500 });
+                      playSound("success");
+                      toast.success("+2 500 TerraGems 💎 ajoutées !");
+                    }}
+                    className="py-1.5 px-2 bg-white hover:bg-sky-50 text-sky-800 text-xs font-black rounded-xl border border-sky-300 shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95"
+                  >
+                    <span>💎</span>
+                    <span>+2 500 Gems</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      adminGrantResources(profile?.id, { fullRefill: true, setLives: 5 });
+                      playSound("success");
+                      toast.success("5 Cœurs ❤️ restaurés au maximum !");
+                    }}
+                    className="py-1.5 px-2 bg-white hover:bg-rose-50 text-rose-800 text-xs font-black rounded-xl border border-rose-300 shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95"
+                  >
+                    <span>❤️</span>
+                    <span>5 Cœurs Max</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      adminGrantResources(profile?.id, { setLives: 99 });
+                      playSound("success");
+                      toast.success("99 Cœurs ❤️ attribués (Mode Dev) !");
+                    }}
+                    className="py-1.5 px-2 bg-white hover:bg-purple-50 text-purple-800 text-xs font-black rounded-xl border border-purple-300 shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95"
+                  >
+                    <span>♾️</span>
+                    <span>99 Cœurs Dev</span>
+                  </button>
+                </div>
+
+                {/* Saisie personnalisée */}
+                <div className="pt-2 border-t border-amber-200/60">
+                  <button
+                    type="button"
+                    onClick={() => setAdminCustomPanelOpen(!adminCustomPanelOpen)}
+                    className="w-full flex items-center justify-between text-[11px] font-bold text-amber-800 hover:text-amber-900 py-1"
+                  >
+                    <span>⚙️ Saisie manuelle personnalisée</span>
+                    <span>{adminCustomPanelOpen ? "▲" : "▼"}</span>
+                  </button>
+
+                  {adminCustomPanelOpen && (
+                    <div className="mt-2 space-y-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          placeholder="Nb gemmes..."
+                          value={adminCustomGems}
+                          onChange={(e) => setAdminCustomGems(e.target.value)}
+                          className="w-2/3 px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = parseInt(adminCustomGems, 10);
+                            if (!isNaN(val) && val !== 0) {
+                              adminGrantResources(profile?.id, { gemsDelta: val });
+                              playSound("success");
+                              toast.success(`${val >= 0 ? "+" : ""}${val} 💎 ajoutées !`);
+                              setAdminCustomGems("");
+                            }
+                          }}
+                          className="w-1/3 py-1.5 px-2 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-lg text-[11px]"
+                        >
+                          + Gems 💎
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          placeholder="Nb cœurs..."
+                          value={adminCustomLives}
+                          onChange={(e) => setAdminCustomLives(e.target.value)}
+                          className="w-2/3 px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = parseInt(adminCustomLives, 10);
+                            if (!isNaN(val) && val >= 0) {
+                              adminGrantResources(profile?.id, { setLives: val });
+                              playSound("success");
+                              toast.success(`Cœurs fixés à ${val} ❤️ !`);
+                              setAdminCustomLives("");
+                            }
+                          }}
+                          className="w-1/3 py-1.5 px-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-lg text-[11px]"
+                        >
+                          = Cœurs ❤️
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -952,6 +1240,11 @@ export function Navbar() {
         isOpen={streakModalOpen}
         onClose={() => setStreakModalOpen(false)}
         profile={profile}
+      />
+
+      <ShopModal
+        isOpen={shopModalOpen}
+        onClose={() => setShopModalOpen(false)}
       />
 
       <style>{`

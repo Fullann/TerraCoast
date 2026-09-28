@@ -140,8 +140,24 @@
     animation: duo-pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* 📱 Safe-area mobile spacing helper */
+  /* 🎬 Question Slide & Fade Transitions (Duolingo style) */
+  @keyframes question-slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-question-slide {
+    animation: question-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* 📱 Safe-area mobile spacing helper for iOS & Android bottom bar */
   .safe-area-bottom {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+    padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem));
   }
 }

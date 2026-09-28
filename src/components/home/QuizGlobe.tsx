@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Globe from "react-globe.gl";
+import { getPlayerGamificationState } from "../../lib/gamificationManager";
+import { getGlobeThemeConfig } from "../../lib/globeThemes";
+import { useAuth } from "../../contexts/AuthContext";
 
 export interface QuizGlobePoint {
   quizId: string;
@@ -16,9 +19,23 @@ interface QuizGlobeProps {
 }
 
 export function QuizGlobe({ points, onPointClick }: QuizGlobeProps) {
+  const { profile } = useAuth();
   const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [globeSize, setGlobeSize] = useState({ width: 0, height: 420 });
+  const [activeTheme, setActiveTheme] = useState(() =>
+    getPlayerGamificationState(profile?.id).activeTheme
+  );
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setActiveTheme(getPlayerGamificationState(profile?.id).activeTheme);
+    };
+    window.addEventListener("terracost_gamification_updated", handleUpdate);
+    return () => window.removeEventListener("terracost_gamification_updated", handleUpdate);
+  }, [profile?.id]);
+
+  const themeConfig = getGlobeThemeConfig(activeTheme);
 
   const arcsData = useMemo(() => {
     if (points.length < 2) return [];
@@ -77,6 +94,7 @@ export function QuizGlobe({ points, onPointClick }: QuizGlobeProps) {
       <div
         ref={containerRef}
         className="h-[420px] w-full relative"
+        style={themeConfig.canvasFilter ? { filter: themeConfig.canvasFilter } : undefined}
         onMouseEnter={() => {
           if (!globeRef.current) return;
           globeRef.current.controls().autoRotate = false;
@@ -90,8 +108,10 @@ export function QuizGlobe({ points, onPointClick }: QuizGlobeProps) {
           ref={globeRef}
           width={globeSize.width}
           height={globeSize.height}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+          globeImageUrl={themeConfig.globeImageUrl}
+          bumpImageUrl={themeConfig.bumpImageUrl}
+          atmosphereColor={themeConfig.atmosphereColor}
+          atmosphereAltitude={themeConfig.atmosphereAltitude || 0.15}
           backgroundColor="rgba(0,0,0,0)"
           pointsData={points}
           pointLat={(d: any) => d.lat}

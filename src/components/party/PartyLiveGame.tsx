@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Users, CheckCircle2, Zap, Ghost } from "lucide-react";
+import { Users, CheckCircle2, Zap, Ghost, Tv } from "lucide-react";
 import { playClickSound, playTickSound } from "../../lib/soundManager";
 import type { PartyPlayer, PartyQuestion, PartyRoom, PartyEmote } from "./types";
 
@@ -70,9 +70,20 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
   const [answerSubmittedAt, setAnswerSubmittedAt] = useState<number | null>(null);
   const lastSecondTickedRef = useRef<number>(-1);
 
+  // Presenter / projector screen mode: host does not play or answer
+  const isPresenterMode = Boolean(
+    currentPlayer.isSpectator || room.hostIsPlayer === false
+  );
+
+  const activePlayers = useMemo(
+    () => players.filter((p) => !p.isSpectator),
+    [players]
+  );
+  const totalPlayersCount = Math.max(activePlayers.length, 1);
+  const answeredCount = activePlayers.filter((p) =>
+    answeredGuestIds.has(p.guestId)
+  ).length;
   const hasAnswered = selectedOption !== null;
-  const answeredCount = answeredGuestIds.size;
-  const totalPlayersCount = Math.max(players.length, 1);
 
   // Synchronized countdown timer
   useEffect(() => {
@@ -110,7 +121,7 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
 
   const handleSelectOption = useCallback(
     (option: string) => {
-      if (hasAnswered || timeLeftMs <= 0) return;
+      if (isPresenterMode || hasAnswered || timeLeftMs <= 0) return;
       playClickSound();
       const now = Date.now();
       const timeMs = Math.max(100, now - questionStartTime);
@@ -118,11 +129,12 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
       setAnswerSubmittedAt(timeMs);
       onAnswer(option, timeMs);
     },
-    [hasAnswered, onAnswer, questionStartTime, timeLeftMs]
+    [hasAnswered, isPresenterMode, onAnswer, questionStartTime, timeLeftMs]
   );
 
   // Keyboard shortcuts (1, 2, 3, 4 or A, B, C, D)
   useEffect(() => {
+    if (isPresenterMode) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (hasAnswered || timeLeftMs <= 0) return;
       const key = e.key.toUpperCase();
@@ -141,7 +153,7 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleSelectOption, hasAnswered, rawOptions, timeLeftMs]);
+  }, [handleSelectOption, hasAnswered, isPresenterMode, rawOptions, timeLeftMs]);
 
   const secondsLeft = Math.ceil(timeLeftMs / 1000);
   const progressRatio = Math.max(0, Math.min(1, timeLeftMs / (timeLimitSeconds * 1000)));
@@ -240,7 +252,14 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
           </div>
         )}
 
-        {currentPlayer.isEliminated && (
+        {isPresenterMode && (
+          <div className="mb-3 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-amber-400 text-slate-950 font-black text-xs md:text-sm shadow-xl border-2 border-amber-300 animate-pulse">
+            <Tv className="w-4 h-4 text-slate-950" />
+            <span>📺 Grand Écran de Projection • Les joueurs répondent sur leur smartphone !</span>
+          </div>
+        )}
+
+        {currentPlayer.isEliminated && !isPresenterMode && (
           <div className="mb-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-950/80 border border-purple-400/40 text-purple-200 text-xs font-bold shadow-lg animate-pulse">
             <Ghost className="w-4 h-4 text-purple-400" />
             <span>Mode Spectateur Fantôme 👻 (Vos réponses ne comptent plus au classement)</span>
@@ -254,7 +273,7 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
         </div>
 
         {/* Confirmation banner when answered */}
-        {hasAnswered && (
+        {hasAnswered && !isPresenterMode && (
           <div className="mt-4 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-sm font-bold shadow-lg animate-in fade-in zoom-in-95">
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             Réponse envoyée en {((answerSubmittedAt || 0) / 1000).toFixed(1)}s ! En attente des autres joueurs...
@@ -268,6 +287,26 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
           const theme = KAHOOT_THEMES[idx % KAHOOT_THEMES.length];
           const isSelected = selectedOption === opt;
           const isOther = hasAnswered && !isSelected;
+
+          if (isPresenterMode) {
+            return (
+              <div
+                key={idx}
+                className={`relative flex items-center justify-between p-5 md:p-7 rounded-3xl text-left font-black text-white shadow-2xl border-4 ${
+                  theme.bg
+                } ${theme.border} ${theme.shadow} transition-transform hover:scale-[1.01]`}
+              >
+                <div className="flex items-center gap-4 md:gap-5 overflow-hidden">
+                  <span className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-black/25 flex items-center justify-center text-3xl md:text-4xl shrink-0 font-mono shadow-inner border border-white/20">
+                    {theme.shape}
+                  </span>
+                  <span className="text-xl md:text-3xl line-clamp-2 leading-tight drop-shadow-md">
+                    {opt}
+                  </span>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <button
@@ -321,10 +360,19 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <span>{currentPlayer.pseudo}</span>
-          <span className="font-mono text-amber-300 font-bold">
-            {currentPlayer.score} pts
-          </span>
+          {isPresenterMode ? (
+            <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md">
+              <Tv className="w-3.5 h-3.5" />
+              <span>Hôte Présentateur ({activePlayers.length} joueur{activePlayers.length > 1 ? "s" : ""})</span>
+            </span>
+          ) : (
+            <>
+              <span>{currentPlayer.pseudo}</span>
+              <span className="font-mono text-amber-300 font-bold">
+                {currentPlayer.score} pts
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

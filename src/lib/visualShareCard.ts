@@ -281,3 +281,247 @@ export async function shareViaWebShareApi(
     return false;
   }
 }
+
+/**
+ * 🎴 Dessine une Carte Collector Pokédex Géographique en haute définition (800 x 1100 px)
+ */
+export function drawConquestCollectorCard(
+  canvas: HTMLCanvasElement,
+  card: {
+    iso3: string;
+    name: string;
+    capital: string;
+    flagEmoji: string;
+    continent: string;
+    population: number;
+    areaKm2: number;
+    rarity: "common" | "rare" | "epic" | "legendary";
+    landmark: { name: string; icon: string; description: string };
+    funFact: string;
+    isConquered: boolean;
+    conqueredAt?: string | null;
+  },
+  playerPseudo?: string
+): void {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const w = 800;
+  const h = 1100;
+  canvas.width = w;
+  canvas.height = h;
+
+  // 1. Dégradé de la bordure holographique selon la rareté
+  const borderGrad = ctx.createLinearGradient(0, 0, w, h);
+  let themeColor = "#10b981";
+  let rarityLabel = "COMMUNE 🧭";
+
+  if (card.rarity === "legendary") {
+    borderGrad.addColorStop(0, "#fef08a");
+    borderGrad.addColorStop(0.3, "#f59e0b");
+    borderGrad.addColorStop(0.7, "#fbbf24");
+    borderGrad.addColorStop(1, "#b45309");
+    themeColor = "#fbbf24";
+    rarityLabel = "LÉGENDAIRE ⭐";
+  } else if (card.rarity === "epic") {
+    borderGrad.addColorStop(0, "#f0abfc");
+    borderGrad.addColorStop(0.3, "#a855f7");
+    borderGrad.addColorStop(0.7, "#c084fc");
+    borderGrad.addColorStop(1, "#6366f1");
+    themeColor = "#c084fc";
+    rarityLabel = "ÉPIQUE 💎";
+  } else if (card.rarity === "rare") {
+    borderGrad.addColorStop(0, "#bae6fd");
+    borderGrad.addColorStop(0.3, "#0ea5e9");
+    borderGrad.addColorStop(0.7, "#38bdf8");
+    borderGrad.addColorStop(1, "#0284c7");
+    themeColor = "#38bdf8";
+    rarityLabel = "RARE 🔷";
+  } else {
+    borderGrad.addColorStop(0, "#a7f3d0");
+    borderGrad.addColorStop(0.3, "#10b981");
+    borderGrad.addColorStop(0.7, "#34d399");
+    borderGrad.addColorStop(1, "#0f766e");
+    themeColor = "#34d399";
+    rarityLabel = "COMMUNE 🧭";
+  }
+
+  // Fond externe (bordure foil de 16px)
+  ctx.fillStyle = borderGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Reflet holographique en diagonale
+  ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(w / 2, 0);
+  ctx.lineTo(0, h / 2);
+  ctx.fill();
+
+  // 2. Corps intérieur de la carte (fond sombre texturé)
+  const margin = 16;
+  ctx.fillStyle = "#090d16";
+  ctx.beginPath();
+  drawRoundedRect(ctx, margin, margin, w - margin * 2, h - margin * 2, 28);
+  ctx.fill();
+
+  // Lueur centrale intérieure
+  const innerGlow = ctx.createRadialGradient(w / 2, 350, 20, w / 2, 350, 400);
+  innerGlow.addColorStop(0, `${themeColor}22`);
+  innerGlow.addColorStop(1, "transparent");
+  ctx.fillStyle = innerGlow;
+  ctx.fillRect(margin, margin, w - margin * 2, h - margin * 2);
+
+  // 3. Header Carte : Rareté et Titre
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText("TERRACOAST • POKÉDEX GÉOGRAPHIQUE", 50, 65);
+
+  ctx.fillStyle = themeColor;
+  ctx.font = "bold 18px sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText(`${rarityLabel} • #${card.iso3}`, w - 50, 65);
+  ctx.textAlign = "left";
+
+  // Ligne de séparation
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(50, 85);
+  ctx.lineTo(w - 50, 85);
+  ctx.stroke();
+
+  // 4. Hero Box (Drapeau + Nom)
+  const heroY = 110;
+  const heroH = 260;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+  ctx.strokeStyle = `${themeColor}55`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  drawRoundedRect(ctx, 50, heroY, w - 100, heroH, 24);
+  ctx.fill();
+  ctx.stroke();
+
+  // Cercle drapeau
+  ctx.font = "100px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(card.flagEmoji, w / 2, heroY + 115);
+
+  // Nom du pays
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 38px sans-serif";
+  ctx.fillText(card.name, w / 2, heroY + 185);
+
+  // Capitale & Continent
+  ctx.fillStyle = themeColor;
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText(`Capitale : ${card.capital} • ${card.continent}`, w / 2, heroY + 225);
+  ctx.textAlign = "left";
+
+  // 5. Statistiques Clés (3 colonnes)
+  const statsY = 395;
+  const colW = (w - 100 - 30) / 3;
+  const colH = 95;
+
+  const statItems = [
+    { label: "👥 POPULATION", val: `${(card.population / 1_000_000).toFixed(1)}M hab.` },
+    { label: "🧭 SUPERFICIE", val: `${card.areaKm2.toLocaleString("fr-FR")} km²` },
+    { label: "👑 STATUT", val: card.isConquered ? "Conquis 100%" : "En cours" },
+  ];
+
+  statItems.forEach((st, i) => {
+    const x = 50 + i * (colW + 15);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    drawRoundedRect(ctx, x, statsY, colW, colH, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "bold 13px sans-serif";
+    ctx.fillText(st.label, x + 16, statsY + 32);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px sans-serif";
+    ctx.fillText(st.val, x + 16, statsY + 68);
+  });
+
+  // 6. Monument Emblématique
+  const monY = 515;
+  const monH = 180;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+  ctx.strokeStyle = `${themeColor}44`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  drawRoundedRect(ctx, 50, monY, w - 100, monH, 20);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.font = "40px sans-serif";
+  ctx.fillText(card.landmark.icon || "🏛️", 75, monY + 65);
+
+  ctx.fillStyle = themeColor;
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText(card.landmark.name, 135, monY + 50);
+
+  ctx.fillStyle = "#cbd5e1";
+  ctx.font = "17px sans-serif";
+  ctx.fillText("Monument & Trésor National", 135, monY + 75);
+
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "16px sans-serif";
+  const desc = card.landmark.description || "Un site d'une importance culturelle majeure.";
+  ctx.fillText(desc.slice(0, 75) + (desc.length > 75 ? "..." : ""), 75, monY + 125);
+  if (desc.length > 75) {
+    ctx.fillText(desc.slice(75, 150), 75, monY + 152);
+  }
+
+  // 7. Anecdote / Fun Fact
+  const factY = 720;
+  const factH = 195;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  drawRoundedRect(ctx, 50, factY, w - 100, factH, 20);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#f59e0b";
+  ctx.font = "bold 18px sans-serif";
+  ctx.fillText("💡 Le saviez-vous ?", 75, factY + 45);
+
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = "italic 18px sans-serif";
+  const words = (card.funFact || "Ce pays regorge d'anecdotes géographiques fascinantes.").split(" ");
+  let line = "";
+  let curY = factY + 80;
+  for (const word of words) {
+    const testLine = line + word + " ";
+    if (ctx.measureText(testLine).width > w - 150) {
+      ctx.fillText(line, 75, curY);
+      line = word + " ";
+      curY += 28;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, 75, curY);
+
+  // 8. Footer Collector & Signature
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "bold 17px sans-serif";
+  ctx.fillText(`🎮 Collectionné par : ${playerPseudo || "Explorateur"}`, 50, 975);
+
+  ctx.fillStyle = themeColor;
+  ctx.font = "bold 17px sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("🌍 terracoast.ch", w - 50, 975);
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = "#475569";
+  ctx.font = "14px sans-serif";
+  ctx.fillText("Carte holographique officielle générée sur TerraCoast", 50, 1010);
+}

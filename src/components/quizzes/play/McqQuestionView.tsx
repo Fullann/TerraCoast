@@ -74,7 +74,7 @@ export const McqQuestionView: React.FC<McqQuestionViewProps> = ({
               type="button"
               onClick={(e) => onSelectOption(option, e)}
               disabled={isAnswered}
-              className={`group w-full text-left p-4 sm:p-5 rounded-2xl sm:rounded-3xl border-2 border-b-4 transition-all duration-150 relative flex flex-col justify-between gap-3 select-none active:translate-y-1 active:border-b-2 cursor-pointer ${cardStyle}`}
+              className={`group w-full min-h-[56px] text-left p-4 sm:p-5 rounded-2xl sm:rounded-3xl border-2 border-b-4 transition-all duration-150 relative flex flex-col justify-between gap-3 select-none active:translate-y-1 active:border-b-0 cursor-pointer ${cardStyle}`}
             >
               {imageUrl && (
                 <div className="w-full flex justify-center py-2 bg-slate-50/70 rounded-xl border border-slate-100 mb-1">

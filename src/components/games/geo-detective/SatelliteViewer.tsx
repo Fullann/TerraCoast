@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ZoomIn,
   ZoomOut,
@@ -9,9 +9,7 @@ import {
   Crosshair,
   Satellite,
   Compass,
-  Layers,
   Camera,
-  RefreshCw,
 } from "lucide-react";
 import {
   SatelliteLocation,
@@ -232,16 +230,16 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({
     <div
       ref={containerRef}
       onWheel={handleWheel}
-      className={`relative w-full rounded-3xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex flex-col select-none transition-all ${
+      className={`relative w-full rounded-3xl overflow-hidden bg-slate-950 border-2 border-slate-300 shadow-md flex flex-col select-none transition-all ${
         isFullscreen ? "h-screen w-screen rounded-none" : "h-[450px] sm:h-[520px] lg:h-[600px]"
       }`}
     >
       {/* HUD Top Bar */}
       <div className="absolute top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Catégorie & Badge de phase */}
-        <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/60 shadow-lg pointer-events-auto">
+        <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/20 shadow-md pointer-events-auto">
           <Satellite className="w-4 h-4 text-emerald-400 animate-pulse" />
-          <span className="text-xs font-black text-slate-200 uppercase tracking-wider">
+          <span className="text-xs font-black text-white uppercase tracking-wider">
             {isResultPhase ? location.name : categoryLabels[location.category] || "Vue Satellite HD"}
           </span>
           <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
@@ -253,10 +251,10 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({
           <button
             type="button"
             onClick={() => setViewMode((m) => (m === "photo" ? "satellite" : "photo"))}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-md border ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-black transition shadow-md border-2 ${
               viewMode === "satellite"
-                ? "bg-emerald-600 text-white border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                : "bg-slate-900/85 hover:bg-slate-800 text-slate-300 border-slate-700"
+                ? "bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20"
+                : "bg-slate-900/90 hover:bg-slate-800 text-white border-white/20"
             }`}
             title="Basculer entre le cliché aérien HD et la dalle satellite directe depuis l'orbite"
           >
@@ -278,15 +276,15 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({
             <button
               type="button"
               onClick={onUseClue}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition transform active:scale-95 shadow-md"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white border-2 border-amber-600 border-b-4 border-b-amber-700 active:border-b-0 active:translate-y-0.5 rounded-2xl text-xs font-black transition shadow-md"
               title="Obtenir un indice sur la région (-250 pts)"
             >
-              <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+              <Lightbulb className="w-3.5 h-3.5 text-amber-100" />
               <span>Indice (-250 pts)</span>
             </button>
           ) : (
-            <div className="bg-amber-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-amber-500/50 shadow-lg text-xs font-medium text-amber-200 max-w-sm sm:max-w-md flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="bg-amber-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border-2 border-amber-500 text-xs font-bold text-amber-100 max-w-sm sm:max-w-md flex items-center gap-2 shadow-md">
+              <Lightbulb className="w-4 h-4 text-amber-300 shrink-0" />
               <span className="line-clamp-2">{location.clues[0]}</span>
             </div>
           )}
@@ -349,51 +347,51 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({
       {/* HUD Bottom Overlay with Controls */}
       <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center justify-between pointer-events-none">
         {/* Coordinates simulation / status */}
-        <div className="bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/60 text-[11px] font-mono text-emerald-400 flex items-center gap-2 pointer-events-auto">
+        <div className="bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/20 text-[11px] font-mono text-emerald-300 flex items-center gap-2 pointer-events-auto shadow-md">
           <Compass className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Zoom: {zoom.toFixed(1)}x</span>
+          <span className="font-bold">Zoom: {zoom.toFixed(1)}x</span>
           <span className="text-slate-500">•</span>
-          <span className="text-slate-300 hidden sm:inline">
+          <span className="text-slate-200 hidden sm:inline">
             {zoom > 1 ? "Glissez pour explorer la zone" : "Double-clic ou molette pour zoomer"}
           </span>
-          <span className="text-slate-300 sm:hidden">Pincez pour zoomer</span>
+          <span className="text-slate-200 sm:hidden">Pincez pour zoomer</span>
         </div>
 
         {/* Zoom & Screen Controls */}
-        <div className="flex items-center gap-1.5 bg-slate-950/85 backdrop-blur-md p-1.5 rounded-xl border border-slate-700/60 shadow-xl pointer-events-auto">
+        <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border-2 border-slate-200 shadow-md pointer-events-auto">
           <button
             type="button"
             onClick={handleZoomIn}
-            className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition"
+            className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 hover:text-slate-900 transition-colors"
             title="Zoomer (+)"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-4 h-4 text-teal-600" />
           </button>
           <button
             type="button"
             onClick={handleZoomOut}
-            className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition"
+            className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 hover:text-slate-900 transition-colors"
             title="Dézoomer (-)"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-4 h-4 text-slate-600" />
           </button>
           <button
             type="button"
             onClick={handleResetZoom}
-            className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition"
+            className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 hover:text-slate-900 transition-colors"
             title="Recentrer le zoom"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-4 h-4 text-slate-500" />
           </button>
-          <div className="w-[1px] h-4 bg-slate-700 mx-1"></div>
+          <div className="w-[1px] h-4 bg-slate-200 mx-1"></div>
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition"
+            className="p-2 hover:bg-slate-100 rounded-xl text-slate-700 hover:text-slate-900 transition-colors"
             title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
           >
             {isFullscreen ? (
-              <Minimize2 className="w-4 h-4" />
+              <Minimize2 className="w-4 h-4 text-teal-600" />
             ) : (
               <Maximize2 className="w-4 h-4" />
             )}

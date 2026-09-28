@@ -9,7 +9,13 @@ export type FrameStyle =
   | "gold"
   | "rainbow"
   | "ice"
-  | "shadow";
+  | "shadow"
+  | "flame"
+  | "frame_flame"
+  | "compass"
+  | "frame_compass"
+  | "crown"
+  | "frame_crown";
 
 export interface AvatarProps {
   url?: string | null;
@@ -44,7 +50,13 @@ function normalizeFrameStyle(frameStyle?: string | null): FrameStyle {
     v === "gold" ||
     v === "rainbow" ||
     v === "ice" ||
-    v === "shadow"
+    v === "shadow" ||
+    v === "flame" ||
+    v === "frame_flame" ||
+    v === "compass" ||
+    v === "frame_compass" ||
+    v === "crown" ||
+    v === "frame_crown"
   ) {
     return v as FrameStyle;
   }
@@ -63,6 +75,15 @@ function frameClass(style: FrameStyle) {
       return "ring-2 ring-gray-300 shadow-lg";
     case "rainbow":
       return "ring-2 ring-transparent bg-gradient-to-br from-pink-200 via-amber-200 to-sky-200 p-[2px]";
+    case "flame":
+    case "frame_flame":
+      return "ring-2 ring-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.6)] animate-pulse";
+    case "compass":
+    case "frame_compass":
+      return "ring-2 ring-teal-400 ring-offset-2 ring-offset-teal-900 shadow-[0_0_10px_rgba(45,212,191,0.5)]";
+    case "crown":
+    case "frame_crown":
+      return "ring-4 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.7)] drop-shadow-md";
     default:
       return "ring-1 ring-gray-200";
   }

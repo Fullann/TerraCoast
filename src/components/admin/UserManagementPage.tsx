@@ -12,7 +12,15 @@ import {
   UserX,
   Edit2,
   Ban,
+  Sparkles,
+  X,
 } from "lucide-react";
+import {
+  getPlayerGamificationState,
+  adminGrantResources,
+} from "../../lib/gamificationManager";
+import { toast } from "../common/ToastContainer";
+import { playSound } from "../../lib/soundManager";
 import type { Database } from "../../lib/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -41,6 +49,9 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
   const [banReason, setBanReason] = useState("");
   const [banUntilDate, setBanUntilDate] = useState("");
   const [newNickname, setNewNickname] = useState("");
+  const [showGrantResourcesModal, setShowGrantResourcesModal] = useState(false);
+  const [grantGemsAmount, setGrantGemsAmount] = useState("");
+  const [grantLivesAmount, setGrantLivesAmount] = useState("");
 
   useEffect(() => {
     loadUsers();
@@ -558,6 +569,20 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
                           <RotateCcw className="w-4 h-4" />
                         </button>
 
+                        {/* Bouton Octroyer Gemmes & Cœurs */}
+                        <button
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setGrantGemsAmount("");
+                            setGrantLivesAmount("");
+                            setShowGrantResourcesModal(true);
+                          }}
+                          className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
+                          title="Octroyer Gemmes & Cœurs 💎❤️"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </button>
+
                         {/* Bouton Ban */}
                         <button
                           onClick={() =>
@@ -733,6 +758,236 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
                 Changer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Octroi de Gemmes & Vies */}
+      {showGrantResourcesModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 relative border-2 border-slate-200">
+            <button
+              onClick={() => {
+                setShowGrantResourcesModal(false);
+                setSelectedUser(null);
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-2xl">
+                💎
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 leading-tight">
+                  Octroyer des Ressources
+                </h3>
+                <p className="text-xs text-slate-500 font-bold">
+                  Compte cible : <span className="text-emerald-600 font-black">{selectedUser.pseudo}</span> ({selectedUser.role || "user"})
+                </p>
+              </div>
+            </div>
+
+            {/* Solde actuel de l'utilisateur ciblé */}
+            {(() => {
+              const uState = getPlayerGamificationState(selectedUser.id);
+              return (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4 flex items-center justify-around text-center">
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500">TerraGems 💎</p>
+                    <p className="text-base font-black text-sky-600">{uState.gems.toLocaleString()}</p>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200" />
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500">Cœurs ❤️</p>
+                    <p className="text-base font-black text-rose-600">{uState.lives} / {uState.maxLives}</p>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200" />
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500">Gels 🧊</p>
+                    <p className="text-base font-black text-cyan-600">{uState.streakFreezes || 0}</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Actions rapides */}
+            <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
+              Octroi Rapide en 1 Clic
+            </p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  adminGrantResources(selectedUser.id, { gemsDelta: 500 });
+                  playSound("success");
+                  toast.success(`+500 💎 octroyées à ${selectedUser.pseudo} !`);
+                  // Force re-render
+                  setSelectedUser({ ...selectedUser });
+                }}
+                className="py-2 px-2 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-black rounded-xl border border-sky-300 shadow-sm transition-all"
+              >
+                +500 💎
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  adminGrantResources(selectedUser.id, { gemsDelta: 2500 });
+                  playSound("success");
+                  toast.success(`+2 500 💎 octroyées à ${selectedUser.pseudo} !`);
+                  setSelectedUser({ ...selectedUser });
+                }}
+                className="py-2 px-2 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-black rounded-xl border border-sky-300 shadow-sm transition-all"
+              >
+                +2 500 💎
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  adminGrantResources(selectedUser.id, { gemsDelta: 10000 });
+                  playSound("success");
+                  toast.success(`+10 000 💎 octroyées à ${selectedUser.pseudo} !`);
+                  setSelectedUser({ ...selectedUser });
+                }}
+                className="py-2 px-2 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-black rounded-xl border border-sky-300 shadow-sm transition-all"
+              >
+                +10 000 💎
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  adminGrantResources(selectedUser.id, { setLives: 5, fullRefill: true });
+                  playSound("success");
+                  toast.success(`5 Vies ❤️ restaurées pour ${selectedUser.pseudo} !`);
+                  setSelectedUser({ ...selectedUser });
+                }}
+                className="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-black rounded-xl border border-rose-300 shadow-sm transition-all"
+              >
+                ❤️ 5 Vies Max
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  adminGrantResources(selectedUser.id, { setLives: 99 });
+                  playSound("success");
+                  toast.success(`99 Vies ❤️ octroyées à ${selectedUser.pseudo} !`);
+                  setSelectedUser({ ...selectedUser });
+                }}
+                className="py-2 px-2 bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-black rounded-xl border border-purple-300 shadow-sm transition-all"
+              >
+                ♾️ 99 Vies Dev
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  adminGrantResources(selectedUser.id, { streakFreezesDelta: 3 });
+                  playSound("success");
+                  toast.success(`+3 Gels 🧊 octroyés à ${selectedUser.pseudo} !`);
+                  setSelectedUser({ ...selectedUser });
+                }}
+                className="py-2 px-2 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 text-xs font-black rounded-xl border border-cyan-300 shadow-sm transition-all"
+              >
+                +3 Gels 🧊
+              </button>
+            </div>
+
+            {/* Formulaires Montants Libres */}
+            <div className="space-y-3 pt-3 border-t border-slate-200 mb-5">
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1">
+                  💎 Gemmes Personnalisées
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder="Montant..."
+                    value={grantGemsAmount}
+                    onChange={(e) => setGrantGemsAmount(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300 outline-none focus:border-sky-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = parseInt(grantGemsAmount, 10);
+                      if (!isNaN(val) && val !== 0) {
+                        adminGrantResources(selectedUser.id, { gemsDelta: val });
+                        playSound("success");
+                        toast.success(`${val >= 0 ? "+" : ""}${val} 💎 ajoutées !`);
+                        setGrantGemsAmount("");
+                        setSelectedUser({ ...selectedUser });
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95"
+                  >
+                    + Ajouter
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = parseInt(grantGemsAmount, 10);
+                      if (!isNaN(val) && val >= 0) {
+                        adminGrantResources(selectedUser.id, { setGems: val });
+                        playSound("success");
+                        toast.success(`Solde fixé à ${val} 💎 !`);
+                        setGrantGemsAmount("");
+                        setSelectedUser({ ...selectedUser });
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95"
+                  >
+                    = Fixer
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-slate-700 mb-1">
+                  ❤️ Cœurs Personnalisés
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder="Nombre de vies..."
+                    value={grantLivesAmount}
+                    onChange={(e) => setGrantLivesAmount(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300 outline-none focus:border-rose-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = parseInt(grantLivesAmount, 10);
+                      if (!isNaN(val) && val >= 0) {
+                        adminGrantResources(selectedUser.id, { setLives: val });
+                        playSound("success");
+                        toast.success(`Cœurs fixés à ${val} ❤️ !`);
+                        setGrantLivesAmount("");
+                        setSelectedUser({ ...selectedUser });
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95"
+                  >
+                    = Définir Cœurs
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowGrantResourcesModal(false);
+                setSelectedUser(null);
+              }}
+              className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       )}

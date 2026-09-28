@@ -12,11 +12,26 @@ import {
   Clock,
   Map,
   CheckCircle2,
-  UserCheck,
   BarChart3,
   Flame,
   Compass,
+  Heart,
+  Globe,
+  Palette,
+  Zap,
+  Star,
+  ArrowRight,
 } from "lucide-react";
+import {
+  getPlayerGamificationState,
+  adminGrantResources,
+  PlayerGamificationState,
+} from "../../lib/gamificationManager";
+import { getSiteConfig, type SiteConfig } from "../../lib/siteConfigManager";
+import { fetchCountryIntelligence, type GlobalCountryIntelligence } from "../../lib/countryTrackingManager";
+import { toast } from "../common/ToastContainer";
+import { playSound } from "../../lib/soundManager";
+import { triggerConfetti } from "../common/Confetti";
 import {
   ResponsiveContainer,
   LineChart,
@@ -107,11 +122,36 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
   const [logsPage, setLogsPage] = useState(1);
   const [logsPageSize] = useState(20);
   const [logsTotalCount, setLogsTotalCount] = useState(0);
+  const [adminGamification, setAdminGamification] = useState<PlayerGamificationState>(() =>
+    getPlayerGamificationState(profile?.id)
+  );
+  const [customGrantGems, setCustomGrantGems] = useState("");
+  const [customGrantLives, setCustomGrantLives] = useState("");
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => getSiteConfig());
+  const [countryIntel, setCountryIntel] = useState<GlobalCountryIntelligence | null>(null);
+
+  useEffect(() => {
+    setAdminGamification(getPlayerGamificationState(profile?.id));
+    const handleGamificationUpdate = () => {
+      setAdminGamification(getPlayerGamificationState(profile?.id));
+    };
+    const handleConfigUpdate = (e: Event) => {
+      const ce = e as CustomEvent<SiteConfig>;
+      if (ce.detail) setSiteConfig(ce.detail);
+    };
+    window.addEventListener("terracost_gamification_updated", handleGamificationUpdate);
+    window.addEventListener("terracost_site_config_updated", handleConfigUpdate);
+    return () => {
+      window.removeEventListener("terracost_gamification_updated", handleGamificationUpdate);
+      window.removeEventListener("terracost_site_config_updated", handleConfigUpdate);
+    };
+  }, [profile?.id]);
 
   useEffect(() => {
     if (profile?.role === "admin") {
       loadAdminData();
       logAdminEvent("open_admin_dashboard", null, null, {});
+      void fetchCountryIntelligence("fr").then((data) => setCountryIntel(data));
     }
   }, [profile]);
 
@@ -538,55 +578,482 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
         <p className="text-gray-600">{t("admin.dashboard.subtitle")}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 mb-8">
         <button
           onClick={() => goToSection("user-management", "utilisateurs")}
-          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+          className="bg-white rounded-xl border border-gray-200 p-3.5 text-left hover:shadow-md transition-shadow"
         >
-          <Users className="w-5 h-5 text-blue-600 mb-2" />
+          <Users className="w-5 h-5 text-blue-600 mb-1.5" />
           <p className="text-xs text-gray-500">{t("admin.dashboard.totalUsers")}</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+          <p className="text-xl font-bold text-gray-900">{stats.totalUsers}</p>
         </button>
         <button
           onClick={() => goToSection("quiz-management", "quiz")}
-          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+          className="bg-white rounded-xl border border-gray-200 p-3.5 text-left hover:shadow-md transition-shadow"
         >
-          <BookOpen className="w-5 h-5 text-emerald-600 mb-2" />
+          <BookOpen className="w-5 h-5 text-emerald-600 mb-1.5" />
           <p className="text-xs text-gray-500">{t("admin.dashboard.totalQuizzes")}</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.totalQuizzes}</p>
+          <p className="text-xl font-bold text-gray-900">{stats.totalQuizzes}</p>
+        </button>
+        <button
+          onClick={() => goToSection("country-tracking", "statistiques pays")}
+          className="bg-white rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white p-3.5 text-left hover:shadow-md transition-shadow"
+        >
+          <Globe className="w-5 h-5 text-emerald-600 mb-1.5" />
+          <p className="text-xs text-emerald-800 font-semibold">Géo-Suivi</p>
+          <p className="text-xl font-bold text-slate-900">195 pays</p>
+        </button>
+        <button
+          onClick={() => goToSection("site-config", "personnalisation")}
+          className="bg-white rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50/50 to-white p-3.5 text-left hover:shadow-md transition-shadow"
+        >
+          <Palette className="w-5 h-5 text-violet-600 mb-1.5" />
+          <p className="text-xs text-violet-800 font-semibold">Réglages Site</p>
+          <p className="text-xl font-bold text-slate-900">En direct</p>
         </button>
         <button
           onClick={() => goToSection("quiz-validation", "validation quiz")}
-          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+          className="bg-white rounded-xl border border-gray-200 p-3.5 text-left hover:shadow-md transition-shadow"
         >
-          <CheckCircle2 className="w-5 h-5 text-teal-600 mb-2" />
+          <CheckCircle2 className="w-5 h-5 text-teal-600 mb-1.5" />
           <p className="text-xs text-gray-500">{t("admin.dashboard.pendingValidation")}</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.pendingValidations}</p>
+          <p className="text-xl font-bold text-gray-900">{stats.pendingValidations}</p>
         </button>
         <button
           onClick={() => goToSection("warnings-management", "warnings")}
-          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+          className="bg-white rounded-xl border border-gray-200 p-3.5 text-left hover:shadow-md transition-shadow"
         >
-          <AlertTriangle className="w-5 h-5 text-amber-600 mb-2" />
+          <AlertTriangle className="w-5 h-5 text-amber-600 mb-1.5" />
           <p className="text-xs text-gray-500">{t("admin.dashboard.pendingReports")}</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.pendingReports}</p>
+          <p className="text-xl font-bold text-gray-900">{stats.pendingReports}</p>
         </button>
         <button
           onClick={() => goToSection("quiz-management", "quiz sans localisation")}
-          className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md transition-shadow"
+          className="bg-white rounded-xl border border-gray-200 p-3.5 text-left hover:shadow-md transition-shadow"
         >
-          <Map className="w-5 h-5 text-cyan-600 mb-2" />
+          <Map className="w-5 h-5 text-cyan-600 mb-1.5" />
           <p className="text-xs text-gray-500">{t("admin.dashboard.missingLocation")}</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.missingLocations}</p>
+          <p className="text-xl font-bold text-gray-900">{stats.missingLocations}</p>
         </button>
         <button
           onClick={() => goToSection("path-management", "parcours")}
-          className="bg-white rounded-xl border border-emerald-200 p-4 text-left hover:shadow-md transition-shadow bg-gradient-to-br from-emerald-50/40 to-white"
+          className="bg-white rounded-xl border border-gray-200 p-3.5 text-left hover:shadow-md transition-shadow"
         >
-          <Compass className="w-5 h-5 text-emerald-600 mb-2" />
+          <Compass className="w-5 h-5 text-emerald-600 mb-1.5" />
           <p className="text-xs text-gray-500">Parcours</p>
-          <p className="text-2xl font-bold text-gray-900">14 étapes</p>
+          <p className="text-xl font-bold text-gray-900">14 étapes</p>
         </button>
+      </div>
+
+      {/* ⚡ Outils Développeur : Gestion des Ressources (Gemmes & Cœurs) */}
+      <div className="bg-gradient-to-br from-white via-amber-50/30 to-amber-100/20 rounded-2xl shadow-md border-2 border-amber-200/80 p-5 sm:p-6 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-amber-200/70">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-2xl shrink-0">
+              💎
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                  <span>Console Développeur : Gemmes & Cœurs de Jeu</span>
+                  <span className="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-black uppercase">
+                    Admin
+                  </span>
+                </h2>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
+                Attribuez-vous des ressources en un clic pour tester la boutique cosmétique, les recharges et les quiz sans limitation.
+              </p>
+            </div>
+          </div>
+
+          {/* Solde actuel de l'admin */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-sky-50 border border-sky-200 text-sky-900 rounded-xl font-black text-xs sm:text-sm shadow-sm">
+              <span>💎</span>
+              <span>{adminGamification.gems.toLocaleString()} Gems</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl font-black text-xs sm:text-sm shadow-sm">
+              <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+              <span>{adminGamification.lives} Vies</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 border border-cyan-200 text-cyan-800 rounded-xl font-black text-xs sm:text-sm shadow-sm">
+              <span>🧊</span>
+              <span>{adminGamification.streakFreezes || 0} Gels</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Boutons d'octroi rapide */}
+        <div className="mb-4">
+          <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
+            Actions Rapides en 1 Clic
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const s = adminGrantResources(profile?.id, { gemsDelta: 500 });
+                playSound("success");
+                toast.success("+500 TerraGems 💎 ajoutées !");
+                setAdminGamification(s);
+              }}
+              className="py-2.5 px-3 bg-white hover:bg-sky-50 text-sky-900 font-black text-xs rounded-xl border border-sky-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+            >
+              <span className="text-base">💎</span>
+              <span>+500 Gems</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const s = adminGrantResources(profile?.id, { gemsDelta: 2500 });
+                playSound("success");
+                toast.success("+2 500 TerraGems 💎 ajoutées !");
+                setAdminGamification(s);
+              }}
+              className="py-2.5 px-3 bg-white hover:bg-sky-50 text-sky-900 font-black text-xs rounded-xl border border-sky-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+            >
+              <span className="text-base">💎</span>
+              <span>+2 500 Gems</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const s = adminGrantResources(profile?.id, { gemsDelta: 10000 });
+                playSound("success");
+                triggerConfetti();
+                toast.success("+10 000 TerraGems 💎 ajoutées !");
+                setAdminGamification(s);
+              }}
+              className="py-2.5 px-3 bg-white hover:bg-sky-50 text-sky-900 font-black text-xs rounded-xl border border-sky-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+            >
+              <span className="text-base">💎</span>
+              <span>+10 000 Gems</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const s = adminGrantResources(profile?.id, { fullRefill: true, setLives: 5 });
+                playSound("success");
+                toast.success("Cœurs restaurés à 5 ❤️ !");
+                setAdminGamification(s);
+              }}
+              className="py-2.5 px-3 bg-white hover:bg-rose-50 text-rose-900 font-black text-xs rounded-xl border border-rose-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+            >
+              <span className="text-base">❤️</span>
+              <span>Plein 5 Cœurs</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const s = adminGrantResources(profile?.id, { setLives: 99 });
+                playSound("success");
+                toast.success("Mode Immortel : 99 Cœurs ❤️ attribués !");
+                setAdminGamification(s);
+              }}
+              className="py-2.5 px-3 bg-white hover:bg-purple-50 text-purple-900 font-black text-xs rounded-xl border border-purple-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+            >
+              <span className="text-base">♾️</span>
+              <span>99 Vies Dev</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const s = adminGrantResources(profile?.id, { streakFreezesDelta: 3 });
+                playSound("success");
+                toast.success("+3 Gels de Flamme 🧊 ajoutés !");
+                setAdminGamification(s);
+              }}
+              className="py-2.5 px-3 bg-white hover:bg-indigo-50 text-indigo-900 font-black text-xs rounded-xl border border-indigo-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+            >
+              <span className="text-base">🧊</span>
+              <span>+3 Gels 🧊</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const s = adminGrantResources(profile?.id, { setGems: 100, setLives: 5, fullRefill: true });
+                playSound("click");
+                toast.success("Ressources réinitialisées (100 💎, 5 ❤️) !");
+                setAdminGamification(s);
+              }}
+              className="py-2.5 px-3 bg-white hover:bg-slate-100 text-slate-700 font-black text-xs rounded-xl border border-slate-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+            >
+              <span className="text-base">🔄</span>
+              <span>Reset 100💎/5❤️</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Formulaires d'ajustement personnalisé */}
+        <div className="pt-3 border-t border-amber-200/70 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Custom Gems */}
+          <div className="bg-white/80 p-3 rounded-xl border border-slate-200">
+            <label className="block text-xs font-black text-slate-700 mb-1.5">
+              💎 Ajustement Personnalisé des TerraGems
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                placeholder="Montant (ex: 1500)..."
+                value={customGrantGems}
+                onChange={(e) => setCustomGrantGems(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const val = parseInt(customGrantGems, 10);
+                  if (!isNaN(val) && val !== 0) {
+                    const s = adminGrantResources(profile?.id, { gemsDelta: val });
+                    playSound("success");
+                    toast.success(`${val >= 0 ? "+" : ""}${val} 💎 ajoutées !`);
+                    setAdminGamification(s);
+                    setCustomGrantGems("");
+                  }
+                }}
+                className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs rounded-lg whitespace-nowrap active:scale-95 shadow-sm transition-all"
+              >
+                + Ajouter
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const val = parseInt(customGrantGems, 10);
+                  if (!isNaN(val) && val >= 0) {
+                    const s = adminGrantResources(profile?.id, { setGems: val });
+                    playSound("success");
+                    toast.success(`Solde fixé à ${val} 💎 !`);
+                    setAdminGamification(s);
+                    setCustomGrantGems("");
+                  }
+                }}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-lg whitespace-nowrap active:scale-95 shadow-sm transition-all"
+              >
+                = Définir
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Lives */}
+          <div className="bg-white/80 p-3 rounded-xl border border-slate-200">
+            <label className="block text-xs font-black text-slate-700 mb-1.5">
+              ❤️ Ajustement Personnalisé des Cœurs
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                placeholder="Nombre de cœurs (ex: 10)..."
+                value={customGrantLives}
+                onChange={(e) => setCustomGrantLives(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const val = parseInt(customGrantLives, 10);
+                  if (!isNaN(val) && val !== 0) {
+                    const s = adminGrantResources(profile?.id, { livesDelta: val });
+                    playSound("success");
+                    toast.success(`${val >= 0 ? "+" : ""}${val} ❤️ modifiés !`);
+                    setAdminGamification(s);
+                    setCustomGrantLives("");
+                  }
+                }}
+                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-lg whitespace-nowrap active:scale-95 shadow-sm transition-all"
+              >
+                + Ajouter
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const val = parseInt(customGrantLives, 10);
+                  if (!isNaN(val) && val >= 0) {
+                    const s = adminGrantResources(profile?.id, { setLives: val });
+                    playSound("success");
+                    toast.success(`Cœurs fixés à ${val} ❤️ !`);
+                    setAdminGamification(s);
+                    setCustomGrantLives("");
+                  }
+                }}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-lg whitespace-nowrap active:scale-95 shadow-sm transition-all"
+              >
+                = Définir
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Deux Nouvelles Cartes Exécutives : Géo-Intelligence & Personnalisation Active ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Carte 1 : Intelligence Géo & Radar Pays */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-emerald-100 text-emerald-800">
+                  <Globe className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    Intelligence Géo : Radar des Pays
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Détection en temps réel des pays les plus maîtrisés et des pièges
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full font-black bg-emerald-100 text-emerald-800 uppercase">
+                195 Pays Suivis
+              </span>
+            </div>
+
+            {countryIntel ? (
+              <div className="grid grid-cols-2 gap-3 my-4">
+                {/* Top 3 Reconnus */}
+                <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200">
+                  <p className="text-xs font-black text-emerald-800 uppercase mb-2 flex items-center gap-1">
+                    <span>🌟 Top 3 Reconnus</span>
+                  </p>
+                  <div className="space-y-1.5">
+                    {countryIntel.mostRecognizedCountries.slice(0, 3).map((c, i) => (
+                      <div key={c.iso3} className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 truncate">
+                          {c.flagEmoji} {c.name}
+                        </span>
+                        <span className="font-black text-emerald-700">
+                          {c.recognitionRate.toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top 3 Pièges */}
+                <div className="p-3 rounded-xl bg-rose-50/60 border border-rose-200">
+                  <p className="text-xs font-black text-rose-800 uppercase mb-2 flex items-center gap-1">
+                    <span>⚠️ Top 3 Pièges Géo</span>
+                  </p>
+                  <div className="space-y-1.5">
+                    {countryIntel.mostFailedCountries.slice(0, 3).map((c, i) => (
+                      <div key={c.iso3} className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 truncate">
+                          {c.flagEmoji} {c.name}
+                        </span>
+                        <span className="font-black text-rose-700">
+                          {c.recognitionRate.toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-slate-400">
+                Chargement des données géographiques...
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => goToSection("country-tracking", "radar des pays")}
+            className="w-full mt-2 py-2.5 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs flex items-center justify-center gap-2 transition-colors border border-emerald-200"
+          >
+            <span>Explorer le classement complet & exporter CSV</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Carte 2 : Personnalisation Active du Site */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-violet-100 text-violet-800">
+                  <Palette className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    Personnalisation Active du Site
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Bannière globale, pays vedette et multiplicateurs en temps réel
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full font-black bg-violet-100 text-violet-800 uppercase">
+                Configuration
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 my-4 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-slate-500 font-semibold mb-1">Bannière Globale</p>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      siteConfig.announcement.enabled ? "bg-emerald-500 animate-pulse" : "bg-slate-300"
+                    }`}
+                  />
+                  <span className="font-bold text-slate-800 truncate">
+                    {siteConfig.announcement.enabled ? "Active en ligne" : "Désactivée"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-slate-500 font-semibold mb-1">Multiplicateur XP</p>
+                <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" />
+                  <span>
+                    {siteConfig.gameplay.isEventActive
+                      ? `${siteConfig.gameplay.globalXpMultiplier}x XP (Actif)`
+                      : "1.0x (Standard)"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-slate-500 font-semibold mb-1">Pays à l'Honneur</p>
+                <div className="flex items-center gap-1.5 font-bold text-slate-800 truncate">
+                  <Star className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="truncate">
+                    {siteConfig.featuredCountry.isActive
+                      ? `${siteConfig.featuredCountry.flagEmoji} ${siteConfig.featuredCountry.name}`
+                      : "Aucun pays vedette"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-slate-500 font-semibold mb-1">Vies Maximales</p>
+                <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                  <Heart className="w-3.5 h-3.5 text-rose-500" />
+                  <span>
+                    {siteConfig.gameplay.maxLives === -1
+                      ? "Illimitées (Dev/Event)"
+                      : `${siteConfig.gameplay.maxLives} Cœurs`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => goToSection("site-config", "personnalisation")}
+            className="w-full mt-2 py-2.5 px-4 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-900 font-bold text-xs flex items-center justify-center gap-2 transition-colors border border-violet-200"
+          >
+            <span>Modifier la bannière d'annonce & les multiplicateurs</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-5 mb-8">

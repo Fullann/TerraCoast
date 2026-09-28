@@ -17,6 +17,7 @@ export interface PartyPlayer {
   streak: number;
   isHost: boolean;
   isConnected: boolean;
+  isSpectator?: boolean; // When true: host is screen/presenter only, does not answer or compete
   hasAnsweredCurrentQuestion?: boolean;
   lastAnswerCorrect?: boolean | null;
   lastAnswerTimeMs?: number | null;
@@ -54,6 +55,7 @@ export interface PartyRoom {
   questions?: PartyQuestion[];
   gameMode?: "classic" | "battle_royale";
   eliminatedPerRound?: number;
+  hostIsPlayer?: boolean; // When false: host acts as dedicated projector screen
 }
 
 export interface PartyAnswerSubmission {
@@ -144,7 +146,7 @@ export function computeBattleRoyaleEliminations(
   newlyEliminatedIds: string[];
   remainingCount: number;
 } {
-  const activePlayers = players.filter((p) => !p.isEliminated);
+  const activePlayers = players.filter((p) => !p.isEliminated && !p.isSpectator);
 
   // Si 2 joueurs ou moins sont actifs, on ne force pas l'élimination pour garder la finale
   if (activePlayers.length <= 2) {

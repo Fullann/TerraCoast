@@ -151,14 +151,14 @@ export function HigherLowerGamePage() {
   const currentMetric = round.activeMetric;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col pb-28 safe-area-bottom">
       {/* Header */}
-      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 px-4 py-3 sm:px-6">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 py-3 sm:px-6 shadow-xs">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/games")}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
               title="Retour aux modes"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -166,38 +166,38 @@ export function HigherLowerGamePage() {
             <div className="flex items-center gap-2">
               <span className="text-2xl">⚖️</span>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
+                <h1 className="text-lg sm:text-xl font-black text-slate-800">
                   Plus Grand ou Plus Petit
                 </h1>
-                <p className="text-xs text-slate-400">Le duel des chiffres mondiaux</p>
+                <p className="text-xs text-slate-500 font-medium">Le duel des chiffres mondiaux</p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Streak Counter */}
-            <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 px-3.5 py-1.5 rounded-full">
-              <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
-              <div className="text-xs">
-                <span className="text-slate-400">Série : </span>
-                <span className="font-extrabold text-amber-300 text-sm">{streak}</span>
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-full shadow-2xs">
+              <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <div className="text-xs font-black">
+                <span className="text-amber-800">Série : </span>
+                <span className="text-amber-950 text-sm">{streak}</span>
               </div>
             </div>
 
             {/* High Score */}
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-full border border-slate-700">
-              <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 font-bold">
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
               <span>Record : </span>
-              <span className="font-bold text-white">{highScore}</span>
+              <span className="font-black text-slate-800">{highScore}</span>
             </div>
 
             {/* Sound Toggle */}
             <button
               onClick={handleSoundToggle}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
               title={soundOn ? "Couper le son" : "Activer le son"}
             >
-              {soundOn ? <Volume2 className="w-5 h-5 text-amber-400" /> : <VolumeX className="w-5 h-5" />}
+              {soundOn ? <Volume2 className="w-5 h-5 text-amber-600" /> : <VolumeX className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -205,16 +205,16 @@ export function HigherLowerGamePage() {
 
       {/* Metric Mode Filter Bar */}
       <div className="max-w-5xl mx-auto w-full px-4 pt-4 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs font-semibold">
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl text-xs font-black">
           <button
             onClick={() => {
               setMetricMode("population");
               handleStartGame("population");
             }}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all ${
               metricMode === "population"
-                ? "bg-amber-600 text-white shadow-md shadow-amber-900/30"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-white text-amber-900 shadow-sm border border-slate-200/80"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             👥 Population
@@ -224,10 +224,10 @@ export function HigherLowerGamePage() {
               setMetricMode("area_km2");
               handleStartGame("area_km2");
             }}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all ${
               metricMode === "area_km2"
-                ? "bg-amber-600 text-white shadow-md shadow-amber-900/30"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-white text-amber-900 shadow-sm border border-slate-200/80"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             📐 Superficie
@@ -237,18 +237,18 @@ export function HigherLowerGamePage() {
               setMetricMode("random");
               handleStartGame("random");
             }}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all ${
               metricMode === "random"
-                ? "bg-amber-600 text-white shadow-md shadow-amber-900/30"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-white text-amber-900 shadow-sm border border-slate-200/80"
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
             🎲 Aléatoire
           </button>
         </div>
 
-        <span className="text-xs text-slate-500 font-medium">
-          Métrique active : {currentMetric === "population" ? "Population" : "Superficie"}
+        <span className="text-xs text-slate-500 font-bold bg-white px-3 py-1 rounded-xl border border-slate-200">
+          Métrique : {currentMetric === "population" ? "Population" : "Superficie"}
         </span>
       </div>
 
@@ -257,30 +257,30 @@ export function HigherLowerGamePage() {
         {!isGameOver ? (
           <div className="relative grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-stretch my-auto">
             {/* Card A : Pays de Référence (Valeur Connue) */}
-            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-between shadow-2xl relative overflow-hidden group">
-              <div className="w-full flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider">
+            <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-between shadow-xs relative overflow-hidden group">
+              <div className="w-full flex items-center justify-between text-xs text-slate-500 font-black uppercase tracking-wider">
                 <span>Pays de référence</span>
-                <span>{round.currentCountry.continent}</span>
+                <span className="bg-slate-100 px-2 py-0.5 rounded-lg">{round.currentCountry.continent}</span>
               </div>
 
               <div className="my-6 text-center space-y-3">
                 <span className="text-6xl sm:text-7xl block filter drop-shadow-md">
                   {round.currentCountry.flagEmoji}
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-800">
                   {round.currentCountry.name}
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 font-bold">
                   Capitale : {round.currentCountry.capital}
                 </p>
               </div>
 
               {/* Highlighted Value */}
-              <div className="w-full bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 text-center">
-                <p className="text-xs text-amber-400 font-bold uppercase tracking-wider mb-1">
+              <div className="w-full bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 text-center">
+                <p className="text-xs text-amber-800 font-black uppercase tracking-wider mb-1">
                   {currentMetric === "population" ? "Population" : "Superficie"}
                 </p>
-                <p className="text-2xl sm:text-3xl font-extrabold text-white font-mono">
+                <p className="text-2xl sm:text-3xl font-black text-amber-950 font-mono">
                   {formatMetricValue(
                     currentMetric === "population"
                       ? round.currentCountry.population
@@ -293,33 +293,33 @@ export function HigherLowerGamePage() {
             </div>
 
             {/* VS Badge in the center */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-amber-500 to-orange-500 rounded-full border-4 border-slate-950 shadow-xl text-white font-black text-xs">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex items-center justify-center w-12 h-12 bg-amber-400 text-slate-900 rounded-full border-4 border-slate-100 shadow-xl font-black text-xs">
               VS
             </div>
 
             {/* Card B : Pays Challenger (À Deviner) */}
             <div
-              className={`bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-between shadow-2xl relative overflow-hidden transition-all duration-500 ${
+              className={`bg-white border-2 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-between shadow-xs relative overflow-hidden transition-all duration-300 ${
                 revealed
                   ? lastChoiceCorrect
-                    ? "border-emerald-500 ring-2 ring-emerald-500/30"
-                    : "border-red-500 ring-2 ring-red-500/30"
-                  : "border-slate-800"
+                    ? "border-emerald-500 ring-4 ring-emerald-100"
+                    : "border-rose-500 ring-4 ring-rose-100"
+                  : "border-slate-200"
               }`}
             >
-              <div className="w-full flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider">
+              <div className="w-full flex items-center justify-between text-xs text-slate-500 font-black uppercase tracking-wider">
                 <span>Challenger</span>
-                <span>{round.nextCountry.continent}</span>
+                <span className="bg-slate-100 px-2 py-0.5 rounded-lg">{round.nextCountry.continent}</span>
               </div>
 
               <div className="my-6 text-center space-y-3">
                 <span className="text-6xl sm:text-7xl block filter drop-shadow-md">
                   {round.nextCountry.flagEmoji}
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-800">
                   {round.nextCountry.name}
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 font-bold">
                   Capitale : {round.nextCountry.capital}
                 </p>
               </div>
@@ -327,17 +327,17 @@ export function HigherLowerGamePage() {
               {/* Interactive choice or revealed value */}
               <div className="w-full">
                 {!revealed ? (
-                  <div className="space-y-2">
-                    <p className="text-xs text-center text-slate-400 font-medium mb-2">
+                  <div className="space-y-3">
+                    <p className="text-xs text-center text-slate-500 font-bold mb-1">
                       {currentMetric === "population"
-                        ? `A-t-il une population plus élevée ou moins élevée que ${round.currentCountry.name} ?`
+                        ? `A-t-il une population plus ou moins élevée que ${round.currentCountry.name} ?`
                         : `A-t-il une superficie plus grande ou plus petite que ${round.currentCountry.name} ?`}
                     </p>
 
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => handleChoice("higher")}
-                        className="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2 transition-all hover:scale-102 active:scale-98"
+                        className="py-4 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm sm:text-base rounded-2xl border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1 shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all"
                       >
                         <ArrowUp className="w-5 h-5 stroke-[3]" />
                         <span>Plus {currentMetric === "population" ? "Élevé" : "Grand"}</span>
@@ -345,7 +345,7 @@ export function HigherLowerGamePage() {
 
                       <button
                         onClick={() => handleChoice("lower")}
-                        className="py-3.5 px-4 bg-red-600 hover:bg-red-500 text-white font-black text-sm sm:text-base rounded-2xl shadow-lg shadow-red-900/40 flex items-center justify-center gap-2 transition-all hover:scale-102 active:scale-98"
+                        className="py-4 px-4 bg-rose-500 hover:bg-rose-600 text-white font-black text-sm sm:text-base rounded-2xl border-b-4 border-rose-700 active:border-b-0 active:translate-y-1 shadow-md shadow-rose-500/20 flex items-center justify-center gap-2 transition-all"
                       >
                         <ArrowDown className="w-5 h-5 stroke-[3]" />
                         <span>Plus {currentMetric === "population" ? "Faible" : "Petit"}</span>
@@ -354,26 +354,26 @@ export function HigherLowerGamePage() {
                   </div>
                 ) : (
                   <div
-                    className={`w-full rounded-2xl p-4 text-center border animate-scaleUp ${
+                    className={`w-full rounded-2xl p-4 text-center border-2 animate-in zoom-in-95 ${
                       lastChoiceCorrect
-                        ? "bg-emerald-950/60 border-emerald-500 text-emerald-300"
-                        : "bg-red-950/60 border-red-500 text-red-300"
+                        ? "bg-emerald-50 border-emerald-500 text-emerald-950"
+                        : "bg-rose-50 border-rose-500 text-rose-950"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2 mb-1 font-bold text-xs">
+                    <div className="flex items-center justify-center gap-2 mb-1 font-black text-xs">
                       {lastChoiceCorrect ? (
                         <>
-                          <Check className="w-4 h-4 text-emerald-400" />
+                          <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
                           <span>Exact !</span>
                         </>
                       ) : (
                         <>
-                          <X className="w-4 h-4 text-red-400" />
+                          <X className="w-4 h-4 text-rose-600 stroke-[3]" />
                           <span>Faux !</span>
                         </>
                       )}
                     </div>
-                    <p className="text-2xl sm:text-3xl font-extrabold font-mono">
+                    <p className="text-2xl sm:text-3xl font-black font-mono">
                       {formatMetricValue(
                         currentMetric === "population"
                           ? round.nextCountry.population
@@ -389,32 +389,32 @@ export function HigherLowerGamePage() {
           </div>
         ) : (
           /* Game Over Recap Card */
-          <div className="max-w-md mx-auto w-full bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-6 sm:p-8 text-center space-y-6 shadow-2xl animate-scaleUp">
-            <div className="w-20 h-20 bg-gradient-to-tr from-amber-500 to-orange-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-orange-950">
+          <div className="max-w-md mx-auto w-full bg-white border-3 border-amber-400 rounded-3xl p-6 sm:p-8 text-center space-y-6 shadow-2xl animate-in zoom-in-95">
+            <div className="w-20 h-20 bg-gradient-to-tr from-amber-400 to-orange-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20">
               <Flame className="w-10 h-10 text-white" />
             </div>
 
             <div>
-              <h2 className="text-3xl font-black text-white">Série Terminée !</h2>
-              <p className="text-slate-400 mt-1 text-sm">
-                Tu as enchaîné une belle série de comparaisons.
+              <h2 className="text-3xl font-black text-slate-800">Série Terminée !</h2>
+              <p className="text-slate-500 font-medium mt-1 text-sm">
+                Vous avez enchaîné une belle série de comparaisons.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border-2 border-slate-200">
               <div className="text-center">
-                <p className="text-xs text-slate-400 font-bold uppercase">Ton Score</p>
-                <p className="text-3xl font-black text-amber-400 mt-1">{streak}</p>
+                <p className="text-xs text-slate-500 font-black uppercase">Votre Score</p>
+                <p className="text-3xl font-black text-amber-600 mt-1">{streak}</p>
               </div>
-              <div className="text-center border-l border-slate-700">
-                <p className="text-xs text-slate-400 font-bold uppercase">Meilleur Record</p>
-                <p className="text-3xl font-black text-white mt-1">{highScore}</p>
+              <div className="text-center border-l-2 border-slate-200">
+                <p className="text-xs text-slate-500 font-black uppercase">Meilleur Record</p>
+                <p className="text-3xl font-black text-slate-800 mt-1">{highScore}</p>
               </div>
             </div>
 
             {streak >= highScore && streak > 0 && (
-              <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-500/40 py-2 rounded-xl">
-                <Sparkles className="w-4 h-4" />
+              <div className="flex items-center justify-center gap-2 text-xs font-black text-emerald-800 bg-emerald-100 border border-emerald-300 py-2.5 rounded-2xl">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
                 <span>Nouveau Record Personnel Établi ! 🎉</span>
               </div>
             )}
@@ -422,17 +422,17 @@ export function HigherLowerGamePage() {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 onClick={() => handleStartGame()}
-                className="flex-1 py-3 px-5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-950/40 flex items-center justify-center gap-2 transition-all"
+                className="flex-1 py-3.5 px-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm rounded-2xl border-b-4 border-amber-700 active:border-b-0 active:translate-y-1 shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition-all"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-4 h-4 stroke-[2.5]" />
                 <span>Rejouer</span>
               </button>
 
               <button
                 onClick={handleShare}
-                className="py-3 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 transition-all"
+                className="py-3.5 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm rounded-2xl border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 flex items-center justify-center gap-2 transition-all"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-4 h-4 stroke-[2.5]" />
                 <span>{copiedShare ? "Copié ! ✅" : "Partager"}</span>
               </button>
             </div>

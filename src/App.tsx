@@ -6,7 +6,7 @@ import { NotificationProvider, useNotifications } from "./contexts/NotificationC
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
-// Auth & Layout (statiques - chargés immédiatement, sans Suspense)
+import { AuthLayout } from "./components/auth/AuthLayout";
 import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -16,6 +16,7 @@ import { PageTransition } from "./components/ui/PageTransition";
 import { ToastContainer } from "./components/common/ToastContainer";
 import { OfflineIndicator } from "./components/common/OfflineIndicator";
 import { ConfettiContainer } from "./components/common/Confetti";
+import { GlobalAnnouncementBanner } from "./components/layout/GlobalAnnouncementBanner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { RadioGlobeProvider } from "./contexts/RadioGlobeContext";
@@ -50,6 +51,10 @@ const HigherLowerGamePage = lazyWithRetry(() => import("./components/games/highe
 const ChronoRushGamePage = lazyWithRetry(() => import("./components/games/chrono-rush/ChronoRushGamePage").then(m => ({ default: m.ChronoRushGamePage })));
 const GeoDetectiveGamePage = lazyWithRetry(() => import("./components/games/geo-detective/GeoDetectiveGamePage").then(m => ({ default: m.GeoDetectiveGamePage })));
 const SrsStudyPage = lazyWithRetry(() => import("./components/games/srs/SrsStudyPage").then(m => ({ default: m.SrsStudyPage })));
+const TravleGamePage = lazyWithRetry(() => import("./components/games/travle/TravleGamePage").then(m => ({ default: m.TravleGamePage })));
+const MapBlitzGamePage = lazyWithRetry(() => import("./components/games/map-blitz/MapBlitzGamePage").then(m => ({ default: m.MapBlitzGamePage })));
+const PhysicalGeoGamePage = lazyWithRetry(() => import("./components/games/physical-geo/PhysicalGeoGamePage").then(m => ({ default: m.PhysicalGeoGamePage })));
+const ShopPage = lazyWithRetry(() => import("./components/shop/ShopPage").then(m => ({ default: m.ShopPage })));
 
 // Admin Pages (Lazy Loading avec reprise automatique)
 const AdminPage = lazyWithRetry(() => import("./components/admin/AdminPage").then(m => ({ default: m.AdminPage })));
@@ -67,6 +72,8 @@ const GeoJsonMapsManagementPage = lazyWithRetry(() => import("./components/admin
 const AdminAnalyticsPage = lazyWithRetry(() => import("./components/admin/AdminAnalyticsPage").then(m => ({ default: m.AdminAnalyticsPage })));
 const HomepageTestimonialsManagementPage = lazyWithRetry(() => import("./components/admin/HomepageTestimonialsManagementPage").then(m => ({ default: m.HomepageTestimonialsManagementPage })));
 const PathManagementPage = lazyWithRetry(() => import("./components/admin/PathManagementPage").then(m => ({ default: m.PathManagementPage })));
+const CountryTrackingPage = lazyWithRetry(() => import("./components/admin/CountryTrackingPage").then(m => ({ default: m.CountryTrackingPage })));
+const SiteConfigPage = lazyWithRetry(() => import("./components/admin/SiteConfigPage").then(m => ({ default: m.SiteConfigPage })));
 
 // Loader affiché pendant le chargement des pages lazy
 function PageLoader() {
@@ -113,6 +120,7 @@ function AppContent() {
       <ToastContainer />
       <OfflineIndicator />
       <ConfettiContainer />
+      <GlobalAnnouncementBanner />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
       {/* ── Routes publiques ── statiques, transition immédiate */}
@@ -120,31 +128,21 @@ function AppContent() {
 
       <Route path="/login" element={!user ? (
         <PageTransition>
-          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-            <div className="w-full max-w-md mx-auto">
-              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
-                ← Retour à l'accueil
-              </button>
-              <LoginForm onSwitchToRegister={() => navigate("/register")} />
-            </div>
-          </div>
+          <AuthLayout activeTab="login" title="Connexion à TerraCoast" subtitle="Accédez à vos conquêtes, vos ligues et vos duels">
+            <LoginForm onSwitchToRegister={() => navigate("/register")} />
+          </AuthLayout>
         </PageTransition>
       ) : <Navigate to="/terra" replace />} />
 
       <Route path="/register" element={!user ? (
         <PageTransition>
-          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-            <div className="w-full max-w-md mx-auto">
-              <button onClick={() => navigate("/")} className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center mb-4">
-                ← Retour à l'accueil
-              </button>
-              <RegisterForm
-                onSwitchToLogin={() => navigate("/login")}
-                onShowTerms={() => navigate("/terms")}
-                onShowPrivacy={() => navigate("/privacy")}
-              />
-            </div>
-          </div>
+          <AuthLayout activeTab="register" title="Rejoindre l'Aventure" subtitle="Créez votre profil d'explorateur et recevez 500 XP offerts">
+            <RegisterForm
+              onSwitchToLogin={() => navigate("/login")}
+              onShowTerms={() => navigate("/terms")}
+              onShowPrivacy={() => navigate("/privacy")}
+            />
+          </AuthLayout>
         </PageTransition>
       ) : <Navigate to="/terra" replace />} />
 
@@ -172,6 +170,10 @@ function AppContent() {
         <Route path="/games/chrono-rush" element={<Lazy><ChronoRushGamePage /></Lazy>} />
         <Route path="/games/geo-detective" element={<Lazy><GeoDetectiveGamePage /></Lazy>} />
         <Route path="/games/srs" element={<Lazy><SrsStudyPage /></Lazy>} />
+        <Route path="/games/travle" element={<Lazy><TravleGamePage /></Lazy>} />
+        <Route path="/games/map-blitz" element={<Lazy><MapBlitzGamePage /></Lazy>} />
+        <Route path="/games/physical-geo" element={<Lazy><PhysicalGeoGamePage /></Lazy>} />
+        <Route path="/shop" element={<Lazy><ShopPage /></Lazy>} />
         <Route path="/quizzes/create" element={<Lazy><CreateQuizPage /></Lazy>} />
         <Route path="/quizzes/edit/:quizId" element={<Lazy><EditQuizPage /></Lazy>} />
         <Route path="/quizzes/play/:quizId" element={<Lazy><PlayQuizPage /></Lazy>} />
@@ -202,6 +204,8 @@ function AppContent() {
           <Route path="duels" element={<Lazy><DuelFeaturesPage /></Lazy>} />
           <Route path="geojson" element={<Lazy><GeoJsonMapsManagementPage /></Lazy>} />
           <Route path="analytics" element={<Lazy><AdminAnalyticsPage /></Lazy>} />
+          <Route path="countries" element={<Lazy><CountryTrackingPage /></Lazy>} />
+          <Route path="site-config" element={<Lazy><SiteConfigPage /></Lazy>} />
           <Route path="path" element={<Lazy><PathManagementPage /></Lazy>} />
           <Route path="homepage-testimonials-management" element={<Lazy><HomepageTestimonialsManagementPage /></Lazy>} />
         </Route>

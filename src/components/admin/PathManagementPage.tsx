@@ -7,7 +7,6 @@ import {
   RotateCcw,
   Play,
   Settings,
-  Sparkles,
   ExternalLink,
   Check,
   X,
@@ -16,11 +15,8 @@ import {
   Plus,
   Trash2,
   Edit3,
-  Layers,
   Palette,
   Gift,
-  HelpCircle,
-  AlertTriangle,
   TrendingUp,
   Users,
   Target,
@@ -48,7 +44,6 @@ import {
   resetCustomUnits,
   getAllPathAnalytics,
   getPathStageAnalytics,
-  resetPathStageAnalytics,
   PathNodeAssignment,
   StageAnalytics,
   StageDifficultyRating,
@@ -1625,7 +1620,7 @@ export function PathManagementPage() {
                           <span className="text-[10px] font-bold text-slate-500">
                             {quiz.difficulty || "moyen"}
                           </span>
-                          {quiz.verified && (
+                          {(quiz as any).verified && (
                             <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
                               <Check className="w-3 h-3 stroke-[3]" /> Officiel
                             </span>

@@ -10,8 +10,14 @@ import {
   playVictoryFanfare,
 } from "../../../lib/soundManager";
 import { triggerConfetti } from "../../common/Confetti";
-import { getPathNodeQuiz } from "../../../lib/pathQuizzesData";
-import { completePathNode } from "../../../lib/gamificationManager";
+import {
+  completePathNode,
+  getPlayerGamificationState,
+  deductLife,
+  refillAllLives,
+  buyShopItem,
+  type PlayerGamificationState,
+} from "../../../lib/gamificationManager";
 import { recordPathStageAttempt } from "../../../lib/pathConfigManager";
 import type {
   Quiz,
@@ -101,6 +107,22 @@ export function usePlayQuiz({
   } | null>(null);
 
   const pendingSessionPayloadRef = useRef<PendingSessionPayload | null>(null);
+
+  const [showHeartRefillModal, setShowHeartRefillModal] = useState(false);
+  const [gamification, setGamification] = useState<PlayerGamificationState>(() =>
+    getPlayerGamificationState(profile?.id)
+  );
+
+  useEffect(() => {
+    setGamification(getPlayerGamificationState(profile?.id));
+    const handleGamificationUpdate = () => {
+      setGamification(getPlayerGamificationState(profile?.id));
+    };
+    window.addEventListener("terracost_gamification_updated", handleGamificationUpdate);
+    return () => {
+      window.removeEventListener("terracost_gamification_updated", handleGamificationUpdate);
+    };
+  }, [profile?.id]);
 
   const [puzzleStates, setPuzzleStates] = useState<Record<string, PuzzleState>>({});
   const [top10States, setTop10States] = useState<Record<string, Top10State>>({});
@@ -951,8 +973,7 @@ export function usePlayQuiz({
         setIsAnswered(true);
         saveAnswer(answerData);
 
-        if (isCorrect) playCorrectSound();
-        else playIncorrectSound();
+        handleAnswerResult(isCorrect);
 
         if (currentQuestion.question_type === "puzzle_map") {
           setConsumedPuzzleIso3s((prev) => {
@@ -1011,8 +1032,7 @@ export function usePlayQuiz({
         setIsAnswered(true);
         saveAnswer(answerData);
 
-        if (isCorrect) playCorrectSound();
-        else playIncorrectSound();
+        handleAnswerResult(isCorrect);
 
         return;
       }
@@ -1171,8 +1191,7 @@ export function usePlayQuiz({
         setIsAnswered(true);
         saveAnswer(answerData);
 
-        if (isCorrect) playCorrectSound();
-        else playIncorrectSound();
+        handleAnswerResult(isCorrect);
 
         return;
       }
@@ -1217,8 +1236,7 @@ export function usePlayQuiz({
 
       saveAnswer(answerData);
 
-      if (isCorrect) playCorrectSound();
-      else playIncorrectSound();
+      handleAnswerResult(isCorrect);
 
     },
     [
@@ -1280,6 +1298,60 @@ export function usePlayQuiz({
     }
   };
 
+  const handleAnswerResult = useCallback(
+    (isCorrect: boolean) => {
+      if (isCorrect) {
+        playCorrectSound();
+      } else {
+        playIncorrectSound();
+        if (!trainingMode) {
+          const hasRemaining = deductLife(profile?.id);
+          const updated = getPlayerGamificationState(profile?.id);
+          setGamification(updated);
+          if (!hasRemaining || updated.lives <= 0) {
+            setShowHeartRefillModal(true);
+          }
+        }
+      }
+    },
+    [trainingMode, profile?.id]
+  );
+
+  const handleHeartRefill = useCallback(() => {
+    const current = getPlayerGamificationState(profile?.id);
+    if (current.gems >= 100) {
+      const res = buyShopItem(profile?.id, "refill_lives");
+      if (res.success) {
+        setShowHeartRefillModal(false);
+        setGamification(getPlayerGamificationState(profile?.id));
+        playCorrectSound();
+        showAppNotification({
+          type: "success",
+          message: "5 Cœurs rechargés avec succès ! ❤️",
+        });
+        return true;
+      }
+    }
+    refillAllLives(profile?.id);
+    setShowHeartRefillModal(false);
+    setGamification(getPlayerGamificationState(profile?.id));
+    playCorrectSound();
+    showAppNotification({
+      type: "success",
+      message: "5 Cœurs régénérés ! ❤️",
+    });
+    return true;
+  }, [profile?.id, showAppNotification]);
+
+  const handleQuitOnNoHearts = useCallback(() => {
+    setShowHeartRefillModal(false);
+    if (trainingMode) {
+      setGameComplete(true);
+    } else {
+      completeGame();
+    }
+  }, [trainingMode, completeGame]);
+
   const restartReviewMistakes = useCallback(() => {
     const wrongQuestionIds = new Set(
       answers.filter((a) => !a.is_correct).map((a) => a.question_id)
@@ -1335,5 +1407,10 @@ export function usePlayQuiz({
     syncSessionProgress,
     restartReviewMistakes,
     pathNodeResult,
+    showHeartRefillModal,
+    setShowHeartRefillModal,
+    handleHeartRefill,
+    handleQuitOnNoHearts,
+    gamification,
   };
 }

@@ -18,7 +18,9 @@ import { getConquestStats } from "../../lib/conquestManager";
 import { DuolingoQuestPath } from "./DuolingoQuestPath";
 import {
   getLeagueForXp,
+  getUserLeagueProgress,
 } from "../../lib/gamificationManager";
+import { FeaturedCountryCard } from "./FeaturedCountryCard";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"];
@@ -201,6 +203,7 @@ export function HomePage() {
   }, [profile]);
 
   const userLeague = getLeagueForXp(profile?.experience_points || 0);
+  const leagueProgress = getUserLeagueProgress(profile?.experience_points || 0);
   const conquest = getConquestStats(profile?.id);
 
   return (
@@ -220,8 +223,26 @@ export function HomePage() {
           </p>
         </div>
 
-        {/* Badges statut compacts sur mobile & tablette */}
+        {/* Badges statut gamifiés avec Ligue & Rang en direct */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* 🏆 Ligue et Rang en direct avec jauge */}
+          <div
+            onClick={() => navigate("/leaderboard")}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs font-black bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-900 border border-amber-300 cursor-pointer shadow-sm hover:border-amber-400 active:scale-95 transition-all"
+            title={`${leagueProgress.rankLabel} • ${leagueProgress.statusText} • ${leagueProgress.progressPercent}% vers ${leagueProgress.nextLeague?.name || "Palier Max"}`}
+          >
+            <span className="text-base">{leagueProgress.currentLeague.icon}</span>
+            <div className="flex flex-col text-left leading-tight">
+              <span>{leagueProgress.rankLabel}</span>
+              <div className="w-20 h-1.5 bg-amber-200/90 rounded-full overflow-hidden mt-0.5">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${leagueProgress.progressPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
           <div
             onClick={() => setShowStreakModal(true)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-black cursor-pointer shadow-sm border ${
@@ -330,8 +351,9 @@ export function HomePage() {
               </button>
             </div>
 
-            {/* Mini Défi du Jour sur mobile */}
-            <div className="mb-4">
+            {/* Pays de la Semaine & Défi du Jour sur mobile */}
+            <div className="mb-4 space-y-4">
+              <FeaturedCountryCard />
               <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
             </div>
           </div>
@@ -360,6 +382,9 @@ export function HomePage() {
 
         {/* 🏆 Colonne Latérale : Widgets Gamifiés & Compétition (Desktop Sidebar) */}
         <div className="hidden lg:flex lg:col-span-5 xl:col-span-4 flex-col space-y-6 sticky top-20">
+          {/* ⭐ 0. Pays de la Semaine (Admin Featured Country) */}
+          <FeaturedCountryCard />
+
           {/* 1. Défi du Jour */}
           <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
 

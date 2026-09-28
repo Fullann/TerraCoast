@@ -103,4 +103,46 @@ describe("Federations & Nations System", () => {
       expect(rank2.topPlayerScore).toBe(1000);
     });
   });
+
+  describe("La Conquête des Nations ⚔️", () => {
+    it("should compute season ID and countdown properly", async () => {
+      const { getCurrentSeasonId, getTimeUntilSeasonReset } = await import("../federations");
+      const seasonId = getCurrentSeasonId();
+      expect(seasonId).toMatch(/^\d{4}-W\d{2}$/);
+
+      const countdown = getTimeUntilSeasonReset();
+      expect(countdown.formatted).toBeDefined();
+      expect(countdown.hours).toBeGreaterThanOrEqual(0);
+      expect(countdown.minutes).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should map continent to conquest zone", async () => {
+      const { mapQuizToConquestZone } = await import("../federations");
+      expect(mapQuizToConquestZone("Europe")).toBe("europe");
+      expect(mapQuizToConquestZone("Amériques")).toBe("americas");
+      expect(mapQuizToConquestZone("Asie")).toBe("asia");
+      expect(mapQuizToConquestZone("Afrique")).toBe("africa");
+      expect(mapQuizToConquestZone("Océanie")).toBe("oceania");
+      expect(mapQuizToConquestZone("Pôles")).toBe("poles");
+      expect(mapQuizToConquestZone("Suisse Cantons")).toBe("europe");
+    });
+
+    it("should track and record federation influence dynamically", async () => {
+      const { getConquestSeasonState, recordFederationInfluence } = await import("../federations");
+      const initialState = getConquestSeasonState();
+      expect(initialState.zones.europe).toBeDefined();
+      expect(initialState.zones.europe.rankings.length).toBeGreaterThan(0);
+
+      // Record massive influence for Switzerland on Oceania
+      const beforeChPoints =
+        initialState.zones.oceania.rankings.find((r) => r.federation.id === "CH")?.points || 0;
+      const updatedState = recordFederationInfluence("CH", "oceania", 5000);
+
+      const afterChPoints =
+        updatedState.zones.oceania.rankings.find((r) => r.federation.id === "CH")?.points || 0;
+      expect(afterChPoints).toBe(beforeChPoints + 5000);
+      expect(updatedState.zones.oceania.controllingFederation?.id).toBe("CH");
+    });
+  });
 });
+

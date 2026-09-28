@@ -63,6 +63,32 @@ export function isStreakAtRisk(
 }
 
 /**
+ * Vérifie si la série a manqué un jour et consomme un Gel de Flamme pour la sauver
+ */
+export function checkAndApplyStreakFreeze(
+  userId: string | undefined,
+  lastActivityDate?: string | null,
+  currentStreak?: number | null,
+  consumeFreezeFn?: (userId?: string) => boolean
+): { saved: boolean; message?: string } {
+  const streak = currentStreak || 0;
+  if (streak <= 0 || !lastActivityDate) return { saved: false };
+  if (isStreakPlayedToday(lastActivityDate) || isStreakAtRisk(lastActivityDate, currentStreak)) {
+    return { saved: false };
+  }
+
+  // Si l'utilisateur a manqué hier ou plus
+  if (consumeFreezeFn && consumeFreezeFn(userId)) {
+    return {
+      saved: true,
+      message: `🧊 Votre Gel de Flamme a été utilisé pour protéger votre série de ${streak} jours !`,
+    };
+  }
+
+  return { saved: false };
+}
+
+/**
  * Prochain palier de série et pourcentage d'accomplissement
  */
 export function getNextStreakMilestone(currentStreak: number = 0) {

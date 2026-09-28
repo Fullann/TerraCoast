@@ -185,7 +185,7 @@ export function playVictoryFanfare() {
 }
 
 /**
- * Son de clic ou sélection d'option
+ * Son de clic ou sélection d'option (Effet Bubble Pop ludique type Duolingo)
  */
 export function playClickSound() {
   if (!isSoundEnabled()) return;
@@ -198,14 +198,34 @@ export function playClickSound() {
   const gain = ctx.createGain();
 
   osc.type = "sine";
-  osc.frequency.setValueAtTime(700, ctx.currentTime);
+  // Balayage fréquentiel pop immédiat (bubble pop)
+  osc.frequency.setValueAtTime(440, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(920, ctx.currentTime + 0.04);
 
-  gain.gain.setValueAtTime(0.04, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+  gain.gain.setValueAtTime(0.001, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.09, ctx.currentTime + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.055);
 
   osc.connect(gain);
   gain.connect(ctx.destination);
 
   osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.045);
+  osc.stop(ctx.currentTime + 0.06);
+}
+
+/**
+ * Joue un son selon un identifiant simple
+ */
+export function playSound(
+  type: "correct" | "wrong" | "click" | "fanfare" | "success" | "error"
+) {
+  if (type === "correct" || type === "success") {
+    playCorrectSound();
+  } else if (type === "wrong" || type === "error") {
+    playIncorrectSound();
+  } else if (type === "click") {
+    playClickSound();
+  } else if (type === "fanfare") {
+    playVictoryFanfare();
+  }
 }

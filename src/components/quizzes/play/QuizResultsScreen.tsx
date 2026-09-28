@@ -18,6 +18,19 @@ import { triggerConfetti } from "../../common/Confetti";
 import { addCardToSrs } from "../../../lib/srsManager";
 import { recordConqueredCountries } from "../../../lib/conquestManager";
 import { VisualShareModal } from "../../common/VisualShareModal";
+import {
+  getUserFederation,
+  mapQuizToConquestZone,
+  recordFederationInfluence,
+  CONQUEST_ZONES_CONFIG,
+} from "../../../lib/federations";
+import {
+  saveSentGhostRun,
+  recordCompletedGhostRun,
+  type GhostRunChallenge,
+} from "../../../lib/ghostRunManager";
+import { GhostRunModal } from "../../duels/GhostRunModal";
+import { Swords } from "lucide-react";
 import type { Question, QuizAnswer, PuzzleState } from "./types";
 import { normalizeAnswer } from "./utils";
 
@@ -25,6 +38,9 @@ interface QuizResultsScreenProps {
   trainingMode: boolean;
   mode: "solo" | "duel";
   quizId: string;
+  quizTitle?: string;
+  quizCategory?: string;
+  ghostChallenge?: GhostRunChallenge | null;
   totalScore: number;
   xpGained: number;
   answers: QuizAnswer[];
@@ -47,6 +63,9 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
   trainingMode,
   mode,
   quizId,
+  quizTitle,
+  quizCategory,
+  ghostChallenge,
   totalScore,
   xpGained,
   answers,
@@ -64,6 +83,20 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
   const { user } = useAuth();
   const [addedErrorsToSrs, setAddedErrorsToSrs] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showGhostModal, setShowGhostModal] = useState(false);
+  const [influenceResult, setInfluenceResult] = useState<{
+    points: number;
+    zoneName: string;
+    zoneEmoji: string;
+    fedFlag: string;
+    fedName: string;
+  } | null>(null);
+  const [ghostRunOutcome, setGhostRunOutcome] = useState<{
+    won: boolean;
+    scoreDiff: number;
+    challengerPseudo: string;
+    challengerScore: number;
+  } | null>(null);
 
   const correctAnswers = answers.filter((a) => a.is_correct).length;
   const accuracy = questions.length > 0 ? (correctAnswers / questions.length) * 100 : 0;
@@ -78,6 +111,59 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
       triggerConfetti();
     }
   }, [accuracy, totalScore, isDailyChallenge]);
+
+  // Influence Conquête des Nations ⚔️
+  useEffect(() => {
+    if (totalScore > 0 || accuracy >= 50) {
+      const fed = getUserFederation(user?.id);
+      const zoneKey = mapQuizToConquestZone(quizCategory || quizTitle);
+      const zoneConfig = CONQUEST_ZONES_CONFIG[zoneKey];
+      const points = Math.max(25, Math.round(totalScore / 4));
+      recordFederationInfluence(fed.id, zoneKey, points);
+      setInfluenceResult({
+        points,
+        zoneName: zoneConfig.name,
+        zoneEmoji: zoneConfig.emoji,
+        fedFlag: fed.flagEmoji,
+        fedName: fed.name,
+      });
+    }
+  }, [totalScore, accuracy, quizCategory, quizTitle, user?.id]);
+
+  // Résultat du Ghost Run s'il y avait un défi actif 👻
+  useEffect(() => {
+    if (ghostChallenge) {
+      const won = totalScore > ghostChallenge.challengerScore;
+      const scoreDiff = Math.abs(totalScore - ghostChallenge.challengerScore);
+      const opponentPseudo =
+        user?.user_metadata?.username ||
+        user?.user_metadata?.full_name ||
+        user?.email?.split("@")[0] ||
+        "Explorateur";
+
+      recordCompletedGhostRun({
+        id: `res_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        challengeId: ghostChallenge.id,
+        quizId,
+        quizTitle: quizTitle || ghostChallenge.quizTitle,
+        challengerPseudo: ghostChallenge.challengerPseudo,
+        challengerScore: ghostChallenge.challengerScore,
+        opponentPseudo,
+        opponentScore: totalScore,
+        opponentAccuracy: Math.round(accuracy),
+        opponentWon: won,
+        scoreDifference: scoreDiff,
+        completedAt: new Date().toISOString(),
+      });
+
+      setGhostRunOutcome({
+        won,
+        scoreDiff,
+        challengerPseudo: ghostChallenge.challengerPseudo,
+        challengerScore: ghostChallenge.challengerScore,
+      });
+    }
+  }, [ghostChallenge, totalScore, accuracy, quizId, quizTitle, user]);
 
   useEffect(() => {
     if (accuracy >= 80 && questions.length > 0) {
@@ -106,6 +192,24 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
     }
   }, [accuracy, questions, user?.id, isDailyChallenge]);
 
+  const currentGhostChallenge: GhostRunChallenge = {
+    id: `ghost_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    quizId,
+    quizTitle: quizTitle || "Quiz TerraCoast",
+    quizCategory,
+    challengerId: user?.id,
+    challengerPseudo:
+      user?.user_metadata?.username ||
+      user?.user_metadata?.full_name ||
+      user?.email?.split("@")[0] ||
+      "Explorateur",
+    challengerAvatar: user?.user_metadata?.avatar_url,
+    challengerScore: totalScore,
+    challengerAccuracy: Math.round(accuracy),
+    challengerTimeSeconds: answers.reduce((acc, a) => acc + (a.time_taken || 0), 0),
+    createdAt: new Date().toISOString(),
+  };
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-slate-50 via-sky-50/20 to-emerald-50/20">
       <div className="flex-1 overflow-y-auto">
@@ -131,6 +235,56 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
                   : t("playQuiz.congratsMessage")}
               </p>
             </div>
+
+            {/* DÉNOUEMENT GHOST RUN S'IL Y EN AVAIT UN 👻 */}
+            {ghostRunOutcome && (
+              <div
+                className={`mb-6 p-4 sm:p-5 rounded-2xl border-2 text-center shadow-md animate-fade-in ${
+                  ghostRunOutcome.won
+                    ? "bg-emerald-50 border-emerald-500 text-emerald-950"
+                    : "bg-purple-50 border-purple-500 text-purple-950"
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-2xl">{ghostRunOutcome.won ? "🏆" : "👻"}</span>
+                  <h3 className="text-base sm:text-lg font-black">
+                    {ghostRunOutcome.won
+                      ? `Victoire ! Tu as battu le fantôme de ${ghostRunOutcome.challengerPseudo} !`
+                      : `Le fantôme de ${ghostRunOutcome.challengerPseudo} l'emporte !`}
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-slate-700">
+                  Votre score : <strong className="text-emerald-700">{totalScore} pts</strong> •
+                  Score fantôme : <strong className="text-purple-700">{ghostRunOutcome.challengerScore} pts</strong>{" "}
+                  (
+                  {ghostRunOutcome.won
+                    ? `+${ghostRunOutcome.scoreDiff} pts d'avance !`
+                    : `-${ghostRunOutcome.scoreDiff} pts`}
+                  )
+                </p>
+              </div>
+            )}
+
+            {/* INFLUENCE CONQUÊTE DES NATIONS ⚔️ */}
+            {influenceResult && (
+              <div className="mb-6 p-3.5 bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 text-white rounded-2xl border border-indigo-700/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">{influenceResult.zoneEmoji}</span>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-300 block">
+                      Guerre des Fédérations • Zone {influenceResult.zoneName}
+                    </span>
+                    <p className="text-xs font-bold text-slate-100">
+                      Votre score fortifie les positions de votre Blason territorial !
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-xs shrink-0 shadow-sm self-start sm:self-auto">
+                  <Swords className="w-3.5 h-3.5" />
+                  <span>+{influenceResult.points} pts d'influence {influenceResult.fedFlag}</span>
+                </div>
+              </div>
+            )}
 
             {isOfflinePendingSync && (
               <div
@@ -597,12 +751,24 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
               </div>
             )}
 
-            {/* Bouton Partage Visuel */}
-            <div className="mb-4">
+            {/* Boutons Partage : Ghost Run & Résultat Visuel */}
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  saveSentGhostRun(currentGhostChallenge);
+                  setShowGhostModal(true);
+                }}
+                className="w-full py-4 px-5 btn-duo btn-duo-purple text-sm sm:text-base font-black shadow-md flex items-center justify-center gap-2.5"
+              >
+                <span className="text-xl">👻</span>
+                <span>DÉFIER UN AMI (GHOST RUN)</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowShareModal(true)}
-                className="w-full py-4 px-6 btn-duo btn-duo-teal text-base font-black shadow-md flex items-center justify-center gap-2.5"
+                className="w-full py-4 px-5 btn-duo btn-duo-teal text-sm sm:text-base font-black shadow-md flex items-center justify-center gap-2.5"
               >
                 <Share2 className="w-5 h-5" />
                 <span>{t("playQuiz.shareResult") || "PARTAGER MON RÉSULTAT 📤"}</span>
@@ -656,6 +822,12 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
           emojiGrid: answers.map((a) => (a.is_correct ? "🟩" : "🟥")).join(""),
           url: typeof window !== "undefined" ? window.location.origin : undefined,
         }}
+      />
+
+      <GhostRunModal
+        isOpen={showGhostModal}
+        challenge={currentGhostChallenge}
+        onClose={() => setShowGhostModal(false)}
       />
     </div>
   );

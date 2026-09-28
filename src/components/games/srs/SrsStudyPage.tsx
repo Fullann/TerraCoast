@@ -118,25 +118,25 @@ export function SrsStudyPage() {
   const currentCard = sessionCards[currentCardIndex];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col pb-28 safe-area-bottom">
       {/* Header */}
-      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 px-4 py-3 sm:px-6">
+      <header className="bg-white/95 backdrop-blur-md border-b-2 border-slate-200 sticky top-0 z-30 px-4 py-3 sm:px-6 shadow-xs">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => (isSessionActive ? setIsSessionActive(false) : navigate("/games"))}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors"
               title="Retour"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <span className="text-2xl">🧠</span>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900">
                   Carnet de Révision
                 </h1>
-                <p className="text-xs text-slate-400">Répétition espacée de Leitner</p>
+                <p className="text-xs text-indigo-600 font-bold">Répétition espacée de Leitner</p>
               </div>
             </div>
           </div>
@@ -147,9 +147,9 @@ export function SrsStudyPage() {
                 const next = toggleSound();
                 setSoundOn(next);
               }}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors"
             >
-              {soundOn ? <Volume2 className="w-5 h-5 text-indigo-400" /> : <VolumeX className="w-5 h-5" />}
+              {soundOn ? <Volume2 className="w-5 h-5 text-indigo-600" /> : <VolumeX className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -160,9 +160,9 @@ export function SrsStudyPage() {
         {isSessionActive && currentCard ? (
           /* Active Flashcard Review */
           <div className="space-y-6 my-auto">
-            <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider">
+            <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-500">
               <span>Session en cours</span>
-              <span className="bg-indigo-950 text-indigo-300 px-3 py-1 rounded-full border border-indigo-800">
+              <span className="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-full border-2 border-indigo-200">
                 Carte {currentCardIndex + 1} / {sessionCards.length}
               </span>
             </div>
@@ -173,25 +173,25 @@ export function SrsStudyPage() {
           /* SRS Dashboard Overview */
           <div className="space-y-6">
             {/* Top Banner Card */}
-            <div className="bg-gradient-to-r from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-500/30 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl">
+            <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xs relative overflow-hidden">
               <div className="space-y-2 text-center sm:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-500/30">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black border border-indigo-200">
                   <Brain className="w-4 h-4" />
                   <span>Méthode Scientifique de Leitner</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
                   Prêt pour ta session ?
                 </h2>
-                <p className="text-slate-400 text-xs sm:text-sm max-w-md">
+                <p className="text-slate-600 text-xs sm:text-sm max-w-md font-medium">
                   Chaque bonne réponse décale la prochaine révision plus loin dans le temps
                   pour ancrer les pays dans ta mémoire à long terme.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-2 w-full sm:w-auto">
+              <div className="flex flex-col gap-2.5 w-full sm:w-auto">
                 <button
                   onClick={handleStartSession}
-                  className="py-3.5 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:brightness-110 text-white font-black rounded-2xl shadow-xl shadow-indigo-950 flex items-center justify-center gap-2 transition-all hover:scale-102 active:scale-98"
+                  className="py-3.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl border-2 border-indigo-600 border-b-4 border-b-indigo-800 active:border-b-0 active:translate-y-1 shadow-md flex items-center justify-center gap-2 transition-all"
                 >
                   <Sparkles className="w-5 h-5" />
                   <span>
@@ -203,7 +203,7 @@ export function SrsStudyPage() {
 
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 transition-all text-xs"
+                  className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-xl border-2 border-slate-200 border-b-4 border-b-slate-300 active:border-b-0 active:translate-y-0.5 flex items-center justify-center gap-2 transition-all text-xs"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Ajouter des pays au carnet</span>
@@ -213,87 +213,87 @@ export function SrsStudyPage() {
 
             {/* Quick Metrics */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-center">
-                <p className="text-xs text-slate-400 font-bold uppercase">Total Cartes</p>
-                <p className="text-2xl sm:text-3xl font-black text-white mt-1 font-mono">
+              <div className="bg-white border-2 border-slate-200 p-4 rounded-2xl text-center shadow-xs">
+                <p className="text-xs text-slate-500 font-black uppercase tracking-wider">Total Cartes</p>
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 font-mono">
                   {stats.totalCards}
                 </p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-center">
-                <p className="text-xs text-slate-400 font-bold uppercase">À revoir aujourd'hui</p>
-                <p className="text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono">
+              <div className="bg-white border-2 border-slate-200 p-4 rounded-2xl text-center shadow-xs">
+                <p className="text-xs text-slate-500 font-black uppercase tracking-wider">À revoir aujourd'hui</p>
+                <p className="text-2xl sm:text-3xl font-black text-amber-500 mt-1 font-mono">
                   {stats.dueToday}
                 </p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-center">
-                <p className="text-xs text-slate-400 font-bold uppercase">Maîtrisées (B5)</p>
-                <p className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono">
+              <div className="bg-white border-2 border-slate-200 p-4 rounded-2xl text-center shadow-xs">
+                <p className="text-xs text-slate-500 font-black uppercase tracking-wider">Maîtrisées (B5)</p>
+                <p className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1 font-mono">
                   {stats.masteredCount}
                 </p>
               </div>
             </div>
 
             {/* The 5 Leitner Boxes Visual Grid */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-              <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Layers className="w-4 h-4 text-indigo-400" />
+            <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-4 h-4 text-indigo-600" />
                 <span>Répartition des 5 Boîtes de Leitner</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                 {/* Box 1 */}
-                <div className="bg-red-950/30 border border-red-500/30 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4 flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-bold text-red-400">Boîte 1</span>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Tous les jours</p>
+                    <span className="text-xs font-black text-rose-700">Boîte 1</span>
+                    <p className="text-[11px] text-rose-600 font-semibold mt-0.5">Tous les jours</p>
                   </div>
-                  <p className="text-2xl font-black text-red-300 mt-3 font-mono">
+                  <p className="text-2xl font-black text-rose-800 mt-3 font-mono">
                     {stats.boxCounts[1] || 0}
                   </p>
                 </div>
 
                 {/* Box 2 */}
-                <div className="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-bold text-amber-400">Boîte 2</span>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Tous les 3 jours</p>
+                    <span className="text-xs font-black text-amber-700">Boîte 2</span>
+                    <p className="text-[11px] text-amber-600 font-semibold mt-0.5">Tous les 3 jours</p>
                   </div>
-                  <p className="text-2xl font-black text-amber-300 mt-3 font-mono">
+                  <p className="text-2xl font-black text-amber-800 mt-3 font-mono">
                     {stats.boxCounts[2] || 0}
                   </p>
                 </div>
 
                 {/* Box 3 */}
-                <div className="bg-yellow-950/30 border border-yellow-500/30 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4 flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-bold text-yellow-400">Boîte 3</span>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Chaque semaine</p>
+                    <span className="text-xs font-black text-yellow-800">Boîte 3</span>
+                    <p className="text-[11px] text-yellow-700 font-semibold mt-0.5">Chaque semaine</p>
                   </div>
-                  <p className="text-2xl font-black text-yellow-300 mt-3 font-mono">
+                  <p className="text-2xl font-black text-yellow-900 mt-3 font-mono">
                     {stats.boxCounts[3] || 0}
                   </p>
                 </div>
 
                 {/* Box 4 */}
-                <div className="bg-blue-950/30 border border-blue-500/30 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-bold text-blue-400">Boîte 4</span>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Toutes les 2 sem.</p>
+                    <span className="text-xs font-black text-blue-700">Boîte 4</span>
+                    <p className="text-[11px] text-blue-600 font-semibold mt-0.5">Toutes les 2 sem.</p>
                   </div>
-                  <p className="text-2xl font-black text-blue-300 mt-3 font-mono">
+                  <p className="text-2xl font-black text-blue-800 mt-3 font-mono">
                     {stats.boxCounts[4] || 0}
                   </p>
                 </div>
 
                 {/* Box 5 */}
-                <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-bold text-emerald-400">Boîte 5 (Acquis)</span>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Tous les mois</p>
+                    <span className="text-xs font-black text-emerald-700">Boîte 5 (Acquis)</span>
+                    <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Tous les mois</p>
                   </div>
-                  <p className="text-2xl font-black text-emerald-300 mt-3 font-mono">
+                  <p className="text-2xl font-black text-emerald-800 mt-3 font-mono">
                     {stats.boxCounts[5] || 0}
                   </p>
                 </div>
@@ -304,16 +304,16 @@ export function SrsStudyPage() {
 
         {/* Modal : Ajouter un pays au carnet */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white border-2 border-slate-200 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-indigo-600" />
                   <span>Ajouter au Carnet</span>
                 </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="text-slate-400 hover:text-white p-1"
+                  className="text-slate-400 hover:text-slate-700 p-1 font-bold"
                 >
                   ✕
                 </button>
@@ -326,30 +326,30 @@ export function SrsStudyPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Rechercher un pays ou capitale..."
-                  className="w-full bg-slate-800 border border-slate-700 text-white pl-9 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-slate-50 border-2 border-slate-200 text-slate-800 pl-9 pr-4 py-2.5 rounded-xl text-sm font-bold focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
-              <div className="max-h-60 overflow-y-auto divide-y divide-slate-800">
+              <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
                 {filteredCountries.map((c) => (
                   <div
                     key={c.iso3}
-                    className="py-2.5 px-2 flex items-center justify-between hover:bg-slate-800/50 rounded-xl transition-colors"
+                    className="py-2.5 px-2 flex items-center justify-between hover:bg-slate-50 rounded-xl transition-colors"
                   >
                     <div className="flex items-center gap-2.5">
                       <span className="text-2xl">{c.flagEmoji}</span>
                       <div>
-                        <p className="text-sm font-semibold text-white">{c.name}</p>
-                        <p className="text-xs text-slate-400">{c.capital}</p>
+                        <p className="text-sm font-black text-slate-900">{c.name}</p>
+                        <p className="text-xs text-slate-500 font-semibold">{c.capital}</p>
                       </div>
                     </div>
 
                     <button
                       onClick={() => handleAddCountry(c.iso3)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border-b-2 active:border-b-0 ${
                         justAddedIso === c.iso3
-                          ? "bg-emerald-600 text-white"
-                          : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                          ? "bg-emerald-500 text-white border-emerald-700"
+                          : "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-800"
                       }`}
                     >
                       {justAddedIso === c.iso3 ? "Ajouté ! ✅" : "Ajouter +"}

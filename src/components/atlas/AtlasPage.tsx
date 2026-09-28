@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ComposableMap,
@@ -20,6 +20,7 @@ import {
   Maximize2,
   MapPin,
   Sparkles,
+  Scale,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -31,6 +32,13 @@ import {
 } from "../../lib/atlasData";
 import { isCountryConquered } from "../../lib/conquestManager";
 import { CountryDetailDrawer } from "./CountryDetailDrawer";
+import { CountryComparisonModal } from "./CountryComparisonModal";
+import { getPlayerGamificationState } from "../../lib/gamificationManager";
+import {
+  getGlobeThemeConfig,
+  GLOBE_LAYER_OPTIONS,
+  type GlobeLayerType,
+} from "../../lib/globeThemes";
 
 const GlobeComponent = lazy(() => import("react-globe.gl"));
 
@@ -47,7 +55,7 @@ const CONTINENT_CENTERS: Record<string, { center: [number, number]; zoom: number
 
 export function AtlasPage() {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
 
   const [viewMode, setViewMode] = useState<ViewMode>("map");
@@ -56,12 +64,31 @@ export function AtlasPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<AtlasCountry | null>(null);
   const [hoveredCountry, setHoveredCountry] = useState<AtlasCountry | null>(null);
+  const [showComparatorModal, setShowComparatorModal] = useState(false);
 
   // Carte 2D Zoom state
   const [zoomPosition, setZoomPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
     coordinates: [0, 20],
     zoom: 1,
   });
+
+  const [selectedGlobeLayer, setSelectedGlobeLayer] = useState<GlobeLayerType>("satellite");
+
+  const [activeTheme, setActiveTheme] = useState(() =>
+    getPlayerGamificationState(profile?.id).activeTheme
+  );
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setActiveTheme(getPlayerGamificationState(profile?.id).activeTheme);
+    };
+    window.addEventListener("terracost_gamification_updated", handleUpdate);
+    return () => window.removeEventListener("terracost_gamification_updated", handleUpdate);
+  }, [profile?.id]);
+
+  // Texture et ambiance selon le calque sélectionné (Politique, Satellite HD, Relief, Nocturne)
+  const layerOption = GLOBE_LAYER_OPTIONS.find((l) => l.id === selectedGlobeLayer) || GLOBE_LAYER_OPTIONS[1];
+  const themeConfig = layerOption.themeConfig;
 
   const allCountries = useMemo(() => {
     return getAllAtlasCountries(language);
@@ -242,24 +269,37 @@ export function AtlasPage() {
             ))}
           </div>
 
-          {/* Search Box */}
-          <div className="relative w-full md:w-72">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("atlas.searchPlaceholder") || "Rechercher pays, capitale..."}
-              className="w-full pl-9 pr-4 py-1.5 rounded-xl text-xs sm:text-sm bg-gray-100 border border-transparent focus:border-emerald-500 focus:bg-white focus:outline-none transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
-              >
-                ✕
-              </button>
-            )}
+          {/* Actions & Search */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <button
+              onClick={() => setShowComparatorModal(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs shadow-sm transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+              title="Comparer deux Pays & True Size"
+            >
+              <Scale className="w-3.5 h-3.5 text-pink-300" />
+              <span className="hidden sm:inline">Comparer deux Pays ⚖️</span>
+              <span className="sm:hidden">Comparer ⚖️</span>
+            </button>
+
+            {/* Search Box */}
+            <div className="relative flex-1 md:w-64">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("atlas.searchPlaceholder") || "Rechercher pays, capitale..."}
+                className="w-full pl-9 pr-4 py-1.5 rounded-xl text-xs sm:text-sm bg-gray-100 border border-transparent focus:border-emerald-500 focus:bg-white focus:outline-none transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -431,8 +471,32 @@ export function AtlasPage() {
         {/* VIEW 2: GLOBE 3D */}
         {viewMode === "globe" && (
           <div className="relative flex-1 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl min-h-[550px] flex items-center justify-center">
-            <div className="absolute top-4 left-4 z-20 bg-slate-900/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs text-slate-300">
+            {/* Indication tactile en haut à gauche */}
+            <div className="hidden sm:block absolute top-4 left-4 z-20 bg-slate-900/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 text-xs text-slate-300">
               🌍 {t("atlas.globeHint") || "Faites glisser pour tourner le globe. Cliquez sur un repère pour explorer."}
+            </div>
+
+            {/* 🛰️ Sélecteur de Calques Flottant en haut à droite */}
+            <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5 p-1 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-700 shadow-xl overflow-x-auto max-w-[95%] sm:max-w-none">
+              {GLOBE_LAYER_OPTIONS.map((layer) => {
+                const isSelected = selectedGlobeLayer === layer.id;
+                return (
+                  <button
+                    key={layer.id}
+                    type="button"
+                    onClick={() => setSelectedGlobeLayer(layer.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                      isSelected
+                        ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30 scale-105"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800"
+                    }`}
+                    title={layer.description}
+                  >
+                    <span>{layer.icon}</span>
+                    <span className="hidden sm:inline">{layer.shortLabel}</span>
+                  </button>
+                );
+              })}
             </div>
 
             <Suspense
@@ -443,12 +507,18 @@ export function AtlasPage() {
                 </div>
               }
             >
-              <GlobeComponent
-                ref={globeRef}
-                globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-                bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-                backgroundColor="rgba(0,0,0,0)"
-                pointsData={filteredCountries}
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={themeConfig.canvasFilter ? { filter: themeConfig.canvasFilter } : undefined}
+              >
+                <GlobeComponent
+                  ref={globeRef}
+                  globeImageUrl={themeConfig.globeImageUrl}
+                  bumpImageUrl={themeConfig.bumpImageUrl}
+                  atmosphereColor={themeConfig.atmosphereColor}
+                  atmosphereAltitude={themeConfig.atmosphereAltitude || 0.15}
+                  backgroundColor="rgba(0,0,0,0)"
+                  pointsData={filteredCountries}
                 pointLat={(d: any) => d.lat}
                 pointLng={(d: any) => d.lng}
                 pointAltitude={0.06}
@@ -462,6 +532,7 @@ export function AtlasPage() {
                 }
                 onPointClick={(d: any) => setSelectedCountry(d as AtlasCountry)}
               />
+            </div>
             </Suspense>
           </div>
         )}
@@ -542,6 +613,14 @@ export function AtlasPage() {
           const found = getAtlasCountryByIso3(iso3, language);
           if (found) setSelectedCountry(found);
         }}
+      />
+
+      {/* Country Comparison Modal (Versus & True Size) */}
+      <CountryComparisonModal
+        isOpen={showComparatorModal}
+        initialCountryA={selectedCountry}
+        onClose={() => setShowComparatorModal(false)}
+        language={language}
       />
     </div>
   );

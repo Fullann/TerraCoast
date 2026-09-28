@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -15,6 +15,9 @@ import {
   Headphones,
   Play,
   Pause,
+  Volume2,
+  Music,
+  Scale,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -25,6 +28,12 @@ import {
   getLocalizedContinent,
   getAtlasCountryByIso3,
 } from "../../lib/atlasData";
+import {
+  speakCountryAndCapital,
+  playNationalAnthem,
+  stopNationalAnthem,
+} from "../../lib/countryAudio";
+import { CountryComparisonModal } from "./CountryComparisonModal";
 
 interface CountryDetailDrawerProps {
   country: AtlasCountry | null;
@@ -41,7 +50,16 @@ export function CountryDetailDrawer({
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const [addedToSrs, setAddedToSrs] = useState(false);
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
+  const [isPlayingAnthem, setIsPlayingAnthem] = useState(false);
   const { tuneToCountry, play, pause, setMode, isPlaying, currentCountry } = useRadioGlobe();
+
+  useEffect(() => {
+    return () => {
+      stopNationalAnthem();
+      setIsPlayingAnthem(false);
+    };
+  }, [country?.iso3]);
 
   if (!country) return null;
 
@@ -191,6 +209,39 @@ export function CountryDetailDrawer({
             <p className="text-[11px] text-slate-300 leading-snug">
               Voyagez en musique avec les ondes radio en direct et paysages sonores traditionnels de {country.name}.
             </p>
+
+            {/* Prononciation & Hymne National */}
+            <div className="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => speakCountryAndCapital(country.name, country.capital, country.iso3)}
+                className="py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer border border-white/10"
+              >
+                <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Prononciation 🗣️</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (isPlayingAnthem) {
+                    stopNationalAnthem();
+                    setIsPlayingAnthem(false);
+                  } else {
+                    setIsPlayingAnthem(true);
+                    playNationalAnthem(country.iso3, () => setIsPlayingAnthem(false));
+                  }
+                }}
+                className={`py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer border ${
+                  isPlayingAnthem
+                    ? "bg-amber-400 text-slate-950 border-amber-300 animate-pulse font-black"
+                    : "bg-white/10 hover:bg-white/20 text-white border-white/10"
+                }`}
+              >
+                <Music className="w-3.5 h-3.5" />
+                <span>{isPlayingAnthem ? "Stop Hymne" : "Hymne 🎶"}</span>
+              </button>
+            </div>
           </div>
 
           {/* Currencies & Languages */}
@@ -288,6 +339,15 @@ export function CountryDetailDrawer({
 
         {/* Drawer Footer CTA */}
         <div className="p-4 bg-gray-50 border-t border-gray-200 shrink-0 space-y-2">
+          {/* Bouton Comparer deux Pays (Versus) */}
+          <button
+            onClick={() => setShowComparisonModal(true)}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md transition-all hover:scale-101 active:scale-99 cursor-pointer"
+          >
+            <Scale className="w-4 h-4 text-pink-300" />
+            <span>Comparer ce pays (Versus & True Size) ⚖️</span>
+          </button>
+
           <button
             onClick={handleTestKnowledge}
             className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all hover:scale-101 active:scale-99"
@@ -324,6 +384,13 @@ export function CountryDetailDrawer({
           </button>
         </div>
       </div>
+
+      <CountryComparisonModal
+        isOpen={showComparisonModal}
+        initialCountryA={country}
+        onClose={() => setShowComparisonModal(false)}
+        language={language}
+      />
     </div>
   );
 }

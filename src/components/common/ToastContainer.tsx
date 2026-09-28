@@ -13,6 +13,36 @@ import {
   X,
 } from "lucide-react";
 
+export const toast = {
+  success: (message: string) => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("terracoast_toast", {
+          detail: { type: "success", message },
+        })
+      );
+    }
+  },
+  error: (message: string) => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("terracoast_toast", {
+          detail: { type: "error", message },
+        })
+      );
+    }
+  },
+  info: (message: string) => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("terracoast_toast", {
+          detail: { type: "info", message },
+        })
+      );
+    }
+  },
+};
+
 export function ToastContainer() {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -25,7 +55,22 @@ export function ToastContainer() {
     clearMessageNotification,
     clearFriendRequestNotification,
     clearAppNotification,
+    showAppNotification,
   } = useNotifications();
+
+  // Écoute des toasts globaux
+  useEffect(() => {
+    const handleCustomToast = (e: any) => {
+      if (e.detail?.message && e.detail?.type) {
+        showAppNotification({
+          type: e.detail.type,
+          message: e.detail.message,
+        });
+      }
+    };
+    window.addEventListener("terracoast_toast", handleCustomToast);
+    return () => window.removeEventListener("terracoast_toast", handleCustomToast);
+  }, [showAppNotification]);
 
   // Auto-fermeture des toasts
   useEffect(() => {

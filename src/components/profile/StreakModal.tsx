@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Award, Calendar, ChevronRight, Check } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -7,6 +8,7 @@ import {
   getNextStreakMilestone,
   getWeekStreakStatus,
 } from "../../lib/streakUtils";
+import { getPlayerGamificationState } from "../../lib/gamificationManager";
 import type { Database } from "../../lib/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -27,11 +29,21 @@ export function StreakModal({
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const currentStreak = profile?.current_streak || 0;
   const longestStreak = profile?.longest_streak || 0;
   const lastActivityDate = profile?.last_activity_date;
+  const gamification = getPlayerGamificationState(profile?.id);
 
   const playedToday = isStreakPlayedToday(lastActivityDate);
   const atRisk = isStreakAtRisk(lastActivityDate, currentStreak);
@@ -59,11 +71,17 @@ export function StreakModal({
         {/* Header with Flame Banner */}
         <div className="relative bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 text-white p-6 text-center overflow-hidden">
           <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 text-white transition-colors"
-            title={t("common.close")}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-black/20 hover:bg-black/40 active:scale-90 text-white transition-all cursor-pointer pointer-events-auto shadow-sm"
+            aria-label={t("common.close") || "Fermer"}
+            title={t("common.close") || "Fermer"}
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 stroke-[2.5]" />
           </button>
 
           <div className="relative z-10 flex flex-col items-center">
@@ -206,22 +224,64 @@ export function StreakModal({
             </div>
           </div>
 
+          {/* Streak Freeze Banner */}
+          <div className="bg-cyan-50/90 border border-cyan-200 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-xl flex items-center justify-center shrink-0">
+                🧊
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-black text-cyan-950 flex items-center gap-1.5">
+                  <span>Gel de Flamme</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-200/70 text-cyan-900 font-extrabold">
+                    {gamification.streakFreezes} en stock
+                  </span>
+                </div>
+                <div className="text-[11px] text-cyan-700 font-medium truncate">
+                  {gamification.streakFreezes > 0
+                    ? "Votre série est protégée en cas d'oubli !"
+                    : "Protégez votre flamme si vous manquez un jour"}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                navigate("/shop");
+              }}
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-white border border-cyan-300 text-cyan-900 text-xs font-black hover:bg-cyan-100 shadow-xs transition-all active:scale-95"
+            >
+              {gamification.streakFreezes > 0 ? "Boutique 💎" : "Activer (200 💎)"}
+            </button>
+          </div>
+
           {/* Call to action */}
-          <button
-            onClick={handleAction}
-            className={`w-full py-3.5 px-4 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
-              playedToday
-                ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/25 hover:scale-101 active:scale-99"
-            }`}
-          >
-            <span>
-              {playedToday
-                ? t("streak.playMore") || "Continuer à s'entraîner"
-                : t("streak.playNow") || "Jouer pour valider ma flamme 🔥"}
-            </span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={handleAction}
+              className={`w-full py-3.5 px-4 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+                playedToday
+                  ? "bg-gray-100 hover:bg-slate-200 text-slate-800"
+                  : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/25 hover:scale-101 active:scale-99"
+              }`}
+            >
+              <span>
+                {playedToday
+                  ? t("streak.playMore") || "Continuer à s'entraîner"
+                  : t("streak.playNow") || "Jouer pour valider ma flamme 🔥"}
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors text-center cursor-pointer"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       </div>
     </div>

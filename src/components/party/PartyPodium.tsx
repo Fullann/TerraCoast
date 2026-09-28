@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Trophy, Crown, ArrowLeft, RefreshCw, Sparkles, Skull } from "lucide-react";
+import { Trophy, Crown, ArrowLeft, RefreshCw, Sparkles, Skull, Tv } from "lucide-react";
 import { playVictoryFanfare } from "../../lib/soundManager";
 import { triggerConfetti } from "../common/Confetti";
 import type { PartyPlayer, PartyRoom } from "./types";
@@ -25,11 +25,15 @@ export const PartyPodium: React.FC<PartyPodiumProps> = ({
   }, []);
 
   const isHost = currentPlayer.isHost;
+  const isPresenterMode = Boolean(
+    currentPlayer.isSpectator || room.hostIsPlayer === false
+  );
 
-  const first = podium[0];
-  const second = podium[1];
-  const third = podium[2];
-  const others = podium.slice(3);
+  const realPlayers = podium.filter((p) => !p.isSpectator);
+  const first = realPlayers[0];
+  const second = realPlayers[1];
+  const third = realPlayers[2];
+  const others = realPlayers.slice(3);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-white flex flex-col justify-between p-4 md:p-8 overflow-y-auto">
@@ -53,6 +57,12 @@ export const PartyPodium: React.FC<PartyPodiumProps> = ({
       {/* Center: The Grand Podium */}
       <div className="max-w-4xl w-full mx-auto my-auto py-6 flex flex-col items-center">
         <div className="text-center mb-8">
+          {isPresenterMode && (
+            <div className="mb-3 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-amber-400 text-slate-950 font-black text-xs md:text-sm shadow-xl border-2 border-amber-300 animate-pulse">
+              <Tv className="w-4 h-4 text-slate-950" />
+              <span>📺 Vue Grand Écran de Projection • Félicitations aux vainqueurs !</span>
+            </div>
+          )}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold mb-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
             Partie terminée sur « {room.quizTitle} »

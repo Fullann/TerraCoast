@@ -51,7 +51,7 @@ export const TrueFalseQuestionView: React.FC<TrueFalseQuestionViewProps> = ({
         type="button"
         onClick={(e) => onSelectOption(isTrueCorrect ? trueLabel : "Vrai", e)}
         disabled={isAnswered}
-        className={`w-full p-5 sm:p-6 rounded-3xl border-2 border-b-4 transition-all duration-150 relative flex items-center justify-between gap-4 select-none active:translate-y-1 active:border-b-2 cursor-pointer ${getCardStyle(
+        className={`w-full min-h-[64px] p-5 sm:p-6 rounded-3xl border-2 border-b-4 transition-all duration-150 relative flex items-center justify-between gap-4 select-none active:translate-y-1 active:border-b-0 cursor-pointer ${getCardStyle(
           isTrueCorrect,
           selectedOption === trueLabel
         )}`}
@@ -85,7 +85,7 @@ export const TrueFalseQuestionView: React.FC<TrueFalseQuestionViewProps> = ({
         type="button"
         onClick={(e) => onSelectOption(isFalseCorrect ? falseLabel : "Faux", e)}
         disabled={isAnswered}
-        className={`w-full p-5 sm:p-6 rounded-3xl border-2 border-b-4 transition-all duration-150 relative flex items-center justify-between gap-4 select-none active:translate-y-1 active:border-b-2 cursor-pointer ${getCardStyle(
+        className={`w-full min-h-[64px] p-5 sm:p-6 rounded-3xl border-2 border-b-4 transition-all duration-150 relative flex items-center justify-between gap-4 select-none active:translate-y-1 active:border-b-0 cursor-pointer ${getCardStyle(
           isFalseCorrect,
           selectedOption === falseLabel
         )}`}

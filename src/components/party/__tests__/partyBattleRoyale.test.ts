@@ -82,4 +82,32 @@ describe("Party Battle Royale Elimination Logic", () => {
     expect(p3?.isEliminated).toBe(true);
     expect(p3?.eliminatedAtRound).toBe(2);
   });
+
+  it("should never eliminate spectator players (such as host in display-only mode)", () => {
+    const hostSpectator: PartyPlayer = {
+      id: "host_screen",
+      guestId: "host_screen",
+      pseudo: "Host_TV",
+      score: 0,
+      streak: 0,
+      isHost: true,
+      isConnected: true,
+      isSpectator: true,
+    };
+    const players: PartyPlayer[] = [
+      hostSpectator,
+      createPlayer("p1", 800),
+      createPlayer("p2", 1200),
+      createPlayer("p3", 250), // lowest real player
+      createPlayer("p4", 950),
+    ];
+
+    const result = computeBattleRoyaleEliminations(players, 1, 1);
+    expect(result.newlyEliminatedIds).toEqual(["p3"]);
+    expect(result.remainingCount).toBe(3);
+
+    const hostAfter = result.updatedPlayers.find((p) => p.guestId === "host_screen");
+    expect(hostAfter?.isEliminated).toBeFalsy();
+    expect(hostAfter?.isSpectator).toBe(true);
+  });
 });

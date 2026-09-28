@@ -63,10 +63,14 @@ export const StreakModal: React.FC<StreakModalProps> = ({
           </h3>
           <button
             type="button"
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             aria-label={t("common.close")}
             title={t("common.close")}
-            className="text-gray-500 hover:text-gray-700 p-1 rounded-lg transition-colors"
+            className="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg transition-colors cursor-pointer pointer-events-auto"
           >
             <X className="w-6 h-6" aria-hidden="true" />
           </button>

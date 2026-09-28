@@ -35,6 +35,7 @@ import {
   playVictoryFanfare,
   playClickSound,
 } from "../../../lib/soundManager";
+import { saveSilhouetteGameResult } from "../../../lib/gameRecordsManager";
 
 const MAX_ATTEMPTS = 5;
 
@@ -123,10 +124,12 @@ export function SilhouetteGamePage() {
       setGameStatus("won");
       playVictoryFanfare();
       triggerConfetti();
+      saveSilhouetteGameResult(newGuesses.length, true);
     } else {
       if (newGuesses.length >= MAX_ATTEMPTS) {
         setGameStatus("lost");
         playIncorrectSound();
+        saveSilhouetteGameResult(MAX_ATTEMPTS, false);
       } else {
         playIncorrectSound();
       }
@@ -163,14 +166,14 @@ export function SilhouetteGamePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col pb-28 safe-area-bottom">
       {/* Header */}
-      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 px-4 py-3 sm:px-6">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 py-3 sm:px-6 shadow-xs">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/games")}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
               title="Retour aux modes"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -178,23 +181,23 @@ export function SilhouetteGamePage() {
             <div className="flex items-center gap-2">
               <span className="text-2xl">🗺️</span>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+                <h1 className="text-lg sm:text-xl font-black text-slate-800">
                   Silhouette Mystère
                 </h1>
-                <p className="text-xs text-slate-400">Devine le pays par sa frontière</p>
+                <p className="text-xs text-slate-500 font-medium">Devinez le pays par sa frontière</p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Toggle Mode */}
-            <div className="bg-slate-800 p-1 rounded-xl flex items-center text-xs font-semibold">
+            <div className="bg-slate-100 p-1 rounded-2xl flex items-center text-xs font-black">
               <button
                 onClick={() => startNewGame("daily")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
                   mode === "daily"
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/30"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-white text-emerald-800 shadow-sm border border-slate-200"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5" />
@@ -202,10 +205,10 @@ export function SilhouetteGamePage() {
               </button>
               <button
                 onClick={() => startNewGame("training")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
                   mode === "training"
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/30"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-white text-emerald-800 shadow-sm border border-slate-200"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -216,10 +219,10 @@ export function SilhouetteGamePage() {
             {/* Sound Toggle */}
             <button
               onClick={handleSoundToggle}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
               title={soundOn ? "Couper le son" : "Activer le son"}
             >
-              {soundOn ? <Volume2 className="w-5 h-5 text-emerald-400" /> : <VolumeX className="w-5 h-5" />}
+              {soundOn ? <Volume2 className="w-5 h-5 text-emerald-600" /> : <VolumeX className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -228,35 +231,35 @@ export function SilhouetteGamePage() {
       {/* Main Container */}
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {/* Silhouette Visualizer Box */}
-        <div className="relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-6 overflow-hidden shadow-2xl flex flex-col items-center">
-          {/* Subtle Radar/Grid background overlay */}
+        <div className="relative bg-white rounded-3xl border-2 border-slate-200 p-5 sm:p-7 overflow-hidden shadow-xs flex flex-col items-center">
+          {/* Subtle warm topographic dot pattern */}
           <div
-            className="absolute inset-0 opacity-10 pointer-events-none"
+            className="absolute inset-0 opacity-40 pointer-events-none"
             style={{
-              backgroundImage: `radial-gradient(circle at 50% 50%, #10B981 1px, transparent 1px), linear-gradient(to right, #334155 1px, transparent 1px), linear-gradient(to bottom, #334155 1px, transparent 1px)`,
-              backgroundSize: "24px 24px, 48px 48px, 48px 48px",
+              backgroundImage: `radial-gradient(circle at 50% 50%, #CBD5E1 1.5px, transparent 1.5px)`,
+              backgroundSize: "28px 28px",
             }}
           />
 
           {/* Zoom controls */}
-          <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-slate-800/80 backdrop-blur-md rounded-lg p-1 border border-slate-700">
+          <div className="absolute top-4 right-4 z-10 flex items-center gap-1 bg-white/90 backdrop-blur-md rounded-xl p-1 border border-slate-200 shadow-xs">
             <button
               onClick={() => setZoomMultiplier((z) => Math.min(2.5, z + 0.25))}
-              className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors"
+              className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
               title="Zoom avant"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
             <button
               onClick={() => setZoomMultiplier((z) => Math.max(0.75, z - 0.25))}
-              className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors"
+              className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
               title="Zoom arrière"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
             <button
               onClick={() => setZoomMultiplier(1)}
-              className="px-2 py-1 text-xs text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+              className="px-2 py-1 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
               title="Réinitialiser le zoom"
             >
               100%
@@ -264,12 +267,12 @@ export function SilhouetteGamePage() {
           </div>
 
           {/* Attempts counter pill */}
-          <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-slate-800/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700 text-xs font-bold text-slate-300">
-            <span>Essai :</span>
-            <span className={guesses.length >= 4 ? "text-amber-400" : "text-emerald-400"}>
+          <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-200 text-xs font-black shadow-xs">
+            <span className="text-slate-500">Essai :</span>
+            <span className={guesses.length >= 4 ? "text-amber-600" : "text-emerald-600"}>
               {guesses.length}
             </span>
-            <span className="text-slate-500">/ {MAX_ATTEMPTS}</span>
+            <span className="text-slate-400">/ {MAX_ATTEMPTS}</span>
           </div>
 
           {/* SVG Map of the single Country Feature */}
@@ -283,7 +286,7 @@ export function SilhouetteGamePage() {
                 }}
                 width={400}
                 height={320}
-                className="w-full h-full drop-shadow-[0_0_25px_rgba(16,185,129,0.25)]"
+                className="w-full h-full drop-shadow-[0_10px_20px_rgba(16,185,129,0.25)]"
               >
                 <Geographies
                   geography={{
@@ -299,20 +302,19 @@ export function SilhouetteGamePage() {
                         style={{
                           default: {
                             fill: "#10B981",
-                            stroke: "#34D399",
-                            strokeWidth: 1.5,
+                            stroke: "#047857",
+                            strokeWidth: 2,
                             outline: "none",
-                            filter: "drop-shadow(0 0 8px rgba(16, 185, 129, 0.4))",
                           },
                           hover: {
                             fill: "#059669",
-                            stroke: "#6EE7B7",
-                            strokeWidth: 2,
+                            stroke: "#065F46",
+                            strokeWidth: 2.5,
                             outline: "none",
                           },
                           pressed: {
                             fill: "#047857",
-                            stroke: "#A7F3D0",
+                            stroke: "#064E3B",
                             outline: "none",
                           },
                         }}
@@ -322,9 +324,9 @@ export function SilhouetteGamePage() {
                 </Geographies>
               </ComposableMap>
             ) : (
-              <div className="flex flex-col items-center justify-center text-slate-500 gap-2">
-                <Compass className="w-10 h-10 animate-spin" />
-                <p className="text-sm">Chargement de la silhouette...</p>
+              <div className="flex flex-col items-center justify-center text-slate-400 gap-2">
+                <Compass className="w-10 h-10 animate-spin text-emerald-500" />
+                <p className="text-sm font-bold">Chargement de la silhouette...</p>
               </div>
             )}
           </div>
@@ -344,31 +346,31 @@ export function SilhouetteGamePage() {
                   setIsDropdownOpen(true);
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
-                placeholder="Tape le nom d'un pays (ex: Madagascar, Chili, Japon...)"
-                className="w-full bg-slate-900 border border-slate-700 text-white pl-12 pr-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base placeholder:text-slate-500 shadow-lg"
+                placeholder="Tapez le nom d'un pays (ex: Madagascar, Chili, Japon...)"
+                className="w-full bg-white border-2 border-slate-200 text-slate-800 pl-12 pr-4 py-3.5 rounded-2xl focus:outline-none focus:border-emerald-500 text-sm sm:text-base placeholder:text-slate-400 font-bold shadow-xs transition-all"
               />
             </div>
 
             {/* Dropdown Suggestions */}
             {isDropdownOpen && filteredSuggestions.length > 0 && (
-              <div className="absolute top-full mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-20 max-h-64 overflow-y-auto divide-y divide-slate-800">
+              <div className="absolute top-full mt-2 w-full bg-white border-2 border-slate-200 rounded-2xl shadow-xl overflow-hidden z-20 max-h-64 overflow-y-auto divide-y divide-slate-100 animate-in fade-in">
                 {filteredSuggestions.map((country) => (
                   <button
                     key={country.iso3}
                     type="button"
                     onClick={() => handleSelectCountry(country)}
-                    className="w-full px-4 py-3 text-left hover:bg-slate-800 flex items-center justify-between group transition-colors"
+                    className="w-full px-4 py-3 text-left hover:bg-emerald-50/70 flex items-center justify-between group transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{country.flagEmoji}</span>
                       <div>
-                        <p className="font-semibold text-slate-200 group-hover:text-emerald-400 transition-colors">
+                        <p className="font-black text-slate-800 group-hover:text-emerald-800 transition-colors">
                           {country.name}
                         </p>
-                        <p className="text-xs text-slate-500">{country.continent}</p>
+                        <p className="text-xs text-slate-500 font-medium">{country.continent}</p>
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-slate-500 group-hover:text-slate-300">
+                    <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-slate-600">
                       {country.iso3}
                     </span>
                   </button>
@@ -379,24 +381,24 @@ export function SilhouetteGamePage() {
         )}
 
         {/* Guess History Table */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
-          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+        <div className="bg-white border-2 border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xs">
+          <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-3 flex items-center justify-between">
             <span>Historique des essais ({guesses.length}/{MAX_ATTEMPTS})</span>
             {guesses.length > 0 && (
-              <span className="text-xs font-normal lowercase text-slate-500">
+              <span className="text-[11px] font-bold text-slate-400">
                 (distance, direction, proximité)
               </span>
             )}
           </h2>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {Array.from({ length: MAX_ATTEMPTS }).map((_, idx) => {
               const g = guesses[idx];
               if (!g) {
                 return (
                   <div
                     key={idx}
-                    className="h-12 rounded-xl border border-dashed border-slate-800/80 bg-slate-950/40 flex items-center px-4 text-slate-600 text-xs font-medium"
+                    className="h-14 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 flex items-center px-4 text-slate-400 text-xs font-bold"
                   >
                     Essai #{idx + 1}
                   </div>
@@ -406,33 +408,33 @@ export function SilhouetteGamePage() {
               return (
                 <div
                   key={idx}
-                  className={`h-14 rounded-xl border px-4 flex items-center justify-between transition-all animate-fadeIn ${
+                  className={`h-14 rounded-2xl border-2 px-4 flex items-center justify-between transition-all shadow-xs ${
                     g.isCorrect
-                      ? "bg-emerald-950/50 border-emerald-500/50 text-emerald-300"
-                      : "bg-slate-900 border-slate-700/80 text-slate-200"
+                      ? "bg-emerald-50 border-emerald-500 text-emerald-950 font-black"
+                      : "bg-slate-50 border-slate-200 text-slate-800 font-bold"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-2xl flex-shrink-0">
+                    <span className="text-2xl shrink-0">
                       {g.guessedCountry.flagEmoji}
                     </span>
                     <div className="min-w-0">
-                      <p className="font-bold text-sm sm:text-base truncate">
+                      <p className="font-black text-sm sm:text-base truncate">
                         {g.guessedCountry.name}
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-500 font-medium">
                         {g.guessedCountry.continent}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+                  <div className="flex items-center gap-3 sm:gap-6 shrink-0">
                     {/* Distance */}
                     <div className="text-right">
-                      <p className="text-xs sm:text-sm font-mono font-bold">
+                      <p className="text-xs sm:text-sm font-mono font-black">
                         {g.distanceKm === 0 ? "0 km" : `${g.distanceKm.toLocaleString()} km`}
                       </p>
-                      <p className="text-xs text-slate-400 flex items-center justify-end gap-1">
+                      <p className="text-xs text-slate-500 font-bold flex items-center justify-end gap-1">
                         <span>{g.arrow}</span>
                         <span>{g.direction}</span>
                       </p>
@@ -440,17 +442,17 @@ export function SilhouetteGamePage() {
 
                     {/* Proximity gauge */}
                     <div className="w-16 sm:w-24 flex flex-col items-end gap-1">
-                      <span className="text-xs font-mono font-bold">
+                      <span className="text-xs font-mono font-black">
                         {g.proximityPercent}%
                       </span>
-                      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
                             g.isCorrect
                               ? "bg-emerald-500"
                               : g.proximityPercent >= 80
                               ? "bg-amber-400"
-                              : "bg-red-500"
+                              : "bg-rose-500"
                           }`}
                           style={{ width: `${g.proximityPercent}%` }}
                         />
@@ -465,9 +467,9 @@ export function SilhouetteGamePage() {
 
         {/* Unlocked Hints Section */}
         {unlockedHints.length > 0 && (
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 sm:p-5">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
+          <div className="bg-amber-50/80 border-2 border-amber-200 rounded-3xl p-5 shadow-xs">
+            <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
               <span>Indices Débloqués</span>
             </h3>
 
@@ -475,10 +477,10 @@ export function SilhouetteGamePage() {
               {unlockedHints.map((hint) => (
                 <div
                   key={hint.type}
-                  className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3 flex flex-col"
+                  className="bg-white border border-amber-200 rounded-2xl p-3.5 flex flex-col shadow-xs"
                 >
-                  <span className="text-xs text-slate-400 font-medium">{hint.label}</span>
-                  <span className="text-base sm:text-lg font-bold text-amber-300 mt-1">
+                  <span className="text-xs text-amber-800 font-bold">{hint.label}</span>
+                  <span className="text-base sm:text-lg font-black text-amber-950 mt-1">
                     {hint.value}
                   </span>
                 </div>
@@ -489,61 +491,61 @@ export function SilhouetteGamePage() {
 
         {/* Game Finished Summary Dialog */}
         {gameStatus !== "playing" && (
-          <div className="bg-gradient-to-br from-slate-900 to-slate-950 border-2 border-emerald-500/50 rounded-2xl p-6 shadow-2xl text-center space-y-4 animate-scaleUp">
+          <div className="bg-white border-3 border-emerald-500 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-4 animate-in zoom-in-95">
             {gameStatus === "won" ? (
               <>
-                <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto ring-4 ring-emerald-500/30">
-                  <Trophy className="w-8 h-8" />
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-emerald-500/10">
+                  <Trophy className="w-8 h-8 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-800">
                     Victoire ! 🎉
                   </h2>
-                  <p className="text-emerald-400 font-semibold mt-1">
-                    Tu as trouvé en {guesses.length}{" "}
+                  <p className="text-emerald-700 font-bold mt-1 text-sm sm:text-base">
+                    Vous avez trouvé en {guesses.length}{" "}
                     {guesses.length > 1 ? "essais" : "essai"} !
                   </p>
                 </div>
               </>
             ) : (
               <>
-                <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto ring-4 ring-red-500/30">
-                  <XCircle className="w-8 h-8" />
+                <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-rose-500/10">
+                  <XCircle className="w-8 h-8 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white">Partie terminée</h2>
-                  <p className="text-slate-400 mt-1">
+                  <h2 className="text-2xl font-black text-slate-800">Partie terminée</h2>
+                  <p className="text-slate-500 font-medium mt-1 text-sm">
                     La bonne réponse était :
                   </p>
                 </div>
               </>
             )}
 
-            <div className="bg-slate-800/80 rounded-xl p-4 flex items-center justify-center gap-4 max-w-sm mx-auto">
+            <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 flex items-center justify-center gap-4 max-w-sm mx-auto shadow-2xs">
               <span className="text-4xl">{targetCountry.flagEmoji}</span>
               <div className="text-left">
-                <p className="text-xl font-bold text-white">{targetCountry.name}</p>
-                <p className="text-xs text-slate-400">
+                <p className="text-xl font-black text-slate-800">{targetCountry.name}</p>
+                <p className="text-xs text-slate-500 font-bold">
                   Capitale : {targetCountry.capital} • {targetCountry.continent}
                 </p>
               </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
               <button
                 onClick={handleShare}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/40 flex items-center gap-2 transition-all"
+                className="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1 shadow-md shadow-emerald-500/20 flex items-center gap-2 transition-all text-sm"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-4 h-4 stroke-[2.5]" />
                 {copiedShare ? "Copié dans le presse-papier ! ✅" : "Partager mon résultat"}
               </button>
 
               <button
                 onClick={() => startNewGame("training")}
-                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 flex items-center gap-2 transition-all"
+                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-2xl border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 flex items-center gap-2 transition-all text-sm"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-4 h-4 stroke-[2.5]" />
                 Rejouer un autre pays
               </button>
             </div>

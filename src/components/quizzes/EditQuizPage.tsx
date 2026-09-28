@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  X,
+  Sparkles,
+  AlertCircle,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useNotifications } from "../../contexts/NotificationContext";
+import { triggerConfetti } from "../common/Confetti";
 import type { Database } from "../../lib/database.types";
 import {
   useQuizForm,
@@ -31,6 +38,7 @@ export function EditQuizPage({
   const { t } = useLanguage();
   const { showAppNotification } = useNotifications();
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"settings" | "questions">("questions");
 
   const {
     formData,
@@ -53,6 +61,12 @@ export function EditQuizPage({
     saving,
     setSaving,
   } = useQuizForm();
+
+  const totalPoints = questions.reduce(
+    (sum, q) => sum + (Number(q.points) || 100),
+    0
+  );
+  const estimatedMinutes = Math.max(1, Math.round((questions.length * 20) / 60));
 
   const handleNavigateBack = () => {
     if (onNavigate) {
@@ -334,6 +348,8 @@ export function EditQuizPage({
         }
       }
 
+      triggerConfetti();
+
       showAppNotification({
         type: "success",
         message: t("editQuiz.updateSuccess"),
@@ -348,89 +364,224 @@ export function EditQuizPage({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      <div className="flex flex-col justify-center items-center min-h-[400px] gap-3">
+        <div className="w-12 h-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
+        <p className="text-sm font-black text-slate-600">Chargement de votre atelier quiz...</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-6">
+      {/* Top Back Navigation */}
+      <div className="mb-5">
         <button
           onClick={handleNavigateBack}
-          className="flex items-center text-gray-600 hover:text-gray-800 mb-4 transition-colors"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs font-bold text-sm transition-all"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          {t("editQuiz.backToQuizzes")}
+          <ArrowLeft className="w-4 h-4" />
+          <span>{t("editQuiz.backToQuizzes")}</span>
         </button>
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          {t("editQuiz.title")}
-        </h1>
       </div>
 
+      {/* Hero Creator Studio Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-700 text-white p-6 sm:p-8 shadow-xl shadow-indigo-700/10 mb-6">
+        <div className="absolute top-0 right-0 -mt-6 -mr-6 w-52 h-52 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-10 w-44 h-44 bg-indigo-400/20 rounded-full blur-xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-indigo-100 text-xs font-black tracking-wide uppercase mb-3 border border-white/20">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Atelier de Modification</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
+            <span>{formData.title || t("editQuiz.title")}</span>
+            <span className="text-2xl sm:text-3xl">🛠️</span>
+          </h1>
+
+          <p className="text-indigo-100 text-sm sm:text-base font-medium max-w-2xl leading-relaxed mb-6">
+            Peaufinez les questions, les anecdotes pédagogiques et la configuration générale de votre quiz.
+          </p>
+
+          {/* Live Quiz Stats Capsule */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 border-t border-white/15">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-sky-500/40 text-sky-100 flex items-center justify-center font-black text-base shrink-0">
+                🧩
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] text-indigo-200 font-bold uppercase tracking-wider">
+                  Questions
+                </div>
+                <div className="text-base sm:text-lg font-black text-white">
+                  {questions.length}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/40 text-amber-100 flex items-center justify-center font-black text-base shrink-0">
+                ⭐
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] text-indigo-200 font-bold uppercase tracking-wider">
+                  XP Total
+                </div>
+                <div className="text-base sm:text-lg font-black text-white">
+                  {totalPoints} XP
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/40 text-indigo-100 flex items-center justify-center font-black text-base shrink-0">
+                ⏱️
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] text-indigo-200 font-bold uppercase tracking-wider">
+                  Durée estimée
+                </div>
+                <div className="text-base sm:text-lg font-black text-white">
+                  ~{estimatedMinutes} min
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/40 text-purple-100 flex items-center justify-center font-black text-base shrink-0">
+                🎯
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] text-indigo-200 font-bold uppercase tracking-wider">
+                  Niveau
+                </div>
+                <div className="text-base sm:text-lg font-black text-white capitalize truncate">
+                  {formData.difficulty}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Modal */}
       {error && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border-2 border-rose-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800">⚠️ Erreur</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 stroke-[2.5]" />
+                </div>
+                <h3 className="text-lg font-black text-slate-800">Attention</h3>
+              </div>
               <button
                 onClick={() => setError("")}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-gray-600 mb-6">{error}</p>
+            <p className="text-slate-600 text-sm font-medium mb-6 leading-relaxed">
+              {error}
+            </p>
             <button
               onClick={() => setError("")}
-              className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
+              className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl transition-all font-black text-sm border-b-4 border-rose-700 active:border-b-0 active:translate-y-1 shadow-md shadow-rose-500/20"
             >
-              Fermer
+              Compris !
             </button>
           </div>
         </div>
       )}
 
-      {/* General Settings Card */}
-      <QuizGeneralSettings
-        formData={formData}
-        onChange={updateFormField}
-        isEditMode={true}
-        onMakePrivate={makeQuizPrivate}
-      />
+      {/* Stepper Navigation Pills */}
+      <div className="flex items-center gap-2 mb-6 p-1.5 bg-slate-200/70 rounded-2xl w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTab("questions")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all ${
+            activeTab === "questions"
+              ? "bg-white text-indigo-900 shadow-sm border border-slate-200/80"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>🧩</span>
+          <span>Questions</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-black ${
+              questions.length > 0
+                ? "bg-indigo-100 text-indigo-800"
+                : "bg-slate-200 text-slate-600"
+            }`}
+          >
+            {questions.length}
+          </span>
+        </button>
 
-      {/* Questions List with inline QuestionEditor support */}
-      <QuestionList
-        questions={questions}
-        onMoveUp={moveUp}
-        onMoveDown={moveDown}
-        onEdit={startEditing}
-        onDelete={deleteQuestion}
-        onAddNew={handleAddNewQuestion}
-        editingIndex={editingIndex}
-        editingQuestion={currentQuestion}
-        onEditingQuestionChange={setCurrentQuestion}
-        onSaveQuestion={commitCurrentQuestion}
-        onCancelEdit={cancelEditing}
-        mode="inline"
-      />
+        <button
+          type="button"
+          onClick={() => setActiveTab("settings")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all ${
+            activeTab === "settings"
+              ? "bg-white text-indigo-900 shadow-sm border border-slate-200/80"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>🎨</span>
+          <span>Paramètres & Ambiance</span>
+        </button>
+      </div>
 
-      {/* Footer Actions */}
-      <div className="flex space-x-4 pt-6">
+      {/* Tab 1: Questions Workshop */}
+      {activeTab === "questions" && (
+        <div className="space-y-6">
+          <QuestionList
+            questions={questions}
+            onMoveUp={moveUp}
+            onMoveDown={moveDown}
+            onEdit={startEditing}
+            onDelete={deleteQuestion}
+            onAddNew={handleAddNewQuestion}
+            editingIndex={editingIndex}
+            editingQuestion={currentQuestion}
+            onEditingQuestionChange={setCurrentQuestion}
+            onSaveQuestion={commitCurrentQuestion}
+            onCancelEdit={cancelEditing}
+            mode="inline"
+          />
+        </div>
+      )}
+
+      {/* Tab 2: General Settings */}
+      {activeTab === "settings" && (
+        <div className="space-y-6">
+          <QuizGeneralSettings
+            formData={formData}
+            onChange={updateFormField}
+            isEditMode={true}
+            onMakePrivate={makeQuizPrivate}
+          />
+        </div>
+      )}
+
+      {/* Footer Bottom Actions Bar */}
+      <div className="mt-8 pt-5 border-t border-slate-200 flex flex-col sm:flex-row items-center gap-3">
         <button
           onClick={handleNavigateBack}
-          className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+          className="w-full sm:w-1/3 py-3.5 px-5 bg-slate-100 text-slate-700 rounded-2xl hover:bg-slate-200 transition-all font-black text-sm border-b-4 border-slate-300 active:border-b-0 active:translate-y-1 text-center"
         >
           {t("common.cancel")}
         </button>
+
         <button
           onClick={saveQuiz}
           disabled={saving}
-          className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center"
+          className="w-full sm:flex-1 py-3.5 px-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white rounded-2xl hover:brightness-105 transition-all font-black text-base border-b-4 border-indigo-900 active:border-b-0 active:translate-y-1 shadow-xl shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          <Save className="w-5 h-5 mr-2" />
-          {saving ? t("editQuiz.saving") : t("editQuiz.saveChanges")}
+          <Save className="w-5 h-5 stroke-[2.5]" />
+          <span>{saving ? t("editQuiz.saving") : t("editQuiz.saveChanges")}</span>
         </button>
       </div>
     </div>

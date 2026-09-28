@@ -17,6 +17,18 @@ import {
 
 export type { PathNode, PathChest, PathUnit };
 
+export interface ShopItem {
+  id: string;
+  name: string;
+  category: "consumable" | "theme" | "frame" | "title";
+  priceGems: number;
+  icon: string;
+  badge?: string;
+  description: string;
+  details?: string;
+  previewGradient?: string;
+}
+
 export interface PlayerGamificationState {
   gems: number;
   lives: number;
@@ -25,8 +37,160 @@ export interface PlayerGamificationState {
   nextLifeRefillMs: number; // ms until next life
   claimedChests: string[];
   completedNodes: Record<string, { stars: number; completedAt: number }>;
+  streakFreezes: number;
+  doubleXpUntil?: number | null;
+  inventory: {
+    themes: string[];
+    avatarFrames: string[];
+    titles: string[];
+  };
+  activeTheme: string;
+  activeAvatarFrame: string;
+  activeTitle: string | null;
   _v2Cleaned?: boolean;
 }
+
+export const SHOP_CATALOG: ShopItem[] = [
+  // 1. Consommables & Boosters
+  {
+    id: "streak_freeze",
+    name: "Gel de Flamme 🧊",
+    category: "consumable",
+    priceGems: 200,
+    icon: "🧊",
+    badge: "Essentiel",
+    description: "Protège ta série de jours si tu manques une journée.",
+    details: "S'active automatiquement si tu oublies de jouer. Évite de perdre ta flamme !",
+    previewGradient: "from-sky-500/20 to-blue-500/20 border-sky-400/40",
+  },
+  {
+    id: "refill_lives",
+    name: "Recharge de Cœurs ❤️",
+    category: "consumable",
+    priceGems: 100,
+    icon: "❤️",
+    badge: "Plein d'Énergie",
+    description: "Restaure immédiatement tes 5 vies.",
+    details: "Plus besoin d'attendre 20 minutes par vie : reprends ta partie sans interruption !",
+    previewGradient: "from-rose-500/20 to-red-500/20 border-rose-400/40",
+  },
+  {
+    id: "double_xp_15m",
+    name: "Boost Double XP (15 min) ⚡",
+    category: "consumable",
+    priceGems: 150,
+    icon: "⚡",
+    badge: "Multiplicateur",
+    description: "Double tous les gains d'XP pendant 15 minutes.",
+    details: "Grimpez plus rapidement dans la ligue et validez vos défis !",
+    previewGradient: "from-amber-500/20 to-yellow-500/20 border-amber-400/40",
+  },
+
+  // 2. Thèmes & Textures pour le Globe 3D & Cartes
+  {
+    id: "theme_antique",
+    name: "Globe Parchemin Antique 📜",
+    category: "theme",
+    priceGems: 350,
+    icon: "📜",
+    badge: "Élégant",
+    description: "Style cartes marines du 17e siècle avec teintes sépia et océans parcheminés.",
+    details: "S'applique en temps réel sur le globe 3D de l'Atlas et de l'accueil.",
+    previewGradient: "from-amber-700/20 to-stone-800/20 border-amber-600/40",
+  },
+  {
+    id: "theme_night",
+    name: "Globe Satellite Nocturne 🌃",
+    category: "theme",
+    priceGems: 400,
+    icon: "🌃",
+    badge: "Vue Spatiale",
+    description: "Vue satellite orbitale avec lumières dorées des mégalopoles mondiales.",
+    details: "Idéal pour une exploration contemplative et contrastée.",
+    previewGradient: "from-indigo-900/30 to-slate-950/40 border-indigo-500/40",
+  },
+  {
+    id: "theme_cyberpunk",
+    name: "Globe Cyberpunk / Néon 👾",
+    category: "theme",
+    priceGems: 450,
+    icon: "👾",
+    badge: "Futuriste",
+    description: "Océans sombres, tracés vectoriels luminescents vert émeraude et cyan.",
+    details: "Un rendu visuel high-tech pour les cartographes modernes.",
+    previewGradient: "from-cyan-900/30 to-fuchsia-950/40 border-cyan-400/50",
+  },
+
+  // 3. Cadres d'Avatar Animés
+  {
+    id: "frame_flame",
+    name: "Flamme Incandescente 🔥",
+    category: "frame",
+    priceGems: 250,
+    icon: "🔥",
+    badge: "Animé",
+    description: "Halo de braises ardentes qui palpite autour de votre photo de profil.",
+    details: "Visible sur vos scores, duels, classements et votre profil.",
+    previewGradient: "from-orange-500/20 to-amber-500/20 border-orange-400/40",
+  },
+  {
+    id: "frame_compass",
+    name: "Rose des Vents 🧭",
+    category: "frame",
+    priceGems: 300,
+    icon: "🧭",
+    badge: "Animé",
+    description: "Boussole de marin dorée en rotation continue autour de votre avatar.",
+    details: "Pour afficher fièrement votre sens inné de l'orientation.",
+    previewGradient: "from-teal-500/20 to-emerald-500/20 border-teal-400/40",
+  },
+  {
+    id: "frame_crown",
+    name: "Couronne d'Explorateur 👑",
+    category: "frame",
+    priceGems: 500,
+    icon: "👑",
+    badge: "Légendaire",
+    description: "Couronne d'or sertie de gemmes scintillantes pour les maîtres du monde.",
+    details: "Le cosmétique suprême pour régner sur les classements.",
+    previewGradient: "from-yellow-500/20 to-amber-500/30 border-yellow-400/50",
+  },
+
+  // 4. Titres Honorifiques Exclusifs
+  {
+    id: "title_navigator",
+    name: "Navigateur des Équateurs 🌊",
+    category: "title",
+    priceGems: 200,
+    icon: "🌊",
+    badge: "Titre",
+    description: "Titre de prestige affiché sous votre pseudo sur l'ensemble de l'application.",
+    details: "Célèbre votre maîtrise des latitudes et des traversées océaniques.",
+    previewGradient: "from-sky-500/20 to-indigo-500/20 border-sky-400/40",
+  },
+  {
+    id: "title_cartographer",
+    name: "Cartographe Suprême 📐",
+    category: "title",
+    priceGems: 350,
+    icon: "📐",
+    badge: "Titre",
+    description: "Titre d'expert pour ceux qui connaissent chaque frontière au millimètre.",
+    details: "Affiche un insigne doré de géomètre impérial sur votre fiche joueur.",
+    previewGradient: "from-emerald-500/20 to-teal-500/20 border-emerald-400/40",
+  },
+  {
+    id: "title_conqueror",
+    name: "Maître des 7 Océans 🔱",
+    category: "title",
+    priceGems: 500,
+    icon: "🔱",
+    badge: "Légendaire",
+    description: "Le titre ultime réservé aux conquérants des terres et des mers.",
+    details: "Impressionne tes rivaux lors des duels et des parties multijoueur !",
+    previewGradient: "from-purple-500/20 to-indigo-500/20 border-purple-400/40",
+  },
+];
 
 export interface LeagueTier {
   name: string;
@@ -156,6 +320,15 @@ export function getPlayerGamificationState(userId?: string): PlayerGamificationS
     nextLifeRefillMs: 0,
     claimedChests: [],
     completedNodes: {},
+    streakFreezes: 0,
+    inventory: {
+      themes: ["default"],
+      avatarFrames: ["none"],
+      titles: [],
+    },
+    activeTheme: "default",
+    activeAvatarFrame: "none",
+    activeTitle: null,
     _v2Cleaned: true,
   };
 
@@ -163,7 +336,15 @@ export function getPlayerGamificationState(userId?: string): PlayerGamificationS
     const raw = getStoredString(key);
     if (raw) {
       const parsed = JSON.parse(raw);
-      state = { ...state, ...parsed };
+      state = {
+        ...state,
+        ...parsed,
+        inventory: {
+          themes: parsed.inventory?.themes || ["default"],
+          avatarFrames: parsed.inventory?.avatarFrames || ["none"],
+          titles: parsed.inventory?.titles || [],
+        },
+      };
 
       // Nettoyage automatique du bouchon par défaut où u1-n1 était pré-validé
       if (!parsed._v2Cleaned) {
@@ -177,7 +358,6 @@ export function getPlayerGamificationState(userId?: string): PlayerGamificationS
   } catch (err) {
     console.warn("Could not read gamification state:", err);
   }
-
 
   // Calcul de la régénération des vies
   if (state.lives < MAX_LIVES && state.lastLifeLostAt) {
@@ -233,7 +413,8 @@ export function deductLife(userId?: string): boolean {
   if (state.lives <= 0) return false;
 
   state.lives -= 1;
-  if (!state.lastLifeLostAt) {
+  // Ne déclencher le minuteur de régénération que si les vies sont repassées sous le max standard
+  if (state.lives < MAX_LIVES && !state.lastLifeLostAt) {
     state.lastLifeLostAt = Date.now();
   }
   savePlayerGamificationState(userId, state);
@@ -259,6 +440,183 @@ export function addGems(userId: string | undefined, amount: number): number {
   state.gems = Math.max(0, state.gems + amount);
   savePlayerGamificationState(userId, state);
   return state.gems;
+}
+
+export interface AdminGrantParams {
+  gemsDelta?: number;
+  livesDelta?: number;
+  setGems?: number;
+  setLives?: number;
+  fullRefill?: boolean;
+  streakFreezesDelta?: number;
+  setStreakFreezes?: number;
+}
+
+/**
+ * Outil d'administration / Développeur pour s'octroyer ou octroyer des gemmes, cœurs et bonus
+ */
+export function adminGrantResources(
+  userId: string | undefined,
+  params: AdminGrantParams
+): PlayerGamificationState {
+  const state = getPlayerGamificationState(userId);
+
+  if (params.fullRefill) {
+    state.lives = MAX_LIVES;
+    state.lastLifeLostAt = null;
+    state.nextLifeRefillMs = 0;
+  }
+
+  if (typeof params.setLives === "number") {
+    state.lives = Math.max(0, Math.floor(params.setLives));
+    if (state.lives >= MAX_LIVES) {
+      state.lastLifeLostAt = null;
+      state.nextLifeRefillMs = 0;
+    }
+  } else if (typeof params.livesDelta === "number") {
+    state.lives = Math.max(0, state.lives + Math.floor(params.livesDelta));
+    if (state.lives >= MAX_LIVES) {
+      state.lastLifeLostAt = null;
+      state.nextLifeRefillMs = 0;
+    }
+  }
+
+  if (typeof params.setGems === "number") {
+    state.gems = Math.max(0, Math.floor(params.setGems));
+  } else if (typeof params.gemsDelta === "number") {
+    state.gems = Math.max(0, state.gems + Math.floor(params.gemsDelta));
+  }
+
+  if (typeof params.setStreakFreezes === "number") {
+    state.streakFreezes = Math.max(0, Math.floor(params.setStreakFreezes));
+  } else if (typeof params.streakFreezesDelta === "number") {
+    state.streakFreezes = Math.max(0, (state.streakFreezes || 0) + Math.floor(params.streakFreezesDelta));
+  }
+
+  savePlayerGamificationState(userId, state);
+  return state;
+}
+
+/**
+ * Achète un article dans la Boutique TerraGems 💎
+ */
+export function buyShopItem(
+  userId: string | undefined,
+  itemId: string
+): { success: boolean; message: string; state: PlayerGamificationState } {
+  const state = getPlayerGamificationState(userId);
+  const item = SHOP_CATALOG.find((it) => it.id === itemId);
+
+  if (!item) {
+    return { success: false, message: "Article introuvable dans la boutique.", state };
+  }
+
+  if (state.gems < item.priceGems) {
+    return {
+      success: false,
+      message: `TerraGems insuffisantes ! Il vous manque ${item.priceGems - state.gems} 💎.`,
+      state,
+    };
+  }
+
+  // Déduire les gems
+  state.gems -= item.priceGems;
+
+  if (item.category === "consumable") {
+    if (item.id === "streak_freeze") {
+      state.streakFreezes = (state.streakFreezes || 0) + 1;
+    } else if (item.id === "refill_lives") {
+      state.lives = MAX_LIVES;
+      state.lastLifeLostAt = null;
+      state.nextLifeRefillMs = 0;
+    } else if (item.id === "double_xp_15m") {
+      state.doubleXpUntil = Math.max(Date.now(), state.doubleXpUntil || 0) + 15 * 60 * 1000;
+    }
+  } else if (item.category === "theme") {
+    if (!state.inventory.themes.includes(item.id)) {
+      state.inventory.themes.push(item.id);
+    }
+    state.activeTheme = item.id;
+  } else if (item.category === "frame") {
+    if (!state.inventory.avatarFrames.includes(item.id)) {
+      state.inventory.avatarFrames.push(item.id);
+    }
+    state.activeAvatarFrame = item.id;
+  } else if (item.category === "title") {
+    if (!state.inventory.titles.includes(item.id)) {
+      state.inventory.titles.push(item.id);
+    }
+    state.activeTitle = item.id;
+  }
+
+  savePlayerGamificationState(userId, state);
+  return {
+    success: true,
+    message: `${item.name} acquis avec succès !`,
+    state,
+  };
+}
+
+/**
+ * Équipe un cosmétique de l'inventaire
+ */
+export function equipShopItem(
+  userId: string | undefined,
+  itemType: "theme" | "frame" | "title",
+  itemId: string | null
+): PlayerGamificationState {
+  const state = getPlayerGamificationState(userId);
+
+  if (itemType === "theme") {
+    if (!itemId || state.inventory.themes.includes(itemId)) {
+      state.activeTheme = itemId || "default";
+    }
+  } else if (itemType === "frame") {
+    if (!itemId || state.inventory.avatarFrames.includes(itemId)) {
+      state.activeAvatarFrame = itemId || "none";
+    }
+  } else if (itemType === "title") {
+    if (!itemId || state.inventory.titles.includes(itemId)) {
+      state.activeTitle = itemId;
+    }
+  }
+
+  savePlayerGamificationState(userId, state);
+  return state;
+}
+
+/**
+ * Consomme un Streak Freeze si disponible pour sauver la série
+ */
+export function consumeStreakFreeze(userId: string | undefined): boolean {
+  const state = getPlayerGamificationState(userId);
+  if ((state.streakFreezes || 0) > 0) {
+    state.streakFreezes -= 1;
+    savePlayerGamificationState(userId, state);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Récupère le thème actif du globe
+ */
+export function getActiveGlobeTheme(userId?: string): string {
+  return getPlayerGamificationState(userId).activeTheme || "default";
+}
+
+/**
+ * Récupère le cadre d'avatar actif
+ */
+export function getActiveAvatarFrame(userId?: string): string {
+  return getPlayerGamificationState(userId).activeAvatarFrame || "none";
+}
+
+/**
+ * Récupère le titre honorifique actif
+ */
+export function getActiveTitle(userId?: string): string | null {
+  return getPlayerGamificationState(userId).activeTitle || null;
 }
 
 /**
@@ -317,6 +675,66 @@ export function getLeagueForXp(xp: number = 0): LeagueTier {
     }
   }
   return DUOLINGO_LEAGUES[0];
+}
+
+export interface UserLeagueProgress {
+  currentLeague: LeagueTier;
+  nextLeague: LeagueTier | null;
+  tier: number;
+  progressPercent: number;
+  xpToNext: number;
+  divisionRank: number;
+  rankLabel: string;
+  statusText: string;
+}
+
+/**
+ * Calcule l'état détaillé de progression dans la ligue et le rang de division
+ */
+export function getUserLeagueProgress(xp: number = 0, customRank?: number): UserLeagueProgress {
+  const currentLeague = getLeagueForXp(xp);
+  const nextLeague = DUOLINGO_LEAGUES.find((l) => l.tier === currentLeague.tier + 1) || null;
+
+  let progressPercent = 100;
+  let xpToNext = 0;
+
+  if (nextLeague) {
+    const tierSpan = nextLeague.minXp - currentLeague.minXp;
+    const currentProgress = Math.max(0, xp - currentLeague.minXp);
+    progressPercent = Math.min(100, Math.max(0, Math.round((currentProgress / tierSpan) * 100)));
+    xpToNext = Math.max(0, nextLeague.minXp - xp);
+  }
+
+  // Calcul du rang dans la division (cohorte de 30 joueurs)
+  let divisionRank = customRank;
+  if (!divisionRank || divisionRank < 1) {
+    if (progressPercent >= 85) divisionRank = 2;
+    else if (progressPercent >= 70) divisionRank = 4;
+    else if (progressPercent >= 50) divisionRank = 7;
+    else if (progressPercent >= 30) divisionRank = 11;
+    else if (progressPercent >= 15) divisionRank = 16;
+    else divisionRank = 21;
+  }
+
+  const statusText =
+    divisionRank <= 5
+      ? "Zone de promotion ⬆️"
+      : divisionRank >= 25
+      ? "Zone de relégation ⬇️"
+      : "Maintien assuré 🛡️";
+
+  const rankLabel = `${currentLeague.icon} ${currentLeague.name} • Rang #${divisionRank}`;
+
+  return {
+    currentLeague,
+    nextLeague,
+    tier: currentLeague.tier,
+    progressPercent,
+    xpToNext,
+    divisionRank,
+    rankLabel,
+    statusText,
+  };
 }
 
 export const DEFAULT_BASE_UNITS: PathUnit[] = [
@@ -628,3 +1046,12 @@ export function getQuestPath(userId?: string): PathUnit[] {
 
   return allUnits;
 }
+
+/**
+ * Vérifie si le joueur bénéficie actuellement d'un multiplicateur Double XP
+ */
+export function isDoubleXpActive(userId?: string): boolean {
+  const state = getPlayerGamificationState(userId);
+  return Boolean(state.doubleXpUntil && state.doubleXpUntil > Date.now());
+}
+

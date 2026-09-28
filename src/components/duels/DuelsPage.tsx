@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -10,17 +10,28 @@ import {
   Clock,
   Users,
   Plus,
-  Target,
   Zap,
-  Award,
-  TrendingUp,
   Crown,
+  Play,
+  CheckCircle2,
+  X,
+  AlertCircle,
+  Gamepad2,
+  Sparkles,
+  Flame,
+  Search,
   ChevronRight,
+  TrendingUp,
+  Award,
+  RefreshCw,
 } from "lucide-react";
 import { useDuelsData } from "./hooks/useDuelsData";
 import { useMatchmaking } from "./hooks/useMatchmaking";
 import { useDuelNotifications } from "./hooks/useDuelNotifications";
 import { fetchUserFriends } from "../../lib/queries/friendQueries";
+import { decodeGhostRunChallenge, getSentGhostRuns } from "../../lib/ghostRunManager";
+import { GhostRunsTab } from "./GhostRunsTab";
+import { Avatar } from "../common/Avatar";
 import type {
   DuelWithDetails,
   InvitationWithDetails,
@@ -31,25 +42,35 @@ import type {
 
 export function DuelsPage({ initialTab }: { initialTab?: string }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const ghostParam = searchParams.get("ghost");
+  const incomingGhostChallenge = ghostParam ? decodeGhostRunChallenge(ghostParam) : null;
+  const sentGhosts = getSentGhostRuns();
+
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { refreshNotifications, showDuelNotification } = useNotifications();
+
   const [activeTab, setActiveTab] = useState<
-    "invitations" | "active" | "completed" | "matchmaking"
+    "active" | "matchmaking" | "invitations" | "completed" | "ghost"
   >(() => {
+    if (ghostParam) return "ghost";
     if (initialTab === "history") return "completed";
     if (
       initialTab === "invitations" ||
       initialTab === "active" ||
       initialTab === "completed" ||
-      initialTab === "matchmaking"
+      initialTab === "matchmaking" ||
+      initialTab === "ghost"
     ) {
       return initialTab;
     }
-    return "invitations";
+    return "active";
   });
+
   const [showCreateInvitation, setShowCreateInvitation] = useState(false);
   const [rankedOnlyHistory, setRankedOnlyHistory] = useState(false);
+
   const {
     activeDuels,
     completedDuels,
@@ -99,6 +120,18 @@ export function DuelsPage({ initialTab }: { initialTab?: string }) {
     navigate,
     t,
   });
+
+  // State for quiz search inside matchmaking tab
+  const [quizSearchQuery, setQuizSearchQuery] = useState("");
+  const [showQuizSelector, setShowQuizSelector] = useState(false);
+
+  const filteredMatchmakingQuizzes = useMemo(() => {
+    if (!quizSearchQuery.trim()) return matchmakingQuizzes;
+    const q = quizSearchQuery.toLowerCase();
+    return matchmakingQuizzes.filter((quiz) =>
+      quiz.title.toLowerCase().includes(q)
+    );
+  }, [matchmakingQuizzes, quizSearchQuery]);
 
   const acceptInvitation = async (invitation: InvitationWithDetails) => {
     refreshNotifications();
@@ -167,854 +200,1095 @@ export function DuelsPage({ initialTab }: { initialTab?: string }) {
     return duel.player1_id === profile?.id ? duel.player2 : duel.player1;
   };
 
+  // Helper to determine whether the current user has completed their session for a duel
+  const hasUserPlayedDuel = (duel: DuelWithDetails) => {
+    const isPlayer1 = duel.player1_id === profile?.id;
+    return isPlayer1 ? !!duel.player1_session_id : !!duel.player2_session_id;
+  };
+
+  const hasOpponentPlayedDuel = (duel: DuelWithDetails) => {
+    const isPlayer1 = duel.player1_id === profile?.id;
+    return isPlayer1 ? !!duel.player2_session_id : !!duel.player1_session_id;
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-4 sm:py-8">
-      {/* Header responsive */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2 flex items-center">
-              <Swords className="w-8 h-8 sm:w-10 sm:h-10 mr-3 text-emerald-600" />
+    <div className="max-w-6xl mx-auto px-4 py-4 sm:py-8 space-y-6">
+      {/* ========================================================
+          1. HERO HEADER WITH QUICK ACTION SHORTCUTS
+      ======================================================== */}
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border-b-4 border-emerald-800">
+        {/* Playful background decorative shapes */}
+        <div className="absolute -right-10 -bottom-10 w-56 h-56 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute right-32 -top-12 w-40 h-40 bg-teal-400/20 rounded-full blur-xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-emerald-100 text-xs font-bold tracking-wide uppercase border border-white/20">
+              <Swords className="w-3.5 h-3.5 text-amber-300" />
+              <span>Arène 1v1 & Multijoueur</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white flex items-center gap-3">
               {t("duels.title")}
+              <span className="text-2xl sm:text-3xl">⚔️</span>
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">
-              {t("duels.subtitle")}
+
+            <p className="text-emerald-100 text-sm sm:text-base max-w-xl font-medium leading-relaxed">
+              {t("duels.subtitle") || "Défie tes amis, grimpe au classement en Matchmaking ou joue en direct !"}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
             <button
               onClick={() => navigate("/party")}
-              className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-lg shadow-md transition-all font-bold flex items-center justify-center gap-2"
+              className="px-5 py-3.5 bg-gradient-to-r from-purple-500 via-indigo-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-extrabold rounded-2xl shadow-lg border-b-4 border-purple-800 active:translate-y-0.5 transition-all flex items-center justify-center gap-2.5 text-sm sm:text-base group"
             >
-              <Crown className="w-5 h-5 text-amber-300" />
-              {t("party.buttonTitle") || "Mode Salon / Party 🏆"}
+              <Crown className="w-5 h-5 text-amber-300 group-hover:rotate-12 transition-transform" />
+              <span>Mode Salon / Party 🏆</span>
             </button>
+
             <button
               onClick={() => setShowCreateInvitation(true)}
-              className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
+              className="px-5 py-3.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-extrabold rounded-2xl shadow-lg border-b-4 border-amber-600 active:translate-y-0.5 transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
             >
-              <Plus className="w-5 h-5 mr-2" />
-              {t("duels.createDuel")}
+              <Plus className="w-5 h-5 stroke-[2.5]" />
+              <span>{t("duels.createDuel")}</span>
             </button>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-          <button
-            onClick={() => setActiveTab("active")}
-            className="text-left p-3 rounded-lg border border-emerald-100 bg-emerald-50 hover:bg-emerald-100 transition-colors"
-          >
-            <p className="text-xs text-emerald-700">{t("duels.activeDuels")}</p>
-            <p className="text-xl font-bold text-emerald-800">{activeDuels.length}</p>
-          </button>
-          <button
-            onClick={() => setActiveTab("invitations")}
-            className="text-left p-3 rounded-lg border border-amber-100 bg-amber-50 hover:bg-amber-100 transition-colors"
-          >
-            <p className="text-xs text-amber-700">{t("duels.invitations")}</p>
-            <p className="text-xl font-bold text-amber-800">
-              {pendingInvitations.length}
-            </p>
-          </button>
-          <button
-            onClick={() => setActiveTab("matchmaking")}
-            className="text-left p-3 rounded-lg border border-purple-100 bg-purple-50 hover:bg-purple-100 transition-colors"
-          >
-            <p className="text-xs text-purple-700">{t("duels.matchmaking")}</p>
-            <p className="text-xl font-bold text-purple-800">
-              {matchmakingQueueEntry ? "1" : "0"}
-            </p>
-          </button>
-          <button
-            onClick={() => setActiveTab("completed")}
-            className="text-left p-3 rounded-lg border border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors"
-          >
-            <p className="text-xs text-blue-700">{t("duels.history")}</p>
-            <p className="text-xl font-bold text-blue-800">
-              {completedDuels.length}
-            </p>
-          </button>
-        </div>
+
+        {/* Priority Alert Banner if user has pending duels to play */}
+        {pendingDuelsCount > 0 && (
+          <div className="mt-6 pt-5 border-t border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/30">
+            <div className="flex items-center gap-3">
+              <span className="flex h-3.5 w-3.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-300"></span>
+              </span>
+              <div>
+                <p className="font-bold text-white text-sm sm:text-base flex items-center gap-1.5">
+                  <Flame className="w-4 h-4 text-amber-300 fill-amber-300" />
+                  C&apos;est à toi de jouer !
+                </p>
+                <p className="text-xs sm:text-sm text-emerald-100">
+                  Tu as <span className="font-bold underline">{pendingDuelsCount}</span> duel(s) en attente de ton score.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab("active")}
+              className="px-4 py-2 bg-white text-emerald-800 hover:bg-emerald-50 rounded-xl font-bold text-xs sm:text-sm border-b-2 border-emerald-300 transition-colors self-start sm:self-auto flex items-center gap-1"
+            >
+              <span>Jouer maintenant</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Onglets */}
-      <div className="bg-white rounded-xl shadow-md p-3 sm:p-6 mb-6 sm:mb-8">
-        <div className="grid grid-cols-4 gap-2">
+      {/* ========================================================
+          2. CLEAN TACTILE NAVIGATION BAR (DUOLINGO STYLE)
+      ======================================================== */}
+      <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 p-2 sm:p-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {/* Onglet 1: En cours */}
           <button
             onClick={() => setActiveTab("active")}
-            className={`relative flex flex-col items-center justify-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
+            className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all border-b-4 active:translate-y-0.5 ${
               activeTab === "active"
-                ? "bg-emerald-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "bg-emerald-500 text-white border-emerald-700 shadow-md"
+                : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
             }`}
           >
-            <Swords className="w-5 h-5 mb-1" />
-            <span className="text-xs sm:text-base">
-              {t("duels.activeDuels")}
+            <Swords className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+            <span className="truncate">{t("duels.activeDuels")}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-xs font-black ${
+                activeTab === "active"
+                  ? "bg-emerald-700 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {activeDuels.length}
             </span>
-            <span className="text-xs">({activeDuels.length})</span>
 
-            {/* Notification point rouge si duels en attente */}
+            {/* Notification badge if user needs to play */}
             {pendingDuelsCount > 0 && (
-              <span className="absolute top-1 right-1 flex h-3 w-3">
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[9px] font-black items-center justify-center">
+                  !
+                </span>
               </span>
             )}
           </button>
 
-          <button
-            onClick={() => setActiveTab("invitations")}
-            className={`flex flex-col items-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
-              activeTab === "invitations"
-                ? "bg-emerald-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            <Users className="w-5 h-5 mb-1" />
-            <span className="text-xs sm:text-base">
-              {t("duels.invitations")}
-            </span>
-            <span className="text-xs">({pendingInvitations.length})</span>
-          </button>
+          {/* Onglet 2: Matchmaking / Partie Rapide */}
           <button
             onClick={() => setActiveTab("matchmaking")}
-            className={`relative flex flex-col items-center justify-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
+            className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all border-b-4 active:translate-y-0.5 ${
               activeTab === "matchmaking"
-                ? "bg-emerald-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ? "bg-indigo-600 text-white border-indigo-800 shadow-md"
+                : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
             }`}
           >
-            <Zap className="w-5 h-5 mb-1" />
-            <span className="text-xs sm:text-base">{t("duels.matchmaking")}</span>
-            <span className="text-xs">{matchmakingQueueEntry ? "1" : "0"}</span>
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-amber-400" />
+            <span className="truncate">{t("duels.matchmaking")}</span>
+
             {matchmakingQueueEntry && (
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+              <span className="px-1.5 py-0.5 rounded-full text-xs font-black bg-purple-700 text-white animate-pulse">
+                1
+              </span>
+            )}
+
+            {matchmakingQueueEntry && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-indigo-500"></span>
               </span>
             )}
           </button>
+
+          {/* Onglet 3: Invitations */}
           <button
-            onClick={() => setActiveTab("completed")}
-            className={`relative flex flex-col items-center justify-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
-              activeTab === "completed"
-                ? "bg-emerald-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            onClick={() => setActiveTab("invitations")}
+            className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all border-b-4 active:translate-y-0.5 ${
+              activeTab === "invitations"
+                ? "bg-amber-500 text-white border-amber-700 shadow-md"
+                : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
             }`}
           >
-            <Trophy className="w-5 h-5 mb-1" />
-            <span className="text-xs sm:text-base">{t("duels.history")}</span>
-            <span className="text-xs">({completedDuels.length})</span>
+            <Users className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+            <span className="truncate">{t("duels.invitations")}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-xs font-black ${
+                activeTab === "invitations"
+                  ? "bg-amber-700 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {pendingInvitations.length}
+            </span>
+          </button>
 
-            {/* Badge pour nouveaux résultats */}
+          {/* Onglet 4: Historique */}
+          <button
+            onClick={() => setActiveTab("completed")}
+            className={`relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all border-b-4 active:translate-y-0.5 ${
+              activeTab === "completed"
+                ? "bg-blue-600 text-white border-blue-800 shadow-md"
+                : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
+            }`}
+          >
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-amber-300" />
+            <span className="truncate">{t("duels.history")}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-xs font-black ${
+                activeTab === "completed"
+                  ? "bg-blue-800 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+            >
+              {completedDuels.length}
+            </span>
+
             {newResultsCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 text-xs font-bold text-white bg-red-500 rounded-full border-2 border-white animate-pulse">
+              <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center h-5 w-5 text-[10px] font-black text-white bg-red-500 rounded-full border-2 border-white animate-pulse">
                 {newResultsCount}
               </span>
             )}
           </button>
+
+          {/* Onglet 5: Ghost Runs */}
+          <button
+            onClick={() => setActiveTab("ghost")}
+            className={`col-span-2 sm:col-span-1 relative flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all border-b-4 active:translate-y-0.5 ${
+              activeTab === "ghost"
+                ? "bg-purple-600 text-white border-purple-800 shadow-md"
+                : "bg-purple-50 text-purple-800 hover:bg-purple-100 border-purple-200"
+            }`}
+          >
+            <span className="text-base shrink-0">👻</span>
+            <span className="truncate">Ghost Runs</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-xs font-black ${
+                activeTab === "ghost"
+                  ? "bg-purple-800 text-white"
+                  : "bg-purple-200 text-purple-800"
+              }`}
+            >
+              {sentGhosts.length}
+            </span>
+
+            {incomingGhostChallenge && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-pink-500"></span>
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Active Duels */}
+      {/* ========================================================
+          3. TAB CONTENT: DUELS EN COURS (ACTIVE DUELS)
+      ======================================================== */}
       {activeTab === "active" && (
         <div className="space-y-4">
           {activeDuels.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md p-8 sm:p-12 text-center">
-              <Swords className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
-                {t("duels.noActiveDuels")}
-              </h3>
-              <p className="text-sm sm:text-base text-gray-500">
-                {t("duels.createOrAccept")}
-              </p>
+            <div className="bg-white rounded-3xl border-2 border-dashed border-gray-200 p-8 sm:p-12 text-center max-w-xl mx-auto space-y-4">
+              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto text-emerald-600 border-2 border-emerald-100">
+                <Swords className="w-10 h-10" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-extrabold text-gray-800">
+                  {t("duels.noActiveDuels")}
+                </h3>
+                <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                  {t("duels.createOrAccept") || "Lance un défi à un ami ou trouve un adversaire en 1v1 instantané !"}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                <button
+                  onClick={() => setActiveTab("matchmaking")}
+                  className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl border-b-4 border-indigo-800 active:translate-y-0.5 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4 text-amber-300" />
+                  <span>Partie Rapide 1v1</span>
+                </button>
+                <button
+                  onClick={() => setShowCreateInvitation(true)}
+                  className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl border-b-4 border-emerald-800 active:translate-y-0.5 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{t("duels.createDuel")}</span>
+                </button>
+              </div>
             </div>
           ) : (
-            activeDuels.map((duel) => {
-              const opponent = getOpponent(duel);
-              const isPlayer1 = duel.player1_id === profile?.id;
-              const hasPlayed = isPlayer1
-                ? !!duel.player1_session_id
-                : !!duel.player2_session_id;
-              const opponentHasPlayed = isPlayer1
-                ? !!duel.player2_session_id
-                : !!duel.player1_session_id;
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeDuels.map((duel) => {
+                const opponent = getOpponent(duel);
+                const hasPlayed = hasUserPlayedDuel(duel);
+                const opponentHasPlayed = hasOpponentPlayedDuel(duel);
+                const isYourTurn = !hasPlayed;
 
-              return (
-                <div
-                  key={duel.id}
-                  className="bg-white rounded-xl shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow"
-                >
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
-                    {duel.quizzes.title}
-                  </h3>
-                  <div className="mb-2">
-                    <span
-                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                        duel.match_type === "ranked"
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-blue-100 text-blue-700"
-                      }`}
-                    >
-                      {duel.match_type === "ranked"
-                        ? t("duels.rankedTag")
-                        : t("duels.casualTag")}
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm text-gray-600 mb-3">
-                    <span className="flex items-center">
-                      <Users className="w-4 h-4 mr-1" />
-                      {t("duels.vs")} {opponent.pseudo}
-                    </span>
-                    <span className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {new Date(duel.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                    <div
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-full text-xs font-medium ${
-                        hasPlayed
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          hasPlayed ? "bg-green-500" : "bg-amber-500"
-                        }`}
-                      />
-                      <span>
-                        {hasPlayed ? t("duels.youPlayed") : t("duels.waiting")}
-                      </span>
-                    </div>
-                    <div
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-full text-xs font-medium ${
-                        opponentHasPlayed
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          opponentHasPlayed ? "bg-green-500" : "bg-gray-400"
-                        }`}
-                      />
-                      <span className="truncate">
-                        {opponent.pseudo}{" "}
-                        {opponentHasPlayed
-                          ? t("duels.hasPlayed")
-                          : t("duels.hasNotPlayed")}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => joinDuel(duel)}
-                    disabled={hasPlayed}
-                    className={`w-full px-4 py-3 rounded-lg transition-colors font-medium ${
-                      hasPlayed
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-emerald-600 text-white hover:bg-emerald-700"
+                return (
+                  <div
+                    key={duel.id}
+                    className={`rounded-2xl transition-all overflow-hidden flex flex-col justify-between ${
+                      isYourTurn
+                        ? "bg-gradient-to-b from-emerald-50/60 to-white border-2 border-emerald-400 shadow-md hover:shadow-lg ring-4 ring-emerald-100/50"
+                        : "bg-white border-2 border-gray-200 shadow-sm hover:border-gray-300"
                     }`}
                   >
-                    {hasPlayed ? t("duels.alreadyPlayed") : t("quiz.play")}
-                  </button>
-                </div>
-              );
-            })
+                    <div className="p-5 sm:p-6 space-y-4">
+                      {/* Top status bar: Mode & Date */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide ${
+                            duel.match_type === "ranked"
+                              ? "bg-purple-100 text-purple-700 border border-purple-200"
+                              : "bg-blue-100 text-blue-700 border border-blue-200"
+                          }`}
+                        >
+                          {duel.match_type === "ranked" ? "🏆 " + t("duels.rankedTag") : "🎮 " + t("duels.casualTag")}
+                        </span>
+
+                        <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-gray-400" />
+                          {new Date(duel.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      {/* Quiz Title */}
+                      <div>
+                        <h3 className="text-lg sm:text-xl font-extrabold text-gray-800 line-clamp-1">
+                          {duel.quizzes.title}
+                        </h3>
+                        <p className="text-xs text-gray-500 capitalize">
+                          Difficulté : {duel.quizzes.difficulty}
+                        </p>
+                      </div>
+
+                      {/* Opponents showdown visual */}
+                      <div className="bg-gray-50 rounded-2xl p-3.5 border border-gray-100 flex items-center justify-between">
+                        {/* Current User */}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Avatar
+                            url={profile?.avatar_url}
+                            pseudo={profile?.pseudo}
+                            frameStyle={profile?.frame_style}
+                            size="sm"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-gray-800 truncate">
+                              Toi
+                            </p>
+                            <span
+                              className={`inline-flex items-center gap-1 text-[11px] font-bold ${
+                                hasPlayed ? "text-emerald-600" : "text-amber-600"
+                              }`}
+                            >
+                              {hasPlayed ? (
+                                <>
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                  <span>Tour joué</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Flame className="w-3 h-3 text-amber-500 fill-amber-500" />
+                                  <span>À toi !</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* VS badge */}
+                        <div className="px-2.5 py-1 bg-white rounded-full border border-gray-200 text-xs font-black text-gray-500 shadow-xs">
+                          VS
+                        </div>
+
+                        {/* Opponent */}
+                        <div className="flex items-center gap-2.5 min-w-0 justify-end text-right">
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-gray-800 truncate">
+                              {opponent.pseudo}
+                            </p>
+                            <span
+                              className={`inline-flex items-center gap-1 text-[11px] font-bold justify-end ${
+                                opponentHasPlayed ? "text-emerald-600" : "text-gray-500"
+                              }`}
+                            >
+                              {opponentHasPlayed ? (
+                                <>
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                  <span>A joué</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="w-3 h-3 text-gray-400" />
+                                  <span>En attente</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                          <Avatar
+                            url={opponent.avatar_url}
+                            pseudo={opponent.pseudo}
+                            frameStyle={opponent.frame_style}
+                            size="sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Turn Status Message */}
+                      {isYourTurn ? (
+                        <div className="p-3 bg-emerald-100/70 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs font-bold text-emerald-800">
+                          <Flame className="w-4 h-4 text-emerald-600 fill-emerald-600 shrink-0" />
+                          <span>C&apos;est ton tour ! Réponds aux questions pour marquer tes points.</span>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-xs font-medium text-amber-800">
+                          <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Ton score est enregistré ! En attente du tour de {opponent.pseudo}.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action button */}
+                    <div className="p-4 bg-gray-50/70 border-t border-gray-100">
+                      {isYourTurn ? (
+                        <button
+                          onClick={() => joinDuel(duel)}
+                          className="w-full py-3.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl border-b-4 border-emerald-700 active:translate-y-0.5 transition-all text-sm sm:text-base flex items-center justify-center gap-2 shadow-md"
+                        >
+                          <Play className="w-4 h-4 fill-white" />
+                          <span>Jouer mon tour maintenant !</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="w-full py-3 px-4 bg-gray-100 text-gray-500 font-bold rounded-xl border border-gray-200 text-xs sm:text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                        >
+                          <Clock className="w-4 h-4 text-gray-400" />
+                          <span>En attente de l&apos;adversaire</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
 
+      {/* ========================================================
+          4. TAB CONTENT: MATCHMAKING 1V1 (PARTIE RAPIDE)
+      ======================================================== */}
       {activeTab === "matchmaking" && (
-        <div className="space-y-4">
-          {!matchmakingQueueEntry && !matchedPreview && (
-            <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">
-                  {t("duels.matchmaking")}
-                </h3>
-                <button
-                  onClick={() => {
-                    setQueueMode("targeted");
-                    setPreferredDifficulty("");
-                    setPreferredQuizIds([]);
-                  }}
-                  disabled={matchmakingLoading}
-                  className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
-                >
-                  {t("duels.resetFilters")}
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setQueueMode("targeted")}
-                  disabled={matchmakingLoading}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                    queueMode === "targeted"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {t("duels.queueModeTargeted")}
-                </button>
-                <button
-                  onClick={() => setQueueMode("random_bonus")}
-                  disabled={matchmakingLoading}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                    queueMode === "random_bonus"
-                      ? "bg-orange-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {t("duels.queueModeRandomBonus")}
-                </button>
-                <select
-                  value={preferredDifficulty}
-                  onChange={(e) =>
-                    setPreferredDifficulty(
-                      (e.target.value as Difficulty | "") || ""
-                    )
-                  }
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  disabled={matchmakingLoading}
-                >
-                  <option value="">{t("duels.anyDifficulty")}</option>
-                  <option value="easy">{t("quizzes.difficulty.easy")}</option>
-                  <option value="medium">{t("quizzes.difficulty.medium")}</option>
-                  <option value="hard">{t("quizzes.difficulty.hard")}</option>
-                </select>
-              </div>
-
-              {queueMode === "targeted" ? (
-                <div className="p-3 border border-gray-200 rounded-lg bg-gray-50">
-                  <p className="text-xs text-gray-600 mb-2">
-                    {t("duels.quizSelectionCount")} {preferredQuizIds.length}/10
-                  </p>
-                  <div className="max-h-44 overflow-y-auto space-y-1">
-                    {matchmakingQuizzes.map((quiz) => (
-                      <label
-                        key={quiz.id}
-                        className="flex items-center gap-2 text-xs text-gray-700"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={preferredQuizIds.includes(quiz.id)}
-                          onChange={() => togglePreferredQuiz(quiz.id)}
-                          disabled={
-                            matchmakingLoading ||
-                            (!preferredQuizIds.includes(quiz.id) &&
-                              preferredQuizIds.length >= 10)
-                          }
-                        />
-                        <span className="truncate">{quiz.title}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="px-3 py-2 rounded-lg text-xs bg-orange-50 text-orange-700 border border-orange-200">
-                  {t("duels.randomBonusHint")}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  onClick={() => handleStartRandomMatchmaking("ranked")}
-                  disabled={matchmakingLoading}
-                  className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center"
-                >
-                  {t("duels.startRankedSearch")}
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </button>
-                <button
-                  onClick={() => handleStartRandomMatchmaking("casual")}
-                  disabled={matchmakingLoading}
-                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center"
-                >
-                  {t("duels.startCasualSearch")}
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </button>
-              </div>
-            </div>
-          )}
-
+        <div className="space-y-6">
+          {/* Match Found State */}
           {matchedPreview && (
-            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-emerald-800 mb-2">
-                {t("duels.matchFound")}
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl border-b-4 border-emerald-700 animate-scale-up space-y-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-amber-300" />
+                <span className="font-black text-sm uppercase tracking-wide text-emerald-100">
+                  Adversaire Trouvé !
+                </span>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+                Prépare-toi pour le duel !
               </h3>
-              <p className="text-sm text-emerald-700 mb-1">
-                {t("duels.opponentLabel")} {matchedPreview.opponentPseudo}
-              </p>
-              <p className="text-sm text-emerald-700 mb-3">
-                {t("duels.opponentMmrLabel")} {matchedPreview.opponentMmr}
-              </p>
+              <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/20 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-emerald-100">Adversaire</p>
+                  <p className="text-lg sm:text-xl font-black text-white">{matchedPreview.opponentPseudo}</p>
+                </div>
+                {matchedPreview.matchType === "ranked" && (
+                  <div className="text-right">
+                    <p className="text-xs text-emerald-100">MMR Estimé</p>
+                    <p className="text-lg sm:text-xl font-black text-amber-300">
+                      {matchedPreview.opponentMmr} pts
+                    </p>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={launchMatchedDuel}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                className="w-full py-4 bg-white hover:bg-emerald-50 text-emerald-800 font-extrabold text-lg rounded-2xl border-b-4 border-emerald-200 active:translate-y-0.5 transition-all shadow-lg flex items-center justify-center gap-2"
               >
-                {t("duels.startDuelNow")}
+                <Play className="w-5 h-5 fill-emerald-800" />
+                <span>{t("duels.startDuelNow")} 🚀</span>
               </button>
             </div>
           )}
-          {matchmakingQueueEntry ? (
-            <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-purple-800 mb-2">
-                {t("duels.searchingOpponent")}
-              </h3>
-              <p className="text-sm text-purple-700 mb-1">
-                {matchmakingQueueEntry.match_type === "ranked"
-                  ? t("duels.matchTypeRanked")
-                  : t("duels.matchTypeCasual")}
-              </p>
-              <p className="text-xs text-purple-600 mb-1">
-                {(matchmakingQueueEntry.queue_mode as string) === "random_bonus"
-                  ? t("duels.queueModeRandomBonus")
-                  : t("duels.queueModeTargeted")}
-              </p>
-              {matchmakingQueueEntry.preferred_difficulty && (
-                <p className="text-xs text-purple-600 mb-1">
-                  {t("duels.preferredDifficultyLabel")}{" "}
-                  {t(
-                    `quizzes.difficulty.${matchmakingQueueEntry.preferred_difficulty}` as
-                      | "quizzes.difficulty.easy"
-                      | "quizzes.difficulty.medium"
-                      | "quizzes.difficulty.hard"
-                  )}
+
+          {/* Active Queue State (Searching...) */}
+          {matchmakingQueueEntry && !matchedPreview && (
+            <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 rounded-3xl p-8 sm:p-12 text-white shadow-2xl border-2 border-indigo-500/30 text-center space-y-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Pulsing Sonar / Radar effect */}
+              <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-500 opacity-30"></span>
+                <span className="animate-pulse absolute inline-flex h-20 w-20 rounded-full bg-indigo-600/40"></span>
+                <div className="relative w-16 h-16 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white/30">
+                  <Zap className="w-8 h-8 text-amber-300 animate-bounce" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-2xl sm:text-3xl font-black text-white">
+                  {t("duels.searchingOpponent")}
+                </h3>
+                <p className="text-sm text-indigo-200">
+                  Le système cherche un adversaire de ton niveau...
                 </p>
-              )}
-              {matchmakingQueueEntry.preferred_quiz_id && (
-                <p className="text-xs text-purple-600 mb-1">
-                  {t("duels.preferredQuizLabel")}{" "}
-                  {matchmakingQuizzes.find(
-                    (quiz) => quiz.id === matchmakingQueueEntry.preferred_quiz_id
-                  )?.title || t("duels.preferredQuizUnknown")}
-                </p>
-              )}
-              {(matchmakingQueueEntry.preferred_quiz_ids as string[] | null)
-                ?.length ? (
-                <p className="text-xs text-purple-600 mb-1">
-                  {t("duels.preferredQuizListLabel")}{" "}
-                  {
-                    (
-                      matchmakingQueueEntry.preferred_quiz_ids as string[] | null
-                    )?.length
-                  }
-                </p>
-              ) : null}
-              {(matchmakingQueueEntry.queue_mode as string) ===
-                "random_bonus" && (
-                <p className="text-xs text-orange-700 mb-1">
-                  {t("duels.randomBonusReward")}
-                </p>
-              )}
-              <p className="text-xs text-purple-600 mb-4">
-                {t("duels.inQueueSince")}{" "}
-                {new Date(matchmakingQueueEntry.created_at).toLocaleTimeString()}
-              </p>
-              <button
-                onClick={cancelRandomMatchmaking}
-                disabled={matchmakingLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-              >
-                {t("duels.cancelSearch")}
-              </button>
+              </div>
+
+              {/* Queue summary chips */}
+              <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold">
+                <span className="px-3 py-1.5 rounded-full bg-white/10 text-white border border-white/10">
+                  Mode: {matchmakingQueueEntry.match_type === "ranked" ? "Classé 🏆" : "Amical 🎮"}
+                </span>
+                <span className="px-3 py-1.5 rounded-full bg-white/10 text-white border border-white/10">
+                  Quiz: {matchmakingQueueEntry.queue_mode === "random_bonus" ? "Aléatoire (+Bonus XP)" : "Sélection personnalisée"}
+                </span>
+                {matchmakingQueueEntry.preferred_difficulty && (
+                  <span className="px-3 py-1.5 rounded-full bg-white/10 text-white border border-white/10 uppercase">
+                    Difficulté: {matchmakingQueueEntry.preferred_difficulty}
+                  </span>
+                )}
+                <span className="px-3 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {t("duels.inQueueSince")} {new Date(matchmakingQueueEntry.created_at).toLocaleTimeString()}
+                </span>
+              </div>
+
+              {/* Cancel Button */}
+              <div>
+                <button
+                  onClick={cancelRandomMatchmaking}
+                  disabled={matchmakingLoading}
+                  className="px-6 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-white font-bold rounded-xl border border-red-500/40 active:translate-y-0.5 transition-all text-sm inline-flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  <span>{t("duels.cancelSearch")}</span>
+                </button>
+              </div>
             </div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-md p-10 text-center">
-              <Zap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                {t("duels.noQueue")}
-              </h3>
-              <p className="text-sm text-gray-500">{t("duels.createOrAccept")}</p>
+          )}
+
+          {/* Default State: Setup & Choose Mode */}
+          {!matchmakingQueueEntry && !matchedPreview && (
+            <div className="space-y-6">
+              {/* Mode Selection Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Mode Classé */}
+                <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-white rounded-3xl p-6 sm:p-7 border-2 border-purple-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="p-3 bg-purple-600 text-white rounded-2xl shadow-sm">
+                        <Trophy className="w-6 h-6 text-amber-300" />
+                      </span>
+                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-purple-100 text-purple-700 border border-purple-200">
+                        Compétitif
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-black text-gray-900">
+                        Match Classé 1v1
+                      </h3>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                        Gagne ou perds des points de classement (MMR). Affronte des joueurs à ta hauteur et monte dans la ligue !
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs font-bold text-purple-700 bg-purple-100/60 p-2.5 rounded-xl">
+                      <Award className="w-4 h-4 text-purple-600 shrink-0" />
+                      <span>Classement mondial • Calcul d&apos;ELO en temps réel</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleStartRandomMatchmaking("ranked")}
+                    disabled={matchmakingLoading}
+                    className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-base rounded-2xl border-b-4 border-purple-800 active:translate-y-0.5 transition-all shadow-md flex items-center justify-center gap-2 group"
+                  >
+                    <span>Lancer la recherche Classée</span>
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+
+                {/* 2. Mode Amical */}
+                <div className="bg-gradient-to-br from-sky-50 via-blue-50 to-white rounded-3xl p-6 sm:p-7 border-2 border-sky-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="p-3 bg-sky-500 text-white rounded-2xl shadow-sm">
+                        <Gamepad2 className="w-6 h-6 text-white" />
+                      </span>
+                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-sky-100 text-sky-700 border border-sky-200">
+                        Détente
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-black text-gray-900">
+                        Match Amical 1v1
+                      </h3>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                        Joue pour le plaisir sans pression. Parfait pour t&apos;entraîner, découvrir de nouveaux quiz et tester tes réflexes.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs font-bold text-sky-700 bg-sky-100/60 p-2.5 rounded-xl">
+                      <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
+                      <span>Sans impact sur ton classement MMR</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleStartRandomMatchmaking("casual")}
+                    disabled={matchmakingLoading}
+                    className="w-full py-4 bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-base rounded-2xl border-b-4 border-sky-700 active:translate-y-0.5 transition-all shadow-md flex items-center justify-center gap-2 group"
+                  >
+                    <span>Lancer la recherche Amicale</span>
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Matchmaking Custom Preferences (Difficulty & Quiz options) */}
+              <div className="bg-white rounded-3xl border-2 border-gray-100 shadow-sm p-6 sm:p-7 space-y-5">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">⚙️</span>
+                    <h4 className="font-extrabold text-gray-800 text-base sm:text-lg">
+                      Préférences de partie (Optionnel)
+                    </h4>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setQueueMode("targeted");
+                      setPreferredDifficulty("");
+                      setPreferredQuizIds([]);
+                    }}
+                    disabled={matchmakingLoading}
+                    className="text-xs text-gray-500 hover:text-gray-800 font-bold flex items-center gap-1 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>{t("duels.resetFilters")}</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Difficulty Selector */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600 uppercase tracking-wider block">
+                      Difficulté des questions
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { id: "", label: "Toutes", icon: "🌐" },
+                        { id: "easy", label: "Facile", icon: "🌱" },
+                        { id: "medium", label: "Moyen", icon: "⚡" },
+                        { id: "hard", label: "Difficile", icon: "🔥" },
+                      ].map((diff) => (
+                        <button
+                          key={diff.id}
+                          type="button"
+                          onClick={() => setPreferredDifficulty(diff.id as Difficulty | "")}
+                          className={`py-2 px-1 text-center rounded-xl font-bold text-xs transition-all border-b-2 ${
+                            preferredDifficulty === diff.id
+                              ? "bg-emerald-500 text-white border-emerald-700 shadow-sm"
+                              : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
+                          }`}
+                        >
+                          <div className="text-sm">{diff.icon}</div>
+                          <div className="truncate">{diff.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mode / Category Selector */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-600 uppercase tracking-wider block">
+                      Sélection des Quiz
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQueueMode("random_bonus");
+                          setShowQuizSelector(false);
+                        }}
+                        className={`p-2.5 rounded-xl font-bold text-xs text-left transition-all border-b-2 flex items-center gap-2 ${
+                          queueMode === "random_bonus"
+                            ? "bg-amber-500 text-white border-amber-700 shadow-sm"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
+                        }`}
+                      >
+                        <span className="text-lg">🎲</span>
+                        <div>
+                          <div>Aléatoire</div>
+                          <div className={`text-[10px] ${queueMode === "random_bonus" ? "text-amber-100" : "text-amber-600"}`}>
+                            + Bonus d&apos;XP !
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQueueMode("targeted");
+                          setShowQuizSelector(true);
+                        }}
+                        className={`p-2.5 rounded-xl font-bold text-xs text-left transition-all border-b-2 flex items-center gap-2 ${
+                          queueMode === "targeted"
+                            ? "bg-indigo-600 text-white border-indigo-800 shadow-sm"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200"
+                        }`}
+                      >
+                        <span className="text-lg">🎯</span>
+                        <div>
+                          <div>Quiz Ciblés</div>
+                          <div className={`text-[10px] ${queueMode === "targeted" ? "text-indigo-100" : "text-gray-500"}`}>
+                            {preferredQuizIds.length > 0 ? `${preferredQuizIds.length} sélectionné(s)` : "Tous les quiz"}
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Collapsible targeted quiz search if mode is targeted */}
+                {queueMode === "targeted" && (
+                  <div className="pt-4 border-t border-gray-100 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <p className="text-xs font-bold text-gray-700">
+                        Choisis tes thèmes favoris ({preferredQuizIds.length}/10 sélectionnés) :
+                      </p>
+                      {preferredQuizIds.length > 0 && (
+                        <button
+                          onClick={() => setPreferredQuizIds([])}
+                          className="text-xs text-red-500 hover:underline font-medium"
+                        >
+                          Tout désélectionner
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Search bar inside matchmaking */}
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Rechercher un quiz par titre..."
+                        value={quizSearchQuery}
+                        onChange={(e) => setQuizSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto space-y-1 p-2 bg-gray-50 rounded-xl border border-gray-200">
+                      {filteredMatchmakingQuizzes.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-4">
+                          Aucun quiz ne correspond à votre recherche.
+                        </p>
+                      ) : (
+                        filteredMatchmakingQuizzes.map((quiz) => {
+                          const isSelected = preferredQuizIds.includes(quiz.id);
+                          return (
+                            <label
+                              key={quiz.id}
+                              className={`flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs font-medium transition-colors ${
+                                isSelected
+                                  ? "bg-indigo-100 text-indigo-900 font-bold"
+                                  : "hover:bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => togglePreferredQuiz(quiz.id)}
+                                  disabled={
+                                    matchmakingLoading ||
+                                    (!isSelected && preferredQuizIds.length >= 10)
+                                  }
+                                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="truncate">{quiz.title}</span>
+                              </div>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-gray-600 border border-gray-200 capitalize shrink-0 ml-2">
+                                {quiz.difficulty}
+                              </span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Invitations */}
+      {/* ========================================================
+          5. TAB CONTENT: INVITATIONS (DEFIS RECUS & ENVOYES)
+      ======================================================== */}
       {activeTab === "invitations" && (
         <div className="space-y-6">
-          {pendingInvitations.length > 0 && (
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
-                {t("duels.receivedInvitations")}
-              </h2>
-              <div className="space-y-3">
+          {/* Section: Invitations reçues */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg sm:text-xl font-extrabold text-gray-900 flex items-center gap-2">
+                <span>📨</span>
+                <span>{t("duels.receivedInvitations")}</span>
+                <span className="text-xs px-2.5 py-0.5 bg-amber-100 text-amber-800 rounded-full font-black">
+                  {pendingInvitations.length}
+                </span>
+              </h3>
+            </div>
+
+            {pendingInvitations.length === 0 ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center text-gray-500">
+                <Users className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                <p className="font-bold text-gray-700 text-sm">
+                  {t("duels.noInvitations")}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Aucun ami ne t&apos;a défié pour le moment.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {pendingInvitations.map((invitation) => (
                   <div
                     key={invitation.id}
-                    className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 sm:p-6"
+                    className="bg-white rounded-2xl p-5 border-2 border-amber-300 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex-1">
-                        <p className="text-base sm:text-lg font-semibold text-gray-800 mb-1">
-                          {invitation.from_user.pseudo}{" "}
-                          {t("duels.challengesYou")}
+                    <div className="flex items-start gap-3.5">
+                      <Avatar
+                        url={invitation.from_user.avatar_url}
+                        pseudo={invitation.from_user.pseudo}
+                        frameStyle={invitation.from_user.frame_style}
+                        size="md"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-black text-gray-900 text-base truncate">
+                            {invitation.from_user.pseudo}
+                          </p>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                            Niv. {invitation.from_user.level}
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-700 font-bold mt-0.5">
+                          Te défie en 1v1 ! ⚔️
                         </p>
-                        <p className="text-sm sm:text-base text-gray-600 mb-2">
-                          {invitation.quizzes.title}
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-500">
-                          {new Date(invitation.created_at).toLocaleString()}
+                        <p className="text-xs text-gray-600 mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100 font-medium truncate">
+                          Quiz: <span className="font-bold text-gray-800">{invitation.quizzes.title}</span>
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => acceptInvitation(invitation)}
-                          className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm sm:text-base"
-                        >
-                          {t("friends.accept")}
-                        </button>
-                        <button
-                          onClick={() => declineInvitation(invitation.id)}
-                          className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
-                        >
-                          {t("friends.reject")}
-                        </button>
-                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2 border-t border-gray-100">
+                      <button
+                        onClick={() => acceptInvitation(invitation)}
+                        className="flex-1 py-2.5 px-3 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl border-b-4 border-emerald-700 active:translate-y-0.5 transition-all text-xs sm:text-sm flex items-center justify-center gap-1.5"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-white" />
+                        <span>{t("friends.accept")}</span>
+                      </button>
+                      <button
+                        onClick={() => declineInvitation(invitation.id)}
+                        className="py-2.5 px-4 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 font-bold rounded-xl border border-gray-200 transition-colors text-xs sm:text-sm"
+                      >
+                        <span>{t("friends.reject")}</span>
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {sentInvitations.length > 0 && (
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
-                {t("duels.sentInvitations")}
-              </h2>
-              <div className="space-y-3">
+          {/* Section: Invitations envoyées */}
+          <div className="pt-4 border-t border-gray-200">
+            <h3 className="text-base sm:text-lg font-extrabold text-gray-800 mb-3 flex items-center gap-2">
+              <span>📤</span>
+              <span>{t("duels.sentInvitations")}</span>
+              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full font-bold">
+                {sentInvitations.length}
+              </span>
+            </h3>
+
+            {sentInvitations.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">
+                Aucun défi envoyé en attente de réponse.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {sentInvitations.map((invitation) => (
                   <div
                     key={invitation.id}
-                    className="bg-white rounded-xl shadow-md p-4 sm:p-6"
+                    className="bg-gray-50 rounded-2xl p-4 border border-gray-200 flex items-center justify-between gap-3"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex-1">
-                        <p className="text-base sm:text-lg font-semibold text-gray-800 mb-1">
-                          {t("duels.invitationTo")} {invitation.to_user.pseudo}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar
+                        url={invitation.to_user.avatar_url}
+                        pseudo={invitation.to_user.pseudo}
+                        frameStyle={invitation.to_user.frame_style}
+                        size="sm"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-800 truncate">
+                          Défi envoyé à <span className="text-emerald-700 font-extrabold">{invitation.to_user.pseudo}</span>
                         </p>
-                        <p className="text-sm sm:text-base text-gray-600 mb-2">
+                        <p className="text-[11px] text-gray-500 truncate">
                           {invitation.quizzes.title}
                         </p>
-                        <p className="text-xs sm:text-sm text-gray-500">
-                          {new Date(invitation.created_at).toLocaleString()}
-                        </p>
                       </div>
-                      <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium text-sm sm:text-base text-center">
-                        {t("duels.waiting")}
-                      </span>
                     </div>
+                    <span className="text-[11px] font-bold px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full shrink-0 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{t("duels.waiting")}</span>
+                    </span>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {pendingInvitations.length === 0 && sentInvitations.length === 0 && (
-            <div className="bg-white rounded-xl shadow-md p-8 sm:p-12 text-center">
-              <Users className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
-                {t("duels.noInvitations")}
-              </h3>
-              <p className="text-sm sm:text-base text-gray-500">
-                {t("duels.createToChallenge")}
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
-      {/* Completed Duels */}
+      {/* ========================================================
+          6. TAB CONTENT: HISTORIQUE DES DUELS
+      ======================================================== */}
       {activeTab === "completed" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-end">
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+          {/* Filter Bar */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <span className="font-extrabold text-sm sm:text-base text-gray-800">
+                Historique des affrontements ({filteredCompletedDuels.length})
+              </span>
+            </div>
+
+            <label className="inline-flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-100">
               <input
                 type="checkbox"
                 checked={rankedOnlyHistory}
                 onChange={(e) => setRankedOnlyHistory(e.target.checked)}
-                className="rounded border-gray-300"
+                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
               />
-              {t("duels.rankedOnlyHistory")}
+              <span>{t("duels.rankedOnlyHistory")}</span>
             </label>
           </div>
+
           {filteredCompletedDuels.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md p-8 sm:p-12 text-center">
-              <Trophy className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
+            <div className="bg-white rounded-3xl border-2 border-dashed border-gray-200 p-8 sm:p-12 text-center max-w-md mx-auto space-y-2">
+              <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <h3 className="text-lg font-bold text-gray-700">
                 {t("duels.noCompletedDuels")}
               </h3>
-              <p className="text-sm sm:text-base text-gray-500">
+              <p className="text-xs text-gray-500">
                 {t("duels.historyAppears")}
               </p>
             </div>
           ) : (
-            filteredCompletedDuels.map((duel) => {
-              const opponent = getOpponent(duel);
-              const status = getDuelStatus(duel);
-              const isPlayer1 = duel.player1_id === profile?.id;
-              const mySession = isPlayer1
-                ? duel.player1_session
-                : duel.player2_session;
-              const opponentSession = isPlayer1
-                ? duel.player2_session
-                : duel.player1_session;
-              const myProfile = isPlayer1 ? duel.player1 : duel.player2;
-              const winner = duel.winner_id
-                ? duel.winner_id === profile?.id
-                  ? myProfile
-                  : opponent
-                : null;
+            <div className="space-y-3">
+              {filteredCompletedDuels.map((duel) => {
+                const opponent = getOpponent(duel);
+                const status = getDuelStatus(duel);
+                const isPlayer1 = duel.player1_id === profile?.id;
+                const mySession = isPlayer1
+                  ? duel.player1_session
+                  : duel.player2_session;
+                const opponentSession = isPlayer1
+                  ? duel.player2_session
+                  : duel.player1_session;
+                const isVictory = status === t("duels.victory");
+                const isDefeat = status === t("duels.defeat");
+                const ratingDelta =
+                  duel.player1_id === profile?.id
+                    ? duel.player1_rating_delta
+                    : duel.player2_rating_delta;
 
-              return (
-                <div
-                  key={duel.id}
-                  className={`rounded-xl shadow-lg overflow-hidden transition-all hover:shadow-xl ${
-                    status === t("duels.victory")
-                      ? "bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-400"
-                      : status === t("duels.defeat")
-                      ? "bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-400"
-                      : "bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-400"
-                  }`}
-                >
-                  <div className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
-                            {duel.quizzes.title}
-                          </h3>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              duel.match_type === "ranked"
-                                ? "bg-purple-100 text-purple-700"
-                                : "bg-blue-100 text-blue-700"
+                return (
+                  <div
+                    key={duel.id}
+                    className={`rounded-2xl p-4 sm:p-5 border-2 transition-all shadow-xs hover:shadow-md ${
+                      isVictory
+                        ? "bg-gradient-to-r from-emerald-50/70 via-white to-white border-emerald-300"
+                        : isDefeat
+                        ? "bg-gradient-to-r from-rose-50/70 via-white to-white border-rose-300"
+                        : "bg-gradient-to-r from-gray-50 via-white to-white border-gray-300"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      {/* Left: Result Badge & Quiz Info */}
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div
+                          className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-black text-xs shrink-0 border-b-2 shadow-xs ${
+                            isVictory
+                              ? "bg-emerald-500 text-white border-emerald-700"
+                              : isDefeat
+                              ? "bg-rose-500 text-white border-rose-700"
+                              : "bg-gray-500 text-white border-gray-700"
+                          }`}
+                        >
+                          <span className="text-lg">
+                            {isVictory ? "🏆" : isDefeat ? "💀" : "🤝"}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-wider">
+                            {status}
+                          </span>
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-extrabold text-gray-900 text-sm sm:text-base truncate">
+                              {duel.quizzes.title}
+                            </h4>
+                            <span
+                              className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
+                                duel.match_type === "ranked"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {duel.match_type === "ranked" ? "Classé" : "Amical"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {duel.completed_at ? new Date(duel.completed_at).toLocaleDateString() : ""}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Center / Right: Players Score comparison */}
+                      <div className="flex items-center justify-between sm:justify-end gap-6 bg-white/80 p-2.5 rounded-xl border border-gray-100">
+                        {/* You */}
+                        <div className="flex items-center gap-2">
+                          <Avatar
+                            url={profile?.avatar_url}
+                            pseudo={profile?.pseudo}
+                            frameStyle={profile?.frame_style}
+                            size="xs"
+                          />
+                          <div>
+                            <p className="text-[11px] font-bold text-gray-500">Toi</p>
+                            <p className="text-sm font-black text-emerald-700">
+                              {mySession ? `${mySession.score} pts` : "-"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-black text-gray-400">vs</span>
+
+                        {/* Opponent */}
+                        <div className="flex items-center gap-2 text-right">
+                          <div>
+                            <p className="text-[11px] font-bold text-gray-500 truncate max-w-[80px]">
+                              {opponent.pseudo}
+                            </p>
+                            <p className="text-sm font-black text-gray-800">
+                              {opponentSession ? `${opponentSession.score} pts` : "-"}
+                            </p>
+                          </div>
+                          <Avatar
+                            url={opponent.avatar_url}
+                            pseudo={opponent.pseudo}
+                            frameStyle={opponent.frame_style}
+                            size="xs"
+                          />
+                        </div>
+
+                        {/* MMR Delta if Ranked */}
+                        {duel.match_type === "ranked" && ratingDelta !== null && ratingDelta !== undefined && (
+                          <div
+                            className={`px-2.5 py-1 rounded-lg text-xs font-black shrink-0 ${
+                              ratingDelta >= 0
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : "bg-rose-100 text-rose-800 border border-rose-200"
                             }`}
                           >
-                            {duel.match_type === "ranked"
-                              ? t("duels.rankedTag")
-                              : t("duels.casualTag")}
-                          </span>
-                          {status === t("duels.victory") && (
-                            <Crown className="w-6 h-6 text-yellow-500" />
-                          )}
-                        </div>
-                        <p className="text-xs sm:text-sm text-gray-500">
-                          {duel.completed_at &&
-                            new Date(duel.completed_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <span
-                        className={`inline-flex items-center px-4 py-2 rounded-lg font-bold text-lg sm:text-xl shadow-md ${
-                          status === t("duels.victory")
-                            ? "bg-green-600 text-white"
-                            : status === t("duels.defeat")
-                            ? "bg-red-600 text-white"
-                            : "bg-gray-600 text-white"
-                        }`}
-                      >
-                        {status === t("duels.victory") && (
-                          <Trophy className="w-5 h-5 mr-2" />
-                        )}
-                        {status}
-                      </span>
-                    </div>
-
-                    {winner && (
-                      <div className="mb-4 p-4 bg-white/60 backdrop-blur rounded-lg border-2 border-yellow-300">
-                        <div className="flex items-center justify-center space-x-3">
-                          <Crown className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
-                          <div className="text-center">
-                            <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                              {t("duels.winner")}
-                            </p>
-                            <p className="text-xl sm:text-2xl font-bold text-gray-800">
-                              {winner.pseudo}
-                            </p>
-                          </div>
-                          <Crown className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                      <div
-                        className={`p-4 rounded-lg ${
-                          status === t("duels.victory")
-                            ? "bg-green-100/70"
-                            : "bg-white/50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-gray-700">
-                            {t("duels.you")}
-                          </p>
-                          {status === t("duels.victory") && (
-                            <Award className="w-5 h-5 text-green-600" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mb-1">
-                          {myProfile.pseudo}
-                        </p>
-                        {mySession && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">
-                                {t("duels.score")}
-                              </span>
-                              <span className="text-lg font-bold text-emerald-600">
-                                {mySession.score}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">
-                                {t("duels.accuracy")}
-                              </span>
-                              <span className="text-sm font-semibold text-gray-700">
-                                {mySession.correct_answers}/
-                                {mySession.total_questions}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">
-                                {t("duels.rate")}
-                              </span>
-                              <span className="text-sm font-semibold text-gray-700">
-                                {(
-                                  (mySession.correct_answers /
-                                    mySession.total_questions) *
-                                  100
-                                ).toFixed(0)}
-                                %
-                              </span>
-                            </div>
-                            {duel.match_type === "ranked" && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-600">
-                                  {t("leaderboard.duelRating")}
-                                </span>
-                                <span
-                                  className={`text-sm font-semibold ${
-                                    ((duel.player1_id === profile?.id
-                                      ? duel.player1_rating_delta
-                                      : duel.player2_rating_delta) ?? 0) >= 0
-                                      ? "text-green-700"
-                                      : "text-red-700"
-                                  }`}
-                                >
-                                  {((duel.player1_id === profile?.id
-                                    ? duel.player1_rating_delta
-                                    : duel.player2_rating_delta) ?? 0) >= 0
-                                    ? "+"
-                                    : ""}
-                                  {duel.player1_id === profile?.id
-                                    ? duel.player1_rating_delta
-                                    : duel.player2_rating_delta}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <div
-                        className={`p-4 rounded-lg ${
-                          status === t("duels.defeat")
-                            ? "bg-red-100/70"
-                            : "bg-white/50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-gray-700">
-                            {t("duels.opponent")}
-                          </p>
-                          {status === t("duels.defeat") && (
-                            <Award className="w-5 h-5 text-red-600" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mb-1">
-                          {opponent.pseudo}
-                        </p>
-                        {opponentSession && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">
-                                {t("duels.score")}
-                              </span>
-                              <span className="text-lg font-bold text-emerald-600">
-                                {opponentSession.score}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">
-                                {t("duels.accuracy")}
-                              </span>
-                              <span className="text-sm font-semibold text-gray-700">
-                                {opponentSession.correct_answers}/
-                                {opponentSession.total_questions}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">
-                                {t("duels.rate")}
-                              </span>
-                              <span className="text-sm font-semibold text-gray-700">
-                                {(
-                                  (opponentSession.correct_answers /
-                                    opponentSession.total_questions) *
-                                  100
-                                ).toFixed(0)}
-                                %
-                              </span>
-                            </div>
+                            {ratingDelta >= 0 ? `+${ratingDelta}` : ratingDelta} MMR
                           </div>
                         )}
                       </div>
                     </div>
-
-                    {mySession && opponentSession && (
-                      <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-4 border-t border-gray-300">
-                        <div className="text-center p-2 sm:p-3 bg-white/40 rounded-lg">
-                          <Target className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-blue-600" />
-                          <p className="text-xs text-gray-600 mb-1">
-                            {t("duels.gap")}
-                          </p>
-                          <p className="text-base sm:text-lg font-bold text-gray-800">
-                            {Math.abs(mySession.score - opponentSession.score)}
-                          </p>
-                        </div>
-                        <div className="text-center p-2 sm:p-3 bg-white/40 rounded-lg">
-                          <Zap className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-yellow-600" />
-                          <p className="text-xs text-gray-600 mb-1">
-                            {t("duels.yourScore")}
-                          </p>
-                          <p className="text-base sm:text-lg font-bold text-emerald-600">
-                            {mySession.score}
-                          </p>
-                        </div>
-                        <div className="text-center p-2 sm:p-3 bg-white/40 rounded-lg">
-                          <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-purple-600" />
-                          <p className="text-xs text-gray-600 mb-1">
-                            {t("quiz.questions")}
-                          </p>
-                          <p className="text-base sm:text-lg font-bold text-gray-800">
-                            {mySession.total_questions}
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       )}
 
+      {/* ========================================================
+          7. TAB CONTENT: GHOST RUNS 👻
+      ======================================================== */}
+      {activeTab === "ghost" && (
+        <GhostRunsTab
+          incomingChallenge={incomingGhostChallenge}
+          rawGhostParam={ghostParam}
+        />
+      )}
+
+      {/* ========================================================
+          8. CREER UN DUEL / DEFIS MODAL
+      ======================================================== */}
       {showCreateInvitation && (
         <CreateDuelInvitation
           onClose={() => setShowCreateInvitation(false)}
@@ -1028,6 +1302,9 @@ export function DuelsPage({ initialTab }: { initialTab?: string }) {
   );
 }
 
+// ----------------------------------------------------------------------
+// MODERN TACTILE CREATE DUEL MODAL
+// ----------------------------------------------------------------------
 function CreateDuelInvitation({
   onClose,
   onCreated,
@@ -1042,6 +1319,8 @@ function CreateDuelInvitation({
   const [selectedFriend, setSelectedFriend] = useState("");
   const [selectedQuiz, setSelectedQuiz] = useState("");
   const [loading, setLoading] = useState(false);
+  const [friendSearch, setFriendSearch] = useState("");
+  const [quizSearch, setQuizSearch] = useState("");
 
   useEffect(() => {
     loadFriendsAndQuizzes();
@@ -1058,10 +1337,22 @@ function CreateDuelInvitation({
       .select("*")
       .or("is_public.eq.true,is_global.eq.true")
       .order("total_plays", { ascending: false })
-      .limit(50);
+      .limit(60);
 
     if (quizzesData) setQuizzes(quizzesData);
   };
+
+  const filteredFriends = useMemo(() => {
+    if (!friendSearch.trim()) return friends;
+    const q = friendSearch.toLowerCase();
+    return friends.filter((f) => f.pseudo.toLowerCase().includes(q));
+  }, [friends, friendSearch]);
+
+  const filteredQuizzes = useMemo(() => {
+    if (!quizSearch.trim()) return quizzes;
+    const q = quizSearch.toLowerCase();
+    return quizzes.filter((quiz) => quiz.title.toLowerCase().includes(q));
+  }, [quizzes, quizSearch]);
 
   const createInvitation = async () => {
     if (!profile || !selectedFriend || !selectedQuiz) return;
@@ -1085,70 +1376,165 @@ function CreateDuelInvitation({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
-          {t("duels.createDuel")}
-        </h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-7 border-4 border-emerald-100 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 bg-emerald-100 text-emerald-700 rounded-xl text-lg">
+              ⚔️
+            </span>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900">
+                {t("duels.createDuel")}
+              </h2>
+              <p className="text-xs text-gray-500">
+                Choisis un ami et le quiz sur lequel vous allez vous affronter.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        <div className="space-y-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t("duels.chooseFriend")}
+        {/* Form Body */}
+        <div className="space-y-4">
+          {/* 1. Sélection de l'Ami */}
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-wider text-gray-700 block">
+              1. {t("duels.chooseFriend")}
             </label>
-            <select
-              value={selectedFriend}
-              onChange={(e) => setSelectedFriend(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-            >
-              <option value="">{t("duels.selectFriend")}</option>
-              {friends.map((friend) => (
-                <option key={friend.id} value={friend.id}>
-                  {friend.pseudo} ({t("profile.level")} {friend.level})
-                </option>
-              ))}
-            </select>
+
+            {friends.length === 0 ? (
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-800">
+                Tu n&apos;as pas encore d&apos;amis ajoutés ! Ajoute des amis dans l&apos;onglet Amis pour les défier en 1v1.
+              </div>
+            ) : (
+              <>
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Chercher un ami..."
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                </div>
+
+                <div className="max-h-36 overflow-y-auto space-y-1.5 p-1">
+                  {filteredFriends.map((friend) => {
+                    const isSelected = selectedFriend === friend.id;
+                    return (
+                      <button
+                        key={friend.id}
+                        type="button"
+                        onClick={() => setSelectedFriend(friend.id)}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-xl border-2 transition-all text-left ${
+                          isSelected
+                            ? "bg-emerald-50 border-emerald-500 shadow-xs"
+                            : "bg-white border-gray-100 hover:border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <Avatar
+                            url={friend.avatar_url}
+                            pseudo={friend.pseudo}
+                            frameStyle={friend.frame_style}
+                            size="xs"
+                          />
+                          <span className="font-extrabold text-xs sm:text-sm text-gray-900 truncate">
+                            {friend.pseudo}
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                          Niv. {friend.level}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t("duels.chooseQuiz")}
+          {/* 2. Sélection du Quiz */}
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-wider text-gray-700 block">
+              2. {t("duels.chooseQuiz")}
             </label>
-            <select
-              value={selectedQuiz}
-              onChange={(e) => setSelectedQuiz(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-            >
-              <option value="">{t("duels.selectQuiz")}</option>
-              {quizzes.map((quiz) => (
-                <option key={quiz.id} value={quiz.id}>
-                  {quiz.title} (
-                  {t(
-                    `quizzes.difficulty.${quiz.difficulty}` as
-                      | "quizzes.difficulty.easy"
-                      | "quizzes.difficulty.medium"
-                      | "quizzes.difficulty.hard"
-                  )}
-                  )
-                </option>
-              ))}
-            </select>
+
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Chercher un quiz..."
+                value={quizSearch}
+                onChange={(e) => setQuizSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+            </div>
+
+            <div className="max-h-40 overflow-y-auto space-y-1.5 p-1">
+              {filteredQuizzes.map((quiz) => {
+                const isSelected = selectedQuiz === quiz.id;
+                return (
+                  <button
+                    key={quiz.id}
+                    type="button"
+                    onClick={() => setSelectedQuiz(quiz.id)}
+                    className={`w-full flex items-center justify-between p-2.5 rounded-xl border-2 transition-all text-left ${
+                      isSelected
+                        ? "bg-emerald-50 border-emerald-500 shadow-xs"
+                        : "bg-white border-gray-100 hover:border-gray-200"
+                    }`}
+                  >
+                    <span className="font-bold text-xs sm:text-sm text-gray-900 truncate">
+                      {quiz.title}
+                    </span>
+                    <span
+                      className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase shrink-0 ml-2 ${
+                        quiz.difficulty === "easy"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : quiz.difficulty === "hard"
+                          ? "bg-rose-100 text-rose-800"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {quiz.difficulty}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        {/* Modal Footer */}
+        <div className="flex gap-3 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors text-sm"
           >
             {t("common.cancel")}
           </button>
           <button
             onClick={createInvitation}
             disabled={!selectedFriend || !selectedQuiz || loading}
-            className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-2 py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl border-b-4 border-emerald-700 active:translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center justify-center gap-2"
           >
-            {loading ? t("duels.sending") : t("chat.send")}
+            {loading ? (
+              <span>{t("duels.sending")}</span>
+            ) : (
+              <>
+                <Swords className="w-4 h-4" />
+                <span>Envoyer le défi 🚀</span>
+              </>
+            )}
           </button>
         </div>
       </div>

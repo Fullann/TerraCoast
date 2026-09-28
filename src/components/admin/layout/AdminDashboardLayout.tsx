@@ -13,6 +13,8 @@ import {
   BarChart3,
   MessageSquareQuote,
   Compass,
+  Globe,
+  Palette,
 } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
 
@@ -34,6 +36,8 @@ export function AdminDashboardLayout() {
     const path = location.pathname;
     if (path === '/admin') return 'admin';
     if (path.includes('/admin/analytics')) return 'admin-analytics';
+    if (path.includes('/admin/countries')) return 'country-tracking';
+    if (path.includes('/admin/site-config')) return 'site-config';
     if (path.includes('/admin/path')) return 'path-management';
     if (path.includes('/admin/quizzes')) return 'quiz-management';
     if (path.includes('/admin/validation')) return 'quiz-validation';
@@ -57,6 +61,11 @@ export function AdminDashboardLayout() {
           view: "admin",
           label: t("admin.nav.overview"),
           icon: <LayoutDashboard className="w-4 h-4" />,
+        },
+        {
+          view: "country-tracking",
+          label: "Intelligence Géo & Pays",
+          icon: <Globe className="w-4 h-4 text-emerald-600" />,
         },
         {
           view: "admin-analytics",
@@ -108,6 +117,11 @@ export function AdminDashboardLayout() {
     {
       title: t("admin.nav.settings"),
       items: [
+        {
+          view: "site-config",
+          label: "Personnalisation du Site",
+          icon: <Palette className="w-4 h-4 text-violet-600" />,
+        },
         {
           view: "duel-features",
           label: t("admin.nav.duelFeatures"),
@@ -166,6 +180,8 @@ export function AdminDashboardLayout() {
                         onClick={() => {
                           const viewToPath: Record<string, string> = {
                             'admin': '/admin',
+                            'country-tracking': '/admin/countries',
+                            'site-config': '/admin/site-config',
                             'admin-analytics': '/admin/analytics',
                             'path-management': '/admin/path',
                             'quiz-management': '/admin/quizzes',

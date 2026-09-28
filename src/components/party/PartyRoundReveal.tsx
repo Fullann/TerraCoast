@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { CheckCircle2, XCircle, Trophy, Flame, Users, Sparkles, Skull, Ghost } from "lucide-react";
+import { CheckCircle2, XCircle, Trophy, Flame, Users, Sparkles, Skull, Ghost, Tv } from "lucide-react";
 import { playCorrectSound, playIncorrectSound } from "../../lib/soundManager";
 import type { PartyPlayer, PartyQuestion, PartyRoom } from "./types";
 
@@ -39,16 +39,21 @@ export const PartyRoundReveal: React.FC<PartyRoundRevealProps> = ({
   onNextQuestion,
 }) => {
   const isHost = currentPlayer.isHost;
+  const isPresenterMode = Boolean(
+    currentPlayer.isSpectator || room.hostIsPlayer === false
+  );
   const myResult = playerResults[currentPlayer.guestId];
   const isLastQuestion = questionIndex + 1 >= totalQuestions;
+  const competingLeaderboard = leaderboard.filter((p) => !p.isSpectator);
 
   useEffect(() => {
+    if (isPresenterMode) return;
     if (myResult?.isCorrect) {
       playCorrectSound();
-    } else {
+    } else if (myResult) {
       playIncorrectSound();
     }
-  }, [myResult?.isCorrect]);
+  }, [myResult?.isCorrect, isPresenterMode]);
 
   // Options to show in the breakdown
   const options = question.options && question.options.length > 0
@@ -114,8 +119,22 @@ export const PartyRoundReveal: React.FC<PartyRoundRevealProps> = ({
             </div>
           )}
 
-          {/* Personal Feedback Banner */}
-          {myResult && (
+          {/* Personal Feedback Banner OR Presenter Screen Banner */}
+          {isPresenterMode ? (
+            <div className="p-5 rounded-3xl bg-indigo-950/80 border-2 border-indigo-400/40 text-indigo-100 flex items-center gap-4 shadow-xl">
+              <div className="w-12 h-12 rounded-2xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center shrink-0">
+                <Tv className="w-6 h-6 text-amber-300" />
+              </div>
+              <div>
+                <span className="text-base font-extrabold text-white block">
+                  📺 Vue Écran de Projection
+                </span>
+                <span className="text-xs text-indigo-200 font-semibold">
+                  Projetez les bonnes réponses et le classement en direct pour vos joueurs !
+                </span>
+              </div>
+            </div>
+          ) : myResult ? (
             <div
               className={`p-6 rounded-3xl border shadow-xl flex items-center gap-4 animate-in fade-in zoom-in-95 ${
                 myResult.isCorrect
@@ -144,7 +163,7 @@ export const PartyRoundReveal: React.FC<PartyRoundRevealProps> = ({
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Correct Answer Highlight */}
           <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-xl">
@@ -203,12 +222,12 @@ export const PartyRoundReveal: React.FC<PartyRoundRevealProps> = ({
               <h3 className="font-bold text-white text-base">Classement provisoire</h3>
             </div>
             <span className="text-xs text-indigo-300">
-              {leaderboard.length} joueurs
+              {competingLeaderboard.length} joueurs
             </span>
           </div>
 
           <div className="space-y-2 overflow-y-auto max-h-[340px] pr-1">
-            {leaderboard.map((player, idx) => {
+            {competingLeaderboard.map((player, idx) => {
               const isMe = player.guestId === currentPlayer.guestId;
               const medal =
                 idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}.`;

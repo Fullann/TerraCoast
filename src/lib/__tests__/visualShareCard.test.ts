@@ -70,4 +70,57 @@ describe("visualShareCard engine", () => {
     expect(mockCanvas.height).toBe(630);
     expect(fillTextMock).toHaveBeenCalled();
   });
+
+  it("draws holographic collector card for conquest properly", async () => {
+    const { drawConquestCollectorCard } = await import("../visualShareCard");
+    const fillRectMock = vi.fn();
+    const fillTextMock = vi.fn();
+    const mockCtx = {
+      createLinearGradient: () => ({ addColorStop: vi.fn() }),
+      createRadialGradient: () => ({ addColorStop: vi.fn() }),
+      fillRect: fillRectMock,
+      fillText: fillTextMock,
+      strokeRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      roundRect: vi.fn(),
+      measureText: () => ({ width: 100 }),
+    } as any;
+
+    const mockCanvas = {
+      getContext: () => mockCtx,
+      width: 0,
+      height: 0,
+    } as any;
+
+    const mockCard = {
+      iso3: "FRA",
+      name: "France",
+      officialName: "République française",
+      capital: "Paris",
+      continent: "Europe",
+      flagEmoji: "🇫🇷",
+      rarity: "legendary" as const,
+      population: 68000000,
+      areaKm2: 551695,
+      currencies: [{ name: "Euro", symbol: "€" }],
+      landmark: {
+        name: "Tour Eiffel",
+        description: "Monument emblématique de Paris.",
+        icon: "🗼",
+      },
+      funFact: "Le pays le plus visité au monde.",
+      isConquered: true,
+      bestAccuracy: 100,
+    };
+
+    drawConquestCollectorCard(mockCanvas, mockCard as any, "PikachuTrainer");
+
+    expect(mockCanvas.width).toBe(800);
+    expect(mockCanvas.height).toBe(1100);
+    expect(fillTextMock).toHaveBeenCalled();
+  });
 });

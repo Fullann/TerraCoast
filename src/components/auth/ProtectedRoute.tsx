@@ -26,8 +26,8 @@ export function ProtectedRoute({ requireAdmin = false }: { requireAdmin?: boolea
 
   if (mfaRequired) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
-        <div className="w-full">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-white/10 shadow-2xl backdrop-blur-2xl">
           <LoginForm forceMfa={true} />
         </div>
       </div>

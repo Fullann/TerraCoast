@@ -9,6 +9,7 @@ import {
   getLeagueForXp,
   getQuestPath,
   resetGamificationState,
+  adminGrantResources,
 } from "../gamificationManager";
 
 describe("gamificationManager", () => {
@@ -89,4 +90,32 @@ describe("gamificationManager", () => {
     expect(updatedPath[0].nodes[0].stars).toBe(3);
     expect(updatedPath[0].nodes[1].status).toBe("active");
   });
+
+  it("should allow admin to grant gems, hearts and streak freezes", () => {
+    // Grant gems delta
+    const s1 = adminGrantResources(testUserId, { gemsDelta: 1000 });
+    expect(s1.gems).toBeGreaterThanOrEqual(1100);
+
+    // Set exact gems
+    const s2 = adminGrantResources(testUserId, { setGems: 7777 });
+    expect(s2.gems).toBe(7777);
+
+    // Give developer god mode (99 lives)
+    const s3 = adminGrantResources(testUserId, { setLives: 99 });
+    expect(s3.lives).toBe(99);
+
+    // Deducting a life from 99 lives should result in 98 without clamping to 5
+    deductLife(testUserId);
+    const s4 = getPlayerGamificationState(testUserId);
+    expect(s4.lives).toBe(98);
+
+    // Full refill restores 5 lives
+    const s5 = adminGrantResources(testUserId, { fullRefill: true });
+    expect(s5.lives).toBe(5);
+
+    // Grant streak freezes
+    const s6 = adminGrantResources(testUserId, { streakFreezesDelta: 3 });
+    expect(s6.streakFreezes).toBe(3);
+  });
 });
+

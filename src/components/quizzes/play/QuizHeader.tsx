@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Clock, Trophy, Flag, Volume2, VolumeX, Radio } from "lucide-react";
+import { ArrowLeft, Clock, Trophy, Flag, Volume2, VolumeX, Radio, Heart } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { useRadioGlobe } from "../../../contexts/RadioGlobeContext";
 import { isSoundEnabled, toggleSound } from "../../../lib/soundManager";
@@ -16,6 +16,11 @@ interface QuizHeaderProps {
   currentQuestionIndex: number;
   totalQuestions: number;
   progress: number;
+  lives?: number;
+  maxLives?: number;
+  streakFreezes?: number;
+  isDoubleXp?: boolean;
+  onRefillHearts?: () => void;
 }
 
 export const QuizHeader: React.FC<QuizHeaderProps> = ({
@@ -29,6 +34,11 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
   currentQuestionIndex,
   totalQuestions,
   progress,
+  lives,
+  maxLives = 5,
+  streakFreezes = 0,
+  isDoubleXp = false,
+  onRefillHearts,
 }) => {
   const { t } = useLanguage();
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
@@ -104,9 +114,45 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
             </button>
           </div>
 
-          {/* Right counters: Score & Timer */}
-          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-            {!trainingMode && (
+          {/* Right counters: Hearts, Boosters, Score & Timer */}
+          <div className="flex items-center space-x-1.5 sm:space-x-2.5 shrink-0">
+            {/* Boosters actifs */}
+            {streakFreezes > 0 && (
+              <span
+                className="hidden md:inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 text-xs font-black shadow-2xs"
+                title={`${streakFreezes} Gel(s) de Flamme actif(s) pour protéger votre série 🧊`}
+              >
+                🧊 Gel
+              </span>
+            )}
+
+            {isDoubleXp && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-amber-400 text-amber-950 border border-amber-300 text-xs font-black shadow-xs animate-pulse"
+                title="Booster Double XP actif ! ⚡"
+              >
+                ⚡ 2X
+              </span>
+            )}
+
+            {/* ❤️ Cœurs / Vies */}
+            {!trainingMode && typeof lives === "number" && (
+              <button
+                type="button"
+                onClick={onRefillHearts}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-2xl border-2 border-b-4 transition-all shadow-xs cursor-pointer active:translate-y-0.5 active:border-b-2 ${
+                  lives <= 1
+                    ? "bg-rose-50 text-rose-700 border-rose-300 border-b-rose-500 animate-pulse"
+                    : "bg-rose-50/70 text-rose-700 border-rose-200 border-b-rose-300 hover:bg-rose-100"
+                }`}
+                title={`${lives}/${maxLives} Cœurs ❤️ (Cliquez pour recharger)`}
+              >
+                <Heart className={`w-4 h-4 text-rose-500 fill-rose-500 ${lives <= 1 ? "animate-bounce" : ""}`} />
+                <span className="font-black text-xs sm:text-sm">{lives}</span>
+              </button>
+            )}
+
+            {!trainingMode ? (
               <>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-950 rounded-2xl border-2 border-amber-300 border-b-4 shadow-xs">
                   <Trophy className="w-4 h-4 text-amber-500" />

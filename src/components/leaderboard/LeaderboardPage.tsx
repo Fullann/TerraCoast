@@ -23,6 +23,7 @@ import {
   type Federation,
 } from "../../lib/federations";
 import { FederationSelectModal } from "../profile/modals/FederationSelectModal";
+import { TerritorialConquestSection } from "./TerritorialConquestSection";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -345,8 +346,14 @@ export function LeaderboardPage({ onNavigate: _onNavigate }: LeaderboardPageProp
           const myFedEntry = federationLeaderboard.find((f) => f.federation.id === myFederation.id);
           return (
             <div className="space-y-6">
-          {/* User's current federation banner */}
-          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Conquête des Nations ⚔️ */}
+              <TerritorialConquestSection
+                userFederation={myFederation}
+                onOpenFederationModal={() => setShowFederationModal(true)}
+              />
+
+              {/* User's current federation banner */}
+              <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-center sm:text-left">
               <span className="text-4xl">{myFederation.flagEmoji}</span>
               <div>

@@ -112,22 +112,22 @@ export function GeoDetectiveGamePage() {
 
   if (isGameOver) {
     return (
-      <div className="min-h-screen bg-[#070b14] flex flex-col justify-center py-8">
+      <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-8">
         <GeoDetectiveSummary gameState={gameState} onPlayAgain={handleRestart} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col pb-28 safe-area-bottom">
       {/* Top HUD Bar */}
-      <header className="bg-slate-950/90 border-b border-slate-800/80 px-4 py-3 sticky top-0 z-30 backdrop-blur-md">
+      <header className="bg-white/95 border-b-2 border-slate-200 px-4 py-3 sticky top-0 z-30 backdrop-blur-md shadow-xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* Back & Title */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/games")}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors"
               title="Retour aux jeux"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -136,10 +136,10 @@ export function GeoDetectiveGamePage() {
             <div className="flex items-center gap-2">
               <span className="text-xl">🛰️</span>
               <div>
-                <h1 className="text-sm sm:text-base font-black text-white leading-tight">
-                  Geo-Detective <span className="hidden sm:inline text-emerald-400">• Satellite Mini</span>
+                <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                  Geo-Detective <span className="hidden sm:inline text-teal-600">• Satellite Mini</span>
                 </h1>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-slate-500 font-bold">
                   GeoGuessr Satellite Gratuit & Accessible
                 </p>
               </div>
@@ -149,34 +149,34 @@ export function GeoDetectiveGamePage() {
           {/* Round Indicator & Score Gauge */}
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Round Pills */}
-            <div className="flex items-center gap-1 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-mono">
-              <span className="text-slate-400 font-bold uppercase hidden sm:inline">Manche</span>
-              <span className="font-black text-emerald-400">
+            <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono">
+              <span className="text-slate-500 font-black uppercase hidden sm:inline">Manche</span>
+              <span className="font-black text-teal-700">
                 {currentRound.roundNumber} / {gameState.rounds.length}
               </span>
             </div>
 
             {/* Score */}
-            <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-mono">
-              <Trophy className="w-3.5 h-3.5 text-yellow-400" />
-              <span className="font-black text-white">
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border-2 border-slate-200 text-xs font-mono shadow-xs">
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              <span className="font-black text-slate-900">
                 {gameState.totalScore.toLocaleString()}
               </span>
-              <span className="text-slate-500 hidden sm:inline">/ 25k</span>
+              <span className="text-slate-400 hidden sm:inline">/ 25k</span>
             </div>
 
             {/* High Score */}
             {highScore > 0 && (
-              <div className="hidden md:flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-mono text-slate-400">
-                <span>Record :</span>
-                <span className="font-bold text-amber-400">{highScore.toLocaleString()}</span>
+              <div className="hidden md:flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 text-xs font-mono text-amber-800">
+                <span className="font-bold">Record :</span>
+                <span className="font-black text-amber-700">{highScore.toLocaleString()}</span>
               </div>
             )}
 
             {/* Restart */}
             <button
               onClick={handleRestart}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors"
               title="Recommencer la mission"
             >
               <RotateCcw className="w-4 h-4" />
@@ -218,18 +218,18 @@ export function GeoDetectiveGamePage() {
           />
 
           {/* Quick instructions / tips */}
-          <div className="mt-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-xs text-slate-400 space-y-1">
-            <p className="flex items-center gap-1.5 font-bold text-slate-300">
+          <div className="mt-3 p-3.5 rounded-2xl bg-white border-2 border-slate-200 shadow-xs text-xs text-slate-600 space-y-1 font-medium">
+            <p className="flex items-center gap-1.5 font-black text-slate-900">
               <span>🎯 Règle du jeu :</span>
             </p>
             <p>
               1. Zoomez et analysez les reliefs, canaux et monuments depuis l'orbite.
             </p>
             <p>
-              2. Pointez sur la mini-carte pour placer votre repère (`📍`).
+              2. Pointez sur la mini-carte pour placer votre repère (<code className="bg-slate-100 px-1 py-0.5 rounded text-rose-600 font-bold">📍</code>).
             </p>
             <p>
-              3. Plus votre tir est proche, plus vous vous approchez des <strong>5 000 pts</strong> par manche !
+              3. Plus votre tir est proche, plus vous vous approchez des <strong className="text-emerald-600">5 000 pts</strong> par manche !
             </p>
           </div>
         </div>

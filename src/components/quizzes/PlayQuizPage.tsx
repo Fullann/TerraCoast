@@ -18,6 +18,7 @@ import { CountryMultiQuestionView } from "./play/CountryMultiQuestionView";
 import { ReportQuestionModal } from "./play/ReportQuestionModal";
 import { ConfirmModal } from "../common/ConfirmModal";
 import { Flag } from "lucide-react";
+import { decodeGhostRunChallenge, type GhostRunChallenge } from "../../lib/ghostRunManager";
 
 interface PlayQuizPageProps {
   quizId?: string;
@@ -81,6 +82,11 @@ export function PlayQuizPage({
     "";
   const [quizId, setQuizId] = useState<string>(initialQuizId);
 
+  const ghostParam = searchParams.get("ghost");
+  const [ghostChallenge] = useState<GhostRunChallenge | null>(() => {
+    return ghostParam ? decodeGhostRunChallenge(ghostParam) : null;
+  });
+
   useEffect(() => {
     const directQuizId =
       propQuizId ||
@@ -136,6 +142,11 @@ export function PlayQuizPage({
     syncSessionProgress,
     restartReviewMistakes,
     pathNodeResult,
+    showHeartRefillModal,
+    setShowHeartRefillModal,
+    handleHeartRefill,
+    handleQuitOnNoHearts,
+    gamification,
   } = usePlayQuiz({
     quizId,
     mode,
@@ -344,6 +355,9 @@ export function PlayQuizPage({
         trainingMode={trainingMode}
         mode={mode}
         quizId={quizId}
+        quizTitle={quiz?.title}
+        quizCategory={quiz?.category}
+        ghostChallenge={ghostChallenge}
         totalScore={totalScore}
         xpGained={xpGained}
         answers={answers}
@@ -424,6 +438,23 @@ export function PlayQuizPage({
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-slate-50 via-sky-50/20 to-emerald-50/20">
+      {ghostChallenge && (
+        <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-pink-900 text-white px-4 py-2 text-xs font-bold flex items-center justify-between border-b border-pink-500/30 shadow-md shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-base animate-pulse">👻</span>
+            <span>
+              Mode Ghost Run contre <strong>{ghostChallenge.challengerPseudo}</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 font-mono">
+            <span className="text-pink-200">Score à battre :</span>
+            <span className="text-amber-300 font-black text-sm">
+              {ghostChallenge.challengerScore} pts
+            </span>
+          </div>
+        </div>
+      )}
+
       <QuizHeader
         onQuit={handleQuit}
         onReport={() => setShowReportModal(true)}
@@ -435,13 +466,19 @@ export function PlayQuizPage({
         currentQuestionIndex={currentQuestionIndex}
         totalQuestions={questions.length}
         progress={progress}
+        lives={gamification?.lives}
+        maxLives={gamification?.maxLives || 5}
+        streakFreezes={gamification?.streakFreezes}
+        isDoubleXp={Boolean(gamification?.doubleXpUntil && gamification.doubleXpUntil > Date.now())}
+        onRefillHearts={() => setShowHeartRefillModal(true)}
       />
 
       {/* ZONE DE CONTENU SCROLLABLE */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
-          {/* CARTE HERO DE LA QUESTION */}
-          <div className="card-duo p-5 sm:p-7 md:p-8 bg-white shadow-md relative overflow-hidden mb-6">
+          <div key={currentQuestion.id || currentQuestionIndex} className="animate-question-slide">
+            {/* CARTE HERO DE LA QUESTION */}
+            <div className="card-duo p-5 sm:p-7 md:p-8 bg-white shadow-md relative overflow-hidden mb-6">
             {/* EN-TÊTE QUESTION : TITRE DU QUIZ & SIGNALEMENT */}
             <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -673,11 +710,12 @@ export function PlayQuizPage({
               questionStartTime={questionStartTime}
             />
           )}
+          </div>
         </div>
       </div>
 
       {/* FOOTER FIXE AVEC BOUTONS TACTILES 3D DUOLINGO */}
-      <div className="bg-white/95 backdrop-blur-md border-t-2 border-slate-200/90 px-4 py-4 shadow-[0_-10px_25px_rgba(0,0,0,0.04)] safe-area-bottom">
+      <div className="bg-white/95 backdrop-blur-md border-t-2 border-slate-200/90 px-4 py-4 pb-28 sm:pb-5 shadow-[0_-10px_25px_rgba(0,0,0,0.04)] safe-area-bottom">
         <div className="max-w-4xl mx-auto">
           {!isAnswered ? (
             <button
@@ -748,6 +786,64 @@ export function PlayQuizPage({
         onCancel={() => setShowQuitModal(false)}
         onConfirm={confirmQuitGame}
       />
+
+      {/* 💔 MODALE LUDIQUE DE RECHARGE DE CŒURS EN PLEIN QUIZ */}
+      {showHeartRefillModal && (
+        <div
+          className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => {}}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl border-4 border-slate-100 text-center relative animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-4 border-2 border-rose-200 shadow-inner">
+              <span className="text-3xl animate-bounce">💔</span>
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-1">
+              Plus de cœurs !
+            </h3>
+
+            <p className="text-sm font-medium text-slate-600 mb-4 leading-relaxed">
+              Vous avez épuisé vos cœurs pour ce quiz. Voulez-vous recharger immédiatement ou attendre la régénération ?
+            </p>
+
+            <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3.5 mb-5 text-left shadow-xs">
+              <div className="flex items-center justify-between text-xs font-black text-slate-700 mb-1.5">
+                <span>Votre solde TerraGems</span>
+                <span className="font-mono text-sky-700 bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200">
+                  💎 {gamification.gems} Gems
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                <span>Coût recharge 5 ❤️</span>
+                <span className="font-black text-emerald-600">100 💎</span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={handleHeartRefill}
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#58cc02] hover:bg-[#61e002] active:bg-[#46a302] text-white font-black text-sm border-b-4 border-[#46a302] active:border-b-0 active:translate-y-1 transition shadow-sm cursor-pointer"
+              >
+                {gamification.gems >= 100
+                  ? "⚡ RECHARGER 5 ❤️ (100 💎)"
+                  : "⚡ RECHARGER 5 ❤️ (OFFERT)"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleQuitOnNoHearts}
+                className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-800 font-black text-xs border-2 border-slate-200 border-b-4 hover:border-slate-300 active:border-b-0 active:translate-y-1 transition cursor-pointer"
+              >
+                ATTENDRE (+1 ❤️ / 20 MIN) ➔ RÉSULTATS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

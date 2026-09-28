@@ -419,3 +419,420 @@ export function aggregateFederationLeaderboard(
 
   return result;
 }
+
+/**
+ * ============================================================================
+ * LA CONQUÊTE DES NATIONS ⚔️ (Saison Hebdomadaire des Fédérations)
+ * ============================================================================
+ */
+
+export type ConquestZoneKey = "europe" | "americas" | "asia" | "africa" | "oceania" | "poles";
+
+export interface ConquestZoneConfig {
+  id: ConquestZoneKey;
+  name: string;
+  emoji: string;
+  subtitle: string;
+  description: string;
+  color: string;
+  bgGradient: string;
+  accentBorder: string;
+  badge: string;
+  bonusXpPercent: number;
+}
+
+export const CONQUEST_ZONES_CONFIG: Record<ConquestZoneKey, ConquestZoneConfig> = {
+  europe: {
+    id: "europe",
+    name: "Europe",
+    emoji: "🏰",
+    subtitle: "Bastion Ancien",
+    description: "Des fjords norvégiens aux collines toscanes, l'influence s'arrache à coups de capitales et drapeaux.",
+    color: "emerald",
+    bgGradient: "from-emerald-600 via-teal-700 to-cyan-900",
+    accentBorder: "border-emerald-400",
+    badge: "Seigneur d'Europe 🏰",
+    bonusXpPercent: 15,
+  },
+  americas: {
+    id: "americas",
+    name: "Amériques",
+    emoji: "🌎",
+    subtitle: "Terres des Géants",
+    description: "Du Grand Nord canadien à la Terre de Feu, dominez les cordillères, fleuves et mégapoles.",
+    color: "sky",
+    bgGradient: "from-sky-600 via-blue-700 to-indigo-900",
+    accentBorder: "border-sky-400",
+    badge: "Conquérant du Nouveau Monde 🌎",
+    bonusXpPercent: 15,
+  },
+  asia: {
+    id: "asia",
+    name: "Asie",
+    emoji: "🏯",
+    subtitle: "Empire d'Orient",
+    description: "Le continent le plus vaste et peuplé : un affrontement d'influence titanesque.",
+    color: "rose",
+    bgGradient: "from-rose-600 via-pink-700 to-purple-900",
+    accentBorder: "border-rose-400",
+    badge: "Empereur d'Orient 🏯",
+    bonusXpPercent: 20,
+  },
+  africa: {
+    id: "africa",
+    name: "Afrique",
+    emoji: "🦁",
+    subtitle: "Berceau Sauvage",
+    description: "Du Sahara au Cap de Bonne-Espérance, imposez les couleurs de votre blason.",
+    color: "amber",
+    bgGradient: "from-amber-600 via-orange-700 to-red-900",
+    accentBorder: "border-amber-400",
+    badge: "Gardien de la Savane 🦁",
+    bonusXpPercent: 15,
+  },
+  oceania: {
+    id: "oceania",
+    name: "Océanie",
+    emoji: "🏝️",
+    subtitle: "Archipels du Pacifique",
+    description: "D'innombrables atolls coralliens et l'Outback australien à conquérir par les quiz.",
+    color: "teal",
+    bgGradient: "from-teal-600 via-cyan-700 to-blue-900",
+    accentBorder: "border-teal-400",
+    badge: "Navigateur du Pacifique 🏝️",
+    bonusXpPercent: 15,
+  },
+  poles: {
+    id: "poles",
+    name: "Pôles & Terres Australes",
+    emoji: "❄️",
+    subtitle: "Frontières Glacées",
+    description: "Arctique et Antarctique : les contrées les plus rudes récompensent les géographes les plus téméraires.",
+    color: "indigo",
+    bgGradient: "from-indigo-600 via-slate-800 to-cyan-950",
+    accentBorder: "border-cyan-400",
+    badge: "Pionnier des Glaces ❄️",
+    bonusXpPercent: 25,
+  },
+};
+
+export interface ConquestZoneInfluenceEntry {
+  federation: Federation;
+  points: number;
+  percentage: number;
+}
+
+export interface ConquestZoneState {
+  id: ConquestZoneKey;
+  config: ConquestZoneConfig;
+  totalInfluence: number;
+  controllingFederation: Federation | null;
+  dominancePercent: number;
+  rankings: ConquestZoneInfluenceEntry[];
+}
+
+export interface ConquestSeasonState {
+  seasonId: string;
+  seasonEndsAt: number;
+  zones: Record<ConquestZoneKey, ConquestZoneState>;
+  topDominatingFederation: Federation | null;
+}
+
+const STORAGE_CONQUEST_KEY = "terracoast_conquest_season_v1";
+let inMemoryConquestStorage: RawInfluenceStorage | null = null;
+
+/**
+ * Calcule l'ID de la saison hebdomadaire courante (ex: 2026-W39)
+ */
+export function getCurrentSeasonId(now: Date = new Date()): string {
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+/**
+ * Calcule l'horodatage de fin de saison (Dimanche soir à 23:59:59.999 local)
+ */
+export function getSeasonEndTimestamp(now: Date = new Date()): number {
+  const end = new Date(now);
+  const day = end.getDay(); // 0 is Sunday
+  const daysUntilSunday = (7 - day) % 7;
+  end.setDate(end.getDate() + daysUntilSunday);
+  end.setHours(23, 59, 59, 999);
+  return end.getTime();
+}
+
+/**
+ * Calcule le temps restant avant le reset du dimanche minuit
+ */
+export function getTimeUntilSeasonReset(now: Date = new Date()): {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  formatted: string;
+} {
+  const end = getSeasonEndTimestamp(now);
+  const diffMs = Math.max(0, end - now.getTime());
+  const totalSeconds = Math.floor(diffMs / 1000);
+
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const formatted = `${days > 0 ? `${days}j ` : ""}${String(hours).padStart(2, "0")}h ${String(
+    minutes
+  ).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
+
+  return { days, hours, minutes, seconds, formatted };
+}
+
+/**
+ * Associe un quiz ou un continent à une zone de conflit territorial
+ */
+export function mapQuizToConquestZone(continentOrCategory?: string): ConquestZoneKey {
+  if (!continentOrCategory) return "europe";
+  const lower = continentOrCategory.toLowerCase();
+  if (lower.includes("eur") || lower.includes("suisse") || lower.includes("france") || lower.includes("belg")) {
+    return "europe";
+  }
+  if (
+    lower.includes("amér") ||
+    lower.includes("americ") ||
+    lower.includes("usa") ||
+    lower.includes("canada") ||
+    lower.includes("brésil") ||
+    lower.includes("nord") ||
+    lower.includes("sud")
+  ) {
+    return "americas";
+  }
+  if (
+    lower.includes("asi") ||
+    lower.includes("japon") ||
+    lower.includes("chine") ||
+    lower.includes("inde") ||
+    lower.includes("orient")
+  ) {
+    return "asia";
+  }
+  if (
+    lower.includes("afri") ||
+    lower.includes("maroc") ||
+    lower.includes("sahara") ||
+    lower.includes("senegal") ||
+    lower.includes("égypte")
+  ) {
+    return "africa";
+  }
+  if (
+    lower.includes("océan") ||
+    lower.includes("ocean") ||
+    lower.includes("austral") ||
+    lower.includes("pacifi") ||
+    lower.includes("zélande")
+  ) {
+    return "oceania";
+  }
+  if (
+    lower.includes("pôle") ||
+    lower.includes("pole") ||
+    lower.includes("gla") ||
+    lower.includes("antar") ||
+    lower.includes("arcti")
+  ) {
+    return "poles";
+  }
+  return "europe";
+}
+
+/**
+ * Données d'influence brutes par zone
+ */
+type RawInfluenceStorage = {
+  seasonId: string;
+  zones: Record<ConquestZoneKey, Record<string, number>>;
+};
+
+function getInitialRawInfluence(seasonId: string): RawInfluenceStorage {
+  return {
+    seasonId,
+    zones: {
+      europe: { CH: 1420, FR: 1180, BE: 560, DE: 420, GB: 310 },
+      americas: { CA: 1650, US: 1420, BR: 720, FR: 340 },
+      asia: { JP: 1890, CH: 950, FR: 780, US: 420 },
+      africa: { MA: 1350, SN: 980, CI: 750, FR: 680, TN: 540 },
+      oceania: { FR: 1120, CH: 840, GB: 650, US: 410 },
+      poles: { CH: 1280, CA: 1100, FR: 860, DE: 450 },
+    },
+  };
+}
+
+/**
+ * Récupère l'état complet de la saison de Conquête des Nations
+ */
+export function getConquestSeasonState(now: Date = new Date()): ConquestSeasonState {
+  const currentSeasonId = getCurrentSeasonId(now);
+  let raw: RawInfluenceStorage | null =
+    inMemoryConquestStorage && inMemoryConquestStorage.seasonId === currentSeasonId
+      ? inMemoryConquestStorage
+      : null;
+
+  if (!raw) {
+    try {
+      if (typeof localStorage !== "undefined") {
+        const stored = localStorage.getItem(STORAGE_CONQUEST_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as RawInfluenceStorage;
+          if (parsed.seasonId === currentSeasonId) {
+            raw = parsed;
+          }
+        }
+      }
+    } catch {
+      // Ignorer
+    }
+  }
+
+  if (!raw) {
+    raw = getInitialRawInfluence(currentSeasonId);
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(STORAGE_CONQUEST_KEY, JSON.stringify(raw));
+      }
+    } catch {
+      // Ignorer
+    }
+  }
+
+  inMemoryConquestStorage = raw;
+
+  // Compiler l'état détaillé de chaque zone
+  const zones = {} as Record<ConquestZoneKey, ConquestZoneState>;
+  const zoneKeys: ConquestZoneKey[] = ["europe", "americas", "asia", "africa", "oceania", "poles"];
+
+  const winCountByFed: Record<string, number> = {};
+
+  for (const key of zoneKeys) {
+    const config = CONQUEST_ZONES_CONFIG[key];
+    const fedScores = raw.zones[key] || {};
+    const totalInfluence = Object.values(fedScores).reduce((acc, pts) => acc + pts, 0);
+
+    const rankings: ConquestZoneInfluenceEntry[] = Object.entries(fedScores)
+      .map(([fedId, points]) => {
+        const federation = getFederationById(fedId);
+        const percentage = totalInfluence > 0 ? Math.round((points / totalInfluence) * 100) : 0;
+        return { federation, points, percentage };
+      })
+      .sort((a, b) => b.points - a.points);
+
+    const controllingFederation = rankings.length > 0 && rankings[0].points > 0 ? rankings[0].federation : null;
+    const dominancePercent = rankings.length > 0 ? rankings[0].percentage : 0;
+
+    if (controllingFederation) {
+      winCountByFed[controllingFederation.id] = (winCountByFed[controllingFederation.id] || 0) + 1;
+    }
+
+    zones[key] = {
+      id: key,
+      config,
+      totalInfluence,
+      controllingFederation,
+      dominancePercent,
+      rankings,
+    };
+  }
+
+  // Trouver la fédération la plus dominante du monde
+  let topFedId: string | null = null;
+  let maxWins = -1;
+  for (const [fedId, wins] of Object.entries(winCountByFed)) {
+    if (wins > maxWins) {
+      maxWins = wins;
+      topFedId = fedId;
+    }
+  }
+
+  return {
+    seasonId: currentSeasonId,
+    seasonEndsAt: getSeasonEndTimestamp(now),
+    zones,
+    topDominatingFederation: topFedId ? getFederationById(topFedId) : null,
+  };
+}
+
+/**
+ * Enregistre des points d'influence apportés par un joueur lors d'un quiz
+ */
+export function recordFederationInfluence(
+  federationId: string,
+  zoneKey: ConquestZoneKey,
+  points: number
+): ConquestSeasonState {
+  if (points <= 0) return getConquestSeasonState();
+
+  const currentSeasonId = getCurrentSeasonId();
+  let raw: RawInfluenceStorage =
+    inMemoryConquestStorage && inMemoryConquestStorage.seasonId === currentSeasonId
+      ? inMemoryConquestStorage
+      : getInitialRawInfluence(currentSeasonId);
+
+  try {
+    if (typeof localStorage !== "undefined") {
+      const stored = localStorage.getItem(STORAGE_CONQUEST_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as RawInfluenceStorage;
+        if (parsed.seasonId === currentSeasonId) {
+          raw = parsed;
+        }
+      }
+    }
+  } catch {
+    // Ignorer
+  }
+
+  if (!raw.zones[zoneKey]) {
+    raw.zones[zoneKey] = {};
+  }
+
+  raw.zones[zoneKey][federationId] = (raw.zones[zoneKey][federationId] || 0) + points;
+  inMemoryConquestStorage = raw;
+
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_CONQUEST_KEY, JSON.stringify(raw));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("terracoast_conquest_updated", {
+            detail: { federationId, zoneKey, points },
+          })
+        );
+      }
+    }
+  } catch {
+    // Ignorer
+  }
+
+  return getConquestSeasonState();
+}
+
+/**
+ * Récupère les badges territoriaux conquis par une fédération
+ */
+export function getTerritorialChampionBadges(federationId: string): string[] {
+  const state = getConquestSeasonState();
+  const badges: string[] = [];
+  const zoneKeys: ConquestZoneKey[] = ["europe", "americas", "asia", "africa", "oceania", "poles"];
+
+  for (const key of zoneKeys) {
+    const zone = state.zones[key];
+    if (zone.controllingFederation?.id === federationId) {
+      badges.push(zone.config.badge);
+    }
+  }
+  return badges;
+}

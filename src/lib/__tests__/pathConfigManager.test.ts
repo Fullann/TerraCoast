@@ -12,7 +12,6 @@ import {
   resetCustomUnits,
   resetPathConfigMemory,
   getPathStageAnalytics,
-  getAllPathAnalytics,
   recordPathStageAttempt,
   computeDifficultyRating,
   resetPathStageAnalytics,
