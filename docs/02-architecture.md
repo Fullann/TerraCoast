@@ -26,10 +26,12 @@ L'application utilise **React Router DOM v6** avec un découpage dynamique par p
 |---|---|---|
 | `/` | `LandingPage` / `HomePage` | Accueil public si non-connecté, tableau de bord joueur et globe d'exploration si authentifié |
 | `/login`, `/register` | `LoginForm`, `RegisterForm` | Authentification encapsulée dans `AuthLayout` (DA tactile) |
+| `/conquest` | `ConquestPage` | Pokédex Géographique & Conquête Mondiale (carte Fog of War, cartes TCG holographiques, album) |
 | `/duels` | `DuelsPage` | Arène 1v1, matchmaking radar, gestion des tours de jeu et Ghost Runs |
 | `/party` | `PartyPage` | Salons multijoueurs façon Kahoot (lobby, écran hôte, live game, podium) |
-| `/atlas` | `AtlasPage` | Planisphère 2D, globe 3D, fiches pays et comparateur TrueSize |
-| `/games` | `GamesHubPage` | Hub des 7+ mini-jeux géographiques dédiés |
+| `/atlas` | `AtlasPage` | Planisphère 2D, globe 3D, recherche prédictive, micro-états, fiches pays et comparateur TrueSize |
+| `/radio-globe` | `RadioGlobePage` | Globe 3D des webradios mondiales géolocalisées en streaming direct |
+| `/games` | `GamesHubPage` | Hub des mini-jeux géographiques dédiés |
 | `/games/*` | Pages jeux spécifiques | Geo Detective, Chrono Rush, Silhouette, Higher/Lower, Map Blitz, Physical Geo, Travle, SRS |
 | `/quizzes` | `QuizzesPage` | Catalogue communautaire des quiz avec filtres et recherche |
 | `/quizzes/create`, `/edit/:id` | `CreateQuizPage`, `EditQuizPage` | Éditeur visuel complet de quiz |
@@ -37,7 +39,7 @@ L'application utilise **React Router DOM v6** avec un découpage dynamique par p
 | `/training` | `TrainingModePage` | Mode entraînement zen sans chronomètre |
 | `/shop` | `ShopPage` | Boutique de cosmétiques (cadres d'avatar, thèmes de globe) |
 | `/leaderboard` | `LeaderboardPage` | Classements mensuels, ligues compétitives et podiums |
-| `/admin/*` | `AdminPage` | Espace d'administration sous `AdminDashboardLayout` |
+| `/admin/*` | `AdminPage` & sous-pages | Console d'administration v2.4 (Hub 18 modules, Geo Detective photos, analytics, audit) |
 
 ---
 

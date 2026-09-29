@@ -45,11 +45,11 @@ export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: Re
     if (/[A-Z]/.test(password)) score++;
     if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
 
-    if (score <= 1) return { score: 1, label: 'Trop court', color: 'bg-[#ff4b4b]' };
-    if (score === 2) return { score: 2, label: 'Moyen', color: 'bg-[#ffc800]' };
-    if (score === 3) return { score: 3, label: 'Bon', color: 'bg-[#1cb0f6]' };
-    return { score: 4, label: 'Robuste !', color: 'bg-[#58cc02]' };
-  }, [password]);
+    if (score <= 1) return { score: 1, label: t('auth.strengthTooShort') || 'Trop court', color: 'bg-[#ff4b4b]' };
+    if (score === 2) return { score: 2, label: t('auth.strengthMedium') || 'Moyen', color: 'bg-[#ffc800]' };
+    if (score === 3) return { score: 3, label: t('auth.strengthGood') || 'Bon', color: 'bg-[#1cb0f6]' };
+    return { score: 4, label: t('auth.strengthStrong') || 'Robuste !', color: 'bg-[#58cc02]' };
+  }, [password, t]);
 
   const passwordsMatch = useMemo(() => {
     if (!confirmPassword) return null;
@@ -113,13 +113,13 @@ export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: Re
         <span className="text-3xl">🚀</span>
         <div>
           <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 leading-tight">
-            Rejoignez TerraCoast
+            {t('auth.joinTerraCoast') || "Rejoignez TerraCoast"}
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-black border border-amber-300">
               +500 XP
             </span>
           </h3>
           <p className="text-xs text-slate-500 font-semibold">
-            Votre passeport pour conquérir le monde en apprenant
+            {t('auth.passportToConquer') || "Votre passeport pour conquérir le monde en apprenant"}
           </p>
         </div>
       </div>
@@ -152,7 +152,7 @@ export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: Re
             />
           </div>
           <p className="text-[11px] text-slate-500 mt-1 pl-1 font-semibold">
-            Visible dans les ligues et lors de vos duels mondiaux.
+            {t('auth.pseudoHelpText') || "Visible dans les ligues et lors de vos duels mondiaux."}
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: Re
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-              aria-label={showPassword ? "Masquer mot de passe" : "Afficher mot de passe"}
+              aria-label={showPassword ? (t('auth.hidePassword') || "Masquer le mot de passe") : (t('auth.showPassword') || "Afficher le mot de passe")}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -246,20 +246,20 @@ export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: Re
                   ? 'border-[#58cc02] focus:bg-white'
                   : 'border-slate-200 focus:bg-white focus:border-[#58cc02]'
               }`}
-              placeholder="Confirmez votre mot de passe"
+              placeholder={t('auth.confirmPasswordPlaceholder') || "Confirmez votre mot de passe"}
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword((v) => !v)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-              aria-label={showConfirmPassword ? "Masquer mot de passe" : "Afficher mot de passe"}
+              aria-label={showConfirmPassword ? (t('auth.hidePassword') || "Masquer le mot de passe") : (t('auth.showPassword') || "Afficher le mot de passe")}
             >
               {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
           {passwordsMatch === false && (
             <p className="text-[11px] text-red-600 font-bold mt-1 pl-1">
-              Les mots de passe ne correspondent pas.
+              {t('auth.passwordMismatch')}
             </p>
           )}
         </div>
@@ -274,13 +274,13 @@ export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: Re
               className="mt-0.5 w-4 h-4 rounded border-2 border-slate-300 text-[#58cc02] focus:ring-[#58cc02]"
             />
             <span className="leading-snug">
-              J'accepte les{' '}
+              {t('auth.acceptTermsPrefix') || "J'accepte les"}{' '}
               <button
                 type="button"
                 onClick={onShowTerms}
                 className="text-[#1cb0f6] hover:underline font-bold"
               >
-                Conditions Générales d'Utilisation
+                {t('auth.termsOfService') || "Conditions Générales d'Utilisation"}
               </button>
             </span>
           </label>
@@ -293,13 +293,13 @@ export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: Re
               className="mt-0.5 w-4 h-4 rounded border-2 border-slate-300 text-[#58cc02] focus:ring-[#58cc02]"
             />
             <span className="leading-snug">
-              J'accepte la{' '}
+              {t('auth.acceptPrivacyPrefix') || "J'accepte la"}{' '}
               <button
                 type="button"
                 onClick={onShowPrivacy}
                 className="text-[#1cb0f6] hover:underline font-bold"
               >
-                Politique de Confidentialité
+                {t('auth.privacyPolicy') || "Politique de Confidentialité"}
               </button>
             </span>
           </label>
@@ -314,12 +314,12 @@ export function RegisterForm({ onSwitchToLogin, onShowTerms, onShowPrivacy }: Re
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              <span>Création du profil...</span>
+              <span>{t('auth.creatingProfile') || "Création du profil..."}</span>
             </>
           ) : (
             <>
               <Sparkles className="w-4 h-4 mr-2" />
-              <span>{t('auth.signUp')} & Obtenir 500 XP</span>
+              <span>{t('auth.signUpAndGetXp') || `${t('auth.signUp')} & Obtenir 500 XP`}</span>
             </>
           )}
         </button>

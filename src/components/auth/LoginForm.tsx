@@ -65,7 +65,7 @@ export function LoginForm({
 
   const handleForgotPassword = async () => {
     if (!email || !email.includes('@')) {
-      setError("Veuillez saisir votre adresse email pour réinitialiser votre mot de passe.");
+      setError(t('auth.enterEmailToReset') || "Veuillez saisir votre adresse email pour réinitialiser votre mot de passe.");
       return;
     }
     setError('');
@@ -75,9 +75,9 @@ export function LoginForm({
         redirectTo: `${window.location.origin}/settings`,
       });
       if (resetErr) throw resetErr;
-      setSuccessMsg("Un email de réinitialisation vous a été envoyé !");
+      setSuccessMsg(t('auth.resetEmailSent') || "Un email de réinitialisation vous a été envoyé !");
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la réinitialisation.");
+      setError(err.message || t('auth.resetError') || "Erreur lors de la réinitialisation.");
     } finally {
       setResettingPassword(false);
     }
@@ -90,12 +90,14 @@ export function LoginForm({
         <span className="text-3xl">👋</span>
         <div>
           <h3 className="text-xl font-black text-slate-900 leading-tight">
-            {requiresMfa ? "Validation Double Facteur" : "Bon retour parmi nous !"}
+            {requiresMfa
+              ? (t('auth.twoFactorTitle') || "Validation Double Facteur")
+              : (t('auth.welcomeBack') || "Bon retour parmi nous !")}
           </h3>
           <p className="text-xs text-slate-500 font-semibold">
             {requiresMfa
-              ? "Saisissez votre code à 6 chiffres"
-              : "Prêt à continuer votre conquête du monde ?"}
+              ? (t('auth.twoFactorSubtitle') || "Saisissez votre code à 6 chiffres")
+              : (t('auth.readyToConquer') || "Prêt à continuer votre conquête du monde ?")}
           </p>
         </div>
       </div>
@@ -147,7 +149,7 @@ export function LoginForm({
                   disabled={resettingPassword}
                   className="text-xs text-[#1cb0f6] hover:underline font-black cursor-pointer"
                 >
-                  {resettingPassword ? "Envoi..." : "Oublié ?"}
+                  {resettingPassword ? (t('auth.sending') || "Envoi...") : (t('auth.forgotPassword') || "Oublié ?")}
                 </button>
               </div>
               <div className="relative">
@@ -166,7 +168,7 @@ export function LoginForm({
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                  aria-label={showPassword ? "Masquer mot de passe" : "Afficher mot de passe"}
+                  aria-label={showPassword ? (t('auth.hidePassword') || "Masquer le mot de passe") : (t('auth.showPassword') || "Afficher le mot de passe")}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -206,7 +208,7 @@ export function LoginForm({
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              <span>Connexion en cours...</span>
+              <span>{t('auth.loggingIn') || "Connexion en cours..."}</span>
             </>
           ) : requiresMfa ? (
             <>

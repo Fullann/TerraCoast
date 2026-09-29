@@ -25,6 +25,13 @@ import {
   Settings,
   Star,
   User,
+  Zap,
+  Sparkles,
+  ChevronRight,
+  Shield,
+  Target,
+  Swords,
+  CheckCircle2,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 
@@ -513,8 +520,8 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {challengeModalOpen && challengeQuiz && (
           <ChallengeFriendModal
             quizId={challengeQuiz.quizId}
@@ -526,129 +533,197 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
             }}
           />
         )}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl p-6 md:p-8 border border-gray-200">
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-            <div className="relative">
-              <Avatar
-                url={profile.avatar_url}
-                pseudo={profile.pseudo}
-                frameStyle={profile.frame_style}
-                size="xl"
-                className="shadow-lg"
-              />
-              <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold shadow-lg border-4 border-white">
-                {profile.level}
+
+        {/* 🎮 HERO EXPLORER CARD (CARTE D'IDENTITÉ GAMER) */}
+        <div className="bg-white rounded-3xl border-2 border-slate-200 border-b-4 border-b-slate-300 shadow-sm p-6 sm:p-8 relative overflow-hidden">
+          {/* Bannière Décorative Supérieure */}
+          <div className="h-28 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 mb-6 bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 relative flex items-center justify-between px-6 sm:px-8 overflow-hidden rounded-t-[22px]">
+            <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
+            <div className="relative z-10 flex items-center gap-2 text-white/90 text-xs font-black uppercase tracking-wider">
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Passeport Explorateur TerraCoast</span>
+            </div>
+            {profile.role === "admin" && (
+              <span className="relative z-10 bg-rose-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-sm border border-rose-400">
+                Staff Administrateur 🛡️
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            {/* Avatar 3D avec Badge de Niveau Tactile */}
+            <div className="relative -mt-14 sm:-mt-16 group shrink-0">
+              <div className="p-1.5 bg-white rounded-3xl shadow-xl border-2 border-slate-200">
+                <Avatar
+                  url={profile.avatar_url}
+                  pseudo={profile.pseudo}
+                  frameStyle={profile.frame_style}
+                  size="xl"
+                  className="rounded-2xl"
+                />
+              </div>
+              <div
+                className="absolute -bottom-2 -right-2 bg-amber-400 border-2 border-amber-200 border-b-4 border-amber-600 text-slate-900 rounded-2xl w-12 h-12 flex flex-col items-center justify-center font-black text-xs shadow-md rotate-[-4deg]"
+                title={`Niveau ${profile.level}`}
+              >
+                <span className="text-[9px] uppercase tracking-tighter text-amber-900 font-extrabold leading-none">
+                  Niv.
+                </span>
+                <span className="text-base font-black leading-tight">
+                  {profile.level}
+                </span>
               </div>
             </div>
 
-            <div className="flex-1 text-center md:text-left w-full">
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-                {profile.pseudo}
-              </h1>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-3">
-                {activeTitle && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
-                    <Star className="w-3.5 h-3.5" />
-                    {activeTitle.titles?.name}
-                  </div>
-                )}
+            {/* Infos Joueur & Titres */}
+            <div className="flex-1 text-center sm:text-left w-full min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                    <span>{profile.pseudo}</span>
+                  </h1>
 
-                <button
-                  type="button"
-                  onClick={() => isOwnProfile && setShowFederationModal(true)}
-                  disabled={!isOwnProfile}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition ${
-                    isOwnProfile
-                      ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm cursor-pointer"
-                      : "bg-gray-100 text-gray-700 border-gray-200"
-                  }`}
-                  title={isOwnProfile ? "Changer de Fédération / Blason" : undefined}
-                >
-                  <span className="text-sm">{currentFed.flagEmoji}</span>
-                  <span>{currentFed.name}</span>
-                  {isOwnProfile && <span className="text-[10px] text-emerald-600 ml-0.5 font-normal">✎</span>}
-                </button>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
+                    {activeTitle && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-100 text-purple-800 text-xs font-black border border-purple-200 shadow-sm">
+                        <Star className="w-3.5 h-3.5 fill-purple-500 text-purple-600" />
+                        {activeTitle.titles?.name}
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => isOwnProfile && setShowFederationModal(true)}
+                      disabled={!isOwnProfile}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-xl text-xs font-black border-2 transition ${
+                        isOwnProfile
+                          ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 border-b-4 border-b-emerald-500 active:translate-y-0.5 cursor-pointer shadow-sm"
+                          : "bg-slate-100 text-slate-700 border-slate-200 border-b-4 border-b-slate-300"
+                      }`}
+                      title={isOwnProfile ? "Changer de Fédération / Blason" : undefined}
+                    >
+                      <span className="text-base leading-none">{currentFed.flagEmoji}</span>
+                      <span>{currentFed.name}</span>
+                      {isOwnProfile && (
+                        <span className="text-[10px] text-emerald-600 ml-1 font-bold">✎</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bouton Paramètres pour Desktop */}
+                {isOwnProfile && (
+                  <button
+                    onClick={() => navigate("/settings")}
+                    className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-2xl border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-1 transition-all shadow-sm shrink-0"
+                  >
+                    <Settings className="w-4 h-4 text-slate-500" />
+                    <span>{t("profile.settings")}</span>
+                  </button>
+                )}
               </div>
 
-              {/* ✅ BARRE DE PROGRESSION DU NIVEAU */}
-              <div className="bg-gray-100 rounded-full p-1 mb-4">
-                <div className="relative">
-                  <div className="overflow-hidden h-6 rounded-full bg-gradient-to-r from-gray-200 to-gray-300">
-                    <div
-                      className="h-full bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 transition-all duration-500 ease-out flex items-center justify-end pr-2"
-                      style={{ width: `${levelProgress.percentage}%` }}
-                    >
-                      {levelProgress.percentage > 20 && (
-                        <span className="text-xs font-bold text-white drop-shadow">
-                          {levelProgress.percentage}%
-                        </span>
-                      )}
-                    </div>
+              {/* 🌟 BARRE DE PROGRESSION DU NIVEAU STYLE DUOLINGO */}
+              <div className="mt-4 bg-slate-50 rounded-2xl p-3.5 border-2 border-slate-200 border-b-4 border-b-slate-300">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-600 mb-1.5 px-1">
+                  <span className="flex items-center gap-1.5 font-black text-slate-800">
+                    <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    Progression Niv. {profile.level}
+                  </span>
+                  <span className="font-extrabold text-emerald-700">
+                    {levelProgress.current} / {levelProgress.needed} XP
+                  </span>
+                </div>
+                <div className="h-5 bg-slate-200/80 rounded-full border border-slate-300 p-0.5 overflow-hidden shadow-inner relative">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500 transition-all duration-700 ease-out flex items-center justify-end pr-2 relative shadow-sm"
+                    style={{ width: `${Math.max(6, levelProgress.percentage)}%` }}
+                  >
+                    {levelProgress.percentage >= 15 && (
+                      <span className="text-[10px] font-black text-white drop-shadow">
+                        {levelProgress.percentage}%
+                      </span>
+                    )}
                   </div>
-                  <div className="flex justify-between mt-1 px-1">
-                    <span className="text-xs text-gray-600">
-                      {levelProgress.current} XP
-                    </span>
-                    <span className="text-xs font-semibold text-gray-700">
-                      {levelProgress.remaining} XP {t("profile.toNextLevel")}
-                    </span>
-                    <span className="text-xs text-gray-600">
-                      {levelProgress.needed} XP
-                    </span>
-                  </div>
+                </div>
+                <div className="flex justify-between items-center mt-1.5 px-1 text-[11px] text-slate-500">
+                  <span>Prochain palier : Niveau {profile.level + 1}</span>
+                  <span className="font-bold text-slate-700">
+                    Encore {levelProgress.remaining} XP requis
+                  </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <div className="text-center">
-                  <p className="text-2xl md:text-3xl font-bold text-emerald-600">
+              {/* 📊 LES 4 BLOCS DE STATS TACTILES 3D */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-5">
+                {/* 1. Niveau & XP */}
+                <div className="bg-emerald-50/80 border-2 border-emerald-200 border-b-4 border-b-emerald-400 rounded-2xl p-3.5 sm:p-4 text-center hover:scale-[1.02] transition-transform">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center mx-auto mb-1 text-emerald-600">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <p className="text-xl sm:text-2xl font-black text-emerald-700">
                     {profile.level}
                   </p>
-                  <p className="text-xs md:text-sm text-gray-600">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
                     {t("profile.level")}
                   </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl md:text-3xl font-bold text-blue-600">
-                    {profile.experience_points}
-                  </p>
-                  <p className="text-xs md:text-sm text-gray-600">
-                    {t("profile.xp")}
+                  <p className="text-[10px] font-semibold text-emerald-600/80 mt-0.5">
+                    {profile.experience_points} XP total
                   </p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl md:text-3xl font-bold text-orange-600">
-                    {stats.totalGames}
+
+                {/* 2. Série de Flamme */}
+                <div
+                  onClick={() => setShowStreakModal(true)}
+                  className="bg-amber-50/80 border-2 border-amber-200 border-b-4 border-b-amber-400 rounded-2xl p-3.5 sm:p-4 text-center cursor-pointer hover:scale-[1.02] active:translate-y-0.5 transition-all group"
+                  title="Voir le calendrier des flammes"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center mx-auto mb-1 text-amber-600 group-hover:scale-110 transition-transform">
+                    <Flame className="w-4 h-4 fill-amber-500 text-amber-500 animate-pulse" />
+                  </div>
+                  <p className="text-xl sm:text-2xl font-black text-amber-700">
+                    {profile.current_streak || 0}
                   </p>
-                  <p className="text-xs md:text-sm text-gray-600">
-                    {t("profile.games")}
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                    {getDayText(profile.current_streak)}
+                  </p>
+                  <p className="text-[10px] font-semibold text-amber-600/80 mt-0.5">
+                    Record : {profile.longest_streak || 0}j 🔥
                   </p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl md:text-3xl font-bold text-purple-600">
+
+                {/* 3. Cote de Duel MMR */}
+                <div className="bg-purple-50/80 border-2 border-purple-200 border-b-4 border-b-purple-400 rounded-2xl p-3.5 sm:p-4 text-center hover:scale-[1.02] transition-transform">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 border border-purple-300 flex items-center justify-center mx-auto mb-1 text-purple-600">
+                    <Swords className="w-4 h-4" />
+                  </div>
+                  <p className="text-xl sm:text-2xl font-black text-purple-700">
                     {profile.duel_rating ?? 1000}
                   </p>
-                  <p className="text-xs md:text-sm text-gray-600">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-purple-800">
                     {t("profile.mmr")}
                   </p>
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[10px] font-semibold text-purple-600/80 mt-0.5">
                     {profile.duel_ranked_games ?? 0} {t("profile.rankedDuels")}
                   </p>
                 </div>
-              </div>
 
-              {(profile.current_streak ?? 0) > 0 && (
-                <button
-                  onClick={() => setShowStreakModal(true)}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-100 to-orange-100 rounded-lg hover:from-red-200 hover:to-orange-200 transition-all"
-                >
-                  <Flame className="w-5 h-5 text-orange-500" />
-                  <span className="font-bold text-orange-700">
-                    {profile.current_streak}{" "}
-                    {getDayText(profile.current_streak)}
-                  </span>
-                </button>
-              )}
+                {/* 4. Parties Jouées & Score */}
+                <div className="bg-sky-50/80 border-2 border-sky-200 border-b-4 border-b-sky-400 rounded-2xl p-3.5 sm:p-4 text-center hover:scale-[1.02] transition-transform">
+                  <div className="w-8 h-8 rounded-xl bg-sky-100 border border-sky-300 flex items-center justify-center mx-auto mb-1 text-sky-600">
+                    <Target className="w-4 h-4" />
+                  </div>
+                  <p className="text-xl sm:text-2xl font-black text-sky-700">
+                    {stats.totalGames}
+                  </p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-sky-800">
+                    {t("profile.games")}
+                  </p>
+                  <p className="text-[10px] font-semibold text-sky-600/80 mt-0.5">
+                    Moyenne : {stats.averageScore} pts
+                  </p>
+                </div>
+              </div>
 
               {/* 🗺️ WIDGET CARTE DE CONQUÊTE & POKÉDEX */}
               {(() => {
@@ -656,31 +731,32 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                 return (
                   <div
                     onClick={() => navigate("/conquest")}
-                    className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/30 text-white shadow-lg cursor-pointer hover:border-emerald-400 hover:shadow-emerald-900/30 transition-all flex flex-col sm:flex-row items-center justify-between gap-4 group"
+                    className="mt-5 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 border-2 border-emerald-500/40 border-b-4 border-b-emerald-600 text-white shadow-md hover:border-emerald-400 hover:shadow-lg transition-all cursor-pointer group active:translate-y-0.5 flex flex-col sm:flex-row items-center justify-between gap-4"
                   >
-                    <div className="flex items-center gap-3.5 w-full sm:w-auto">
-                      <div className="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-2xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400/40 border-b-4 border-b-emerald-600 flex items-center justify-center text-2xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
                         🗺️
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="text-sm sm:text-base font-black text-white group-hover:text-emerald-300 transition-colors">
-                            Brouillard de Guerre & Pokédex
+                            Pokédex Géographique & Conquête
                           </h4>
-                          <span className="bg-emerald-500 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
+                          <span className="bg-emerald-400 text-slate-950 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-sm">
                             {cStats.conquestPercentage}% Conquis
                           </span>
                         </div>
                         <p className="text-xs text-slate-300 mt-0.5">
-                          {cStats.conqueredCount} / {cStats.totalCountries} pays explorés • {cStats.legendaryCount} cartes légendaires débloquées
+                          {cStats.conqueredCount} / {cStats.totalCountries} pays découverts • {cStats.legendaryCount} cartes légendaires 🌟
                         </p>
                       </div>
                     </div>
                     <button
                       type="button"
-                      className="shrink-0 px-3.5 py-2 bg-emerald-600 group-hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5 self-end sm:self-auto"
+                      className="w-full sm:w-auto shrink-0 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs border-b-4 border-emerald-700 active:translate-y-1 shadow-md transition flex items-center justify-center gap-2"
                     >
-                      <span>Voir ma Carte 🗺️</span>
+                      <span>Explorer ma Carte</span>
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 );
@@ -688,26 +764,25 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-6">
+          {/* BOUTONS D'ACTION TACTILES 3D */}
+          <div className="flex flex-wrap items-center gap-3 mt-6 pt-5 border-t border-slate-100">
             {isOwnProfile && (
               <>
                 <button
                   onClick={() => navigate("/settings")}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
+                  className="sm:hidden flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-2xl border-2 border-slate-200 border-b-4 border-b-slate-300 active:translate-y-1 transition-all shadow-sm"
                 >
-                  <Settings className="w-5 h-5" />
-                  <span className="font-semibold">{t("profile.settings")}</span>
+                  <Settings className="w-4 h-4" />
+                  <span>{t("profile.settings")}</span>
                 </button>
 
                 {isAdmin && (
                   <button
                     onClick={() => navigate("/account-details")}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black rounded-2xl border-2 border-indigo-200 border-b-4 border-indigo-400 active:translate-y-1 transition-all shadow-sm text-xs"
                   >
-                    <User className="w-5 h-5" />
-                    <span className="font-semibold">
-                      {t("profile.accountDetails")}
-                    </span>
+                    <User className="w-4 h-4" />
+                    <span>{t("profile.accountDetails")}</span>
                   </button>
                 )}
               </>
@@ -718,58 +793,46 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                 {friendshipStatus === "none" && (
                   <button
                     onClick={sendFriendRequest}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl border-b-4 border-blue-700 active:translate-y-1 transition-all shadow-sm"
                   >
                     <UserPlus className="w-5 h-5" />
-                    <span className="font-semibold">
-                      {t("profile.addFriend")}
-                    </span>
+                    <span>{t("profile.addFriend")}</span>
                   </button>
                 )}
 
                 {friendshipStatus === "pending" && (
                   <button
                     disabled
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-400 text-white rounded-xl cursor-not-allowed opacity-75"
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 text-slate-400 font-bold rounded-2xl border-2 border-slate-200 border-b-4 border-b-slate-300 cursor-not-allowed opacity-80"
                   >
                     <Clock className="w-5 h-5" />
-                    <span className="font-semibold">
-                      {t("profile.requestPending")}
-                    </span>
+                    <span>{t("profile.requestPending")}</span>
                   </button>
                 )}
 
                 {friendshipStatus === "friends" && (
-                  <button className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl shadow-md">
-                    <UserCheck className="w-5 h-5" />
-                    <span className="font-semibold">
-                      {t("profile.friends")}
-                    </span>
-                  </button>
+                  <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-3 bg-emerald-100 text-emerald-800 font-black rounded-2xl border-2 border-emerald-300 border-b-4 border-b-emerald-500 shadow-sm">
+                    <UserCheck className="w-5 h-5 text-emerald-600" />
+                    <span>{t("profile.friends")}</span>
+                  </div>
                 )}
 
                 {isAdmin && (
-                  <>
+                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <button
-                      onClick={() =>
-                        navigate(`/account-details?userId=${targetUserId}`)
-                      }
-                      className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
+                      onClick={() => navigate(`/account-details?userId=${targetUserId}`)}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black rounded-2xl border-2 border-indigo-200 border-b-4 border-indigo-400 active:translate-y-1 transition-all text-xs"
                     >
-                      <User className="w-5 h-5" />
-                      <span className="font-semibold">
-                        {t("profile.accountDetails")}
-                      </span>
+                      <User className="w-4 h-4" />
+                      <span>{t("profile.accountDetails")}</span>
                     </button>
 
                     <button
                       onClick={() => setShowWarnModal(true)}
-                      className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 font-black rounded-2xl border-2 border-orange-200 border-b-4 border-orange-400 active:translate-y-1 transition-all text-xs"
                     >
-                      <AlertTriangle className="w-5 h-5" />
-                      <span className="font-semibold">
-                        {t("profile.warnUser")}
-                      </span>
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>{t("profile.warnUser")}</span>
                     </button>
 
                     <button
@@ -777,21 +840,19 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                         setShowWarningHistory(true);
                         loadWarningHistory();
                       }}
-                      className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all shadow-md hover:shadow-lg hover:scale-105 transform duration-200"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-black rounded-2xl border-2 border-purple-200 border-b-4 border-purple-400 active:translate-y-1 transition-all text-xs"
                     >
-                      <History className="w-5 h-5" />
-                      <span className="font-semibold">
-                        {t("profile.warningHistory")}
-                      </span>
+                      <History className="w-4 h-4" />
+                      <span>{t("profile.warningHistory")}</span>
                     </button>
-                  </>
+                  </div>
                 )}
               </>
             )}
           </div>
         </div>
 
-        {/* GRAPHIQUE PROGRESSION */}
+        {/* 📈 GRAPHIQUE DE PROGRESSION */}
         <ProfileScoreChart
           data={allDaysData}
           isOwnProfile={isOwnProfile}
@@ -801,33 +862,43 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
           onPointClick={(dataPoint) => setSelectedDataPoint(dataPoint)}
         />
 
-        {/* BADGES */}
-        <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-xl p-6 border border-yellow-200">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <Award className="w-7 h-7 mr-3 text-yellow-500" />
-            {t("profile.badges")}
-          </h2>
+        {/* 🏆 BADGES & TROPHÉES */}
+        <div className="bg-white rounded-3xl border-2 border-slate-200 border-b-4 border-b-slate-300 shadow-sm p-6 sm:p-7">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 border-2 border-amber-200 border-b-4 border-b-amber-300 flex items-center justify-center text-amber-600 shadow-sm">
+                <Award className="w-5 h-5" />
+              </div>
+              <span>{t("profile.badges")}</span>
+            </h2>
+            <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200 px-3.5 py-1 rounded-full shadow-sm">
+              {badges.length} débloqué{badges.length > 1 ? "s" : ""}
+            </span>
+          </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {badges.map((userBadge) => (
               <div
                 key={userBadge.id}
-                className="group relative bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-yellow-200 hover:border-yellow-400"
+                className="group relative bg-slate-50 hover:bg-amber-50/60 rounded-2xl p-4 border-2 border-slate-200 hover:border-amber-300 border-b-4 border-b-slate-300 hover:border-b-amber-400 transition-all duration-200 hover:scale-[1.03] text-center flex flex-col items-center justify-between shadow-sm cursor-pointer"
               >
-                <div className="flex flex-col items-center space-y-3">
-                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                    <Award className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="font-bold text-gray-800 text-center text-sm leading-tight">
-                    {userBadge.badges?.name}
-                  </h3>
-                  <div className="absolute inset-0 bg-black bg-opacity-90 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-3">
-                    <p className="text-white text-xs text-center">
-                      {userBadge.badges?.description}
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {new Date(userBadge.earned_at).toLocaleDateString()}
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 rounded-2xl flex items-center justify-center shadow-md border-2 border-amber-200 border-b-4 border-amber-600 group-hover:rotate-6 transition-transform mb-2">
+                  <Award className="w-7 h-7 text-white drop-shadow" />
+                </div>
+                <h3 className="font-black text-slate-800 text-xs sm:text-sm leading-snug mb-1 line-clamp-2">
+                  {userBadge.badges?.name}
+                </h3>
+                <span className="text-[10px] font-bold text-slate-400">
+                  {new Date(userBadge.earned_at).toLocaleDateString()}
+                </span>
+
+                {/* Popover Infobulle au Survol */}
+                <div className="absolute inset-0 bg-slate-900/95 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center p-3 text-center pointer-events-none z-10 border-2 border-amber-400">
+                  <p className="text-xs font-bold leading-relaxed">
+                    {userBadge.badges?.description}
+                  </p>
+                  <span className="text-[10px] font-semibold text-amber-300 mt-2">
+                    Obtenu le {new Date(userBadge.earned_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -835,222 +906,266 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
           </div>
 
           {badges.length === 0 && (
-            <div className="text-center py-16">
-              <Award className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">{t("profile.noBadges")}</p>
+            <div className="text-center py-12 px-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-200 border-b-4 border-b-amber-300 flex items-center justify-center mx-auto mb-3 text-amber-500 text-3xl">
+                🏆
+              </div>
+              <h4 className="text-sm font-black text-slate-700">Aucun badge débloqué pour le moment</h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Complète des quiz, relève des défis quotidiens et gagne des duels pour enrichir ton armoire à trophées !
+              </p>
             </div>
           )}
         </div>
 
-        {/* TITRES */}
-        <div className="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-xl p-6 border border-purple-200">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <Star className="w-7 h-7 mr-3 text-purple-500" />
-            {t("profile.titles")}
-          </h2>
+        {/* ⭐ TITRES HONORIFIQUES */}
+        <div className="bg-white rounded-3xl border-2 border-slate-200 border-b-4 border-b-slate-300 shadow-sm p-6 sm:p-7">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-purple-100 border-2 border-purple-200 border-b-4 border-b-purple-300 flex items-center justify-center text-purple-600 shadow-sm">
+                <Star className="w-5 h-5 fill-purple-400 text-purple-600" />
+              </div>
+              <span>{t("profile.titles")}</span>
+            </h2>
+            <span className="text-xs font-black text-purple-800 bg-purple-50 border border-purple-200 px-3.5 py-1 rounded-full shadow-sm">
+              {titles.length} titre{titles.length > 1 ? "s" : ""}
+            </span>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {titles.map((userTitle) => (
               <div
                 key={userTitle.id}
-                className={`group relative rounded-xl p-5 shadow-md hover:shadow-xl transition-all duration-300 border-2 ${
+                className={`rounded-2xl p-4 sm:p-5 border-2 transition-all flex flex-col justify-between ${
                   userTitle.is_active
-                    ? "bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-400"
-                    : "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300"
+                    ? "bg-purple-50/80 border-purple-300 border-b-4 border-b-purple-500 shadow-sm"
+                    : "bg-slate-50 border-slate-200 border-b-4 border-b-slate-300 hover:border-slate-300"
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-800 text-lg mb-2">
-                      {userTitle.titles?.name}
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <h3 className="font-black text-slate-900 text-base flex items-center gap-1.5">
+                      <span>{userTitle.titles?.name}</span>
                     </h3>
-                    <p className="text-sm text-gray-600 mb-3">
-                      {userTitle.titles?.description}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(userTitle.earned_at).toLocaleDateString()}
-                    </p>
-                    <div className="mt-3 flex items-center gap-2">
-                      {userTitle.is_active && (
-                        <span className="inline-flex items-center px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">
-                          {t("profile.active")}
-                        </span>
-                      )}
-                      {isOwnProfile && !userTitle.is_active && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveTitle(userTitle.id)}
-                          className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium transition-colors"
-                        >
-                          {t("profile.activateTitle")}
-                        </button>
-                      )}
-                    </div>
+                    {userTitle.is_active && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+                        <CheckCircle2 className="w-3 h-3" />
+                        {t("profile.active")}
+                      </span>
+                    )}
                   </div>
+                  <p className="text-xs text-slate-600 font-medium mb-3">
+                    {userTitle.titles?.description}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-2">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {new Date(userTitle.earned_at).toLocaleDateString()}
+                  </span>
+                  {isOwnProfile && !userTitle.is_active && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTitle(userTitle.id)}
+                      className="px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black border-b-4 border-purple-800 active:translate-y-0.5 transition-all shadow-sm"
+                    >
+                      {t("profile.activateTitle")}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
 
           {titles.length === 0 && (
-            <div className="text-center py-16">
-              <Star className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">{t("profile.noTitles")}</p>
+            <div className="text-center py-12 px-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+              <div className="w-16 h-16 rounded-2xl bg-purple-50 border-2 border-purple-200 border-b-4 border-b-purple-300 flex items-center justify-center mx-auto mb-3 text-purple-400 text-3xl">
+                ⭐
+              </div>
+              <h4 className="text-sm font-black text-slate-700">Aucun titre honorifique pour le moment</h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Atteins des paliers d'expérience et remporte des victoires pour débloquer des titres de prestige !
+              </p>
             </div>
           )}
         </div>
 
-        {/* DERNIÈRES PARTIES */}
-        <div className="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-xl p-6 border border-green-200">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <History className="w-7 h-7 mr-3 text-green-600" />
-            {t("profile.recentGames")}
-          </h2>
+        {/* 🎮 DERNIÈRES PARTIES JOUÉES */}
+        <div className="bg-white rounded-3xl border-2 border-slate-200 border-b-4 border-b-slate-300 shadow-sm overflow-hidden">
+          <div className="p-5 sm:p-6 pb-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 border-2 border-emerald-200 border-b-4 border-b-emerald-300 flex items-center justify-center text-emerald-600 shadow-sm">
+                  <History className="w-5 h-5" />
+                </div>
+                <span>{t("profile.recentGames")}</span>
+              </h2>
+              <span className="text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full shadow-sm">
+                {sessions.length} partie{sessions.length > 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
 
           {sessions.length === 0 ? (
-            <div className="text-center py-16">
-              <History className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">{t("profile.noGamesYet")}</p>
+            <div className="px-5 sm:px-6 pb-6">
+              <div className="text-center py-12 px-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 border-2 border-emerald-200 border-b-4 border-b-emerald-300 flex items-center justify-center mx-auto mb-3 text-emerald-500 text-3xl">
+                  🎮
+                </div>
+                <h4 className="text-sm font-black text-slate-700">{t("profile.noGamesYet")}</h4>
+                <p className="text-xs text-slate-500 mt-1">
+                  Lance une partie pour voir tes statistiques et exploits s'afficher ici !
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="group bg-white border-2 border-gray-200 rounded-xl p-5 hover:border-green-400 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Trophy className="w-5 h-5 text-green-600" />
-                        <h3 className="font-bold text-gray-800 text-lg group-hover:text-green-600 transition-colors">
-                          {session.quizzes?.title || t("profile.unknownQuiz")}
-                        </h3>
-                      </div>
+            <div className="divide-y divide-slate-100">
+              {sessions.map((session, idx) => {
+                const scoreVal = session.score || 0;
+                const accuracyVal = Math.round(session.accuracy_percentage || 0);
+                const correctAnswers = (session as any).correct_answers ?? 0;
+                const totalQuestions = (session as any).total_questions ?? 0;
+                const timeStr = session.time_taken_seconds
+                  ? `${Math.floor(session.time_taken_seconds / 60)}:${(session.time_taken_seconds % 60).toString().padStart(2, "0")}`
+                  : "N/A";
 
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                        <div className="flex items-center gap-1.5 bg-gray-100 px-3 py-1 rounded-lg">
-                          <Clock className="w-4 h-4" />
-                          <span className="font-medium">
-                            {new Date(session.started_at).toLocaleDateString(
-                              undefined,
-                              {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )}
-                          </span>
-                          <span className="text-gray-400">- </span>
-                          <span>
-                            {new Date(session.started_at).toLocaleTimeString(
-                              undefined,
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </span>
+                const isHighScore = idx === 0 && scoreVal > 0;
+                const isDuel = session.mode === "duel";
+
+                return (
+                  <div
+                    key={session.id}
+                    className={`group relative px-5 sm:px-6 py-4 sm:py-5 hover:bg-slate-50/60 transition-all duration-200 ${
+                      isHighScore ? "bg-gradient-to-r from-amber-50/40 to-transparent" : ""
+                    }`}
+                  >
+                    {/* Accent Bar gauche */}
+                    <div
+                      className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${
+                        isDuel
+                          ? "bg-purple-500"
+                          : isHighScore
+                          ? "bg-gradient-to-b from-amber-400 to-amber-500"
+                          : "bg-emerald-400"
+                      }`}
+                    />
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Infos de la partie */}
+                      <div className="flex-1 min-w-0 ml-2">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          {isHighScore && (
+                            <span className="text-xs">🏆</span>
+                          )}
+                          <h3 className="font-black text-slate-800 text-sm sm:text-base truncate group-hover:text-emerald-600 transition-colors">
+                            {session.quizzes?.title || t("profile.unknownQuiz")}
+                          </h3>
+                          {session.mode && (
+                            <span
+                              className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
+                                isDuel
+                                  ? "bg-purple-100 text-purple-700 border-purple-200"
+                                  : "bg-blue-100 text-blue-700 border-blue-200"
+                              }`}
+                            >
+                              {isDuel ? "⚔️ Duel" : "👤 Solo"}
+                            </span>
+                          )}
                         </div>
 
-                        {session.mode && (
-                          <span
-                            className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                              session.mode === "duel"
-                                ? "bg-gradient-to-r from-red-100 to-red-200 text-red-700"
-                                : "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700"
-                            }`}
-                          >
-                            {session.mode === "duel" ? "🎮 Duel" : "👤 Solo"}
+                        <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400">
+                          <Clock className="w-3 h-3 text-slate-300" />
+                          <span>
+                            {new Date(session.started_at).toLocaleDateString(undefined, {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
                           </span>
+                          <span className="text-slate-300">•</span>
+                          <span>
+                            {new Date(session.started_at).toLocaleTimeString(undefined, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Score principal + stats pills sur la droite */}
+                      <div className="flex items-center gap-3 sm:gap-4 ml-2 sm:ml-0">
+                        {/* Stat pills compactes */}
+                        <div className="hidden sm:flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 rounded-xl border border-blue-200 text-blue-700">
+                            <span className="text-[10px] font-black">{accuracyVal}%</span>
+                          </div>
+                          <div className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-700">
+                            <span className="text-[10px] font-black">{correctAnswers}/{totalQuestions}</span>
+                          </div>
+                          <div className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-700">
+                            <span className="text-[10px] font-black">{timeStr}</span>
+                          </div>
+                        </div>
+
+                        {/* Score principal */}
+                        <div className={`px-4 py-2 rounded-2xl border-2 text-center min-w-[80px] ${
+                          isDuel
+                            ? "bg-purple-50 border-purple-200 border-b-4 border-b-purple-400"
+                            : isHighScore
+                            ? "bg-amber-50 border-amber-200 border-b-4 border-b-amber-400"
+                            : "bg-slate-50 border-slate-200 border-b-4 border-b-slate-300"
+                        }`}>
+                          <p className={`text-xl sm:text-2xl font-black font-mono leading-tight ${
+                            isDuel
+                              ? "text-purple-700"
+                              : isHighScore
+                              ? "text-amber-700"
+                              : "text-slate-800"
+                          }`}>
+                            {scoreVal}
+                          </p>
+                          <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mt-0.5">
+                            {t("profile.score")}
+                          </p>
+                        </div>
+
+                        {/* Bouton Défier */}
+                        {isOwnProfile && session.quiz_id && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setChallengeQuiz({
+                                quizId: session.quiz_id,
+                                quizTitle:
+                                  session.quizzes?.title || t("profile.unknownQuiz"),
+                                targetScore: session.score || 0,
+                              });
+                              setChallengeModalOpen(true);
+                            }}
+                            className="px-3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black border-2 border-emerald-400 border-b-4 border-b-emerald-700 active:translate-y-1 active:border-b-2 transition-all shadow-sm flex items-center gap-1.5 shrink-0"
+                          >
+                            <Swords className="w-3.5 h-3.5" />
+                            <span className="hidden lg:inline">Défier</span>
+                          </button>
                         )}
                       </div>
                     </div>
 
-                    <div>
-                      {session.completed ? (
-                        <div className="flex flex-col items-end gap-2">
-                          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-lg shadow-sm">
-                            <Trophy className="w-4 h-4" />
-                            <span className="text-sm font-bold">
-                              {t("profile.completed")}
-                            </span>
-                          </div>
-                          {isOwnProfile && session.quiz_id && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setChallengeQuiz({
-                                  quizId: session.quiz_id,
-                                  quizTitle:
-                                    session.quizzes?.title ||
-                                    t("profile.unknownQuiz"),
-                                  targetScore: session.score || 0,
-                                });
-                                setChallengeModalOpen(true);
-                              }}
-                              className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
-                            >
-                              {t("home.challengeFriend")}
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg">
-                          <Clock className="w-4 h-4" />
-                          <span className="text-sm font-semibold">
-                            {t("profile.inProgress")}
-                          </span>
-                        </div>
-                      )}
+                    {/* Stats Pills mobiles */}
+                    <div className="sm:hidden flex items-center gap-2 mt-3 ml-2">
+                      <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 rounded-xl border border-blue-200">
+                        <span className="text-[10px] font-black text-blue-700">{accuracyVal}% préc.</span>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-emerald-50 rounded-xl border border-emerald-200">
+                        <span className="text-[10px] font-black text-emerald-700">{correctAnswers}/{totalQuestions} Q</span>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-amber-50 rounded-xl border border-amber-200">
+                        <span className="text-[10px] font-black text-amber-700">⏱ {timeStr}</span>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 text-center">
-                      <p className="text-xs text-purple-600 font-semibold mb-1">
-                        {t("profile.score")}
-                      </p>
-                      <p className="text-2xl font-bold text-purple-700">
-                        {session.score || 0}
-                      </p>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 text-center">
-                      <p className="text-xs text-blue-600 font-semibold mb-1">
-                        {t("profile.accuracy")}
-                      </p>
-                      <p className="text-2xl font-bold text-blue-700">
-                        {Math.round(session.accuracy_percentage || 0)}%
-                      </p>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 text-center">
-                      <p className="text-xs text-green-600 font-semibold mb-1">
-                        {t("profile.questions")}
-                      </p>
-                      <p className="text-2xl font-bold text-green-700">
-                        {(session as any).correct_answers ?? 0}/{(session as any).total_questions ?? 0}
-                      </p>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 text-center">
-                      <p className="text-xs text-orange-600 font-semibold mb-1">
-                        {t("profile.time")}
-                      </p>
-                      <p className="text-2xl font-bold text-orange-700">
-                        {session.time_taken_seconds
-                          ? `${Math.floor(session.time_taken_seconds / 60)}:${(
-                              session.time_taken_seconds % 60
-                            )
-                              .toString()
-                              .padStart(2, "0")}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

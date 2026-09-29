@@ -108,6 +108,8 @@ export function usePlayQuiz({
 
   const pendingSessionPayloadRef = useRef<PendingSessionPayload | null>(null);
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showHeartRefillModal, setShowHeartRefillModal] = useState(false);
   const [gamification, setGamification] = useState<PlayerGamificationState>(() =>
     getPlayerGamificationState(profile?.id)
@@ -124,6 +126,7 @@ export function usePlayQuiz({
     };
   }, [profile?.id]);
 
+  const originalQuestionsRef = useRef<Question[]>([]);
   const [puzzleStates, setPuzzleStates] = useState<Record<string, PuzzleState>>({});
   const [top10States, setTop10States] = useState<Record<string, Top10State>>({});
   const [countryMultiInputs, setCountryMultiInputs] = useState<
@@ -191,18 +194,26 @@ export function usePlayQuiz({
   }, [trainingMode, profile?.id, quizId, mode]);
 
   const loadQuiz = useCallback(async () => {
-    if (!quizId) return;
-
-    let quizData: Quiz | null = null;
-    let questionsData: Question[] | null = null;
-
-    if (quizId.startsWith("u") || quizId.startsWith("path-")) {
-      const bundle = getPathNodeQuiz(quizId);
-      if (bundle) {
-        quizData = bundle.quiz;
-        questionsData = bundle.questions;
-      }
+    if (!quizId) {
+      setIsLoading(false);
+      setLoadError("Identifiant de quiz manquant.");
+      return;
     }
+
+    setIsLoading(true);
+    setLoadError(null);
+
+    try {
+      let quizData: Quiz | null = null;
+      let questionsData: Question[] | null = null;
+
+      if (quizId.startsWith("u") || quizId.startsWith("path-")) {
+        const bundle = getPathNodeQuiz(quizId);
+        if (bundle) {
+          quizData = bundle.quiz;
+          questionsData = bundle.questions;
+        }
+      }
 
     if (!quizData) {
       const { data: dbQuiz } = await supabase
@@ -471,7 +482,15 @@ export function usePlayQuiz({
                   if (sub) pool = [toCountryEntry(sub)];
                   return;
                 }
-                const c = allCountries.find((x) => normalizeAnswer(x.name) === n);
+                const c = allCountries.find((x) => {
+                  if (normalizeAnswer(x.name) === n) return true;
+                  const langs: Language[] = ["fr", "en", "es", "de", "it", "pt"];
+                  for (const l of langs) {
+                    const variants = getCountryNameVariantsByIso3(x.iso3, l);
+                    if (variants.some((v) => normalizeAnswer(v) === n)) return true;
+                  }
+                  return false;
+                });
                 if (c) pool = [c];
               };
 
@@ -565,13 +584,24 @@ export function usePlayQuiz({
         }
 
         setQuestions(processedQuestions);
+        originalQuestionsRef.current = processedQuestions;
         setPuzzleStates(nextPuzzleStates);
         setTop10States(nextTop10States);
         setCountryMultiInputs(nextCountryMultiInputs);
         setConsumedPuzzleIso3s([]);
+      } else {
+        setLoadError("Quiz introuvable ou aucune question disponible.");
       }
+    } else {
+      setLoadError("Quiz introuvable.");
     }
-  }, [quizId, trainingMode, questionCount]);
+  } catch (err: any) {
+    console.error("Error loading quiz:", err);
+    setLoadError(err?.message || "Erreur de chargement du quiz.");
+  } finally {
+    setIsLoading(false);
+  }
+}, [quizId, trainingMode, questionCount]);
 
   useEffect(() => {
     isCompletingRef.current = false;
@@ -1304,44 +1334,16 @@ export function usePlayQuiz({
         playCorrectSound();
       } else {
         playIncorrectSound();
-        if (!trainingMode) {
-          const hasRemaining = deductLife(profile?.id);
-          const updated = getPlayerGamificationState(profile?.id);
-          setGamification(updated);
-          if (!hasRemaining || updated.lives <= 0) {
-            setShowHeartRefillModal(true);
-          }
-        }
+        // Système de cœurs retiré : aucune perte de vie ni interruption
       }
     },
-    [trainingMode, profile?.id]
+    []
   );
 
   const handleHeartRefill = useCallback(() => {
-    const current = getPlayerGamificationState(profile?.id);
-    if (current.gems >= 100) {
-      const res = buyShopItem(profile?.id, "refill_lives");
-      if (res.success) {
-        setShowHeartRefillModal(false);
-        setGamification(getPlayerGamificationState(profile?.id));
-        playCorrectSound();
-        showAppNotification({
-          type: "success",
-          message: "5 Cœurs rechargés avec succès ! ❤️",
-        });
-        return true;
-      }
-    }
-    refillAllLives(profile?.id);
     setShowHeartRefillModal(false);
-    setGamification(getPlayerGamificationState(profile?.id));
-    playCorrectSound();
-    showAppNotification({
-      type: "success",
-      message: "5 Cœurs régénérés ! ❤️",
-    });
     return true;
-  }, [profile?.id, showAppNotification]);
+  }, []);
 
   const handleQuitOnNoHearts = useCallback(() => {
     setShowHeartRefillModal(false);
@@ -1353,10 +1355,14 @@ export function usePlayQuiz({
   }, [trainingMode, completeGame]);
 
   const restartReviewMistakes = useCallback(() => {
+    if (originalQuestionsRef.current.length === 0 && questions.length > 0) {
+      originalQuestionsRef.current = [...questions];
+    }
     const wrongQuestionIds = new Set(
       answers.filter((a) => !a.is_correct).map((a) => a.question_id)
     );
-    const mistakesQuestions = questions.filter((q) => wrongQuestionIds.has(q.id));
+    const pool = originalQuestionsRef.current.length > 0 ? originalQuestionsRef.current : questions;
+    const mistakesQuestions = pool.filter((q) => wrongQuestionIds.has(q.id));
     if (mistakesQuestions.length === 0) return;
 
     setQuestions(mistakesQuestions);
@@ -1370,9 +1376,37 @@ export function usePlayQuiz({
     setUserAnswer("");
     setTimeLeft(quiz?.time_limit_seconds || 30);
     setQuestionStartTime(Date.now());
+    isCompletingRef.current = false;
+    hasTimedOutRef.current = false;
   }, [answers, questions, quiz?.time_limit_seconds]);
 
+  const restartQuiz = useCallback(() => {
+    const fullQuestions =
+      originalQuestionsRef.current.length > 0
+        ? [...originalQuestionsRef.current]
+        : questions;
+    if (fullQuestions.length > 0) {
+      setQuestions(fullQuestions);
+    }
+    setCurrentQuestionIndex(0);
+    setAnswers([]);
+    setTotalScore(0);
+    setGameComplete(false);
+    setIsAnswered(false);
+    setShowResult(false);
+    setSelectedOption("");
+    setUserAnswer("");
+    setTimeLeft(quiz?.time_limit_seconds || 30);
+    setQuestionStartTime(Date.now());
+    setPathNodeResult(null);
+    isCompletingRef.current = false;
+    hasTimedOutRef.current = false;
+    createSession();
+  }, [createSession, questions, quiz?.time_limit_seconds]);
+
   return {
+    isLoading,
+    loadError,
     quiz,
     questions,
     currentQuestionIndex,
@@ -1406,8 +1440,9 @@ export function usePlayQuiz({
     completeGame,
     syncSessionProgress,
     restartReviewMistakes,
+    restartQuiz,
     pathNodeResult,
-    showHeartRefillModal,
+    showHeartRefillModal: false,
     setShowHeartRefillModal,
     handleHeartRefill,
     handleQuitOnNoHearts,

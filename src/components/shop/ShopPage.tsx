@@ -20,6 +20,7 @@ import {
   PlayerGamificationState,
   adminGrantResources,
 } from "../../lib/gamificationManager";
+import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { triggerConfetti } from "../common/Confetti";
 import { playSound } from "../../lib/soundManager";
@@ -49,7 +50,72 @@ export function ShopPage() {
     return () => window.removeEventListener("terracost_gamification_updated", handleUpdate);
   }, [profile?.id]);
 
-  const handleBuy = (item: ShopItem) => {
+  /**
+   * Sync frame_style to Supabase profiles table after buy or equip
+   */
+  const syncFrameToSupabase = async (frameId: string | null) => {
+    if (!profile?.id) return;
+    try {
+      await supabase
+        .from("profiles")
+        .update({ frame_style: frameId || "none", updated_at: new Date().toISOString() })
+        .eq("id", profile.id);
+    } catch (e) {
+      console.error("Failed to sync frame to Supabase:", e);
+    }
+  };
+
+  /**
+   * Sync title to Supabase user_titles table after buy
+   */
+  const syncTitleToSupabase = async (itemId: string, itemName: string) => {
+    if (!profile?.id) return;
+    try {
+      // Check if we need to find the title in the titles table first
+      const { data: existingTitle } = await supabase
+        .from("titles")
+        .select("id")
+        .eq("name", itemName.replace(/[^\p{L}\p{N}\s]/gu, "").trim())
+        .maybeSingle();
+
+      // If no matching title found in the DB, we can't sync
+      // The title system in Supabase requires a title row to exist
+      if (!existingTitle) {
+        console.warn(`Title "${itemName}" not found in titles table, skipping Supabase sync`);
+        return;
+      }
+
+      // Check if user already has this title
+      const { data: existing } = await supabase
+        .from("user_titles")
+        .select("id")
+        .eq("user_id", profile.id)
+        .eq("title_id", existingTitle.id)
+        .maybeSingle();
+
+      if (!existing) {
+        // Deactivate all existing titles first
+        await supabase
+          .from("user_titles")
+          .update({ is_active: false })
+          .eq("user_id", profile.id);
+
+        // Insert new title as active
+        await supabase
+          .from("user_titles")
+          .insert({
+            user_id: profile.id,
+            title_id: existingTitle.id,
+            is_active: true,
+            earned_at: new Date().toISOString(),
+          });
+      }
+    } catch (e) {
+      console.error("Failed to sync title to Supabase:", e);
+    }
+  };
+
+  const handleBuy = async (item: ShopItem) => {
     const res = buyShopItem(profile?.id, item.id);
     if (res.success) {
       playSound("success");
@@ -58,13 +124,20 @@ export function ShopPage() {
       }
       toast.success(res.message);
       setGamification(res.state);
+
+      // Sync to Supabase for frames and titles
+      if (item.category === "frame") {
+        await syncFrameToSupabase(item.id);
+      } else if (item.category === "title") {
+        await syncTitleToSupabase(item.id, item.name);
+      }
     } else {
       playSound("error");
       toast.error(res.message);
     }
   };
 
-  const handleEquip = (item: ShopItem) => {
+  const handleEquip = async (item: ShopItem) => {
     if (item.category === "consumable") return;
     const isCurrentlyActive =
       (item.category === "theme" && gamification.activeTheme === item.id) ||
@@ -78,6 +151,11 @@ export function ShopPage() {
       isCurrentlyActive ? `${item.name} retiré.` : `${item.name} équipé avec succès !`
     );
     setGamification(newState);
+
+    // Sync equip/unequip to Supabase
+    if (item.category === "frame") {
+      await syncFrameToSupabase(targetId);
+    }
   };
 
   const filteredItems = SHOP_CATALOG.filter((it) => {

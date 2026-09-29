@@ -676,12 +676,86 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
     }
   };
 
+  const sanitizeImportedMapData = (raw: any): any => {
+    if (!raw || typeof raw !== "object") return raw;
+    const sanitized = { ...raw };
+
+    // 1. mapLevel
+    if (sanitized.mapLevel) {
+      const ml = String(sanitized.mapLevel).toLowerCase().trim();
+      if (ml.includes("sub") || ml.includes("sous")) {
+        sanitized.mapLevel = "subdivisions";
+      } else if (ml.includes("custom") || ml.includes("geojson")) {
+        sanitized.mapLevel = "custom_geojson";
+      } else {
+        sanitized.mapLevel = "countries";
+      }
+    }
+
+    // 2. continent
+    if (sanitized.continent) {
+      const cont = String(sanitized.continent).toLowerCase().trim();
+      const contMap: Record<string, string> = {
+        europe: "europe",
+        asie: "asia",
+        asia: "asia",
+        afrique: "africa",
+        africa: "africa",
+        "amérique du nord": "north_america",
+        "amerique du nord": "north_america",
+        north_america: "north_america",
+        "amérique du sud": "south_america",
+        "amerique du sud": "south_america",
+        south_america: "south_america",
+        océanie: "oceania",
+        oceanie: "oceania",
+        oceania: "oceania",
+        monde: "world",
+        world: "world",
+      };
+      sanitized.continent = contMap[cont] || cont;
+    }
+
+    // 3. subdivisionScope
+    if (sanitized.subdivisionScope) {
+      const sc = String(sanitized.subdivisionScope).toLowerCase().trim();
+      if (sc.includes("canton") || sc.includes("suisse") || sc.includes("ch")) {
+        sanitized.subdivisionScope = "ch_cantons";
+      } else if (sc.includes("region") || sc.includes("fr")) {
+        sanitized.subdivisionScope = "fr_regions";
+      } else if (sc.includes("comunidad") || sc.includes("es")) {
+        sanitized.subdivisionScope = "es_comunidades";
+      } else if (sc.includes("laender") || sc.includes("länder") || sc.includes("de")) {
+        sanitized.subdivisionScope = "de_laender";
+      } else if (sc.includes("regioni") || sc.includes("it")) {
+        sanitized.subdivisionScope = "it_regioni";
+      } else if (sc.includes("province") || sc.includes("ca")) {
+        sanitized.subdivisionScope = "ca_provinces";
+      } else if (sc.includes("state") || sc.includes("us")) {
+        sanitized.subdivisionScope = "us_states";
+      }
+    }
+
+    // 4. selectedCountries (ISO3 codes)
+    if (Array.isArray(sanitized.selectedCountries)) {
+      sanitized.selectedCountries = sanitized.selectedCountries.map((c: any) =>
+        String(c).trim().toUpperCase()
+      );
+    }
+
+    return sanitized;
+  };
+
   const handleVerifyImport = () => {
     try {
       const parsed = JSON.parse(importJsonText);
       if (!parsed.title || !Array.isArray(parsed.questions)) {
         throw new Error("Format JSON invalide. Il manque 'title' ou 'questions'.");
       }
+      parsed.questions = parsed.questions.map((q: any) => ({
+        ...q,
+        map_data: sanitizeImportedMapData(q.map_data),
+      }));
       setImportVerificationResult(parsed);
     } catch (err: any) {
       showAppNotification({ type: "error", message: "Erreur JSON: " + err.message });
@@ -729,7 +803,7 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
         points: q.points || 10,
         order_index: idx,
         complement_if_wrong: q.complement_if_wrong || null,
-        map_data: q.map_data || null,
+        map_data: sanitizeImportedMapData(q.map_data) || null,
         image_url: q.image_url || null,
         option_images: q.option_images || null,
         randomize_options: q.randomize_options ?? null,
@@ -1121,11 +1195,11 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
               <p className="mb-2">Copie le prompt ci-dessous avec le JSON. L'IA traduira tout le contenu texte et renverra un JSON valide que tu pourras importer.</p>
               <div className="bg-white p-3 rounded border border-indigo-100 flex justify-between items-start gap-4">
                 <code className="text-xs break-words whitespace-pre-wrap flex-1">
-                  Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs textuels suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), 'complement_if_wrong', et 'countryMultiPrompt' (si présent dans map_data). Ne modifie PAS la structure du JSON, ni les clés, ni les champs techniques ('question_type', 'category', 'difficulty', 'points', 'map_data' sauf les textes éventuels, 'image_url', 'option_images', 'randomize_options', 'location_lat', 'location_lng'). Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :
+                  Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs textuels suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), 'complement_if_wrong', et 'countryMultiPrompt' (si présent dans map_data). Ne modifie PAS la structure du JSON, ni les clés. IMPORTANT : Ne modifie ABSOLUMENT PAS l'objet 'map_data' (conserve exactement les mêmes valeurs pour 'mapLevel', 'subdivisionScope', 'selectedCountries', 'continent', 'customGeojsonMapId', etc. NE LES TRADUIS PAS). Ne modifie pas non plus 'question_type', 'category', 'difficulty', 'points', 'image_url', 'option_images', 'randomize_options'. Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :
                 </code>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs textuels suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), 'complement_if_wrong', et 'countryMultiPrompt' (si présent dans map_data). Ne modifie PAS la structure du JSON, ni les clés, ni les champs techniques ('question_type', 'category', 'difficulty', 'points', 'map_data' sauf les textes éventuels, 'image_url', 'option_images', 'randomize_options', 'location_lat', 'location_lng'). Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :\n\n${exportQuizData}`);
+                    navigator.clipboard.writeText(`Je te fournis un quiz au format JSON. Traduis toutes les valeurs des champs textuels suivants dans la langue souhaitée : 'title', 'description', 'question_text', 'correct_answer', 'correct_answers' (tableau), 'options' (tableau ou objet), 'complement_if_wrong', et 'countryMultiPrompt' (si présent dans map_data). Ne modifie PAS la structure du JSON, ni les clés. IMPORTANT : Ne modifie ABSOLUMENT PAS l'objet 'map_data' (conserve exactement les mêmes valeurs pour 'mapLevel', 'subdivisionScope', 'selectedCountries', 'continent', 'customGeojsonMapId', etc. NE LES TRADUIS PAS). Ne modifie pas non plus 'question_type', 'category', 'difficulty', 'points', 'image_url', 'option_images', 'randomize_options'. Renvoie uniquement le code JSON traduit, sans aucun autre texte avant ou après. Voici le JSON :\n\n${exportQuizData}`);
                     showAppNotification({ type: "success", message: "Prompt + JSON copié !" });
                   }}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs whitespace-nowrap"

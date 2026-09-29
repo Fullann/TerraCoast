@@ -27,11 +27,14 @@ export function GeoDetectiveGamePage() {
   const isGameOver = gameState.isGameOver;
   const highScore = getGeoDetectiveHighScore();
 
+  const [mobileTab, setMobileTab] = useState<"photo" | "map">("photo");
+
   // Reset or play again
   const handleRestart = useCallback(() => {
     setGameState(startNewGeoDetectiveGame("all", 5));
     setIsResultPhase(false);
     setShowResultModal(false);
+    setMobileTab("photo");
   }, []);
 
   // Débloquer l'indice
@@ -91,6 +94,7 @@ export function GeoDetectiveGamePage() {
   // Passer à la manche suivante ou terminer
   const handleNextRound = useCallback(() => {
     setShowResultModal(false);
+    setMobileTab("photo");
 
     if (gameState.currentRoundIndex >= gameState.rounds.length - 1) {
       // Fin de la partie
@@ -186,51 +190,98 @@ export function GeoDetectiveGamePage() {
       </header>
 
       {/* Main Game Arena */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col lg:flex-row gap-4 relative">
-        {/* Left / Main Stage : Satellite Viewer */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <SatelliteViewer
-            location={currentRound.location}
-            usedClue={currentRound.usedClue}
-            onUseClue={handleUseClue}
-            isResultPhase={isResultPhase}
-          />
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4 relative">
+        {/* Switcher d'onglets pour smartphone (Photo vs Carte) */}
+        <div className="lg:hidden grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setMobileTab("photo")}
+            className={`py-2 px-3 rounded-2xl text-xs font-black transition flex items-center justify-center gap-1.5 border-2 ${
+              mobileTab === "photo"
+                ? "bg-teal-600 text-white border-teal-700 shadow-sm"
+                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>🛰️ 1. Observer la Photo</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("map")}
+            className={`py-2 px-3 rounded-2xl text-xs font-black transition flex items-center justify-center gap-1.5 border-2 ${
+              mobileTab === "map"
+                ? "bg-teal-600 text-white border-teal-700 shadow-sm"
+                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>🗺️ 2. Placer le Repère</span>
+          </button>
         </div>
 
-        {/* Right / Floating Mini Map */}
-        <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col shrink-0">
-          <MiniPinMap
-            onConfirmGuess={handleConfirmGuess}
-            targetCoords={
-              isResultPhase
-                ? { lat: currentRound.location.lat, lng: currentRound.location.lng }
-                : null
-            }
-            guessCoords={
-              currentRound.guess
-                ? {
-                    lat: currentRound.guess.guessedLat,
-                    lng: currentRound.guess.guessedLng,
-                  }
-                : null
-            }
-            isResultPhase={isResultPhase}
-          />
+        <div className="flex flex-col lg:flex-row gap-4 flex-1">
+          {/* Left Stage : Satellite Viewer */}
+          <div
+            className={`flex-1 flex flex-col min-h-0 ${
+              mobileTab === "photo" ? "flex" : "hidden lg:flex"
+            }`}
+          >
+            <SatelliteViewer
+              location={currentRound.location}
+              usedClue={currentRound.usedClue}
+              onUseClue={handleUseClue}
+              isResultPhase={isResultPhase}
+            />
 
-          {/* Quick instructions / tips */}
-          <div className="mt-3 p-3.5 rounded-2xl bg-white border-2 border-slate-200 shadow-xs text-xs text-slate-600 space-y-1 font-medium">
-            <p className="flex items-center gap-1.5 font-black text-slate-900">
-              <span>🎯 Règle du jeu :</span>
-            </p>
-            <p>
-              1. Zoomez et analysez les reliefs, canaux et monuments depuis l'orbite.
-            </p>
-            <p>
-              2. Pointez sur la mini-carte pour placer votre repère (<code className="bg-slate-100 px-1 py-0.5 rounded text-rose-600 font-bold">📍</code>).
-            </p>
-            <p>
-              3. Plus votre tir est proche, plus vous vous approchez des <strong className="text-emerald-600">5 000 pts</strong> par manche !
-            </p>
+            {/* Bouton d'action rapide sur mobile pour basculer vers la carte */}
+            <div className="lg:hidden mt-3">
+              <button
+                type="button"
+                onClick={() => setMobileTab("map")}
+                className="btn-duo btn-duo-green w-full py-3 text-xs uppercase flex items-center justify-center gap-2"
+              >
+                <span>Passer à la carte pour viser 🗺️</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Right Stage : Mini Pin Map */}
+          <div
+            className={`w-full lg:w-[400px] xl:w-[440px] flex flex-col shrink-0 ${
+              mobileTab === "map" ? "flex" : "hidden lg:flex"
+            }`}
+          >
+            <MiniPinMap
+              onConfirmGuess={handleConfirmGuess}
+              targetCoords={
+                isResultPhase
+                  ? { lat: currentRound.location.lat, lng: currentRound.location.lng }
+                  : null
+              }
+              guessCoords={
+                currentRound.guess
+                  ? {
+                      lat: currentRound.guess.guessedLat,
+                      lng: currentRound.guess.guessedLng,
+                    }
+                  : null
+              }
+              isResultPhase={isResultPhase}
+            />
+
+            {/* Quick instructions / tips */}
+            <div className="mt-3 p-3.5 rounded-2xl bg-white border-2 border-slate-200 shadow-xs text-xs text-slate-600 space-y-1 font-medium">
+              <p className="flex items-center gap-1.5 font-black text-slate-900">
+                <span>🎯 Astuces de repérage :</span>
+              </p>
+              <p>
+                • <strong>Double-cliquez</strong> ou utilisez la <strong>molette</strong> pour zoomer au cœur d'un pays.
+              </p>
+              <p>
+                • Cliquez sur <strong>Plein Écran</strong> pour un ciblage au kilomètre près.
+              </p>
+              <p>
+                • Les raccourcis régionaux (<code className="bg-slate-100 px-1 py-0.5 rounded font-bold">🇪🇺 Europe</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-bold">🌏 Asie</code>...) vous emmènent directement au bon continent !
+              </p>
+            </div>
           </div>
         </div>
       </main>

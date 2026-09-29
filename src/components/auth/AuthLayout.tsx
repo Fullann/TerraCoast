@@ -1,14 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
   Sparkles,
-  Trophy,
-  Compass,
   CheckCircle2,
   ShieldCheck,
-  Award,
+  ChevronDown,
+  Check,
 } from "lucide-react";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { languageNames, type Language } from "../../i18n/translations";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -24,37 +25,39 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   subtitle,
 }) => {
   const navigate = useNavigate();
+  const { t, language, setLanguage } = useLanguage();
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   const perks = [
     {
       icon: "🎴",
-      title: "Pokédex Géographique",
-      desc: "Débloquez plus de 200 pays avec raretés, monuments réels et cartes holographiques.",
+      title: t("auth.perkPokedexTitle") || "Pokédex Géographique",
+      desc: t("auth.perkPokedexDesc") || "Débloquez plus de 200 pays avec raretés, monuments réels et cartes holographiques.",
       bg: "bg-amber-50 text-amber-800 border-amber-200",
     },
     {
       icon: "🏆",
-      title: "Ligues Compétitives 2.0",
-      desc: "Grimpez de Bronze à Légende avec promotions et classements hebdomadaires.",
+      title: t("auth.perkLeaguesTitle") || "Ligues Compétitives 2.0",
+      desc: t("auth.perkLeaguesDesc") || "Grimpez de Bronze à Légende avec promotions et classements hebdomadaires.",
       bg: "bg-blue-50 text-blue-800 border-blue-200",
     },
     {
       icon: "🗺️",
-      title: "Mode Travle & 9 Modes Arcade",
-      desc: "Chrono Rush 60s, reliefs HD, duels asynchrones et party mobile sur smartphone.",
+      title: t("auth.perkModesTitle") || "Mode Travle & 9 Modes Arcade",
+      desc: t("auth.perkModesDesc") || "Chrono Rush 60s, reliefs HD, duels asynchrones et party mobile sur smartphone.",
       bg: "bg-emerald-50 text-emerald-800 border-emerald-200",
     },
     {
       icon: "🎁",
-      title: "+500 XP et 50 Gemmes Offerts",
-      desc: "Crédités dès la création de votre profil pour démarrer votre conquête.",
+      title: t("auth.perkBonusTitle") || "+500 XP et 50 Gemmes Offerts",
+      desc: t("auth.perkBonusDesc") || "Crédités dès la création de votre profil pour démarrer votre conquête.",
       bg: "bg-purple-50 text-purple-800 border-purple-200",
     },
   ];
 
   return (
     <div className="min-h-screen bg-[#f7f9fa] text-slate-800 flex flex-col justify-between font-sans selection:bg-[#58cc02] selection:text-white">
-      {/* Header avec le vrai logo */}
+      {/* Header avec logo & sélecteur de langue */}
       <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
         <Link
           to="/"
@@ -78,13 +81,48 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </div>
         </Link>
 
-        <button
-          onClick={() => navigate("/")}
-          className="btn-duo btn-duo-white px-4 py-2 text-xs font-black text-slate-600"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1.5" />
-          <span>Accueil</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Sélecteur de Langue */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setLangMenuOpen((v) => !v)}
+              className="px-3 py-2 rounded-2xl border-2 border-slate-200 border-b-4 bg-white hover:bg-slate-50 text-slate-700 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-xs"
+            >
+              <span>{language.toUpperCase()}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+            {langMenuOpen && (
+              <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white border-2 border-slate-200 border-b-4 shadow-xl p-1.5 z-50">
+                {(Object.keys(languageNames) as Language[]).map((lng) => (
+                  <button
+                    key={lng}
+                    onClick={() => {
+                      setLanguage(lng);
+                      setLangMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-between ${
+                      language === lng
+                        ? "bg-emerald-50 text-emerald-700 font-black"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{languageNames[lng]}</span>
+                    {language === lng && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => navigate("/")}
+            className="btn-duo btn-duo-white px-4 py-2 text-xs font-black text-slate-600"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1.5" />
+            <span>{t("nav.home") || "Accueil"}</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Container */}
@@ -96,14 +134,14 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-black uppercase tracking-wider mb-3">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                Mise à Jour 2.0
+                {t("auth.update2") || "Mise à Jour 2.0"}
               </div>
               <h1 className="text-3xl font-black text-slate-900 leading-snug">
-                Apprends, Conquiers &{" "}
-                <span className="text-[#58cc02]">Défie le Monde</span> !
+                {t("auth.heroTitle1") || "Apprends, Conquiers &"}{" "}
+                <span className="text-[#58cc02]">{t("auth.heroTitle2") || "Défie le Monde"}</span> !
               </h1>
               <p className="mt-2 text-slate-600 text-sm leading-relaxed font-medium">
-                La méthode la plus amusante et addictive pour maîtriser la géographie mondiale, collectionner des pays et jouer avec ses amis.
+                {t("auth.heroSubtitle") || "La méthode la plus amusante et addictive pour maîtriser la géographie mondiale, collectionner des pays et jouer avec ses amis."}
               </p>
             </div>
 
@@ -134,12 +172,16 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-xl">🥈</span>
                 <div>
-                  <span className="font-black text-slate-800 block">Ligues Hebdomadaires Ouvertes</span>
-                  <span className="text-[11px] text-slate-500 font-semibold">Promotion chaque dimanche soir</span>
+                  <span className="font-black text-slate-800 block">
+                    {t("auth.weeklyLeaguesOpen") || "Ligues Hebdomadaires Ouvertes"}
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-semibold">
+                    {t("auth.promotionSunday") || "Promotion chaque dimanche soir"}
+                  </span>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 font-black text-xs border border-amber-300">
-                Ligue Argent
+                {t("auth.silverLeague") || "Ligue Argent"}
               </span>
             </div>
           </div>
@@ -159,7 +201,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   }`}
                 >
                   <ShieldCheck className="w-4 h-4 mr-1.5" />
-                  <span>Connexion</span>
+                  <span>{t("auth.login") || "Connexion"}</span>
                 </button>
                 <button
                   type="button"
@@ -171,7 +213,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   }`}
                 >
                   <Sparkles className="w-4 h-4 mr-1.5" />
-                  <span>Créer un compte</span>
+                  <span>{t("auth.signUp") || "Créer un compte"}</span>
                 </button>
               </div>
 
@@ -196,11 +238,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               {/* Reassurance */}
               <div className="mt-4 flex items-center justify-center gap-4 text-xs font-bold text-slate-500">
                 <span className="flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4 text-[#58cc02]" /> 100% Gratuit & Sans Pub
+                  <CheckCircle2 className="w-4 h-4 text-[#58cc02]" />
+                  {t("auth.freeNoAds") || "100% Gratuit & Sans Pub"}
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  <ShieldCheck className="w-4 h-4 text-[#1cb0f6]" /> Données Sécurisées
+                  <ShieldCheck className="w-4 h-4 text-[#1cb0f6]" />
+                  {t("auth.secureData") || "Données Sécurisées"}
                 </span>
               </div>
             </div>
@@ -211,8 +255,9 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
       {/* Footer */}
       <footer className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-xs font-semibold text-slate-400">
-        <p>© {new Date().getFullYear()} TerraCoast • La plateforme éducative & gaming de géographie.</p>
+        <p>{t("auth.footerNote") || `© ${new Date().getFullYear()} TerraCoast • La plateforme éducative & gaming de géographie.`}</p>
       </footer>
     </div>
   );
 };
+

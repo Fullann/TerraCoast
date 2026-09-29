@@ -50,6 +50,7 @@ interface QuizResultsScreenProps {
   isSyncing: boolean;
   onRetrySync: () => void;
   onReviewMistakes?: () => void;
+  onReplayQuiz?: () => void;
   isDailyChallenge?: boolean;
   pathNodeResult?: {
     nodeId: string;
@@ -75,6 +76,7 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
   isSyncing,
   onRetrySync,
   onReviewMistakes,
+  onReplayQuiz,
   isDailyChallenge,
   pathNodeResult,
 }) => {
@@ -792,7 +794,11 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
               ) : (
                 <button
                   onClick={() => {
-                    navigate(`/quizzes/play/${quizId}`);
+                    if (onReplayQuiz) {
+                      onReplayQuiz();
+                    } else {
+                      navigate(`/quizzes/play/${quizId}`);
+                    }
                   }}
                   className="flex-1 py-3.5 px-5 btn-duo btn-duo-green text-sm sm:text-base font-black shadow-md"
                 >

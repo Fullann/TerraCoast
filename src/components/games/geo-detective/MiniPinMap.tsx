@@ -19,6 +19,9 @@ import {
   ZoomIn,
   ZoomOut,
   Compass,
+  Sliders,
+  MousePointer,
+  HelpCircle,
 } from "lucide-react";
 import { calculateHaversineDistance } from "../../../lib/geoDetectiveGame";
 
@@ -75,8 +78,14 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
     zoom: 1,
   });
 
+  const [hoverCoords, setHoverCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   const innerGroupRef = useRef<SVGGElement | null>(null);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastClickTimeRef = useRef<number>(0);
+  const touchStartDistRef = useRef<number | null>(null);
+  const touchStartZoomRef = useRef<number>(1);
 
   // Synchronisation si nouvelle manche
   useEffect(() => {
@@ -91,7 +100,6 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
   useEffect(() => {
     if (isResultPhase && targetCoords) {
       if (guessCoords) {
-        // Centrer entre la cible et le tir
         const midLng = (targetCoords.lng + guessCoords.lng) / 2;
         const midLat = (targetCoords.lat + guessCoords.lat) / 2;
         setPosition({
@@ -114,15 +122,102 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
       .translate([MAP_WIDTH / 2, MAP_HEIGHT / 2]);
   }, []);
 
-  // Détection du début de pointeur (pour différencier un clic d'un drag/pan)
+  // 1. Zoom Molette Ultra-Fluide sur la carte (sans faire défiler la page)
+  useEffect(() => {
+    const el = mapContainerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const zoomFactor = e.deltaY < 0 ? 1.25 : 0.8;
+      setPosition((pos) => {
+        const nextZoom = Math.max(1, Math.min(pos.zoom * zoomFactor, 10));
+        return {
+          ...pos,
+          zoom: Math.round(nextZoom * 100) / 100,
+        };
+      });
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  // 2. Raccourcis clavier (+, -, 0, Espace)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorer si l'utilisateur est dans un input
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        setPosition((pos) => ({ ...pos, zoom: Math.min(pos.zoom * 1.3, 10) }));
+      } else if (e.key === "-") {
+        e.preventDefault();
+        setPosition((pos) => ({ ...pos, zoom: Math.max(pos.zoom / 1.3, 1) }));
+      } else if (e.key === "0") {
+        e.preventDefault();
+        setPosition({ coordinates: [0, 20], zoom: 1 });
+      } else if (e.key === " " && !e.repeat) {
+        // Espace = basculer plein écran
+        setIsExpanded((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Détection du début de pointeur
   const handlePointerDown = (e: React.PointerEvent) => {
-    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+    pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
   };
 
-  // Traitement du clic avec inversion mathématique précise
+  // Convertit un point écran (clientX, clientY) en coordonnées géo [lng, lat]
+  const screenToGeo = useCallback(
+    (clientX: number, clientY: number): [number, number] | null => {
+      if (!innerGroupRef.current) return null;
+      const svg = innerGroupRef.current.ownerSVGElement;
+      if (!svg) return null;
+      const ctm = innerGroupRef.current.getScreenCTM();
+      if (!ctm) return null;
+
+      const pt = svg.createSVGPoint();
+      pt.x = clientX;
+      pt.y = clientY;
+      const local = pt.matrixTransform(ctm.inverse());
+
+      const inverted = projection.invert?.([local.x, local.y]);
+      if (inverted && !isNaN(inverted[0]) && !isNaN(inverted[1])) {
+        const clampedLat = Math.max(-85, Math.min(85, inverted[1]));
+        const clampedLng = Math.max(-180, Math.min(180, inverted[0]));
+        return [clampedLng, clampedLat];
+      }
+      return null;
+    },
+    [projection]
+  );
+
+  // Déplacement souris pour affichage en direct des coordonnées
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (isResultPhase) return;
+    const geo = screenToGeo(e.clientX, e.clientY);
+    if (geo) {
+      setHoverCoords({ lng: geo[0], lat: geo[1] });
+    }
+  };
+
+  // 3. Traitement du clic & Double-clic pour zoomer au point précis !
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (disabled || isResultPhase || !pointerStartRef.current || !innerGroupRef.current) {
+      if (disabled || isResultPhase || !pointerStartRef.current) {
         pointerStartRef.current = null;
         return;
       }
@@ -131,35 +226,62 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
       const dy = Math.abs(e.clientY - pointerStartRef.current.y);
       pointerStartRef.current = null;
 
-      // Si déplacement supérieur à 6px, c'est un drag/pan de carte, pas un placement de pin !
+      // Si déplacement > 6px, c'est un drag/pan de carte
       if (dx > 6 || dy > 6) {
         return;
       }
 
-      const svg = innerGroupRef.current.ownerSVGElement;
-      if (!svg) return;
+      const geo = screenToGeo(e.clientX, e.clientY);
+      if (!geo) return;
+      const [lng, lat] = geo;
 
-      const ctm = innerGroupRef.current.getScreenCTM();
-      if (!ctm) return;
+      const now = Date.now();
+      const timeSinceLast = now - lastClickTimeRef.current;
+      lastClickTimeRef.current = now;
 
-      // Conversion exacte des coordonnées écran en coordonnées locales du groupe SVG
-      const pt = svg.createSVGPoint();
-      pt.x = e.clientX;
-      pt.y = e.clientY;
-      const local = pt.matrixTransform(ctm.inverse());
-
-      // Inversion de la projection EqualEarth vers coordonnées géographiques [lng, lat]
-      const inverted = projection.invert?.([local.x, local.y]);
-      if (inverted && !isNaN(inverted[0]) && !isNaN(inverted[1])) {
-        const [lng, lat] = inverted;
-        // Limiter aux bornes géographiques
-        const clampedLat = Math.max(-85, Math.min(85, lat));
-        const clampedLng = Math.max(-180, Math.min(180, lng));
-        setCurrentPin([clampedLng, clampedLat]);
+      // 🎯 Si double-clic rapide (< 320ms) : Zoom avant ciblé sur ce point précis !
+      if (timeSinceLast < 320) {
+        setPosition((pos) => ({
+          coordinates: [lng, lat],
+          zoom: Math.min(pos.zoom * 1.8, 10),
+        }));
+        setCurrentPin([lng, lat]);
+        return;
       }
+
+      // Clic simple : Placement du repère
+      setCurrentPin([lng, lat]);
     },
-    [disabled, isResultPhase, projection]
+    [disabled, isResultPhase, screenToGeo]
   );
+
+  // 4. Support Tactile (Pinch-to-zoom 2 doigts)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchStartDistRef.current = dist;
+      touchStartZoomRef.current = position.zoom;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchStartDistRef.current !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scale = dist / touchStartDistRef.current;
+      const nextZoom = Math.max(1, Math.min(touchStartZoomRef.current * scale, 10));
+      setPosition((pos) => ({ ...pos, zoom: nextZoom }));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartDistRef.current = null;
+  };
 
   const handleConfirm = () => {
     if (!currentPin) return;
@@ -178,7 +300,7 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
     e.stopPropagation();
     setPosition((pos) => ({
       ...pos,
-      zoom: Math.min(pos.zoom * 1.5, 10),
+      zoom: Math.min(pos.zoom * 1.4, 10),
     }));
   };
 
@@ -186,7 +308,7 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
     e.stopPropagation();
     setPosition((pos) => ({
       ...pos,
-      zoom: Math.max(pos.zoom / 1.5, 1),
+      zoom: Math.max(pos.zoom / 1.4, 1),
     }));
   };
 
@@ -198,10 +320,9 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
   };
 
   // Coordonnées pour affichage de résultat
-  const resultGuess = guessCoords ? [guessCoords.lng, guessCoords.lat] as [number, number] : currentPin;
-  const resultTarget = targetCoords ? [targetCoords.lng, targetCoords.lat] as [number, number] : null;
+  const resultGuess = guessCoords ? ([guessCoords.lng, guessCoords.lat] as [number, number]) : currentPin;
+  const resultTarget = targetCoords ? ([targetCoords.lng, targetCoords.lat] as [number, number]) : null;
 
-  // Calcul de la distance si les deux coordonnées sont disponibles
   const resultDistance = useMemo(() => {
     if (resultGuess && resultTarget) {
       return calculateHaversineDistance(
@@ -214,20 +335,19 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
     return null;
   }, [resultGuess, resultTarget]);
 
-  // Facteur d'échelle pour que les icônes de pin restent nettes quel que soit le zoom
   const markerScale = Math.max(0.4, 1 / Math.sqrt(position.zoom || 1));
 
   return (
     <>
-      {/* Conteneur de la carte (Miniature ou Agrandie) */}
+      {/* Conteneur de la carte (Miniature ou Agrandie en mode focus) */}
       <div
         className={`transition-all duration-300 ${
           isExpanded
-            ? "fixed inset-3 sm:inset-8 z-50 bg-white/95 backdrop-blur-2xl rounded-3xl border-2 border-slate-300 shadow-2xl flex flex-col p-4 animate-fade-in"
+            ? "fixed inset-2 sm:inset-6 lg:inset-10 z-50 bg-white/95 backdrop-blur-2xl rounded-3xl border-2 border-slate-300 shadow-2xl flex flex-col p-4 animate-fade-in"
             : "w-full rounded-3xl bg-white border-2 border-slate-200 shadow-xs overflow-hidden flex flex-col"
         }`}
       >
-        {/* En-tête de la mini-carte */}
+        {/* En-tête de la mini-carte avec commandes claires */}
         <div className="flex items-center justify-between px-3.5 py-2.5 border-b-2 border-slate-200 bg-white select-none">
           <div className="flex items-center gap-2 min-w-0">
             <Crosshair className="w-4 h-4 text-teal-600 shrink-0" />
@@ -237,6 +357,11 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
                 : currentPin
                 ? "Repère placé 🎯"
                 : "Pointez sur la carte"}
+            </span>
+
+            {/* Bulle d'aide pour le zoom */}
+            <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+              💡 Molette ou double-clic pour zoomer
             </span>
           </div>
 
@@ -252,47 +377,81 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
                 <span className="hidden sm:inline">Effacer</span>
               </button>
             )}
+
+            {/* Bouton Agrandir / Réduire proéminent */}
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition"
-              title={isExpanded ? "Réduire la carte" : "Agrandir en plein écran pour viser au pixel"}
+              className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition flex items-center gap-1.5 shadow-2xs"
+              title={isExpanded ? "Réduire la carte" : "Agrandir en grand format pour viser au pixel"}
             >
               {isExpanded ? (
-                <Minimize2 className="w-4 h-4 text-teal-600" />
+                <>
+                  <Minimize2 className="w-3.5 h-3.5 text-teal-600" />
+                  <span className="hidden sm:inline">Réduire</span>
+                </>
               ) : (
-                <Maximize2 className="w-4 h-4" />
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 text-teal-600" />
+                  <span className="hidden sm:inline">Plein Écran</span>
+                </>
               )}
             </button>
           </div>
         </div>
 
-        {/* Barre de sauts rapides par Continent */}
-        <div className="px-3 py-1.5 bg-slate-50 border-b-2 border-slate-200 flex items-center gap-1 overflow-x-auto no-scrollbar select-none">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
-            <Compass className="w-3 h-3 text-teal-600" />
-            Zoom :
-          </span>
-          {REGION_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => handleRegionSelect(preset)}
-              className="px-2.5 py-1 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-[11px] font-black text-slate-700 whitespace-nowrap transition flex items-center gap-1 shadow-2xs"
-            >
-              <span>{preset.emoji}</span>
-              <span>{preset.name}</span>
-            </button>
-          ))}
+        {/* Barre de sauts rapides par Continent & Slider Zoom */}
+        <div className="px-3 py-1.5 bg-slate-50 border-b-2 border-slate-200 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar select-none">
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1">
+              <Compass className="w-3 h-3 text-teal-600" />
+              Région :
+            </span>
+            {REGION_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleRegionSelect(preset)}
+                className="px-2 py-0.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-[10px] font-black text-slate-700 whitespace-nowrap transition flex items-center gap-1 shadow-2xs"
+              >
+                <span>{preset.emoji}</span>
+                <span>{preset.name}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Slider tactile de zoom */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0 bg-white px-2 py-0.5 rounded-xl border border-slate-200">
+            <span className="text-[10px] font-black text-slate-500">Zoom :</span>
+            <input
+              type="range"
+              min={1}
+              max={10}
+              step={0.2}
+              value={position.zoom}
+              onChange={(e) =>
+                setPosition((pos) => ({ ...pos, zoom: Number(e.target.value) }))
+              }
+              className="w-16 h-1.5 accent-teal-600 cursor-pointer"
+            />
+            <span className="text-[10px] font-mono font-black text-teal-800 w-8 text-right">
+              {position.zoom.toFixed(1)}x
+            </span>
+          </div>
         </div>
 
-        {/* Zone SVG Interactive avec ComposableMap directe */}
+        {/* Zone SVG Interactive avec ComposableMap */}
         <div
-          className={`relative w-full overflow-hidden flex-1 flex items-center justify-center bg-[#070b14] ${
-            isExpanded ? "h-full min-h-[350px]" : "h-[220px] sm:h-[260px]"
+          ref={mapContainerRef}
+          className={`relative w-full overflow-hidden flex-1 flex items-center justify-center bg-[#070b14] select-none ${
+            isExpanded ? "h-full min-h-[380px]" : "h-[240px] sm:h-[280px]"
           } ${!isResultPhase ? "cursor-crosshair" : "cursor-default"}`}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
+          onPointerMove={handlePointerMove}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <ComposableMap
             projection={projection as any}
@@ -353,7 +512,7 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
                   from={resultGuess}
                   to={resultTarget}
                   stroke="#f59e0b"
-                  strokeWidth={2 / Math.sqrt(position.zoom)}
+                  strokeWidth={2.5 / Math.sqrt(position.zoom)}
                   strokeDasharray="5 3"
                   className="animate-pulse"
                 />
@@ -409,11 +568,10 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
                 </Marker>
               )}
 
-              {/* Repère Cible Réelle (affiché seulement en phase de résultat) */}
+              {/* Repère Cible Réelle */}
               {isResultPhase && resultTarget && (
                 <Marker coordinates={resultTarget}>
                   <g transform={`scale(${markerScale}) translate(-14, -28)`}>
-                    {/* Anneau pulsant émeraude */}
                     <circle
                       cx="14"
                       cy="14"
@@ -423,7 +581,6 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
                       strokeWidth="2.5"
                       className="animate-ping opacity-80"
                     />
-                    {/* SVG Pin émeraude cible */}
                     <path
                       d="M14 2C9.58 2 6 5.58 6 10c0 6 8 16 8 16s8-10 8-16c0-4.42-3.58-8-8-8z"
                       fill="#10b981"
@@ -431,7 +588,6 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
                       strokeWidth="2"
                     />
                     <circle cx="14" cy="10" r="3.5" fill="#ffffff" />
-                    {/* Badge texte cible */}
                     <g transform="translate(14, 34)">
                       <rect
                         x="-35"
@@ -461,41 +617,48 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
             </ZoomableGroup>
           </ComposableMap>
 
-          {/* Boutons de zoom flottants sur la carte */}
-          <div className="absolute right-3 top-3 flex flex-col gap-1.5 z-10">
+          {/* Boutons de zoom flottants grands et tactiles */}
+          <div className="absolute right-3 top-3 flex flex-col gap-1.5 z-10 select-none">
             <button
               type="button"
               onClick={handleZoomIn}
-              className="p-2 rounded-xl bg-white/95 hover:bg-white border-2 border-slate-200 text-slate-800 shadow-sm transition active:scale-95"
+              className="p-2.5 rounded-2xl bg-white/95 hover:bg-white border-2 border-slate-200 text-slate-800 shadow-md transition active:scale-90 flex items-center justify-center"
               title="Zoom avant (+)"
             >
-              <ZoomIn className="w-4 h-4 text-teal-600" />
+              <ZoomIn className="w-5 h-5 text-teal-600" />
             </button>
             <button
               type="button"
               onClick={handleZoomOut}
-              className="p-2 rounded-xl bg-white/95 hover:bg-white border-2 border-slate-200 text-slate-700 shadow-sm transition active:scale-95"
+              className="p-2.5 rounded-2xl bg-white/95 hover:bg-white border-2 border-slate-200 text-slate-700 shadow-md transition active:scale-90 flex items-center justify-center"
               title="Zoom arrière (-)"
             >
-              <ZoomOut className="w-4 h-4 text-slate-600" />
+              <ZoomOut className="w-5 h-5 text-slate-600" />
             </button>
             <button
               type="button"
               onClick={() => handleRegionSelect(REGION_PRESETS[0])}
-              className="p-2 rounded-xl bg-white/95 hover:bg-white border-2 border-slate-200 text-slate-700 shadow-sm transition active:scale-95"
-              title="Vue globale monde"
+              className="p-2.5 rounded-2xl bg-white/95 hover:bg-white border-2 border-slate-200 text-slate-700 shadow-md transition active:scale-90 flex items-center justify-center"
+              title="Réinitialiser (1x Monde)"
             >
-              <RotateCcw className="w-4 h-4 text-slate-500" />
+              <RotateCcw className="w-5 h-5 text-slate-500" />
             </button>
           </div>
 
+          {/* Indicateur de position / coordonnées sous le curseur */}
+          {hoverCoords && !isResultPhase && (
+            <div className="pointer-events-none absolute bottom-1.5 left-2 text-[10px] font-mono text-slate-300 bg-black/60 px-2 py-0.5 rounded-lg select-none backdrop-blur-xs">
+              Curseur : {formatCoordinate(hoverCoords.lat, hoverCoords.lng)}
+            </div>
+          )}
+
           {/* Graticule et repères d'échelle */}
-          <div className="pointer-events-none absolute bottom-1 right-2 text-[10px] font-mono text-slate-400 select-none">
-            Zoom {position.zoom.toFixed(1)}x • Equal Earth
+          <div className="pointer-events-none absolute bottom-1.5 right-2 text-[10px] font-mono text-slate-400 bg-black/40 px-2 py-0.5 rounded-lg select-none">
+            Zoom {position.zoom.toFixed(1)}x
           </div>
         </div>
 
-        {/* Barre inférieure : Coordonnées et Validation */}
+        {/* Barre inférieure : Coordonnées et Bouton Valider */}
         <div className="p-3 bg-white border-t-2 border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="text-xs text-slate-700 flex items-center gap-2 w-full sm:w-auto">
             <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
@@ -509,7 +672,7 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
               </span>
             ) : (
               <span className="text-slate-400 font-medium italic">
-                Cliquez pour placer le repère
+                Cliquez pour placer votre repère
               </span>
             )}
           </div>
@@ -519,7 +682,7 @@ export const MiniPinMap: React.FC<MiniPinMapProps> = ({
               type="button"
               disabled={!currentPin || disabled}
               onClick={handleConfirm}
-              className="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-2xl border-2 border-emerald-600 border-b-4 border-b-emerald-700 active:border-b-0 active:translate-y-1 shadow-md transition flex items-center justify-center gap-2 shrink-0"
+              className="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-2xl border-2 border-emerald-600 border-b-4 border-b-emerald-700 active:border-b-0 active:translate-y-1 shadow-md transition flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             >
               <CheckCircle className="w-4 h-4" />
               <span>Valider mon repère 🎯</span>

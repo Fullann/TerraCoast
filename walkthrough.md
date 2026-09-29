@@ -153,12 +153,39 @@ Toutes les fonctionnalités demandées ont été développées, testées et vali
 
 ---
 
-## 12. 📚 Mise à Jour Complète de la Documentation Technique
+## 12. 📚 Documentation Technique Complète & Matrice de Données
 - Réécriture et enrichissement de l'ensemble du dossier [`docs/`](./docs/README.md) :
-  - `docs/01-overview.md` : vue d'ensemble produit et inventaire fonctionnel complet.
-  - `docs/02-architecture.md` : architecture SPA, découpage `react-router-dom`, Supabase Realtime et moteur audio natif.
-  - `docs/06-frontend.md` : design system tactile Duolingo, hiérarchie des composants et layouts.
-  - `docs/08-gameplay.md` : typologies de quiz et guides techniques des 7+ mini-jeux.
+  - `docs/01-overview.md` : vue d'ensemble produit et inventaire fonctionnel complet (Pokédex, jeux, admin).
+  - `docs/02-architecture.md` : architecture SPA, routes complètes, Supabase Realtime et moteur audio natif.
+  - `docs/06-frontend.md` : design system tactile Duolingo, arborescence des composants et contextes.
+  - `docs/08-gameplay.md` : typologies de quiz, Pokédex TCG holographique et guides techniques des mini-jeux.
   - `docs/09-social-duels.md` : duels 1v1 tactiles, matchmaking radar, Ghost Runs et mode Party.
-  - `docs/10-admin-dashboard.md` : console d'administration, KPI, configuration du site et suivi géographique.
+  - `docs/10-admin-dashboard.md` : console d'administration v2.4, Hub 18 modules, gestionnaire photos Geo Detective.
+  - `docs/16-data-sources-and-usage.md` : **Matrice de provenance et d'utilisation des données** (origine exacte, fichiers sources, composants consommateurs).
   - `readme.md` : page d'accueil GitHub enrichie et à jour.
+
+---
+
+## 13. 🌟 Pokédex Géographique & Conquête Mondiale (`/conquest`)
+- **Collection de Cartes TCG Holographiques** : 250 pays et territoires à conquérir avec 4 raretés (Légendaire, Épique, Rare, Commune).
+- **Condition de Capture Équitable** : validation automatique d'un pays avec un score de précision ≥ 80% (configurable par l'administrateur).
+- **Brouillard de Guerre Interactif (*Fog of War*)** : planisphère D3.js vectoriel avec illumination en vert émeraude vibrant ou éclat doré des pays conquis.
+- **Cartes de Collection Détaillées** : monument historique emblématique, anecdote culturelle insolite (*fun fact*), fiche géographique complète et certificat horodaté d'explorateur.
+- **Album & Jauges Continentales** : progression par continent, filtres par rareté et mode masque mystère.
+
+---
+
+## 14. 🗺️ Atlas Interactif, Recherche Intelligente & Micro-États
+- **Recherche Prédictive Rapide** : autocomplétion insensible aux accents et à la casse avec centrage automatique instantané sur le pays sélectionné.
+- **Prise en Charge des Micro-États** : pastilles d'accentuation circulaires rendant cliquables et visibles les plus petits territoires (Monaco, Vatican, Saint-Marin, Nauru, Singapour, etc.).
+- **Données Cartographiques 50m** : intégration des vecteurs haute résolution Natural Earth.
+
+---
+
+## 15. 🛡️ Console d'Administration v2.4 Rénovée
+- **Hub Central de Configuration Directe** : 18 modules d'administration classés en 4 piliers stratégiques.
+- **Gestionnaire Geo Detective Photos (`/admin/geo-detective`)** : ajout de clichés avec coordonnées GPS précises, modification, suppression et prévisualisation.
+- **Équilibrage Gameplay en Direct** : configuration du seuil de conquête Pokédex, minuterie par question et économie d'XP.
+- **Suppression Définitive des Vies/Cœurs** : bascule complète vers un modèle d'apprentissage positif et illimité.
+- **Outils Développeur** : ajustement direct d'XP pour tester les passages de niveaux.
+

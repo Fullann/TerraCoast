@@ -9,6 +9,7 @@ import {
   PlayerGamificationState,
   adminGrantResources,
 } from "../../lib/gamificationManager";
+import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { triggerConfetti } from "../common/Confetti";
 import { playSound } from "../../lib/soundManager";
@@ -39,7 +40,19 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
 
   if (!isOpen) return null;
 
-  const handleBuy = (item: ShopItem) => {
+  const syncFrameToSupabase = async (frameId: string | null) => {
+    if (!profile?.id) return;
+    try {
+      await supabase
+        .from("profiles")
+        .update({ frame_style: frameId || "none", updated_at: new Date().toISOString() })
+        .eq("id", profile.id);
+    } catch (e) {
+      console.error("Failed to sync frame to Supabase:", e);
+    }
+  };
+
+  const handleBuy = async (item: ShopItem) => {
     const res = buyShopItem(profile?.id, item.id);
     if (res.success) {
       playSound("success");
@@ -48,13 +61,17 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
       }
       toast.success(res.message);
       setGamification(res.state);
+
+      if (item.category === "frame") {
+        await syncFrameToSupabase(item.id);
+      }
     } else {
       playSound("error");
       toast.error(res.message);
     }
   };
 
-  const handleEquip = (item: ShopItem) => {
+  const handleEquip = async (item: ShopItem) => {
     if (item.category === "consumable") return;
     const isCurrentlyActive =
       (item.category === "theme" && gamification.activeTheme === item.id) ||
@@ -68,6 +85,10 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
       isCurrentlyActive ? `${item.name} retiré.` : `${item.name} équipé !`
     );
     setGamification(newState);
+
+    if (item.category === "frame") {
+      await syncFrameToSupabase(targetId);
+    }
   };
 
   const filteredItems = SHOP_CATALOG.filter((it) => {

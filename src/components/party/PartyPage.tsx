@@ -834,24 +834,51 @@ export function PartyPage() {
         return;
       }
 
-      const mappedQuestions: PartyQuestion[] = questionsData.map((q: any, idx: number) => {
+      // 2. Filtrer STRICTEMENT les questions QCM (exclure puzzle_map, map_click, text_free, top10_order)
+      const mcqOnlyQuestions = questionsData.filter((q: any) => {
+        const type = q.question_type;
+        return type === "mcq" || !type;
+      });
+
+      const finalQuestionsData = mcqOnlyQuestions.length > 0
+        ? mcqOnlyQuestions
+        : (PATH_QUIZZES["u1-n1"]?.questions || []);
+
+      const mappedQuestions: PartyQuestion[] = finalQuestionsData.map((q: any, idx: number) => {
         let opts: string[] = [];
         if (Array.isArray(q.options) && q.options.length > 0) {
-          opts = q.options.map(String);
-        } else if (q.question_type === "true_false") {
-          opts = ["Vrai", "Faux"];
-        } else if (q.correct_answer) {
-          opts = [q.correct_answer, "Option B", "Option C", "Option D"];
-        } else {
-          opts = ["Option A", "Option B", "Option C", "Option D"];
+          opts = q.options.map(String).filter((s) => s.trim().length > 0);
+        }
+
+        const correct = String(q.correct_answer || "").trim();
+
+        // S'assurer que la bonne réponse est présente dans les propositions
+        if (correct && !opts.includes(correct)) {
+          opts.unshift(correct);
+        }
+
+        // Normaliser à exactement 4 options (format standard Kahoot 2x2)
+        if (opts.length < 4) {
+          const fillers = ["Option A", "Option B", "Option C", "Option D", "Autre réponse", "Aucune des réponses"];
+          for (const f of fillers) {
+            if (opts.length >= 4) break;
+            if (!opts.includes(f) && f !== correct) {
+              opts.push(f);
+            }
+          }
+        } else if (opts.length > 4) {
+          if (opts.indexOf(correct) >= 4) {
+            opts[3] = correct;
+          }
+          opts = opts.slice(0, 4);
         }
 
         return {
           id: q.id || `q-${idx}`,
           question_text: q.question_text || "Question",
-          question_type: q.question_type || "mcq",
+          question_type: "mcq",
           options: opts,
-          correct_answer: q.correct_answer || opts[0] || "",
+          correct_answer: correct || opts[0] || "",
           image_url: q.image_url || null,
           explanation: q.complement_if_wrong || q.explanation || null,
         };

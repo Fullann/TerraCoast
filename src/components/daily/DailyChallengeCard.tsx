@@ -188,7 +188,7 @@ export function DailyChallengeCard({ quiz, loading }: DailyChallengeCardProps) {
                 onClick={() => setLeaderboardOpen(true)}
                 className="text-xs bg-white/25 hover:bg-white/35 text-white px-3 py-1.5 rounded-xl transition-all font-black border border-white/20 active:scale-95 shrink-0"
               >
-                Voir
+                {t("common.view") || "Voir"}
               </button>
             </div>
           ) : (

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../../contexts/LanguageContext";
 import {
   Star,
   Lock,
@@ -35,11 +36,12 @@ interface DuolingoQuestPathProps {
   onNodeStart?: (node: PathNode, chosenQuizId?: string) => void;
 }
 
-// Oscillations sinueuses horizontales (en pixels) pour créer le chemin Duolingo
-const HORIZONTAL_OFFSETS = [0, -50, -80, -40, 0, 40, 80, 50];
+// Oscillations sinueuses horizontales (en pixels) adaptées pour éviter tout débordement
+const HORIZONTAL_OFFSETS = [0, -35, -55, -30, 0, 30, 55, 35];
 
 export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [units, setUnits] = useState<PathUnit[]>(() => getQuestPath(userId));
   const [selectedNode, setSelectedNode] = useState<{
     node: PathNode;
@@ -122,7 +124,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
   const handleStartLevel = (node: PathNode, chosenQuizId?: string) => {
     setSelectedNode(null);
     if (onNodeStart) {
-      onNodeStart(node, chosenQuizId);
+      onNodeStart(node, chosenQuizId || node.assignedQuizId);
       return;
     }
 
@@ -182,7 +184,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
           }`}
         >
-          <span>🗺️ Parcours Aventure</span>
+          <span>🗺️ {t("quest.adventurePath") || "Parcours Aventure"}</span>
           {currentActiveNode && (
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           )}
@@ -197,7 +199,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
           }`}
         >
-          <span>📚 Choisir son Quiz</span>
+          <span>📚 {t("quest.chooseQuiz") || "Choisir son Quiz"}</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-extrabold">
             {allQuizzes.length}
           </span>
@@ -208,7 +210,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
       {/* VUE 1 : PARCOURS D'AVENTURE SINUEUX DUOLINGO */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {viewTab === "path" && (
-        <div className="space-y-12">
+        <div className="space-y-12 overflow-x-hidden">
           {units.map((unit) => {
             const completedCount = unit.nodes.filter((n) => n.status === "completed").length;
             const totalNodes = unit.nodes.length;
@@ -273,7 +275,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
             };
 
             return (
-              <section key={unit.id} className="relative">
+              <section key={unit.id} className="relative overflow-x-hidden">
                 {/* 📌 En-tête officiel de l'Unité Duolingo */}
                 <div
                   className={`rounded-3xl p-5 text-white shadow-xl ${themeStyles.headerBg} relative overflow-hidden`}
@@ -282,10 +284,10 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs uppercase font-black tracking-widest bg-black/20 px-2.5 py-0.5 rounded-full">
-                          UNITÉ {unit.unitNumber}
+                          {t("quest.unit") || "UNITÉ"} {unit.unitNumber}
                         </span>
                         <span className="text-xs font-bold text-white/80">
-                          {percentCompleted}% complété
+                          {percentCompleted}% {t("quest.completed") || "complété"}
                         </span>
                       </div>
                       <h3 className="text-xl sm:text-2xl font-black truncate">{unit.title}</h3>
@@ -301,7 +303,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
                         className="px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-2xl text-xs font-black flex items-center gap-1.5 transition active:scale-95 border border-white/30"
                       >
                         <BookOpen className="w-4 h-4" />
-                        <span className="hidden sm:inline">GUIDE</span>
+                        <span className="hidden sm:inline">{t("quest.guide") || "GUIDE"}</span>
                       </button>
                       <div className="text-3xl sm:text-4xl filter drop-shadow">
                         {unit.badgeIcon}
@@ -339,7 +341,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
                         {isActive && (
                           <div className="absolute -top-11 z-20 animate-duo-bounce pointer-events-none">
                             <div className="bg-white text-slate-800 text-xs font-black px-3 py-1.5 rounded-2xl shadow-xl border-2 border-slate-200 uppercase tracking-wider flex items-center gap-1">
-                              <span>COMMENCER</span>
+                              <span>{t("quest.start") || "COMMENCER"}</span>
                               <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
                             </div>
                             <div className="w-2.5 h-2.5 bg-white border-r-2 border-b-2 border-slate-200 rotate-45 mx-auto -mt-1" />
@@ -426,15 +428,15 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
 
                       <span className="text-xs font-black mt-1.5 uppercase tracking-wide">
                         {unit.chest.claimed
-                          ? "Coffre ouvert"
+                          ? (t("quest.chestClaimed") || "Coffre ouvert")
                           : unit.chest.unlocked
-                          ? "OUVRIR (+40 💎)"
-                          : "Coffre verrouillé"}
+                          ? (t("quest.openChest") || "OUVRIR (+40 💎)")
+                          : (t("quest.chestLocked") || "Coffre verrouillé")}
                       </span>
 
                       {unit.chest.unlocked && !unit.chest.claimed && (
                         <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md animate-bounce">
-                          PRÊT !
+                          {t("quest.ready") || "PRÊT !"}
                         </span>
                       )}
                     </button>
@@ -456,16 +458,16 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
             <div className="flex items-center gap-3">
               <span className="text-3xl">📚🎯</span>
               <div>
-                <h3 className="text-lg font-black">Bibliothèque des Quiz du Parcours</h3>
+                <h3 className="text-lg font-black">{t("quest.quizLibrary") || "Bibliothèque des Quiz du Parcours"}</h3>
                 <p className="text-xs text-indigo-100 mt-0.5">
-                  Choisis n'importe quel quiz ci-dessous pour valider ton étape active du parcours et remporter des étoiles ⭐ !
+                  {t("quest.librarySubtitle") || "Choisis n'importe quel quiz ci-dessous pour valider ton étape active du parcours et remporter des étoiles ⭐ !"}
                 </p>
               </div>
             </div>
             {currentActiveNode && (
               <div className="mt-3 bg-black/25 px-3 py-2 rounded-2xl flex items-center justify-between text-xs">
                 <span className="font-medium text-indigo-200">
-                  Étape active actuelle : <strong>{currentActiveNode.node.title}</strong>
+                  {t("quest.currentActiveStep") || "Étape active actuelle :"} <strong>{currentActiveNode.node.title}</strong>
                 </span>
                 <span className="font-black bg-amber-400 text-amber-950 px-2 py-0.5 rounded-full text-[10px]">
                   +{currentActiveNode.node.xpReward} XP • +{currentActiveNode.node.gemReward} 💎
@@ -482,7 +484,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
                 type="text"
                 value={quizSearch}
                 onChange={(e) => setQuizSearch(e.target.value)}
-                placeholder="Rechercher par titre, mot-clé ou continent..."
+                placeholder={t("quest.searchPlaceholder") || "Rechercher par titre, mot-clé ou continent..."}
                 className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
               />
               {quizSearch && (
@@ -663,7 +665,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
             {/* Étoiles & Récompenses */}
             <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200/80 mb-5 text-center">
               <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Étoiles</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">{t("quest.stars") || "Étoiles"}</span>
                 <div className="flex items-center justify-center gap-0.5 mt-0.5">
                   {[1, 2, 3].map((s) => (
                     <Star
@@ -679,7 +681,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               </div>
 
               <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Points d'XP</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">{t("quest.xpPoints") || "Points d'XP"}</span>
                 <p className="text-sm font-black text-emerald-600 mt-0.5 flex items-center justify-center gap-1">
                   <Sparkles className="w-3.5 h-3.5" />
                   +{selectedNode.node.xpReward} XP
@@ -687,7 +689,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               </div>
 
               <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase">TerraGems</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">{t("quest.gems") || "TerraGems"}</span>
                 <p className="text-sm font-black text-sky-600 mt-0.5">
                   💎 +{selectedNode.node.gemReward}
                 </p>
@@ -704,7 +706,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
                 <span className={`text-xs font-black uppercase tracking-wider flex items-center gap-1 ${
                   selectedNode.node.hasCustomQuiz ? "text-indigo-800" : "text-emerald-800"
                 }`}>
-                  {selectedNode.node.hasCustomQuiz ? "⚙️ QUIZ ATTRIBUÉ PAR L'ADMIN" : "⭐ DÉFI OFFICIEL RECOMMANDÉ"}
+                  {selectedNode.node.hasCustomQuiz ? (t("quest.customQuizAdmin") || "⚙️ QUIZ ATTRIBUÉ PAR L'ADMIN") : (t("quest.officialChallenge") || "⭐ DÉFI OFFICIEL RECOMMANDÉ")}
                 </span>
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                   selectedNode.node.hasCustomQuiz
@@ -719,8 +721,8 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               </h4>
               <p className="text-xs text-slate-600 mb-4 leading-relaxed">
                 {selectedNode.node.hasCustomQuiz
-                  ? "Ce questionnaire a été configuré spécifiquement par l'administration pour cette étape du parcours."
-                  : "Ce quiz a été spécialement conçu pour tester tes compétences sur cette étape géographique."}
+                  ? (t("quest.customQuizDesc") || "Ce questionnaire a été configuré spécifiquement par l'administration pour cette étape du parcours.")
+                  : (t("quest.officialChallengeDesc") || "Ce quiz a été spécialement conçu pour tester tes compétences sur cette étape géographique.")}
               </p>
 
               <button
@@ -732,8 +734,8 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               >
                 <span>
                   {selectedNode.node.status === "completed"
-                    ? "REJOUER LE QUIZ DU NIVEAU"
-                    : "LANCER LE QUIZ DU NIVEAU"}
+                    ? (t("quest.replayLevel") || "REJOUER LE QUIZ DU NIVEAU")
+                    : (t("quest.launchLevel") || "LANCER LE QUIZ DU NIVEAU")}
                 </span>
                 <ArrowRight className="w-4 h-4 stroke-[3]" />
               </button>
@@ -748,7 +750,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               >
                 <div className="flex items-center gap-2">
                   <Compass className="w-4 h-4 text-indigo-600" />
-                  <span>Ou choisir un quiz parmi tous ceux qu'on a</span>
+                  <span>{t("quest.chooseFromLibrary") || "Ou choisir un quiz parmi tous ceux qu'on a"}</span>
                 </div>
                 {showCustomQuizPicker ? (
                   <ChevronDown className="w-4 h-4 text-slate-500" />
@@ -765,7 +767,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
                       type="text"
                       value={quizSearch}
                       onChange={(e) => setQuizSearch(e.target.value)}
-                      placeholder="Chercher un quiz dans la bibliothèque..."
+                      placeholder={t("quest.searchLibrary") || "Chercher un quiz dans la bibliothèque..."}
                       className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
@@ -792,7 +794,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
                           onClick={() => handleStartLevel(selectedNode.node, quiz.id)}
                           className="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-sm active:scale-95 flex items-center gap-1"
                         >
-                          <span>Choisir</span>
+                          <span>{t("quest.choose") || "Choisir"}</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -826,7 +828,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               <span className="text-4xl">{guidebookUnit.badgeIcon}</span>
               <div>
                 <span className="text-xs font-black uppercase text-emerald-600">
-                  Guide d'étude • Unité {guidebookUnit.unitNumber}
+                  {t("quest.guidebookTitle") || "Guide d'étude"} • {t("quest.unit") || "Unité"} {guidebookUnit.unitNumber}
                 </span>
                 <h3 className="text-xl font-black text-slate-900 leading-tight">
                   {guidebookUnit.title}
@@ -862,7 +864,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               onClick={() => setGuidebookUnit(null)}
               className="w-full mt-5 py-3 btn-duo btn-duo-green text-sm"
             >
-              J'AI COMPRIS !
+              {t("quest.understood") || "J'AI COMPRIS !"}
             </button>
           </div>
         </div>
@@ -881,10 +883,10 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
             <div className="text-6xl my-2 animate-duo-bounce">🎁</div>
 
             <h3 className="text-2xl font-black text-slate-900 mb-1">
-              Trésor Débloqué !
+              {t("quest.treasureUnlocked") || "Trésor Débloqué !"}
             </h3>
             <p className="text-sm text-slate-600 mb-4">
-              Félicitations, vous avez mérité les récompenses de ce coffre d'exploration.
+              {t("quest.treasureDesc") || "Félicitations, vous avez mérité les récompenses de ce coffre d'exploration."}
             </p>
 
             <div className="flex items-center justify-center gap-4 my-4">
@@ -910,7 +912,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
               onClick={() => setChestModal(null)}
               className="w-full py-3 btn-duo btn-duo-amber text-sm font-black mt-2"
             >
-              GÉNIAL !
+              {t("quest.awesome") || "GÉNIAL !"}
             </button>
           </div>
         </div>

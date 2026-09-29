@@ -5,8 +5,9 @@ import {
   Geographies,
   Geography,
   ZoomableGroup,
+  Marker,
 } from "react-simple-maps";
-import worldMapData from "world-atlas/countries-110m.json";
+import worldMapData from "world-atlas/countries-50m.json";
 import {
   Compass,
   Search,
@@ -21,6 +22,8 @@ import {
   MapPin,
   Sparkles,
   Scale,
+  X,
+  ChevronRight,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -43,6 +46,33 @@ import {
 const GlobeComponent = lazy(() => import("react-globe.gl"));
 
 type ViewMode = "map" | "globe" | "list";
+
+function normalizeText(str: string): string {
+  return (str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+// Micro-états et petites nations insulaires visibles par repères interactifs cliquables
+const MICROSTATES: Array<{ iso3: string; name: string }> = [
+  { iso3: "MCO", name: "Monaco" },
+  { iso3: "VAT", name: "Vatican" },
+  { iso3: "SMR", name: "Saint-Marin" },
+  { iso3: "LIE", name: "Liechtenstein" },
+  { iso3: "AND", name: "Andorre" },
+  { iso3: "MLT", name: "Malte" },
+  { iso3: "SGP", name: "Singapour" },
+  { iso3: "BHR", name: "Bahreïn" },
+  { iso3: "BRN", name: "Brunéi" },
+  { iso3: "STP", name: "Sao Tomé-et-Principe" },
+  { iso3: "SYC", name: "Seychelles" },
+  { iso3: "MDV", name: "Maldives" },
+  { iso3: "MUS", name: "Maurice" },
+  { iso3: "CPV", name: "Cap-Vert" },
+  { iso3: "BRB", name: "Barbade" },
+];
 
 const CONTINENT_CENTERS: Record<string, { center: [number, number]; zoom: number }> = {
   all: { center: [0, 20], zoom: 1 },
@@ -94,39 +124,132 @@ export function AtlasPage() {
     return getAllAtlasCountries(language);
   }, [language]);
 
-  // Index rapide par numericCode, iso3 et nom pour react-simple-maps
+  // Index rapide par numericCode, iso3, iso2 et nom pour react-simple-maps
   const countryLookup = useMemo(() => {
     const map = new Map<string, AtlasCountry>();
     for (const c of allCountries) {
       if (c.numericCode) {
         // Enlever les zéros initiaux éventuels pour matcher TopoJSON (ex: "076" -> "76")
         map.set(String(Number(c.numericCode)), c);
+        map.set(c.numericCode, c);
       }
       map.set(c.iso3.toUpperCase(), c);
+      if (c.iso2) map.set(c.iso2.toUpperCase(), c);
       map.set(c.name.toLowerCase(), c);
+      map.set(normalizeText(c.name), c);
+      if (c.officialName) {
+        map.set(c.officialName.toLowerCase(), c);
+        map.set(normalizeText(c.officialName), c);
+      }
     }
     return map;
   }, [allCountries]);
 
-  // Filtrage selon continent et recherche
+  const normQuery = useMemo(() => normalizeText(searchQuery), [searchQuery]);
+  const isSearching = normQuery.length > 0;
+
+  // Filtrage selon continent et recherche (insensible aux accents et à la casse)
   const filteredCountries = useMemo(() => {
+    if (!isSearching) {
+      if (selectedContinent === "all") return allCountries;
+      return allCountries.filter((c) => c.continent === selectedContinent);
+    }
+
     return allCountries.filter((country) => {
-      const matchContinent =
-        selectedContinent === "all" || country.continent === selectedContinent;
+      // Si la recherche fait au moins 2 lettres, recherche globale mondiale (ne bloque pas si l'utilisateur a cliqué un continent)
+      if (normQuery.length < 2 && selectedContinent !== "all") {
+        if (country.continent !== selectedContinent) return false;
+      }
 
-      if (!matchContinent) return false;
+      const nName = normalizeText(country.name);
+      const nOfficial = normalizeText(country.officialName);
+      const nCapital = normalizeText(country.capital);
+      const nIso3 = normalizeText(country.iso3);
+      const nIso2 = normalizeText(country.iso2);
 
-      if (!searchQuery.trim()) return true;
-
-      const q = searchQuery.toLowerCase().trim();
       return (
-        country.name.toLowerCase().includes(q) ||
-        country.capital.toLowerCase().includes(q) ||
-        country.iso3.toLowerCase().includes(q) ||
-        country.officialName.toLowerCase().includes(q)
+        nName.includes(normQuery) ||
+        nCapital.includes(normQuery) ||
+        nIso3 === normQuery ||
+        nIso2 === normQuery ||
+        nOfficial.includes(normQuery)
       );
     });
-  }, [allCountries, selectedContinent, searchQuery]);
+  }, [allCountries, selectedContinent, isSearching, normQuery]);
+
+  // Suggestions d'autocomplétion
+  const searchSuggestions = useMemo(() => {
+    if (!isSearching) return [];
+    return [...filteredCountries]
+      .sort((a, b) => {
+        const aStarts = normalizeText(a.name).startsWith(normQuery);
+        const bStarts = normalizeText(b.name).startsWith(normQuery);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.name.localeCompare(b.name, language);
+      })
+      .slice(0, 8);
+  }, [filteredCountries, isSearching, normQuery, language]);
+
+  // Set des codes ISO3 correspondant à la recherche pour feedback visuel direct sur la carte 2D
+  const matchingIsoSet = useMemo(() => {
+    if (!isSearching) return null;
+    return new Set(filteredCountries.map((c) => c.iso3));
+  }, [filteredCountries, isSearching]);
+
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+  const globeRef = useRef<any>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectCountry = (country: AtlasCountry) => {
+    setSelectedCountry(country);
+    setIsSearchFocused(false);
+
+    // Zoom adapté selon la taille du pays
+    let zoomLevel = 2.4;
+    if (country.areaKm2 < 1000) zoomLevel = 6;
+    else if (country.areaKm2 < 20000) zoomLevel = 5;
+    else if (country.areaKm2 < 150000) zoomLevel = 4;
+    else if (country.areaKm2 < 1500000) zoomLevel = 3;
+
+    setZoomPosition({
+      coordinates: [country.lng, country.lat],
+      zoom: zoomLevel,
+    });
+
+    // Rotation fluide du globe 3D si actif
+    if (globeRef.current?.pointOfView) {
+      globeRef.current.pointOfView(
+        { lat: country.lat, lng: country.lng, altitude: 1.8 },
+        1000
+      );
+    }
+
+    // Réinitialiser le filtre de continent si le pays est sur un autre continent
+    if (selectedContinent !== "all" && country.continent !== selectedContinent) {
+      setSelectedContinent("all");
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (searchSuggestions.length > 0) {
+        handleSelectCountry(searchSuggestions[0]);
+      }
+    } else if (e.key === "Escape") {
+      setIsSearchFocused(false);
+    }
+  };
 
   const handleContinentChange = (cont: string) => {
     setSelectedContinent(cont);
@@ -158,6 +281,8 @@ export function AtlasPage() {
     if (id !== undefined && id !== null) {
       const byNum = countryLookup.get(String(Number(id)));
       if (byNum) return byNum;
+      const byRawId = countryLookup.get(String(id));
+      if (byRawId) return byRawId;
       const byId = countryLookup.get(String(id).toUpperCase());
       if (byId) return byId;
     }
@@ -165,11 +290,11 @@ export function AtlasPage() {
     if (propName) {
       const byName = countryLookup.get(String(propName).toLowerCase());
       if (byName) return byName;
+      const byNorm = countryLookup.get(normalizeText(propName));
+      if (byNorm) return byNorm;
     }
     return null;
   };
-
-  const globeRef = useRef<any>(null);
 
   const continents = [
     { key: "all", label: t("common.all") || "Tous" },
@@ -281,23 +406,83 @@ export function AtlasPage() {
               <span className="sm:hidden">Comparer ⚖️</span>
             </button>
 
-            {/* Search Box */}
-            <div className="relative flex-1 md:w-64">
+            {/* Search Box with Autocomplete Dropdown */}
+            <div ref={searchBoxRef} className="relative flex-1 md:w-72 lg:w-80">
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("atlas.searchPlaceholder") || "Rechercher pays, capitale..."}
-                className="w-full pl-9 pr-4 py-1.5 rounded-xl text-xs sm:text-sm bg-gray-100 border border-transparent focus:border-emerald-500 focus:bg-white focus:outline-none transition-all"
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchFocused(true);
+                }}
+                onFocus={() => setIsSearchFocused(true)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder={t("atlas.searchPlaceholder") || "Rechercher pays, capitale, code..."}
+                className="w-full pl-9 pr-8 py-2 rounded-xl text-xs sm:text-sm bg-gray-100 border border-transparent focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setIsSearchFocused(false);
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-200 transition-colors"
+                  title="Effacer"
                 >
-                  ✕
+                  <X className="w-3.5 h-3.5" />
                 </button>
+              )}
+
+              {/* Autocomplete Dropdown */}
+              {isSearchFocused && isSearching && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="p-2 border-b border-gray-100 flex items-center justify-between text-[11px] font-bold text-gray-500 bg-gray-50/70">
+                    <span>{filteredCountries.length} résultat{filteredCountries.length > 1 ? "s" : ""}</span>
+                    <span className="text-[10px] text-gray-400 font-normal">↵ Entrée pour choisir</span>
+                  </div>
+
+                  {searchSuggestions.length > 0 ? (
+                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                      {searchSuggestions.map((country) => (
+                        <button
+                          key={country.iso3}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectCountry(country);
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 flex items-center justify-between hover:bg-emerald-50 transition-colors group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-2xl shrink-0 group-hover:scale-110 transition-transform">
+                              {country.flagEmoji}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-emerald-700 truncate">
+                                {country.name}
+                              </p>
+                              <p className="text-[11px] text-gray-500 flex items-center gap-1 truncate">
+                                <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+                                {country.capital} • {getLocalizedContinent(country.continent, language)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-[10px] font-mono font-bold bg-gray-100 group-hover:bg-emerald-100 text-gray-600 group-hover:text-emerald-800 px-1.5 py-0.5 rounded">
+                              {country.iso3}
+                            </span>
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-xs text-gray-500">
+                      Aucun pays trouvé pour « <span className="font-semibold">{searchQuery}</span> »
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -368,6 +553,33 @@ export function AtlasPage() {
               </div>
             )}
 
+            {/* Active Search Floating Feedback on Map */}
+            {isSearching && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-amber-500 text-white px-3.5 py-1.5 rounded-full shadow-lg border border-amber-400 flex items-center gap-2 text-xs font-bold animate-in fade-in">
+                <span>🔍 {filteredCountries.length} résultat{filteredCountries.length > 1 ? "s" : ""}</span>
+                {filteredCountries.length > 0 && filteredCountries.length <= 4 && (
+                  <div className="flex items-center gap-1">
+                    {filteredCountries.map((c) => (
+                      <button
+                        key={c.iso3}
+                        onClick={() => handleSelectCountry(c)}
+                        className="px-2 py-0.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-[11px] font-extrabold transition-colors cursor-pointer"
+                        title={`Zoomer sur ${c.name}`}
+                      >
+                        {c.flagEmoji} {c.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="ml-1 text-white/90 hover:text-white underline text-[11px] cursor-pointer"
+                >
+                  Effacer
+                </button>
+              </div>
+            )}
+
             {/* Interactive Composable Map */}
             <ComposableMap
               projection="geoEqualEarth"
@@ -391,37 +603,55 @@ export function AtlasPage() {
                       const isConquered = country
                         ? isCountryConquered(country.iso3, user?.id)
                         : false;
+                      const isMatch = matchingIsoSet
+                        ? country
+                          ? matchingIsoSet.has(country.iso3)
+                          : false
+                        : null;
 
-                      const defaultFill = fogOfWarActive
-                        ? isSelected
-                          ? "#F59E0B"
-                          : isHovered
-                          ? isConquered
-                            ? "#34D399"
-                            : "#475569"
+                      let defaultFill = "#CBD5E1";
+                      let defaultStroke = "#94A3B8";
+                      let defaultOpacity = 1;
+
+                      if (fogOfWarActive) {
+                        if (isSelected) defaultFill = "#F59E0B";
+                        else if (isMatch === true) defaultFill = "#F59E0B";
+                        else if (isMatch === false) {
+                          defaultFill = "#0F172A";
+                          defaultOpacity = 0.35;
+                        } else if (isHovered) defaultFill = isConquered ? "#34D399" : "#475569";
+                        else defaultFill = isConquered ? "#10B981" : "#1E293B";
+
+                        defaultStroke = isMatch === true
+                          ? "#D97706"
                           : isConquered
-                          ? "#10B981"
-                          : "#1E293B"
-                        : isSelected
-                        ? "#059669"
-                        : isHovered
-                        ? "#34D399"
-                        : country
-                        ? "#E2E8F0"
-                        : "#CBD5E1";
-
-                      const defaultStroke = fogOfWarActive
-                        ? isConquered
                           ? "#6EE7B7"
-                          : "#334155"
-                        : "#94A3B8";
+                          : "#334155";
+                      } else {
+                        if (isSelected) defaultFill = "#059669";
+                        else if (isMatch === true) defaultFill = "#F59E0B";
+                        else if (isMatch === false) {
+                          defaultFill = "#F1F5F9";
+                          defaultOpacity = 0.35;
+                        } else if (isHovered) defaultFill = "#34D399";
+                        else if (country) defaultFill = "#E2E8F0";
+                        else defaultFill = "#CBD5E1";
+
+                        defaultStroke = isSelected
+                          ? "#047857"
+                          : isMatch === true
+                          ? "#D97706"
+                          : isMatch === false
+                          ? "#E2E8F0"
+                          : "#94A3B8";
+                      }
 
                       return (
                         <Geography
                           key={geo.rsmKey}
                           geography={geo}
                           onClick={() => {
-                            if (country) setSelectedCountry(country);
+                            if (country) handleSelectCountry(country);
                           }}
                           onMouseEnter={() => {
                             if (country) setHoveredCountry(country);
@@ -433,13 +663,16 @@ export function AtlasPage() {
                             default: {
                               fill: defaultFill,
                               stroke: defaultStroke,
-                              strokeWidth: fogOfWarActive && isConquered ? 0.6 : 0.4,
+                              strokeWidth: isSelected || isMatch === true ? 1.2 : fogOfWarActive && isConquered ? 0.6 : 0.4,
+                              opacity: defaultOpacity,
                               outline: "none",
                               transition: "all 150ms ease",
                               cursor: country ? "pointer" : "default",
                             },
                             hover: {
-                              fill: fogOfWarActive
+                              fill: isMatch === true
+                                ? "#D97706"
+                                : fogOfWarActive
                                 ? isConquered
                                   ? "#34D399"
                                   : "#64748B"
@@ -459,6 +692,35 @@ export function AtlasPage() {
                     })
                   }
                 </Geographies>
+
+                {/* Repères pour micro-états et petites îles */}
+                {MICROSTATES.map((micro) => {
+                  const country = countryLookup.get(micro.iso3);
+                  if (!country || !country.lng || !country.lat) return null;
+                  const isSelected = selectedCountry?.iso3 === country.iso3;
+                  const isMatch = matchingIsoSet ? matchingIsoSet.has(country.iso3) : null;
+                  if (matchingIsoSet && isMatch === false) return null;
+
+                  const markerRadius = Math.max(3, 4.5 / Math.sqrt(zoomPosition.zoom));
+
+                  return (
+                    <Marker
+                      key={`micro-${country.iso3}`}
+                      coordinates={[country.lng, country.lat]}
+                      onClick={() => handleSelectCountry(country)}
+                      onMouseEnter={() => setHoveredCountry(country)}
+                      onMouseLeave={() => setHoveredCountry(null)}
+                      className="cursor-pointer"
+                    >
+                      <circle
+                        r={markerRadius + 1.2}
+                        fill={isSelected ? "#059669" : isMatch === true ? "#F59E0B" : "#10B981"}
+                        stroke="#FFFFFF"
+                        strokeWidth={1.2}
+                      />
+                    </Marker>
+                  );
+                })}
               </ZoomableGroup>
             </ComposableMap>
 
@@ -522,15 +784,15 @@ export function AtlasPage() {
                 pointLat={(d: any) => d.lat}
                 pointLng={(d: any) => d.lng}
                 pointAltitude={0.06}
-                pointRadius={0.7}
-                pointColor={() => "#10B981"}
+                pointRadius={(d: any) => (matchingIsoSet && matchingIsoSet.has(d.iso3) ? 1.2 : 0.7)}
+                pointColor={(d: any) => (matchingIsoSet && matchingIsoSet.has(d.iso3) ? "#F59E0B" : "#10B981")}
                 pointLabel={(d: any) =>
                   `<div style="background: rgba(15,23,42,0.9); color: #fff; padding: 6px 10px; border-radius: 8px; font-family: sans-serif; font-size: 12px; border: 1px solid #10B981;">
                     <strong>${d.flagEmoji} ${d.name}</strong><br/>
                     <span style="color: #94A3B8;">📍 ${d.capital}</span>
                   </div>`
                 }
-                onPointClick={(d: any) => setSelectedCountry(d as AtlasCountry)}
+                onPointClick={(d: any) => handleSelectCountry(d as AtlasCountry)}
               />
             </div>
             </Suspense>
@@ -553,7 +815,7 @@ export function AtlasPage() {
               {filteredCountries.map((c) => (
                 <div
                   key={c.iso3}
-                  onClick={() => setSelectedCountry(c)}
+                  onClick={() => handleSelectCountry(c)}
                   className="p-4 rounded-2xl bg-white hover:bg-emerald-50/50 border border-gray-200 hover:border-emerald-300 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">

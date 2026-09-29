@@ -64,6 +64,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchProfile]);
 
+  useEffect(() => {
+    const handleProfileUpdated = (e: Event) => {
+      const ce = e as CustomEvent<{ userId?: string }>;
+      if (!ce.detail?.userId || ce.detail.userId === user?.id) {
+        refreshProfile();
+      }
+    };
+    window.addEventListener("terracoast:profile_updated", handleProfileUpdated);
+    return () => {
+      window.removeEventListener("terracoast:profile_updated", handleProfileUpdated);
+    };
+  }, [user?.id, refreshProfile]);
+
   const refreshMfaStatus = useCallback(async () => {
     try {
       const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();

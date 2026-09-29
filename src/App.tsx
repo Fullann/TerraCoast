@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider, useNotifications } from "./contexts/NotificationContext";
-import { LanguageProvider } from "./contexts/LanguageContext";
+import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 import { AuthLayout } from "./components/auth/AuthLayout";
@@ -74,6 +74,7 @@ const HomepageTestimonialsManagementPage = lazyWithRetry(() => import("./compone
 const PathManagementPage = lazyWithRetry(() => import("./components/admin/PathManagementPage").then(m => ({ default: m.PathManagementPage })));
 const CountryTrackingPage = lazyWithRetry(() => import("./components/admin/CountryTrackingPage").then(m => ({ default: m.CountryTrackingPage })));
 const SiteConfigPage = lazyWithRetry(() => import("./components/admin/SiteConfigPage").then(m => ({ default: m.SiteConfigPage })));
+const GeoDetectiveManagementPage = lazyWithRetry(() => import("./components/admin/GeoDetectiveManagementPage").then(m => ({ default: m.GeoDetectiveManagementPage })));
 
 // Loader affiché pendant le chargement des pages lazy
 function PageLoader() {
@@ -96,8 +97,17 @@ function Lazy({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname]);
+  return null;
+}
+
 function AppContent() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { setNavigationCallback } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
@@ -117,6 +127,7 @@ function AppContent() {
   return (
     // PAS de Suspense global ici - chaque route lazy a le sien
     <ErrorBoundary>
+      <ScrollToTop />
       <ToastContainer />
       <OfflineIndicator />
       <ConfettiContainer />
@@ -128,7 +139,11 @@ function AppContent() {
 
       <Route path="/login" element={!user ? (
         <PageTransition>
-          <AuthLayout activeTab="login" title="Connexion à TerraCoast" subtitle="Accédez à vos conquêtes, vos ligues et vos duels">
+          <AuthLayout
+            activeTab="login"
+            title={t("auth.loginTitle") || "Connexion à TerraCoast"}
+            subtitle={t("auth.loginSubtitle") || "Accédez à vos conquêtes, vos ligues et vos duels"}
+          >
             <LoginForm onSwitchToRegister={() => navigate("/register")} />
           </AuthLayout>
         </PageTransition>
@@ -136,7 +151,11 @@ function AppContent() {
 
       <Route path="/register" element={!user ? (
         <PageTransition>
-          <AuthLayout activeTab="register" title="Rejoindre l'Aventure" subtitle="Créez votre profil d'explorateur et recevez 500 XP offerts">
+          <AuthLayout
+            activeTab="register"
+            title={t("auth.registerTitle") || "Rejoindre l'Aventure"}
+            subtitle={t("auth.registerSubtitle") || "Créez votre profil d'explorateur et recevez 500 XP offerts"}
+          >
             <RegisterForm
               onSwitchToLogin={() => navigate("/login")}
               onShowTerms={() => navigate("/terms")}
@@ -207,6 +226,7 @@ function AppContent() {
           <Route path="countries" element={<Lazy><CountryTrackingPage /></Lazy>} />
           <Route path="site-config" element={<Lazy><SiteConfigPage /></Lazy>} />
           <Route path="path" element={<Lazy><PathManagementPage /></Lazy>} />
+          <Route path="geodetective" element={<Lazy><GeoDetectiveManagementPage /></Lazy>} />
           <Route path="homepage-testimonials-management" element={<Lazy><HomepageTestimonialsManagementPage /></Lazy>} />
         </Route>
       </Route>

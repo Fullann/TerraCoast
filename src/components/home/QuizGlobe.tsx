@@ -71,6 +71,7 @@ export function QuizGlobe({ points, onPointClick }: QuizGlobeProps) {
     globeRef.current.controls().update();
     globeRef.current.controls().autoRotate = true;
     globeRef.current.controls().autoRotateSpeed = 0.35;
+    globeRef.current.controls().enableZoom = false;
   }, []);
 
   useEffect(() => {

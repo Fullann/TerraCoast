@@ -39,6 +39,8 @@ export interface PlayerGamificationState {
   completedNodes: Record<string, { stars: number; completedAt: number }>;
   streakFreezes: number;
   doubleXpUntil?: number | null;
+  xp?: number;
+  level?: number;
   inventory: {
     themes: string[];
     avatarFrames: string[];
@@ -63,17 +65,7 @@ export const SHOP_CATALOG: ShopItem[] = [
     details: "S'active automatiquement si tu oublies de jouer. Évite de perdre ta flamme !",
     previewGradient: "from-sky-500/20 to-blue-500/20 border-sky-400/40",
   },
-  {
-    id: "refill_lives",
-    name: "Recharge de Cœurs ❤️",
-    category: "consumable",
-    priceGems: 100,
-    icon: "❤️",
-    badge: "Plein d'Énergie",
-    description: "Restaure immédiatement tes 5 vies.",
-    details: "Plus besoin d'attendre 20 minutes par vie : reprends ta partie sans interruption !",
-    previewGradient: "from-rose-500/20 to-red-500/20 border-rose-400/40",
-  },
+
   {
     id: "double_xp_15m",
     name: "Boost Double XP (15 min) ⚡",
@@ -321,6 +313,8 @@ export function getPlayerGamificationState(userId?: string): PlayerGamificationS
     claimedChests: [],
     completedNodes: {},
     streakFreezes: 0,
+    xp: 0,
+    level: 1,
     inventory: {
       themes: ["default"],
       avatarFrames: ["none"],
@@ -450,6 +444,15 @@ export interface AdminGrantParams {
   fullRefill?: boolean;
   streakFreezesDelta?: number;
   setStreakFreezes?: number;
+  xpDelta?: number;
+  setXp?: number;
+}
+
+/**
+ * Calcule le niveau du joueur à partir de ses points d'XP (100 XP / niveau)
+ */
+export function calculateLevelForXp(xp: number = 0): number {
+  return Math.max(1, Math.floor(Math.max(0, xp) / 100) + 1);
 }
 
 /**
@@ -485,6 +488,14 @@ export function adminGrantResources(
     state.gems = Math.max(0, Math.floor(params.setGems));
   } else if (typeof params.gemsDelta === "number") {
     state.gems = Math.max(0, state.gems + Math.floor(params.gemsDelta));
+  }
+
+  if (typeof params.setXp === "number") {
+    state.xp = Math.max(0, Math.floor(params.setXp));
+    state.level = calculateLevelForXp(state.xp);
+  } else if (typeof params.xpDelta === "number") {
+    state.xp = Math.max(0, (state.xp || 0) + Math.floor(params.xpDelta));
+    state.level = calculateLevelForXp(state.xp);
   }
 
   if (typeof params.setStreakFreezes === "number") {

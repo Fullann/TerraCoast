@@ -15,14 +15,21 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
-  const [language, setLanguageState] = useState<Language>('fr');
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = typeof localStorage !== 'undefined' ? (localStorage.getItem('terracost_lang') as Language) : null;
+    return saved || 'fr';
+  });
   const [showAllLanguages, setShowAllLanguagesState] = useState(false);
-  const [, setLoadedVersion] = useState(0);
+  const [loadedVersion, setLoadedVersion] = useState(0);
 
   useEffect(() => {
-    const lang = profile ? ((profile.language as Language) || 'fr') : detectUserLanguage();
+    const saved = typeof localStorage !== 'undefined' ? (localStorage.getItem('terracost_lang') as Language) : null;
+    const lang = profile ? ((profile.language as Language) || saved || 'fr') : (saved || detectUserLanguage());
     setLanguageState(lang);
     document.documentElement.lang = lang;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('terracost_lang', lang);
+    }
     if (profile) {
       setShowAllLanguagesState(profile.show_all_languages || false);
     }
@@ -34,6 +41,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLanguage = useCallback(async (lang: Language) => {
     setLanguageState(lang);
     document.documentElement.lang = lang;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('terracost_lang', lang);
+    }
     await loadLanguage(lang);
     setLoadedVersion((v) => v + 1);
     if (profile) {
@@ -54,11 +64,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [profile]);
 
-  const t = useCallback((key: string) => translate(key, language), [language]);
+  const t = useCallback((key: string) => translate(key, language), [language, loadedVersion]);
 
   const value = useMemo(
     () => ({ language, setLanguage, t, showAllLanguages, setShowAllLanguages }),
-    [language, setLanguage, t, showAllLanguages, setShowAllLanguages]
+    [language, setLanguage, t, showAllLanguages, setShowAllLanguages, loadedVersion]
   );
 
   return (

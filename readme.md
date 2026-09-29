@@ -26,20 +26,28 @@ Le projet est une **SPA React moderne** connectée à **Supabase** (Authentifica
 
 ### 🧠 1. Quiz & Parcours d'Apprentissage
 - **Création & Édition de Quiz** : éditeur visuel complet avec support d'images, de questions QCM, Vrai/Faux, texte libre, puzzles sur carte, classements Top 10 et multi-champs (nom, capitale, clic carte).
-- **Parcours Pédagogique (Quêtes)** : progression pas à pas avec déblocage de nœuds, étoiles et révision des erreurs.
+- **Parcours Pédagogique (Quêtes)** : progression pas à pas avec déblocage de nœuds, étoiles et révision immédiate des erreurs.
 - **Mode Entraînement Zen** : pratique sans chronomètre ni pression pour ancrer les connaissances.
 - **Répétition Espacée (SRS / Leitner)** : système de flashcards 3D en 5 boîtes pour la mémorisation durable.
 
-### 🎮 2. Hub des Jeux Géographiques (`/games`)
-- **Geo Detective** : analyse d'images satellites haute résolution et repérage précis sur mini-carte zoomable.
-- **Chrono Rush** : survie contre la montre de 45 secondes avec multiplicateurs de combos.
+### 🌟 2. Pokédex Géographique & Conquête Mondiale (`/conquest`)
+- **Collection de Cartes TCG Holographiques** : 250 pays et territoires à conquérir avec 4 raretés (🌟 Légendaire, 🏛️ Épique, 🏰 Rare, 📍 Commune).
+- **Condition de Capture Équitable** : validation automatique d'un pays dès qu'un joueur atteint le seuil requis (≥ 80% de précision par défaut, configurable dans le panneau admin) lors d'un quiz, défi quotidien ou duel.
+- **Brouillard de Guerre Interactif (*Fog of War*)** : le globe commence dans la pénombre sombre ; chaque pays conquis s'illumine en vert émeraude ou lueur dorée sur le planisphère vectoriel.
+- **Anatomie de Carte Complète** : monument emblématique illustré avec récit historique, anecdote culturelle insolite (*fun fact*), fiche démographique et certificat horodaté d'explorateur.
+- **Album & Jauges Continentales** : progression par continent, filtres par rareté et mode masque mystère.
+
+### 🎮 3. Hub des Jeux Géographiques (`/games`)
+- **Geo Detective** : identification de lieux précis à partir de photos satellites et terrestres avec mini-carte zoomable haute précision et outil d'administration pour téléverser et modérer les clichés.
+- **Chrono Rush** : survie contre la montre de 45 secondes avec multiplicateurs de combos et bonus de temps.
 - **Silhouette Mystère** : devine le pays uniquement par sa forme vectorielle avec indices progressifs et distance géodésique.
 - **Higher or Lower** : duel de cartes comparant population ou superficie.
 - **Map Blitz** : course d'identification rapide de territoires sur carte.
 - **Physical Geo** : identification des reliefs, fleuves, montagnes et déserts.
-- **Travle** : relie deux pays frontière par frontière avec le moins de détours possible.
+- **Travle** : relie deux pays frontière par frontière avec le moins de détours possible (algorithme BFS).
+- **Radio Globe 3D (`/radio-globe`)** : écoute en direct de stations webradio géolocalisées sur le globe 3D (*Radio Browser API*).
 
-### ⚔️ 3. Duels 1v1 & Matchmaking (`/duels`)
+### ⚔️ 4. Duels 1v1 & Matchmaking (`/duels`)
 - **Interface Tactile Simplifiée** : statut visuel instantané indiquant clairement à qui revient le tour de jeu (*"À toi de jouer !"* vs *"En attente de l'adversaire"*).
 - **Matchmaking 1v1 Rapide** :
   - **Mode Classé 🏆** : calcul d'ELO/MMR en temps réel et classement mondial.
@@ -48,28 +56,46 @@ Le projet est une **SPA React moderne** connectée à **Supabase** (Authentifica
 - **Défis entre Amis & Invitations** : envoi de défis personnalisés avec avatars et sélection de quiz.
 - **Ghost Runs 👻** : défis asynchrones partageables par lien direct ou QR code.
 
-### 👑 4. Mode Salon / Party Multijoueur (`/party`)
+### 👑 5. Mode Salon / Party Multijoueur (`/party`)
 - **Expérience type Kahoot** : l'hôte crée un salon avec code PIN à 6 chiffres et QR code.
 - **Support Écran Grand Format** : option exclusive permettant à l'hôte d'agir en tant que simple écran de projection sans participer comme joueur.
 - **Accès aux Quiz Privés de l'Hôte** : possibilité pour l'organisateur de lancer ses propres quiz créés sur mesure.
 - **Synchronisation Realtime** : questions en direct, podium animé, confettis et mode Battle Royale (élimination).
 
-### 🗺️ 5. Atlas Interactif & TrueSize (`/atlas`)
+### 🗺️ 6. Atlas Interactif & TrueSize (`/atlas`)
 - **Globe 3D & Carte 2D** : rotation fluide, thèmes de globe personnalisés et fiches pays complètes (données ONU / Banque Mondiale 2023).
+- **Recherche Prédictive Intelligente** : autocomplétion insensible aux accents et à la casse avec centrage automatique immédiat sur le pays sélectionné.
+- **Prise en Charge des Micro-États** : pastilles d'accentuation circulaires rendant cliquables et visibles les plus petits territoires (Monaco, Vatican, Saint-Marin, Nauru, Singapour, etc.).
 - **Comparateur de Pays & TrueSize Overlay** : superposition vectorielle pour comparer la taille réelle des pays sans la déformation de Mercator.
 
-### 🏆 6. Gamification, Récompenses & Boutique (`/shop`)
+### 🏆 7. Gamification & Boutique (`/shop`)
+- **Modèle d'Apprentissage Positif** : zéro restriction de vies ou de cœurs pour s'entraîner sans barrière punitive.
 - **Points d'XP, Niveaux & Rangs**.
-- **Séries Quotidiennes (Flamme / Streaks 🔥)** avec calendrier hebdomadaire et bonus d'XP progressif.
+- **Séries Quotidiennes (Flamme / Streaks 🔥)** avec calendrier hebdomadaire et bonus d'XP progressif (+10% à +50%).
 - **Boutique Cosmétique** : cadres d'avatar exclusifs, thèmes de globe 3D et titres de profil.
 - **Classements Hebdomadaires & Mensuels** : ligues compétitives et coffres de gemmes pour le Top 3 le dimanche soir à minuit.
 
-### 🛡️ 7. Administration & Modération (`/admin`)
+### 🛡️ 8. Console d'Administration v2.4 (`/admin`)
+- **Hub Central de Configuration Directe** : 18 modules classés en 4 catégories (Données & Utilisateurs, Modes de Jeux, Cartographie, Système).
+- **Gestionnaire Geo Detective Photos** : ajout de clichés avec coordonnées GPS précises, modification, suppression et prévisualisation.
+- **Équilibrage Gameplay en Direct** : configuration du seuil de conquête Pokédex, minuterie par question et économie d'XP.
 - **Tableau de Bord & Analytics** : métriques d'activité comparées J-1, J-7 et J-30 avec exports CSV.
-- **Validation des Quiz** : workflow de modération avant publication communautaire.
-- **Configuration Globale du Site** : gestion des bannières d'annonces, promotions automatiques et maintenance.
-- **Suivi de Couverture Géographique** : matrice des pays couverts par des quiz.
-- **Gestion des Utilisateurs** : avertissements, bannissements et journalisation d'audit via RPC (`log_admin_event`).
+- **Validation des Quiz & Journal d'Audit** : workflow de modération avant publication communautaire et traçabilité immuable via RPC `log_admin_event`.
+
+---
+
+## 📊 Provenance & Utilisation des Données (Data Lineage)
+
+| Type de Donnée | Source & Origine | Fichier Source Clé | Utilisations Principales |
+|---|---|---|---|
+| **Démographie & Géographie** | ONU (UNSD), Banque Mondiale 2023, GeoNames, REST Countries | [`atlasData.ts`](file:///Users/fullann/Documents/GitHub/TerraCoast/src/lib/atlasData.ts) | Atlas 2D/3D, fiches pays, comparateur TrueSize, Higher/Lower |
+| **Vecteurs & Frontières** | Natural Earth 110m & 50m, TopoJSON, SwissTopo | `ne_50m_admin_0_countries.json`, `world-atlas` | Cartes interactives, Conquête Pokédex, puzzles cartographiques |
+| **Monuments & Anecdotes** | UNESCO World Heritage, encyclopédies vérifiées | [`conquestManager.ts`](file:///Users/fullann/Documents/GitHub/TerraCoast/src/lib/conquestManager.ts) | Cartes holographiques du Pokédex (`/conquest`) |
+| **Photos & Coordonnées** | Unsplash (licence libre), Wikimedia Commons, Admin | [`geoDetectiveLocationsManager.ts`](file:///Users/fullann/Documents/GitHub/TerraCoast/src/lib/geoDetectiveLocationsManager.ts) | Jeu Geo Detective (`/games/geo-detective`) & Panneau Admin |
+| **Stations Radios Mondiales**| *Radio Browser API* (annuaire mondial communautaire) | [`radioGlobe.ts`](file:///Users/fullann/Documents/GitHub/TerraCoast/src/lib/radioGlobe.ts) | Radio Globe 3D (`/radio-globe`) & streaming audio |
+| **Comptes & Gamification** | Base de données PostgreSQL Supabase (RLS, RPC) | Table `profiles`, [`gamificationManager.ts`](file:///Users/fullann/Documents/GitHub/TerraCoast/src/lib/gamificationManager.ts) | Profil, XP, niveaux, flamme, ligues, duels, salons party |
+
+> 📖 Pour la matrice exhaustive de l'ensemble des données, consultez le guide dédié : [`docs/16-data-sources-and-usage.md`](./docs/16-data-sources-and-usage.md).
 
 ---
 
@@ -81,10 +107,10 @@ Le projet est une **SPA React moderne** connectée à **Supabase** (Authentifica
 | **Routage** | `react-router-dom` avec découpage dynamique (`lazyWithRetry`) |
 | **Backend & Données** | Supabase (PostgreSQL, Row Level Security, Triggers SQL, RPC) |
 | **Temps Réel** | Supabase Realtime Channels (Broadcast + Presence pour le mode Party) |
-| **Cartographie 2D & 3D** | `react-simple-maps`, `world-atlas`, `react-globe.gl`, `three`, TopoJSON |
+| **Cartographie 2D & 3D** | `react-simple-maps`, `world-atlas`, `react-globe.gl`, `three`, TopoJSON, Natural Earth 50m |
 | **Audio & Effets** | Synthétiseur Web Audio API natif (`src/lib/soundManager.ts`) + Canvas Confetti |
 | **Graphiques** | `recharts` |
-| **Tests** | Vitest (32 suites de tests, 205 tests unitaires passés avec succès) |
+| **Tests** | Vitest (33 suites de tests, 212 tests unitaires passés avec succès) |
 
 ---
 
@@ -95,9 +121,10 @@ src/
   components/
     admin/        # Dashboard, analytics, validation, config site, couverture pays
     atlas/        # Carte 2D, globe 3D, fiches pays, comparateur TrueSize
+    audio/        # Radio Globe 3D et lecteur de stations webradio mondiales
     auth/         # Connexion, inscription, garde de routes (AuthLayout)
     common/       # Avatar, modales, toasts, confettis, badges
-    conquest/     # Conquête territoriale
+    conquest/     # Pokédex Géographique & Conquête Mondiale (cartes TCG, fog of war)
     daily/        # Quiz du jour & classement quotidien
     duels/        # Duels 1v1, matchmaking radar, Ghost Runs asynchrones
     friends/      # Liste d'amis, demandes d'amitié, chat

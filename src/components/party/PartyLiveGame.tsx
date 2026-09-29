@@ -108,15 +108,29 @@ export const PartyLiveGame: React.FC<PartyLiveGameProps> = ({
     return () => clearInterval(interval);
   }, [questionStartTime, timeLimitSeconds, onTimeUp]);
 
-  // Options parsing
+  // Options parsing (garantit STRICTEMENT 4 options pour la grille Kahoot 2x2)
   const rawOptions = useMemo(() => {
+    let opts: string[] = [];
     if (question.options && Array.isArray(question.options) && question.options.length > 0) {
-      return question.options;
+      opts = question.options.map(String).filter((s) => s.trim().length > 0);
     }
-    if (question.question_type === "true_false") {
-      return ["Vrai", "Faux"];
+    const correct = String(question.correct_answer || "").trim();
+    if (correct && !opts.includes(correct)) {
+      opts.unshift(correct);
     }
-    return [question.correct_answer || "Option 1", "Option 2", "Option 3", "Option 4"];
+    if (opts.length < 4) {
+      const fillers = ["Option A", "Option B", "Option C", "Option D", "Autre choix", "Autre réponse"];
+      for (const f of fillers) {
+        if (opts.length >= 4) break;
+        if (!opts.includes(f) && f !== correct) opts.push(f);
+      }
+    } else if (opts.length > 4) {
+      if (opts.indexOf(correct) >= 4) {
+        opts[3] = correct;
+      }
+      opts = opts.slice(0, 4);
+    }
+    return opts;
   }, [question]);
 
   const handleSelectOption = useCallback(

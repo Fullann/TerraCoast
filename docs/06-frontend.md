@@ -32,10 +32,11 @@ L'application adopte une identité visuelle chaleureuse et ludique inspirée de 
 src/
 ├── components/
 │   ├── admin/             # Console d'administration, analytics, gestionnaires
-│   ├── atlas/             # Planisphère, globe 3D, fiches pays, comparateur TrueSize
+│   ├── atlas/             # Planisphère D3, globe 3D, recherche prédictive, micro-états, fiches pays
+│   ├── audio/             # Radio Globe 3D interactif et lecteur de stations mondiales
 │   ├── auth/              # Formulaires connexion/inscription sous AuthLayout
 │   ├── common/            # Avatar, Confetti, Toast, modales réutilisables
-│   ├── conquest/          # Conquête de territoire
+│   ├── conquest/          # Pokédex Géographique & Conquête Mondiale (cartes TCG, fog of war)
 │   ├── daily/             # Carte et modal du Quiz du Jour
 │   ├── duels/             # Page des duels, matchmaking radar, Ghost Runs
 │   ├── friends/           # Liste d'amis, requêtes, chat direct
@@ -70,4 +71,10 @@ src/
 2. **`AuthLayout.tsx`** :
    - Encapsulation des pages de connexion et d'inscription avec carte d'accueil, bénéfices de jeu et bascule fluide entre création de compte et connexion.
 3. **`AdminDashboardLayout.tsx`** :
-   - Sidebar dédiée aux administrateurs avec accès direct aux statistiques, à la validation des quiz, à la configuration générale du site, à la couverture cartographique et à la gestion des utilisateurs.
+   - Sidebar moderne v2.4 dédiée aux administrateurs avec accès direct aux 18 modules (Hub Central, Analytics, Modération, Photos Geo Detective, Équilibrage gameplay sans vies).
+
+---
+
+## 5. Provenance et Consommation des Données
+Pour une cartographie complète de l'origine de chaque donnée (démographie, polygones cartographiques, photos géolocalisées, audio) et de ses composants consommateurs dans le frontend, consultez [`16-data-sources-and-usage.md`](./16-data-sources-and-usage.md).
+

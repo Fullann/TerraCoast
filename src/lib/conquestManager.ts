@@ -1,4 +1,5 @@
 import { getAllAtlasCountries, getAtlasCountryByIso3, type AtlasCountry } from "./atlasData";
+import { getSiteConfig } from "./siteConfigManager";
 import type { Language } from "../i18n/translations";
 
 export type ConquestRarity = "common" | "rare" | "epic" | "legendary";
@@ -431,8 +432,9 @@ export function recordConqueredCountries(
     return { newlyConquered: [], totalConquered: Object.keys(getConqueredRegistry(userId)).length };
   }
 
-  // Seuls les quiz ou défis réussis avec au moins 80% de précision débloquent la conquête
-  if (accuracy < 80) {
+  // Seuls les quiz ou défis réussis avec au moins le seuil configuré (par défaut 80%) débloquent la conquête
+  const threshold = getSiteConfig()?.gameplay?.conquestAccuracyThreshold ?? 80;
+  if (accuracy < threshold) {
     return { newlyConquered: [], totalConquered: Object.keys(getConqueredRegistry(userId)).length };
   }
 

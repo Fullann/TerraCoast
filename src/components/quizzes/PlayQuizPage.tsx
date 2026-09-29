@@ -110,6 +110,8 @@ export function PlayQuizPage({
   }, [propQuizId, params.quizId, searchParams, location.state, duelId]);
 
   const {
+    isLoading,
+    loadError,
     quiz,
     questions,
     currentQuestionIndex,
@@ -141,11 +143,8 @@ export function PlayQuizPage({
     completeGame,
     syncSessionProgress,
     restartReviewMistakes,
+    restartQuiz,
     pathNodeResult,
-    showHeartRefillModal,
-    setShowHeartRefillModal,
-    handleHeartRefill,
-    handleQuitOnNoHearts,
     gamification,
   } = usePlayQuiz({
     quizId,
@@ -338,12 +337,42 @@ export function PlayQuizPage({
     }
   }, [currentQuestionIndex, questions.length, gameComplete, completeGame]);
 
-  if (!quiz || questions.length === 0) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-slate-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">{t("playQuiz.loadingQuiz")}</p>
+          <p className="text-gray-600 font-bold">{t("playQuiz.loadingQuiz") || "Chargement du quiz..."}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError || !quiz || questions.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50 p-4">
+        <div className="card-duo p-6 sm:p-8 max-w-md w-full bg-white text-center shadow-lg">
+          <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 text-3xl">
+            ⚠️
+          </div>
+          <h2 className="text-xl font-black text-slate-800 mb-2">
+            Impossible de charger le quiz
+          </h2>
+          <p className="text-sm font-semibold text-slate-500 mb-6">
+            {loadError || "Ce quiz n'est pas disponible ou ne contient aucune question pour le moment."}
+          </p>
+          <button
+            onClick={() => {
+              if (pathNodeId) {
+                navigate("/");
+              } else {
+                navigate("/quizzes");
+              }
+            }}
+            className="w-full py-3.5 px-4 btn-duo btn-duo-green font-black text-sm"
+          >
+            {pathNodeId ? "Retourner au Parcours 🗺️" : "Retour aux quiz 📚"}
+          </button>
         </div>
       </div>
     );
@@ -367,6 +396,7 @@ export function PlayQuizPage({
         isSyncing={isSyncing}
         onRetrySync={() => syncSessionProgress()}
         onReviewMistakes={restartReviewMistakes}
+        onReplayQuiz={restartQuiz}
         isDailyChallenge={searchParams.get("daily") === "true"}
         pathNodeResult={pathNodeResult}
       />
@@ -466,11 +496,8 @@ export function PlayQuizPage({
         currentQuestionIndex={currentQuestionIndex}
         totalQuestions={questions.length}
         progress={progress}
-        lives={gamification?.lives}
-        maxLives={gamification?.maxLives || 5}
         streakFreezes={gamification?.streakFreezes}
         isDoubleXp={Boolean(gamification?.doubleXpUntil && gamification.doubleXpUntil > Date.now())}
-        onRefillHearts={() => setShowHeartRefillModal(true)}
       />
 
       {/* ZONE DE CONTENU SCROLLABLE */}
@@ -786,64 +813,6 @@ export function PlayQuizPage({
         onCancel={() => setShowQuitModal(false)}
         onConfirm={confirmQuitGame}
       />
-
-      {/* 💔 MODALE LUDIQUE DE RECHARGE DE CŒURS EN PLEIN QUIZ */}
-      {showHeartRefillModal && (
-        <div
-          className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => {}}
-        >
-          <div
-            className="bg-white rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl border-4 border-slate-100 text-center relative animate-scale-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-4 border-2 border-rose-200 shadow-inner">
-              <span className="text-3xl animate-bounce">💔</span>
-            </div>
-
-            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-1">
-              Plus de cœurs !
-            </h3>
-
-            <p className="text-sm font-medium text-slate-600 mb-4 leading-relaxed">
-              Vous avez épuisé vos cœurs pour ce quiz. Voulez-vous recharger immédiatement ou attendre la régénération ?
-            </p>
-
-            <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3.5 mb-5 text-left shadow-xs">
-              <div className="flex items-center justify-between text-xs font-black text-slate-700 mb-1.5">
-                <span>Votre solde TerraGems</span>
-                <span className="font-mono text-sky-700 bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200">
-                  💎 {gamification.gems} Gems
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-                <span>Coût recharge 5 ❤️</span>
-                <span className="font-black text-emerald-600">100 💎</span>
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
-              <button
-                type="button"
-                onClick={handleHeartRefill}
-                className="w-full py-3.5 px-4 rounded-2xl bg-[#58cc02] hover:bg-[#61e002] active:bg-[#46a302] text-white font-black text-sm border-b-4 border-[#46a302] active:border-b-0 active:translate-y-1 transition shadow-sm cursor-pointer"
-              >
-                {gamification.gems >= 100
-                  ? "⚡ RECHARGER 5 ❤️ (100 💎)"
-                  : "⚡ RECHARGER 5 ❤️ (OFFERT)"}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleQuitOnNoHearts}
-                className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-800 font-black text-xs border-2 border-slate-200 border-b-4 hover:border-slate-300 active:border-b-0 active:translate-y-1 transition cursor-pointer"
-              >
-                ATTENDRE (+1 ❤️ / 20 MIN) ➔ RÉSULTATS
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

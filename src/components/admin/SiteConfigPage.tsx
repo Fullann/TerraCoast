@@ -4,7 +4,10 @@ import {
   Megaphone,
   Zap,
   Star,
-  Heart,
+  Trophy,
+  Timer,
+  Volume2,
+  Wrench,
   Save,
   RotateCcw,
   Sparkles,
@@ -520,61 +523,118 @@ export function SiteConfigPage() {
         </div>
       </div>
 
-      {/* ── Section 4 : Gameplay, Cœurs & Règles ── */}
+      {/* ── Section 4 : Économie de Jeu, Récompenses & Gamification ── */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
         <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-          <span className="p-2 rounded-xl bg-rose-100 text-rose-800">
-            <Heart className="w-5 h-5" />
+          <span className="p-2 rounded-xl bg-amber-100 text-amber-800">
+            <Trophy className="w-5 h-5" />
           </span>
           <div>
             <h2 className="text-lg font-black text-slate-900">
-              4. Économie de Jeu, Vies & Régénération
+              4. Économie de Jeu, Récompenses & Règles
             </h2>
             <p className="text-xs text-slate-500">
-              Ajustez la tolérance aux erreurs et le rythme de jeu pour vos utilisateurs.
+              Ajustez les gains de gemmes, les seuils d'apprentissage et le rythme des parties pour vos joueurs.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Vies Maximales par Défaut
+              💎 Gain de Gemmes par Quiz Gagné
             </label>
             <select
-              value={config.gameplay.maxLives}
+              value={config.gameplay.victoryGemsReward}
               onChange={(e) =>
-                handleChange('gameplay', { maxLives: Number(e.target.value) })
+                handleChange('gameplay', { victoryGemsReward: Number(e.target.value) })
               }
               className="w-full text-xs sm:text-sm font-bold bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800"
             >
-              <option value="3">3 Cœurs (Mode Difficile)</option>
-              <option value="5">5 Cœurs (Standard Équilibré)</option>
-              <option value="10">10 Cœurs (Tolérant)</option>
-              <option value="-1">♾️ Vies Illimitées (Événement Pédagogique)</option>
+              <option value="10">10 💎 (Économie Resserée)</option>
+              <option value="15">15 💎 (Standard Équilibré)</option>
+              <option value="25">25 💎 (Généreux)</option>
+              <option value="50">50 💎 (Festival / Événement)</option>
             </select>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Temps de Régénération d'un Cœur
+              🔥 Bonus Série Quotidienne (Streak)
             </label>
             <select
-              value={config.gameplay.heartRechargeMinutes}
+              value={config.gameplay.dailyStreakGems}
               onChange={(e) =>
-                handleChange('gameplay', { heartRechargeMinutes: Number(e.target.value) })
+                handleChange('gameplay', { dailyStreakGems: Number(e.target.value) })
               }
-              className="w-full text-xs sm:text-sm font-semibold bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800"
+              className="w-full text-xs sm:text-sm font-bold bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800"
             >
-              <option value="15">15 minutes (Rapide)</option>
-              <option value="30">30 minutes (Standard)</option>
-              <option value="60">60 minutes (Compétitif)</option>
+              <option value="15">15 💎 par jour consécutif</option>
+              <option value="25">25 💎 par jour consécutif</option>
+              <option value="50">50 💎 par jour consécutif</option>
+              <option value="100">100 💎 par jour consécutif</option>
             </select>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Thème Visuel 3D par Défaut
+              🗺️ Seuil de Conquête Pokédex
+            </label>
+            <select
+              value={config.gameplay.conquestAccuracyThreshold ?? 80}
+              onChange={(e) =>
+                handleChange('gameplay', { conquestAccuracyThreshold: Number(e.target.value) })
+              }
+              className="w-full text-xs sm:text-sm font-bold bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800"
+            >
+              <option value="70">≥ 70% de précision (Très Accessible)</option>
+              <option value="75">≥ 75% de précision (Accessible)</option>
+              <option value="80">≥ 80% de précision (Standard Maîtrise)</option>
+              <option value="85">≥ 85% de précision (Exigeant)</option>
+              <option value="90">≥ 90% de précision (Expert)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              ⏱️ Chronomètre par Question
+            </label>
+            <select
+              value={config.gameplay.quizTimerSeconds ?? 20}
+              onChange={(e) =>
+                handleChange('gameplay', { quizTimerSeconds: Number(e.target.value) })
+              }
+              className="w-full text-xs sm:text-sm font-bold bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800"
+            >
+              <option value="15">⚡ 15 secondes (Rythme Rapide)</option>
+              <option value="20">⏳ 20 secondes (Standard)</option>
+              <option value="30">🧘 30 secondes (Détendu)</option>
+              <option value="0">♾️ Pas de limite (Mode Zen)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section 5 : Ambiance Visuelle & Thèmes 3D ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+          <span className="p-2 rounded-xl bg-cyan-100 text-cyan-800">
+            <Globe className="w-5 h-5" />
+          </span>
+          <div>
+            <h2 className="text-lg font-black text-slate-900">
+              5. Ambiance Visuelle & Thèmes Cartographiques
+            </h2>
+            <p className="text-xs text-slate-500">
+              Définissez le style visuel par défaut du globe 3D et le continent mis en avant pour les nouveaux arrivants.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Thème Visuel du Globe 3D par Défaut
             </label>
             <select
               value={config.theme.defaultGlobeTheme}
@@ -583,15 +643,100 @@ export function SiteConfigPage() {
               }
               className="w-full text-xs sm:text-sm font-semibold bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800"
             >
+              <option value="satellite">🛰️ Satellite HD (Photographie spatiale)</option>
               <option value="realistic">🌍 Réaliste & Relief</option>
               <option value="neon">⚡ Néon Cyberpunk</option>
               <option value="pastel">🎨 Pastel Doux</option>
               <option value="night">🌃 Nuit & Villes Éclairées</option>
-              <option value="satellite">🛰️ Satellite HD</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Continent Mis en Avant sur la Page d'Accueil
+            </label>
+            <select
+              value={config.theme.featuredContinent}
+              onChange={(e) =>
+                handleChange('theme', { featuredContinent: e.target.value })
+              }
+              className="w-full text-xs sm:text-sm font-semibold bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800"
+            >
+              <option value="all">🌐 Monde Entier (Tous les Continents)</option>
+              <option value="Europe">🇪🇺 Europe</option>
+              <option value="Asia">🌏 Asie</option>
+              <option value="Africa">🌍 Afrique</option>
+              <option value="Americas">🌎 Amériques</option>
+              <option value="Oceania">🏝️ Océanie</option>
             </select>
           </div>
         </div>
       </div>
+
+      {/* ── Section 6 : Mode Maintenance & Disponibilité ── */}
+      <div className={`rounded-2xl border p-5 sm:p-6 shadow-sm space-y-4 transition-all ${
+        config.theme.maintenanceMode
+          ? 'bg-amber-50/70 border-amber-300'
+          : 'bg-white border-slate-200'
+      }`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <span className={`p-2 rounded-xl ${
+              config.theme.maintenanceMode ? 'bg-amber-200 text-amber-900' : 'bg-slate-100 text-slate-700'
+            }`}>
+              <Wrench className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-black text-slate-900">
+                  6. Mode Maintenance & Verrouillage Temporaire
+                </h2>
+                {config.theme.maintenanceMode && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider animate-pulse">
+                    Actif
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">
+                Affiche une page de maintenance aux visiteurs ordinaires tout en laissant l'accès aux administrateurs.
+              </p>
+            </div>
+          </div>
+
+          <label className="relative inline-flex items-center cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={config.theme.maintenanceMode}
+              onChange={(e) =>
+                handleChange('theme', { maintenanceMode: e.target.checked })
+              }
+              className="sr-only peer"
+            />
+            <div className="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+            <span className="ml-3 text-xs font-bold text-slate-700">
+              {config.theme.maintenanceMode ? 'Maintenance Activée' : 'Site Ouvert au Public'}
+            </span>
+          </label>
+        </div>
+
+        {config.theme.maintenanceMode && (
+          <div className="pt-2 animate-in fade-in">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Message d'information affiché aux utilisateurs
+            </label>
+            <textarea
+              rows={2}
+              value={config.theme.maintenanceMessage}
+              onChange={(e) =>
+                handleChange('theme', { maintenanceMessage: e.target.value })
+              }
+              className="w-full text-xs sm:text-sm bg-white border border-amber-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              placeholder="Ex: TerraCoast fait peau neuve ! Nos cartographes reviennent dans quelques minutes..."
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+

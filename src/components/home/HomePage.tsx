@@ -219,7 +219,7 @@ export function HomePage() {
             <span>👋</span>
           </h1>
           <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1">
-            Parcours d'apprentissage géographique • Progressez étape par étape !
+            {t("home.learningPathSubtitle") || "Parcours d'apprentissage géographique • Progressez étape par étape !"}
           </p>
         </div>
 
@@ -229,7 +229,7 @@ export function HomePage() {
           <div
             onClick={() => navigate("/leaderboard")}
             className="flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs font-black bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-900 border border-amber-300 cursor-pointer shadow-sm hover:border-amber-400 active:scale-95 transition-all"
-            title={`${leagueProgress.rankLabel} • ${leagueProgress.statusText} • ${leagueProgress.progressPercent}% vers ${leagueProgress.nextLeague?.name || "Palier Max"}`}
+            title={`${leagueProgress.rankLabel} • ${leagueProgress.statusText} • ${leagueProgress.progressPercent}% vers ${leagueProgress.nextLeague?.name || (t("home.maxTier") || "Palier Max")}`}
           >
             <span className="text-base">{leagueProgress.currentLeague.icon}</span>
             <div className="flex flex-col text-left leading-tight">
@@ -252,7 +252,7 @@ export function HomePage() {
             }`}
           >
             <span>🔥</span>
-            <span>{profile?.current_streak || 0} jours de série</span>
+            <span>{profile?.current_streak || 0} {t("home.streakDays") || "jours de série"}</span>
           </div>
 
           <div
@@ -260,7 +260,7 @@ export function HomePage() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer shadow-sm hover:bg-emerald-100"
           >
             <span>🗺️</span>
-            <span>{conquest.conquestPercentage}% du Monde</span>
+            <span>{conquest.conquestPercentage}% {t("home.ofTheWorld") || "du Monde"}</span>
           </div>
         </div>
       </div>
@@ -339,7 +339,7 @@ export function HomePage() {
                 <span className="text-2xl">{userLeague.icon}</span>
                 <div>
                   <div className="text-xs font-black text-slate-800">{userLeague.name}</div>
-                  <div className="text-[11px] text-slate-500 font-bold">{profile?.experience_points || 0} XP au total</div>
+                  <div className="text-[11px] text-slate-500 font-bold">{profile?.experience_points || 0} {t("home.totalXp") || "XP au total"}</div>
                 </div>
               </div>
               <button
@@ -347,7 +347,7 @@ export function HomePage() {
                 onClick={() => navigate("/leaderboard")}
                 className="text-xs font-black text-emerald-700 bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-sm active:scale-95"
               >
-                Ligues 🏆
+                {t("home.leagues") || "Ligues 🏆"}
               </button>
             </div>
 
@@ -362,7 +362,7 @@ export function HomePage() {
           <DuolingoQuestPath
             userId={profile?.id}
             onNodeStart={(node, chosenQuizId) => {
-              const targetQuizId = chosenQuizId || node.id;
+              const targetQuizId = chosenQuizId || node.assignedQuizId || node.id;
               navigate(`/quizzes/play/${targetQuizId}?pathNodeId=${node.id}`);
             }}
           />
@@ -375,7 +375,7 @@ export function HomePage() {
               className="w-full py-3.5 px-6 btn-duo btn-duo-white text-sm font-black flex items-center justify-center gap-2 shadow-sm"
             >
               <BookOpen className="w-4 h-4 text-emerald-600" />
-              <span>EXPLORER LE CATALOGUE DES 200+ QUIZ 📚</span>
+              <span>{t("home.exploreQuizzesCatalog") || "EXPLORER LE CATALOGUE DES 200+ QUIZ 📚"}</span>
             </button>
           </div>
         </div>
@@ -392,10 +392,10 @@ export function HomePage() {
           <div className={`card-duo p-5 bg-gradient-to-b ${userLeague.bgGradient}`}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-black uppercase tracking-wider text-slate-600">
-                Compétition Hebdomadaire
+                {t("home.weeklyCompetition") || "Compétition Hebdomadaire"}
               </span>
               <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white/80 shadow-sm text-slate-800">
-                Saison en cours ⚡
+                {t("home.activeSeason") || "Saison en cours ⚡"}
               </span>
             </div>
 
@@ -408,15 +408,15 @@ export function HomePage() {
                   {userLeague.name}
                 </h3>
                 <p className="text-xs font-bold text-slate-600 mt-0.5">
-                  {profile?.experience_points || 0} XP • Zone de promotion ⬆️
+                  {profile?.experience_points || 0} XP • {t("home.promotionZone") || "Zone de promotion"} ⬆️
                 </p>
               </div>
             </div>
 
             <div className="bg-white/80 rounded-2xl p-3 text-xs mb-4 border border-slate-200/60 flex items-center justify-between">
-              <span className="text-slate-600 font-bold">Prochaine ligue :</span>
+              <span className="text-slate-600 font-bold">{t("home.nextLeague") || "Prochaine ligue :"}</span>
               <span className="font-black text-purple-700">
-                {userLeague.tier < 6 ? `Ligue Supérieure (${userLeague.minXp + 500} XP)` : "Palier Maximum 👑"}
+                {userLeague.tier < 6 ? `${t("home.higherLeague") || "Ligue Supérieure"} (${userLeague.minXp + 500} XP)` : (t("home.maxTier") || "Palier Maximum 👑")}
               </span>
             </div>
 
@@ -425,7 +425,7 @@ export function HomePage() {
               onClick={() => navigate("/leaderboard")}
               className="w-full py-2.5 px-4 btn-duo btn-duo-amber text-xs font-black"
             >
-              VOIR LE CLASSEMENT DE LA LIGUE 🏆
+              {t("home.viewLeaderboard") || "VOIR LE CLASSEMENT DE LA LIGUE 🏆"}
             </button>
           </div>
 
@@ -434,10 +434,10 @@ export function HomePage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                 <span>🎯</span>
-                <span>Quêtes du Jour</span>
+                <span>{t("home.dailyQuests") || "Quêtes du Jour"}</span>
               </h3>
               <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                {isStreakPlayedToday(profile?.last_activity_date) ? "2/3" : "1/3"} Complétées
+                {isStreakPlayedToday(profile?.last_activity_date) ? "2/3" : "1/3"} {t("home.completed") || "Complétées"}
               </span>
             </div>
 
@@ -447,7 +447,7 @@ export function HomePage() {
                 <div className="text-xl shrink-0 mt-0.5">⚡</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
-                    <span>Gagner 40 XP aujourd'hui</span>
+                    <span>{t("home.questEarnXp") || "Gagner 40 XP aujourd'hui"}</span>
                     <span className="text-emerald-600 font-black">
                       {Math.min(40, stats.dailyPoints || 25)} / 40 XP
                     </span>
@@ -468,7 +468,7 @@ export function HomePage() {
                 <div className="text-xl shrink-0 mt-0.5">🗺️</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
-                    <span>Franchir 1 étape du parcours</span>
+                    <span>{t("home.questCompleteStep") || "Franchir 1 étape du parcours"}</span>
                     <span className="text-emerald-600 font-black flex items-center gap-0.5">
                       1 / 1 <CheckCircle2 className="w-3.5 h-3.5" />
                     </span>
@@ -482,7 +482,7 @@ export function HomePage() {
                 <div className="text-xl shrink-0 mt-0.5">🔥</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
-                    <span>Valider la série du jour</span>
+                    <span>{t("home.questValidateStreak") || "Valider la série du jour"}</span>
                     <span
                       className={`text-xs font-black ${
                         isStreakPlayedToday(profile?.last_activity_date)
@@ -490,7 +490,7 @@ export function HomePage() {
                           : "text-amber-600"
                       }`}
                     >
-                      {isStreakPlayedToday(profile?.last_activity_date) ? "Validée ✅" : "À faire ⏳"}
+                      {isStreakPlayedToday(profile?.last_activity_date) ? (t("home.questDone") || "Validée ✅") : (t("home.questTodo") || "À faire ⏳")}
                     </span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
@@ -514,18 +514,18 @@ export function HomePage() {
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                Pokédex Géographique
+                {t("home.geoPokedex") || "Pokédex Géographique"}
               </span>
               <span className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">
-                {conquest.conquestPercentage}% Conquis
+                {conquest.conquestPercentage}% {t("home.conquered") || "Conquis"}
               </span>
             </div>
 
             <h3 className="text-base font-black text-white group-hover:text-emerald-300 transition-colors">
-              Carte de Conquête Mondiale 🗺️
+              {t("home.worldConquestMap") || "Carte de Conquête Mondiale 🗺️"}
             </h3>
             <p className="text-xs text-slate-300 mt-1 mb-3">
-              {conquest.conqueredCount} pays explorés sur {conquest.totalCountries} • Dissipez le brouillard et complétez votre collection !
+              {conquest.conqueredCount} {t("home.conquestSubtitle") || "pays explorés sur"} {conquest.totalCountries} {t("home.conquestSubtitleEnd") || "• Dissipez le brouillard et complétez votre collection !"}
             </p>
 
             <div className="w-full bg-slate-800 rounded-full h-2.5 p-0.5 mb-4">
@@ -539,7 +539,7 @@ export function HomePage() {
               type="button"
               className="w-full py-2.5 px-4 btn-duo btn-duo-teal text-xs font-black"
             >
-              EXPLORER LA CARTE EN 3D 🧭
+              {t("home.explore3dMap") || "EXPLORER LA CARTE EN 3D 🧭"}
             </button>
           </div>
 
@@ -547,10 +547,10 @@ export function HomePage() {
           <div className="card-duo p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">
-                Arcade Rapide 🕹️
+                {t("home.quickArcade") || "Arcade Rapide 🕹️"}
               </h3>
               <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-500 text-white">
-                Nouveautés
+                {t("home.news") || "Nouveautés"}
               </span>
             </div>
 
@@ -562,7 +562,7 @@ export function HomePage() {
               >
                 <div className="text-xl mb-1">🛰️</div>
                 <div className="text-xs font-black text-slate-800">Geo-Detective</div>
-                <div className="text-[10px] text-slate-500 font-bold">Vue Satellite</div>
+                <div className="text-[10px] text-slate-500 font-bold">{t("home.satelliteView") || "Vue Satellite"}</div>
               </button>
 
               <button
@@ -572,7 +572,7 @@ export function HomePage() {
               >
                 <div className="text-xl mb-1">👤</div>
                 <div className="text-xs font-black text-slate-800">Silhouette</div>
-                <div className="text-[10px] text-slate-500 font-bold">Blind Map</div>
+                <div className="text-[10px] text-slate-500 font-bold">{t("home.blindMap") || "Blind Map"}</div>
               </button>
 
               <button
@@ -582,7 +582,7 @@ export function HomePage() {
               >
                 <div className="text-xl mb-1">⚡</div>
                 <div className="text-xs font-black text-slate-800">Chrono Rush</div>
-                <div className="text-[10px] text-slate-500 font-bold">45 secondes</div>
+                <div className="text-[10px] text-slate-500 font-bold">{t("home.seconds45") || "45 secondes"}</div>
               </button>
 
               <button
@@ -591,8 +591,8 @@ export function HomePage() {
                 className="p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-left transition-all active:scale-95"
               >
                 <div className="text-xl mb-1">⚖️</div>
-                <div className="text-xs font-black text-slate-800">Plus Grand / Petit</div>
-                <div className="text-[10px] text-slate-500 font-bold">Duels de stats</div>
+                <div className="text-xs font-black text-slate-800">{t("home.higherLower") || "Plus Grand / Petit"}</div>
+                <div className="text-[10px] text-slate-500 font-bold">{t("home.statsDuels") || "Duels de stats"}</div>
               </button>
             </div>
           </div>

@@ -43,4 +43,40 @@ describe("atlasData", () => {
     expect(chIso3?.name).toBe("Suisse");
     expect(chIso2?.iso3).toBe("CHE");
   });
+
+  it("contains microstates with valid geographic data", () => {
+    const monaco = getAtlasCountryByIso3("MCO", "fr");
+    const vatican = getAtlasCountryByIso3("VAT", "fr");
+    const sanMarino = getAtlasCountryByIso3("SMR", "fr");
+    const malta = getAtlasCountryByIso3("MLT", "fr");
+
+    expect(monaco).toBeDefined();
+    expect(monaco?.name).toBe("Monaco");
+    expect(monaco?.lat).toBeCloseTo(43.73, 1);
+
+    expect(vatican).toBeDefined();
+    expect(vatican?.capital).toBe("Vatican City");
+
+    expect(sanMarino).toBeDefined();
+    expect(malta).toBeDefined();
+  });
+
+  it("matches countries regardless of accents (e.g. bresil -> Brésil, algerie -> Algérie)", () => {
+    const countries = getAllAtlasCountries("fr");
+    const normalize = (s: string) =>
+      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+    const search = (q: string) => {
+      const nq = normalize(q);
+      return countries.filter((c) => normalize(c.name).includes(nq) || normalize(c.capital).includes(nq));
+    };
+
+    expect(search("bresil").some((c) => c.iso3 === "BRA")).toBe(true);
+    expect(search("algerie").some((c) => c.iso3 === "DZA")).toBe(true);
+    expect(search("etats-unis").some((c) => c.iso3 === "USA")).toBe(true);
+    expect(search("perou").some((c) => c.iso3 === "PER")).toBe(true);
+    expect(search("suede").some((c) => c.iso3 === "SWE")).toBe(true);
+    expect(search("senegal").some((c) => c.iso3 === "SEN")).toBe(true);
+  });
 });
+

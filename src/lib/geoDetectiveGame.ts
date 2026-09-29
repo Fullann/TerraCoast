@@ -6,6 +6,7 @@ import {
   type GeoDetectiveGameState,
   type GeoDetectiveRank,
 } from "./geoDetectiveData";
+import { getActiveGeoDetectiveLocations } from "./geoDetectiveLocationsManager";
 
 export type {
   SatelliteLocation,
@@ -174,7 +175,8 @@ export function startNewGeoDetectiveGame(
   difficulty: "all" | "easy" | "hard" = "all",
   totalRounds = 5
 ): GeoDetectiveGameState {
-  let pool = [...SATELLITE_LOCATIONS];
+  const activeLocations = getActiveGeoDetectiveLocations();
+  let pool = activeLocations.length > 0 ? [...activeLocations] : [...SATELLITE_LOCATIONS];
 
   if (difficulty === "easy") {
     pool = pool.filter((loc) => loc.difficulty === "easy");
@@ -182,9 +184,9 @@ export function startNewGeoDetectiveGame(
     pool = pool.filter((loc) => loc.difficulty === "hard" || loc.difficulty === "medium");
   }
 
-  // Si le pool filtré est trop petit, reprendre la liste complète
+  // Si le pool filtré est trop petit, reprendre la liste active complète
   if (pool.length < totalRounds) {
-    pool = [...SATELLITE_LOCATIONS];
+    pool = activeLocations.length > 0 ? [...activeLocations] : [...SATELLITE_LOCATIONS];
   }
 
   // Mélange Fisher-Yates

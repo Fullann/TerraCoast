@@ -15,18 +15,22 @@ import {
   BarChart3,
   Flame,
   Compass,
-  Heart,
+  Trophy,
+  Camera,
   Globe,
   Palette,
   Zap,
   Star,
   ArrowRight,
+  Sliders,
+  Sparkles,
 } from "lucide-react";
 import {
   getPlayerGamificationState,
   adminGrantResources,
   PlayerGamificationState,
 } from "../../lib/gamificationManager";
+import { adminUpdateUserXp } from "../../lib/queries/profileQueries";
 import { getSiteConfig, type SiteConfig } from "../../lib/siteConfigManager";
 import { fetchCountryIntelligence, type GlobalCountryIntelligence } from "../../lib/countryTrackingManager";
 import { toast } from "../common/ToastContainer";
@@ -82,7 +86,7 @@ export interface AdminPageProps {
 
 export function AdminPage({ onNavigate }: AdminPageProps = {}) {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { t } = useLanguage();
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -126,9 +130,38 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
     getPlayerGamificationState(profile?.id)
   );
   const [customGrantGems, setCustomGrantGems] = useState("");
-  const [customGrantLives, setCustomGrantLives] = useState("");
+  const [customGrantXp, setCustomGrantXp] = useState("");
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => getSiteConfig());
   const [countryIntel, setCountryIntel] = useState<GlobalCountryIntelligence | null>(null);
+
+  const handleAdminGrantXp = async (options: { xpDelta?: number; setXp?: number }) => {
+    if (!profile?.id) return;
+    try {
+      const res = await adminUpdateUserXp(profile.id, options, profile);
+      if (res.success && res.profile) {
+        playSound("success");
+        if (refreshProfile) {
+          await refreshProfile();
+        }
+        const s = getPlayerGamificationState(profile.id);
+        setAdminGamification(s);
+
+        const delta = res.xpDelta ?? 0;
+        if (options.setXp !== undefined) {
+          toast.success(`XP fixés à ${res.newXp} ⭐ (Niv. ${res.newLevel}) !`);
+        } else {
+          if (delta >= 5000) triggerConfetti();
+          toast.success(
+            `${delta >= 0 ? "+" : ""}${delta} XP ⭐ ajoutés (Total: ${res.newXp} XP, Niv. ${res.newLevel}) !`
+          );
+        }
+      } else {
+        toast.error(`Erreur: ${res.error || "Échec de l'ajustement de l'XP"}`);
+      }
+    } catch (err: any) {
+      toast.error(`Erreur inattendue: ${err.message}`);
+    }
+  };
 
   useEffect(() => {
     setAdminGamification(getPlayerGamificationState(profile?.id));
@@ -462,6 +495,7 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
       "admin": "/admin",
       "admin-analytics": "/admin/analytics",
       "path-management": "/admin/path",
+      "geodetective-management": "/admin/geodetective",
       "quiz-management": "/admin/quizzes",
       "quiz-validation": "/admin/validation",
       "geojson-maps-management": "/admin/geojson",
@@ -643,6 +677,21 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
           <p className="text-xs text-gray-500">Parcours</p>
           <p className="text-xl font-bold text-gray-900">14 étapes</p>
         </button>
+        <button
+          onClick={() => goToSection("geodetective-management", "photos geoguessr")}
+          className="bg-white rounded-xl border border-teal-200 bg-gradient-to-br from-teal-50/50 to-white p-3.5 text-left hover:shadow-md transition-shadow col-span-2 sm:col-span-4 xl:col-span-8 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl p-1.5 rounded-xl bg-teal-100 border border-teal-200">🛰️</span>
+            <div>
+              <p className="text-xs text-teal-800 font-bold uppercase tracking-wider">Mode GeoGuessr & Photos Satellites</p>
+              <p className="text-xs text-slate-500 font-medium">Gérer, ajouter, modifier ou supprimer les photos réelles, vues satellites et indices</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-xl bg-teal-600 text-white font-black text-xs shadow-xs">
+            Gérer les photos →
+          </span>
+        </button>
       </div>
 
       {/* ⚡ Outils Développeur : Gestion des Ressources (Gemmes & Cœurs) */}
@@ -655,14 +704,14 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                  <span>Console Développeur : Gemmes & Cœurs de Jeu</span>
+                  <span>Console Développeur : Ressources, Niveaux & Bonus</span>
                   <span className="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-black uppercase">
                     Admin
                   </span>
                 </h2>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
-                Attribuez-vous des ressources en un clic pour tester la boutique cosmétique, les recharges et les quiz sans limitation.
+                Attribuez-vous des ressources en un clic pour tester la boutique cosmétique, les montées de niveau et les fonctionnalités sans limitation.
               </p>
             </div>
           </div>
@@ -673,13 +722,17 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
               <span>💎</span>
               <span>{adminGamification.gems.toLocaleString()} Gems</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl font-black text-xs sm:text-sm shadow-sm">
-              <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
-              <span>{adminGamification.lives} Vies</span>
+            <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl font-black text-xs sm:text-sm shadow-sm">
+              <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+              <span>Niv. {profile?.level || adminGamification.level || 1} ({(profile?.experience_points ?? adminGamification.xp ?? 0).toLocaleString()} XP)</span>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 border border-cyan-200 text-cyan-800 rounded-xl font-black text-xs sm:text-sm shadow-sm">
               <span>🧊</span>
               <span>{adminGamification.streakFreezes || 0} Gels</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 text-purple-800 rounded-xl font-black text-xs sm:text-sm shadow-sm">
+              <span>🎨</span>
+              <span>{adminGamification.unlockedThemes?.length || 1} Thèmes</span>
             </div>
           </div>
         </div>
@@ -735,30 +788,20 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
 
             <button
               type="button"
-              onClick={() => {
-                const s = adminGrantResources(profile?.id, { fullRefill: true, setLives: 5 });
-                playSound("success");
-                toast.success("Cœurs restaurés à 5 ❤️ !");
-                setAdminGamification(s);
-              }}
-              className="py-2.5 px-3 bg-white hover:bg-rose-50 text-rose-900 font-black text-xs rounded-xl border border-rose-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+              onClick={() => handleAdminGrantXp({ xpDelta: 1000 })}
+              className="py-2.5 px-3 bg-white hover:bg-amber-50 text-amber-900 font-black text-xs rounded-xl border border-amber-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
             >
-              <span className="text-base">❤️</span>
-              <span>Plein 5 Cœurs</span>
+              <span className="text-base">⭐</span>
+              <span>+1 000 XP</span>
             </button>
 
             <button
               type="button"
-              onClick={() => {
-                const s = adminGrantResources(profile?.id, { setLives: 99 });
-                playSound("success");
-                toast.success("Mode Immortel : 99 Cœurs ❤️ attribués !");
-                setAdminGamification(s);
-              }}
-              className="py-2.5 px-3 bg-white hover:bg-purple-50 text-purple-900 font-black text-xs rounded-xl border border-purple-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
+              onClick={() => handleAdminGrantXp({ xpDelta: 5000 })}
+              className="py-2.5 px-3 bg-white hover:bg-amber-50 text-amber-900 font-black text-xs rounded-xl border border-amber-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
             >
-              <span className="text-base">♾️</span>
-              <span>99 Vies Dev</span>
+              <span className="text-base">🌟</span>
+              <span>+5 000 XP</span>
             </button>
 
             <button
@@ -777,16 +820,20 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
 
             <button
               type="button"
-              onClick={() => {
-                const s = adminGrantResources(profile?.id, { setGems: 100, setLives: 5, fullRefill: true });
+              onClick={async () => {
+                const s = adminGrantResources(profile?.id, { setGems: 100, setXp: 0 });
+                if (profile?.id) {
+                  await adminUpdateUserXp(profile.id, { setXp: 0 }, profile);
+                  if (refreshProfile) await refreshProfile();
+                }
                 playSound("click");
-                toast.success("Ressources réinitialisées (100 💎, 5 ❤️) !");
+                toast.success("Ressources réinitialisées (100 💎, 0 XP) !");
                 setAdminGamification(s);
               }}
               className="py-2.5 px-3 bg-white hover:bg-slate-100 text-slate-700 font-black text-xs rounded-xl border border-slate-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-1"
             >
               <span className="text-base">🔄</span>
-              <span>Reset 100💎/5❤️</span>
+              <span>Reset Solde</span>
             </button>
           </div>
         </div>
@@ -841,45 +888,39 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
             </div>
           </div>
 
-          {/* Custom Lives */}
+          {/* Custom XP */}
           <div className="bg-white/80 p-3 rounded-xl border border-slate-200">
             <label className="block text-xs font-black text-slate-700 mb-1.5">
-              ❤️ Ajustement Personnalisé des Cœurs
+              ⭐ Ajustement Personnalisé de l'Expérience (XP)
             </label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
-                placeholder="Nombre de cœurs (ex: 10)..."
-                value={customGrantLives}
-                onChange={(e) => setCustomGrantLives(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                placeholder="Points d'XP (ex: 2000)..."
+                value={customGrantXp}
+                onChange={(e) => setCustomGrantXp(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
               />
               <button
                 type="button"
-                onClick={() => {
-                  const val = parseInt(customGrantLives, 10);
+                onClick={async () => {
+                  const val = parseInt(customGrantXp, 10);
                   if (!isNaN(val) && val !== 0) {
-                    const s = adminGrantResources(profile?.id, { livesDelta: val });
-                    playSound("success");
-                    toast.success(`${val >= 0 ? "+" : ""}${val} ❤️ modifiés !`);
-                    setAdminGamification(s);
-                    setCustomGrantLives("");
+                    await handleAdminGrantXp({ xpDelta: val });
+                    setCustomGrantXp("");
                   }
                 }}
-                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-lg whitespace-nowrap active:scale-95 shadow-sm transition-all"
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-lg whitespace-nowrap active:scale-95 shadow-sm transition-all"
               >
                 + Ajouter
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const val = parseInt(customGrantLives, 10);
+                onClick={async () => {
+                  const val = parseInt(customGrantXp, 10);
                   if (!isNaN(val) && val >= 0) {
-                    const s = adminGrantResources(profile?.id, { setLives: val });
-                    playSound("success");
-                    toast.success(`Cœurs fixés à ${val} ❤️ !`);
-                    setAdminGamification(s);
-                    setCustomGrantLives("");
+                    await handleAdminGrantXp({ setXp: val });
+                    setCustomGrantXp("");
                   }
                 }}
                 className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-lg whitespace-nowrap active:scale-95 shadow-sm transition-all"
@@ -1033,13 +1074,11 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
               </div>
 
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                <p className="text-slate-500 font-semibold mb-1">Vies Maximales</p>
+                <p className="text-slate-500 font-semibold mb-1">Seuil Pokédex</p>
                 <div className="flex items-center gap-1.5 font-bold text-slate-800">
-                  <Heart className="w-3.5 h-3.5 text-rose-500" />
+                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
                   <span>
-                    {siteConfig.gameplay.maxLives === -1
-                      ? "Illimitées (Dev/Event)"
-                      : `${siteConfig.gameplay.maxLives} Cœurs`}
+                    ≥ {siteConfig.gameplay.conquestAccuracyThreshold ?? 80}% de précision
                   </span>
                 </div>
               </div>
@@ -1050,8 +1089,240 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
             onClick={() => goToSection("site-config", "personnalisation")}
             className="w-full mt-2 py-2.5 px-4 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-900 font-bold text-xs flex items-center justify-center gap-2 transition-colors border border-violet-200"
           >
-            <span>Modifier la bannière d'annonce & les multiplicateurs</span>
+            <span>Modifier la bannière d'annonce, les multiplicateurs & règles</span>
             <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Hub Central de Configuration & Paramétrage Direct ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100 mb-5">
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-xs">
+              <Sliders className="w-5 h-5" />
+            </span>
+            <div>
+              <h2 className="text-lg font-black text-slate-900">
+                Hub Central de Configuration
+              </h2>
+              <p className="text-xs text-slate-500">
+                Accès direct à tous les modules paramétrables de TerraCoast
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 self-start sm:self-auto">
+            ⚡ Configuration en direct
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <button
+            onClick={() => goToSection("path-management", "parcours")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-emerald-100 text-emerald-700 group-hover:scale-110 transition-transform">
+                  <Compass className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded-full">
+                  Quêtes
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-700 transition-colors">
+                Parcours Pédagogique
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Configurez les mondes, les étapes, les embranchements et les boss de progression.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Ouvrir l'éditeur</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => goToSection("geodetective-management", "geoguessr")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-teal-300 hover:bg-teal-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-teal-100 text-teal-700 group-hover:scale-110 transition-transform">
+                  <Camera className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-teal-700 bg-teal-100/60 px-2 py-0.5 rounded-full">
+                  Photos
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-teal-700 transition-colors">
+                GeoGuessr & Lieux
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Ajoutez, modifiez ou supprimez des panoramas réels avec coordonnées GPS et indices.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-teal-600 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Gérer les panoramas</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => goToSection("site-config", "personnalisation")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-violet-300 hover:bg-violet-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-violet-100 text-violet-700 group-hover:scale-110 transition-transform">
+                  <Palette className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-violet-700 bg-violet-100/60 px-2 py-0.5 rounded-full">
+                  Global
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-violet-700 transition-colors">
+                Personnalisation & Site
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Bannière d'annonce, Double XP, pays de la semaine, thèmes 3D et mode maintenance.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-violet-600 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Configurer le site</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => goToSection("geojson-maps-management", "geojson")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-amber-100 text-amber-700 group-hover:scale-110 transition-transform">
+                  <Map className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded-full">
+                  Cartes
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-amber-700 transition-colors">
+                Subdivisions GeoJSON
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Importez et prévisualisez les cartes de provinces, départements et régions.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Gérer les cartes</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => goToSection("duel-features", "duels")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-rose-300 hover:bg-rose-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-rose-100 text-rose-700 group-hover:scale-110 transition-transform">
+                  <Trophy className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 bg-rose-100/60 px-2 py-0.5 rounded-full">
+                  PvP
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-rose-700 transition-colors">
+                Duels, Kahoot & Royale
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Règles des parties multijoueurs, timer de questions et formats compétitifs.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-rose-600 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Ajuster les duels</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => goToSection("badge-management", "badges")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-yellow-300 hover:bg-yellow-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-yellow-100 text-yellow-700 group-hover:scale-110 transition-transform">
+                  <Shield className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-yellow-700 bg-yellow-100/60 px-2 py-0.5 rounded-full">
+                  Succès
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-yellow-700 transition-colors">
+                Badges & Titres
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Conditions de déblocage, récompenses en gemmes, icônes et raretés.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-yellow-700 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Éditer les succès</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => goToSection("quiz-validation", "validation")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-emerald-100 text-emerald-700 group-hover:scale-110 transition-transform">
+                  <CheckCircle2 className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded-full">
+                  Modération
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-700 transition-colors">
+                Validation des Quiz
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Inspectez, approuvez ou rejetez les quiz soumis par les utilisateurs.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Voir la file ({stats.pendingValidations})</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => goToSection("user-management", "utilisateurs")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-violet-300 hover:bg-violet-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-violet-100 text-violet-700 group-hover:scale-110 transition-transform">
+                  <Users className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-violet-700 bg-violet-100/60 px-2 py-0.5 rounded-full">
+                  Comptes
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-violet-700 transition-colors">
+                Utilisateurs & Rôles
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Gestion des droits admin/modérateur, octrois de gemmes et historique de bans.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-violet-600 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Gérer les comptes</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
           </button>
         </div>
       </div>

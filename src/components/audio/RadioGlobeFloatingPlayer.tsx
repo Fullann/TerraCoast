@@ -65,8 +65,8 @@ export const RadioGlobeFloatingPlayer: React.FC = () => {
 
   return (
     <>
-      {/* 1. Pilule Flottante Compacte (Toujours visible au premier plan) */}
-      <div className="fixed bottom-4 right-4 z-40">
+      {/* 1. Pilule Flottante Compacte (Toujours visible au premier plan, surélevée sur mobile) */}
+      <div className="fixed bottom-20 right-3 sm:bottom-4 sm:right-4 z-40">
         {!isExpanded && (
           <div
             onClick={() => setIsExpanded(true)}

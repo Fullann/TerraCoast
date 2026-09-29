@@ -303,28 +303,28 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 className="hover:text-emerald-600 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
                 <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Nouveautés 2.0</span>
+                <span>{t("landing.nav.novelties")}</span>
               </a>
               <a
                 href="#gamemodes"
                 className="hover:text-emerald-600 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
                 <Play className="w-4 h-4 text-sky-500 shrink-0" />
-                <span>9 Modes de Jeu</span>
+                <span>{t("landing.nav.gameModes")}</span>
               </a>
               <a
                 href="#pokedex"
                 className="hover:text-emerald-600 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
                 <Award className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>Pokédex & Cartes</span>
+                <span>{t("landing.nav.pokedex")}</span>
               </a>
               <a
                 href="#leagues"
                 className="hover:text-emerald-600 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
               >
                 <Trophy className="w-4 h-4 text-yellow-500 shrink-0" />
-                <span>Ligues</span>
+                <span>{t("landing.nav.leagues")}</span>
               </a>
               <button
                 type="button"
@@ -332,7 +332,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 className="hover:text-purple-600 text-purple-700 transition-colors flex items-center gap-1.5 cursor-pointer font-black whitespace-nowrap shrink-0"
               >
                 <Smartphone className="w-4 h-4 text-purple-600 shrink-0" />
-                <span>Mode Fête Mobile</span>
+                <span>{t("landing.nav.mobileParty")}</span>
               </button>
             </nav>
 
@@ -377,7 +377,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 onClick={() => navigate("/login")}
                 className="btn-duo btn-duo-white px-4 xl:px-5 py-2.5 text-xs uppercase whitespace-nowrap shrink-0"
               >
-                Connexion
+                {t("landing.nav.login")}
               </button>
 
               {/* Bouton Commencer */}
@@ -386,7 +386,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 onClick={() => navigate("/register")}
                 className="btn-duo btn-duo-green px-4 xl:px-5 py-2.5 text-xs uppercase whitespace-nowrap shrink-0"
               >
-                C'est parti ! 🚀
+                {t("landing.nav.start")}
               </button>
             </div>
 
@@ -409,7 +409,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 onClick={() => setMobileMenuOpen(false)}
                 className="block p-3 rounded-2xl bg-slate-50 text-sm font-black text-slate-800 flex items-center justify-between"
               >
-                <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-emerald-600" /> Nouveautés 2.0</span>
+                <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-emerald-600" /> {t("landing.nav.novelties")}</span>
                 <ChevronRight className="w-4 h-4 text-slate-400" />
               </a>
               <a
@@ -417,7 +417,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 onClick={() => setMobileMenuOpen(false)}
                 className="block p-3 rounded-2xl bg-slate-50 text-sm font-black text-slate-800 flex items-center justify-between"
               >
-                <span className="flex items-center gap-2"><Play className="w-4 h-4 text-sky-600" /> 9 Modes de Jeu</span>
+                <span className="flex items-center gap-2"><Play className="w-4 h-4 text-sky-600" /> {t("landing.nav.gameModes")}</span>
                 <ChevronRight className="w-4 h-4 text-slate-400" />
               </a>
               <a
@@ -425,7 +425,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 onClick={() => setMobileMenuOpen(false)}
                 className="block p-3 rounded-2xl bg-slate-50 text-sm font-black text-slate-800 flex items-center justify-between"
               >
-                <span className="flex items-center gap-2"><Award className="w-4 h-4 text-amber-600" /> Pokédex & Cartes</span>
+                <span className="flex items-center gap-2"><Award className="w-4 h-4 text-amber-600" /> {t("landing.nav.pokedex")}</span>
                 <ChevronRight className="w-4 h-4 text-slate-400" />
               </a>
               <a
@@ -433,7 +433,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 onClick={() => setMobileMenuOpen(false)}
                 className="block p-3 rounded-2xl bg-slate-50 text-sm font-black text-slate-800 flex items-center justify-between"
               >
-                <span className="flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-600" /> Ligues</span>
+                <span className="flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-600" /> {t("landing.nav.leagues")}</span>
                 <ChevronRight className="w-4 h-4 text-slate-400" />
               </a>
               <button
@@ -443,7 +443,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                 }}
                 className="w-full text-left p-3 rounded-2xl bg-purple-50 text-sm font-black text-purple-800 flex items-center justify-between border-2 border-purple-200"
               >
-                <span className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-purple-600" /> Mode Fête Mobile</span>
+                <span className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-purple-600" /> {t("landing.nav.mobileParty")}</span>
                 <ChevronRight className="w-4 h-4 text-purple-600" />
               </button>
 
@@ -452,13 +452,13 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                   onClick={() => navigate("/login")}
                   className="btn-duo btn-duo-white py-3 text-xs uppercase"
                 >
-                  Connexion
+                  {t("landing.nav.login")}
                 </button>
                 <button
                   onClick={() => navigate("/register")}
                   className="btn-duo btn-duo-green py-3 text-xs uppercase"
                 >
-                  Inscription
+                  {t("auth.signUp")}
                 </button>
               </div>
             </div>
@@ -474,30 +474,30 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
               {/* Badge Duolingo */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border-2 border-emerald-300 text-emerald-800 text-xs font-black uppercase tracking-wider">
                 <span className="text-base">🌍</span>
-                <span>La plateforme de géographie #1 pour progresser en s'amusant</span>
+                <span>{t("landing.hero.badge")}</span>
               </div>
 
               {/* Titre percutant */}
               <h1 className="text-4xl sm:text-6xl xl:text-7xl font-black text-slate-900 tracking-tight leading-[1.08]">
-                La façon gratuite, fun et efficace de{" "}
-                <span className="text-[#58cc02]">conquérir le monde</span> !
+                {t("landing.hero.titleMain")}{" "}
+                <span className="text-[#58cc02]">{t("landing.hero.titleHighlight")}</span> !
               </h1>
 
               {/* Sous-titre clair */}
               <p className="text-base sm:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-semibold">
-                Explorez le monde sous <strong className="text-slate-900">4 calques satellite 3D</strong>, collectionnez des <strong className="text-amber-600">cartes holographiques rares</strong>, domptez le mode <strong className="text-sky-600">Travle</strong> et hissez-vous au sommet des <strong className="text-[#ffc800]">Ligues Hebdomadaires</strong>.
+                {t("landing.hero.desc")}
               </p>
 
               {/* Badges de confiance */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 text-xs font-black text-slate-600 pt-1">
                 <span className="px-3.5 py-1.5 rounded-2xl bg-white border-2 border-slate-200 border-b-4 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#58cc02]" /> 100% Gratuit & Sans Pub
+                  <ShieldCheck className="w-4 h-4 text-[#58cc02]" /> {t("landing.hero.freeBadge")}
                 </span>
                 <span className="px-3.5 py-1.5 rounded-2xl bg-white border-2 border-slate-200 border-b-4 flex items-center gap-1.5">
-                  <Swords className="w-4 h-4 text-[#ffc800]" /> 9 Modes de Jeu Uniques
+                  <Swords className="w-4 h-4 text-[#ffc800]" /> {t("landing.hero.modesBadge")}
                 </span>
                 <span className="px-3.5 py-1.5 rounded-2xl bg-white border-2 border-slate-200 border-b-4 flex items-center gap-1.5">
-                  <Smartphone className="w-4 h-4 text-[#ce82ff]" /> Multijoueur Smartphone
+                  <Smartphone className="w-4 h-4 text-[#ce82ff]" /> {t("landing.hero.mobileBadge")}
                 </span>
               </div>
 
@@ -507,7 +507,7 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                   onClick={() => navigate("/register")}
                   className="btn-duo btn-duo-green w-full sm:w-auto px-8 py-4 text-base uppercase"
                 >
-                  <span>C'est parti ! 🚀</span>
+                  <span>{t("landing.nav.start")}</span>
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </button>
 
@@ -515,14 +515,14 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                   onClick={() => navigate("/login")}
                   className="btn-duo btn-duo-white w-full sm:w-auto px-7 py-4 text-base uppercase"
                 >
-                  J'ai déjà un compte
+                  {t("landing.hero.haveAccount")}
                 </button>
               </div>
 
               {/* Bonus Tag */}
               <p className="text-xs text-slate-500 font-bold flex items-center justify-center lg:justify-start gap-2 pt-1">
                 <span>🎁</span>
-                <span>Bonus de bienvenue : <strong className="text-amber-600 font-black">+500 XP et 50 Gemmes</strong> offerts à l'inscription.</span>
+                <span>{t("landing.hero.welcomeBonus")}</span>
               </p>
             </div>
 
@@ -1002,14 +1002,14 @@ export function LandingPage({ onNavigate: _onNavigate }: LandingPageProps = {}) 
                   className="btn-duo btn-duo-white w-full sm:w-auto px-8 py-4 text-base uppercase text-[#58cc02]"
                 >
                   <Sparkles className="w-5 h-5 mr-2 text-[#58cc02]" />
-                  <span>Créer mon Compte Gratuit</span>
+                  <span>{t("landing.cta.createAccount")}</span>
                 </button>
 
                 <button
                   onClick={() => navigate("/login")}
                   className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-[#46a302] hover:bg-[#3d8c02] text-white font-black text-sm uppercase transition cursor-pointer"
                 >
-                  Déjà un compte ? Se connecter
+                  {t("landing.hero.login")}
                 </button>
               </div>
             </div>

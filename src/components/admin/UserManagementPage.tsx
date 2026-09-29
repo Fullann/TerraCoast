@@ -18,7 +18,9 @@ import {
 import {
   getPlayerGamificationState,
   adminGrantResources,
+  getLeagueForXp,
 } from "../../lib/gamificationManager";
+import { adminUpdateUserXp } from "../../lib/queries/profileQueries";
 import { toast } from "../common/ToastContainer";
 import { playSound } from "../../lib/soundManager";
 import type { Database } from "../../lib/database.types";
@@ -31,11 +33,12 @@ export interface UserManagementPageProps {
 
 export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPageProps = {}) {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isGrantingXp, setIsGrantingXp] = useState(false);
   const [sortBy, setSortBy] = useState<"level" | "xp" | "created" | "games">(
     "created"
   );
@@ -51,7 +54,7 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
   const [newNickname, setNewNickname] = useState("");
   const [showGrantResourcesModal, setShowGrantResourcesModal] = useState(false);
   const [grantGemsAmount, setGrantGemsAmount] = useState("");
-  const [grantLivesAmount, setGrantLivesAmount] = useState("");
+  const [grantXpAmount, setGrantXpAmount] = useState("");
 
   useEffect(() => {
     loadUsers();
@@ -271,6 +274,51 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
     loadUsers();
   };
 
+  const handleGrantXp = async (
+    targetUser: Profile,
+    options: { xpDelta?: number; setXp?: number }
+  ) => {
+    if (!targetUser?.id) return;
+    setIsGrantingXp(true);
+    try {
+      const res = await adminUpdateUserXp(targetUser.id, options, targetUser);
+      if (!res.success || !res.profile) {
+        toast.error(`Erreur: ${res.error || "Impossible d'octroyer l'XP"}`);
+        return;
+      }
+
+      const updatedUserObj = res.profile;
+      setSelectedUser(updatedUserObj);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === targetUser.id ? { ...u, ...updatedUserObj } : u))
+      );
+      setSearchResults((prev) =>
+        prev.map((u) => (u.id === targetUser.id ? { ...u, ...updatedUserObj } : u))
+      );
+
+      if (profile?.id === targetUser.id && refreshProfile) {
+        await refreshProfile();
+      }
+
+      playSound("success");
+      const delta = res.xpDelta ?? 0;
+      if (options.setXp !== undefined) {
+        toast.success(
+          `XP de ${targetUser.pseudo} fixés à ${res.newXp} ⭐ (Niv. ${res.newLevel}) !`
+        );
+      } else {
+        toast.success(
+          `${delta >= 0 ? "+" : ""}${delta} XP octroyés à ${targetUser.pseudo} (Total: ${res.newXp} XP, Niv. ${res.newLevel}) !`
+        );
+      }
+      setGrantXpAmount("");
+    } catch (err: any) {
+      toast.error(`Erreur inattendue: ${err.message}`);
+    } finally {
+      setIsGrantingXp(false);
+    }
+  };
+
   const resetUserStats = async (userId: string, userName: string) => {
     if (!confirm(`Réinitialiser les stats (XP et score) pour ${userName} ?`))
       return;
@@ -283,12 +331,23 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
         monthly_score: 0,
         monthly_games_played: 0,
         current_streak: 0,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", userId);
 
     if (error) {
       alert(`Erreur: ${error.message}`);
       return;
+    }
+
+    adminGrantResources(userId, { setXp: 0 });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("terracoast:profile_updated", { detail: { userId, newXp: 0, newLevel: 1 } })
+      );
+    }
+    if (profile?.id === userId && refreshProfile) {
+      await refreshProfile();
     }
 
     alert(`Stats réinitialisées pour ${userName} !`);
@@ -793,38 +852,84 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
             {/* Solde actuel de l'utilisateur ciblé */}
             {(() => {
               const uState = getPlayerGamificationState(selectedUser.id);
+              const userLeague = getLeagueForXp(selectedUser.experience_points || 0);
               return (
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4 flex items-center justify-around text-center">
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-500">TerraGems 💎</p>
-                    <p className="text-base font-black text-sky-600">{uState.gems.toLocaleString()}</p>
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                  <div className="p-2 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase">Niveau & Ligue</p>
+                    <p className="text-sm font-black text-amber-600 truncate">
+                      Niv. {selectedUser.level || 1} • {userLeague.icon} {userLeague.name}
+                    </p>
                   </div>
-                  <div className="h-8 w-px bg-slate-200" />
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-500">Cœurs ❤️</p>
-                    <p className="text-base font-black text-rose-600">{uState.lives} / {uState.maxLives}</p>
+                  <div className="p-2 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase">Expérience (XP)</p>
+                    <p className="text-sm font-black text-amber-500">
+                      {(selectedUser.experience_points || 0).toLocaleString()} ⭐
+                    </p>
                   </div>
-                  <div className="h-8 w-px bg-slate-200" />
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-500">Gels 🧊</p>
-                    <p className="text-base font-black text-cyan-600">{uState.streakFreezes || 0}</p>
+                  <div className="p-2 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase">TerraGems 💎</p>
+                    <p className="text-sm font-black text-sky-600">{uState.gems.toLocaleString()}</p>
+                  </div>
+                  <div className="p-2 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase">Gels 🧊</p>
+                    <p className="text-sm font-black text-cyan-600">{uState.streakFreezes || 0}</p>
                   </div>
                 </div>
               );
             })()}
 
-            {/* Actions rapides */}
-            <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
-              Octroi Rapide en 1 Clic
+            {/* Actions rapides XP */}
+            <p className="text-xs font-black uppercase tracking-wider text-amber-700 mb-1.5 flex items-center justify-between">
+              <span>⭐ Octroi Rapide d'XP (Niveaux & Ligues)</span>
+              {isGrantingXp && <span className="text-[11px] text-amber-600 animate-pulse">Mise à jour en cours...</span>}
             </p>
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+              <button
+                type="button"
+                disabled={isGrantingXp}
+                onClick={() => handleGrantXp(selectedUser, { xpDelta: 250 })}
+                className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-black rounded-xl border border-amber-300 shadow-sm transition-all disabled:opacity-50 active:scale-95"
+              >
+                +250 XP ⭐
+              </button>
+              <button
+                type="button"
+                disabled={isGrantingXp}
+                onClick={() => handleGrantXp(selectedUser, { xpDelta: 1000 })}
+                className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-black rounded-xl border border-amber-300 shadow-sm transition-all disabled:opacity-50 active:scale-95"
+              >
+                +1 000 XP ⭐
+              </button>
+              <button
+                type="button"
+                disabled={isGrantingXp}
+                onClick={() => handleGrantXp(selectedUser, { xpDelta: 5000 })}
+                className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-black rounded-xl border border-amber-300 shadow-sm transition-all disabled:opacity-50 active:scale-95"
+              >
+                +5 000 XP 🌟
+              </button>
+              <button
+                type="button"
+                disabled={isGrantingXp}
+                onClick={() => handleGrantXp(selectedUser, { xpDelta: 10000 })}
+                className="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-black rounded-xl border border-amber-300 shadow-sm transition-all disabled:opacity-50 active:scale-95"
+              >
+                +10 000 XP 🚀
+              </button>
+            </div>
+
+            {/* Actions rapides Gems */}
+            <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
+              💎 Octroi Rapide de TerraGems & Gels
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               <button
                 type="button"
                 onClick={() => {
                   adminGrantResources(selectedUser.id, { gemsDelta: 500 });
                   playSound("success");
                   toast.success(`+500 💎 octroyées à ${selectedUser.pseudo} !`);
-                  // Force re-render
                   setSelectedUser({ ...selectedUser });
                 }}
                 className="py-2 px-2 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-black rounded-xl border border-sky-300 shadow-sm transition-all"
@@ -861,32 +966,6 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
               <button
                 type="button"
                 onClick={() => {
-                  adminGrantResources(selectedUser.id, { setLives: 5, fullRefill: true });
-                  playSound("success");
-                  toast.success(`5 Vies ❤️ restaurées pour ${selectedUser.pseudo} !`);
-                  setSelectedUser({ ...selectedUser });
-                }}
-                className="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-black rounded-xl border border-rose-300 shadow-sm transition-all"
-              >
-                ❤️ 5 Vies Max
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  adminGrantResources(selectedUser.id, { setLives: 99 });
-                  playSound("success");
-                  toast.success(`99 Vies ❤️ octroyées à ${selectedUser.pseudo} !`);
-                  setSelectedUser({ ...selectedUser });
-                }}
-                className="py-2 px-2 bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-black rounded-xl border border-purple-300 shadow-sm transition-all"
-              >
-                ♾️ 99 Vies Dev
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
                   adminGrantResources(selectedUser.id, { streakFreezesDelta: 3 });
                   playSound("success");
                   toast.success(`+3 Gels 🧊 octroyés à ${selectedUser.pseudo} !`);
@@ -900,7 +979,51 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
 
             {/* Formulaires Montants Libres */}
             <div className="space-y-3 pt-3 border-t border-slate-200 mb-5">
-              <div>
+              {/* Formulaire XP Libre */}
+              <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200">
+                <label className="block text-xs font-black text-amber-900 mb-1">
+                  ⭐ Points d'Expérience Personnalisés (XP)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder="Points d'XP (ex: 750)..."
+                    value={grantXpAmount}
+                    disabled={isGrantingXp}
+                    onChange={(e) => setGrantXpAmount(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-amber-300 outline-none focus:border-amber-500 bg-white"
+                  />
+                  <button
+                    type="button"
+                    disabled={isGrantingXp}
+                    onClick={() => {
+                      const val = parseInt(grantXpAmount, 10);
+                      if (!isNaN(val) && val !== 0) {
+                        handleGrantXp(selectedUser, { xpDelta: val });
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95 disabled:opacity-50 transition-all"
+                  >
+                    {isGrantingXp ? "..." : "+ Ajouter XP"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isGrantingXp}
+                    onClick={() => {
+                      const val = parseInt(grantXpAmount, 10);
+                      if (!isNaN(val) && val >= 0) {
+                        handleGrantXp(selectedUser, { setXp: val });
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95 disabled:opacity-50 transition-all"
+                  >
+                    {isGrantingXp ? "..." : "= Fixer XP"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Formulaire Gems Libre */}
+              <div className="bg-sky-50/40 p-2.5 rounded-xl border border-sky-200">
                 <label className="block text-xs font-black text-slate-700 mb-1">
                   💎 Gemmes Personnalisées
                 </label>
@@ -910,7 +1033,7 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
                     placeholder="Montant..."
                     value={grantGemsAmount}
                     onChange={(e) => setGrantGemsAmount(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300 outline-none focus:border-sky-500"
+                    className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300 outline-none focus:border-sky-500 bg-white"
                   />
                   <button
                     type="button"
@@ -924,7 +1047,7 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
                         setSelectedUser({ ...selectedUser });
                       }
                     }}
-                    className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95"
+                    className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95 transition-all"
                   >
                     + Ajouter
                   </button>
@@ -940,40 +1063,9 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
                         setSelectedUser({ ...selectedUser });
                       }
                     }}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95"
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95 transition-all"
                   >
                     = Fixer
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-black text-slate-700 mb-1">
-                  ❤️ Cœurs Personnalisés
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    placeholder="Nombre de vies..."
-                    value={grantLivesAmount}
-                    onChange={(e) => setGrantLivesAmount(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300 outline-none focus:border-rose-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const val = parseInt(grantLivesAmount, 10);
-                      if (!isNaN(val) && val >= 0) {
-                        adminGrantResources(selectedUser.id, { setLives: val });
-                        playSound("success");
-                        toast.success(`Cœurs fixés à ${val} ❤️ !`);
-                        setGrantLivesAmount("");
-                        setSelectedUser({ ...selectedUser });
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl whitespace-nowrap active:scale-95"
-                  >
-                    = Définir Cœurs
                   </button>
                 </div>
               </div>

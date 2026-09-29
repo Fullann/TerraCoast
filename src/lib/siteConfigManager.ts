@@ -31,10 +31,13 @@ export interface GameplayConfig {
   globalXpMultiplier: number; // 1, 1.5, 2, 3
   eventTitle: string;
   isEventActive: boolean;
-  maxLives: number; // 5, 10, -1 (unlimited)
-  heartRechargeMinutes: number; // 15, 30, 60
   dailyStreakGems: number;
   victoryGemsReward: number;
+  conquestAccuracyThreshold?: number; // 70, 75, 80, 85, 90 (default 80%)
+  quizTimerSeconds?: number; // 0 (unlimited), 15, 20, 30
+  soundEffectsEnabled?: boolean;
+  maxLives?: number; // 5, 10, -1 (unlimited) - maintained for backwards compatibility
+  heartRechargeMinutes?: number; // 15, 30, 60 - maintained for backwards compatibility
 }
 
 export interface VisualThemeConfig {
@@ -80,10 +83,13 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
     globalXpMultiplier: 1,
     eventTitle: 'Saison Géographique Standard',
     isEventActive: false,
-    maxLives: 5,
-    heartRechargeMinutes: 30,
     dailyStreakGems: 25,
     victoryGemsReward: 15,
+    conquestAccuracyThreshold: 80,
+    quizTimerSeconds: 20,
+    soundEffectsEnabled: true,
+    maxLives: 5,
+    heartRechargeMinutes: 30,
   },
   theme: {
     defaultGlobeTheme: 'realistic',
