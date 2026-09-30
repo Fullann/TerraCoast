@@ -1,27 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  Compass,
   Plus,
   Search,
-  Filter,
   Edit2,
   Trash2,
   RotateCcw,
-  ExternalLink,
   CheckCircle2,
   AlertCircle,
   Eye,
   Download,
-  Upload,
-  Layers,
-  Sparkles,
   MapPin,
-  Camera,
   Check,
   X,
-  RefreshCw,
-  Globe,
-  SlidersHorizontal,
 } from "lucide-react";
 import {
   getAllLocationsForAdmin,
@@ -99,7 +89,6 @@ export function GeoDetectiveManagementPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
   const [selectedFilter, setSelectedFilter] = useState<"all" | "custom" | "default" | "deleted">("all");
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
   // Modales
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

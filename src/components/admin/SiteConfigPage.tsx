@@ -5,17 +5,12 @@ import {
   Zap,
   Star,
   Trophy,
-  Timer,
-  Volume2,
   Wrench,
   Save,
   RotateCcw,
   Sparkles,
   ShieldAlert,
   Globe,
-  CheckCircle2,
-  Sliders,
-  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {

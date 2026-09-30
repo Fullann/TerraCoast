@@ -8,13 +8,9 @@ import {
   Download,
   RefreshCw,
   Star,
-  ExternalLink,
-  MapPin,
-  Users,
   Compass,
   CheckCircle2,
   XCircle,
-  HelpCircle,
   X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,9 +19,8 @@ import {
   exportCountryIntelligenceCsv,
   type GlobalCountryIntelligence,
   type CountryMetricData,
-  type DifficultyTier,
 } from '../../lib/countryTrackingManager';
-import { updateSiteConfig, getSiteConfig } from '../../lib/siteConfigManager';
+import { updateSiteConfig } from '../../lib/siteConfigManager';
 import { toast } from '../common/ToastContainer';
 import { playSound } from '../../lib/soundManager';
 
@@ -63,7 +58,6 @@ export function CountryTrackingPage() {
   };
 
   const handleSetFeatured = (country: CountryMetricData) => {
-    const current = getSiteConfig();
     updateSiteConfig({
       featuredCountry: {
         iso3: country.iso3,

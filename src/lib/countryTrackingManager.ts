@@ -4,7 +4,7 @@
  * vs. which countries represent geographic blind spots (traps / low recognition rate).
  */
 
-import { getAllAtlasCountries, type AtlasCountry } from './atlasData';
+import { getAllAtlasCountries } from './atlasData';
 import { supabase } from './supabase';
 import type { Language } from '../i18n/translations';
 

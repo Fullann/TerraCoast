@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -13,6 +13,15 @@ import { FederationSelectModal } from "./modals/FederationSelectModal";
 import { ProfileScoreChart } from "./ProfileScoreChart";
 import { getUserFederation, type Federation } from "../../lib/federations";
 import { getConquestStats } from "../../lib/conquestManager";
+import { toast } from "../common/ToastContainer";
+import { playSound } from "../../lib/soundManager";
+import {
+  getPlayerGamificationState,
+  equipShopItem,
+  getActiveTitleDetails,
+  getUnlockedShopTitles,
+  type PlayerGamificationState,
+} from "../../lib/gamificationManager";
 import {
   Trophy,
   Award,
@@ -28,12 +37,78 @@ import {
   Zap,
   Sparkles,
   ChevronRight,
-  Shield,
   Target,
   Swords,
   CheckCircle2,
+  ShoppingBag,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
+
+const ALL_FRAMES_CATALOG = [
+  {
+    id: "none",
+    name: "Sans cadre (Défaut)",
+    description: "Affichage classique épuré sans contour spécial.",
+    isShop: false,
+    price: 0,
+  },
+  {
+    id: "frame_flame",
+    name: "Flamme Incandescente 🔥",
+    description: "Halo incandescent de braises ardentes qui palpite autour de votre photo.",
+    isShop: true,
+    price: 250,
+  },
+  {
+    id: "frame_compass",
+    name: "Rose des Vents 🧭",
+    description: "Boussole de marin dorée en rotation continue pour explorateurs chevronnés.",
+    isShop: true,
+    price: 300,
+  },
+  {
+    id: "frame_crown",
+    name: "Couronne d'Explorateur 👑",
+    description: "Couronne d'or sertie de gemmes pour régner sur les classements.",
+    isShop: true,
+    price: 500,
+  },
+  {
+    id: "emerald",
+    name: "Émeraude Royale 💎",
+    description: "Anneau d'émeraude brillant aux éclats de pierre précieuse.",
+    isShop: false,
+    price: 0,
+  },
+  {
+    id: "gold",
+    name: "Or Solaire 🪙",
+    description: "Finition or pur avec reflet doré radieux.",
+    isShop: false,
+    price: 0,
+  },
+  {
+    id: "rainbow",
+    name: "Arc-en-ciel Prismatique 🌈",
+    description: "Dégradé pastel multicolore vibrant.",
+    isShop: false,
+    price: 0,
+  },
+  {
+    id: "ice",
+    name: "Glace Polaire 🧊",
+    description: "Cristaux givrés bleutés venus des calottes polaires.",
+    isShop: false,
+    price: 0,
+  },
+  {
+    id: "shadow",
+    name: "Ombre Mystique 🌘",
+    description: "Contour d'ombre profonde et contrastée.",
+    isShop: false,
+    price: 0,
+  },
+];
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type UserBadge = Database["public"]["Tables"]["user_badges"]["Row"] & {
@@ -100,8 +175,25 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
     getUserFederation(targetUserId)
   );
 
+  const [gamification, setGamification] = useState<PlayerGamificationState>(() =>
+    getPlayerGamificationState(targetUserId)
+  );
+
   useEffect(() => {
     setCurrentFed(getUserFederation(targetUserId));
+    setGamification(getPlayerGamificationState(targetUserId));
+  }, [targetUserId]);
+
+  useEffect(() => {
+    const handleGamificationUpdated = () => {
+      setGamification(getPlayerGamificationState(targetUserId));
+    };
+    window.addEventListener("terracost_gamification_updated", handleGamificationUpdated);
+    window.addEventListener("terracoast:profile_updated", handleGamificationUpdated);
+    return () => {
+      window.removeEventListener("terracost_gamification_updated", handleGamificationUpdated);
+      window.removeEventListener("terracoast:profile_updated", handleGamificationUpdated);
+    };
   }, [targetUserId]);
 
   const getDayText = (count?: number | null) => {
@@ -483,8 +575,89 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
   const levelProgress = getLevelProgress();
   const activeTitle = titles.find((title) => title.is_active);
 
+  const activeTitleFromShop = getActiveTitleDetails(targetUserId);
+  const displayedTitleName = activeTitleFromShop?.name || activeTitle?.titles?.name;
+  const displayedTitleIcon = activeTitleFromShop?.icon || "⭐";
+
+  const currentActiveFrame = (profile?.frame_style && profile.frame_style !== "none")
+    ? profile.frame_style
+    : (isOwnProfile ? (gamification.activeAvatarFrame || "none") : "none");
+
+  const availableFrames = useMemo(() => {
+    const unlockedSet = new Set<string>([
+      "none",
+      "emerald",
+      "gold",
+      "rainbow",
+      "ice",
+      "shadow",
+      ...(gamification.inventory?.avatarFrames || []),
+    ]);
+    if (profile?.frame_style && profile.frame_style !== "none") {
+      unlockedSet.add(profile.frame_style);
+    }
+    return ALL_FRAMES_CATALOG.map((f) => ({
+      ...f,
+      isUnlocked: unlockedSet.has(f.id),
+    }));
+  }, [gamification.inventory?.avatarFrames, profile?.frame_style]);
+
+  const unlockedShopTitles = useMemo(() => {
+    return getUnlockedShopTitles(targetUserId);
+  }, [targetUserId, gamification.inventory?.titles]);
+
+  const totalTitlesCount = titles.length + unlockedShopTitles.length;
+
+  const handleEquipFrame = async (frameId: string) => {
+    if (!isOwnProfile || !currentUserProfile) return;
+    const targetId = frameId === "none" ? "none" : frameId;
+    equipShopItem(currentUserProfile.id, "frame", targetId === "none" ? null : targetId);
+    setGamification(getPlayerGamificationState(currentUserProfile.id));
+    playSound("click");
+    toast.success(targetId === "none" ? "Cadre retiré." : "Cadre équipé avec succès ! ✨");
+    await saveFrameStyle(targetId);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("terracoast:profile_updated", { detail: { userId: currentUserProfile.id } })
+      );
+    }
+  };
+
+  const handleEquipShopTitle = async (titleId: string, titleName: string) => {
+    if (!isOwnProfile || !currentUserProfile) return;
+    const isCurrentlyActive = gamification.activeTitle === titleId || gamification.activeTitle === titleName;
+    const targetId = isCurrentlyActive ? null : titleId;
+    equipShopItem(currentUserProfile.id, "title", targetId);
+    setGamification(getPlayerGamificationState(currentUserProfile.id));
+    
+    // Désactiver aussi les titres DB pour qu'il n'y ait qu'un seul titre actif
+    if (!isCurrentlyActive) {
+      setTitles((prev) => prev.map((t) => ({ ...t, is_active: false })));
+      try {
+        await supabase
+          .from("user_titles")
+          .update({ is_active: false })
+          .eq("user_id", currentUserProfile.id);
+      } catch {
+        // no-op
+      }
+    }
+
+    playSound("click");
+    toast.success(isCurrentlyActive ? "Titre retiré." : `${titleName} activé avec succès ! ⭐`);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("terracoast:profile_updated", { detail: { userId: currentUserProfile.id } })
+      );
+    }
+  };
+
   const setActiveTitle = async (userTitleId: string) => {
     if (!isOwnProfile || !currentUserProfile) return;
+
+    // Retirer le titre de la boutique s'il y en avait un actif
+    equipShopItem(currentUserProfile.id, "title", null);
+    setGamification(getPlayerGamificationState(currentUserProfile.id));
 
     const { error: resetError } = await supabase
       .from("user_titles")
@@ -509,6 +682,14 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
           (a, b) => Number(Boolean(b.is_active)) - Number(Boolean(a.is_active))
         )
     );
+
+    playSound("click");
+    toast.success("Titre activé avec succès ! ⭐");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("terracoast:profile_updated", { detail: { userId: currentUserProfile.id } })
+      );
+    }
   };
 
   if (!profile) {
@@ -557,7 +738,7 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                 <Avatar
                   url={profile.avatar_url}
                   pseudo={profile.pseudo}
-                  frameStyle={profile.frame_style}
+                  frameStyle={currentActiveFrame}
                   size="xl"
                   className="rounded-2xl"
                 />
@@ -584,10 +765,10 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                   </h1>
 
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
-                    {activeTitle && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-100 text-purple-800 text-xs font-black border border-purple-200 shadow-sm">
-                        <Star className="w-3.5 h-3.5 fill-purple-500 text-purple-600" />
-                        {activeTitle.titles?.name}
+                    {displayedTitleName && (
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-xl bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-900 text-xs font-black border-2 border-purple-200 border-b-4 border-b-purple-400 shadow-xs animate-fade-in">
+                        <span className="text-sm leading-none">{displayedTitleIcon}</span>
+                        <span>{displayedTitleName}</span>
                       </span>
                     )}
 
@@ -918,6 +1099,118 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
           )}
         </div>
 
+        {/* 🎨 SKINS & CADRES D'AVATAR */}
+        <div className="bg-white rounded-3xl border-2 border-slate-200 border-b-4 border-b-slate-300 shadow-sm p-6 sm:p-7">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 border-2 border-amber-200 border-b-4 border-b-amber-300 flex items-center justify-center text-amber-600 shadow-sm">
+                <span>🎨</span>
+              </div>
+              <span>Skins & Cadres d'Avatar</span>
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-amber-900 bg-amber-50 border border-amber-200 px-3.5 py-1 rounded-full shadow-sm">
+                {availableFrames.filter((f) => f.isUnlocked).length} débloqué(s)
+              </span>
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/shop")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 font-black text-xs border-b-2 border-amber-600 active:translate-y-0.5 shadow-xs cursor-pointer"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>Boutique</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {availableFrames.map((frame) => {
+              const isEquipped = currentActiveFrame === frame.id || (frame.id === "none" && (!currentActiveFrame || currentActiveFrame === "none"));
+              return (
+                <div
+                  key={frame.id}
+                  className={`rounded-2xl p-4 border-2 transition-all flex flex-col justify-between ${
+                    isEquipped
+                      ? "bg-amber-50/70 border-amber-400 border-b-4 border-b-amber-500 shadow-md ring-2 ring-amber-300/40"
+                      : frame.isUnlocked
+                      ? "bg-slate-50 border-slate-200 border-b-4 border-b-slate-300 hover:border-slate-300"
+                      : "bg-slate-50/50 border-slate-200/60 opacity-80"
+                  }`}
+                >
+                  <div>
+                    {/* Header: Preview + Status */}
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="p-1 bg-white rounded-2xl shadow-xs border border-slate-100 shrink-0">
+                        <Avatar
+                          url={profile.avatar_url}
+                          pseudo={profile.pseudo}
+                          frameStyle={frame.id}
+                          size="md"
+                        />
+                      </div>
+                      {isEquipped ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Équipé
+                        </span>
+                      ) : frame.isUnlocked ? (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-200 text-slate-700">
+                          Débloqué
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-200">
+                          <span>🔒</span> {frame.price ? `${frame.price} 💎` : "Boutique"}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="font-black text-slate-900 text-sm mb-1">
+                      {frame.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium mb-3 line-clamp-2">
+                      {frame.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200/60 mt-auto">
+                    {isOwnProfile && frame.isUnlocked && !isEquipped && (
+                      <button
+                        type="button"
+                        onClick={() => handleEquipFrame(frame.id)}
+                        className="w-full py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black border-b-4 border-emerald-800 active:translate-y-0.5 transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Équiper ce skin</span>
+                      </button>
+                    )}
+                    {isOwnProfile && isEquipped && frame.id !== "none" && (
+                      <button
+                        type="button"
+                        onClick={() => handleEquipFrame("none")}
+                        className="w-full py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black border-b-4 border-slate-400 active:translate-y-0.5 transition-all shadow-xs cursor-pointer"
+                      >
+                        Retirer le cadre
+                      </button>
+                    )}
+                    {isOwnProfile && !frame.isUnlocked && (
+                      <button
+                        type="button"
+                        onClick={() => navigate("/shop")}
+                        className="w-full py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-black border-b-4 border-amber-600 active:translate-y-0.5 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span>Débloquer ({frame.price || 250} 💎)</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* ⭐ TITRES HONORIFIQUES */}
         <div className="bg-white rounded-3xl border-2 border-slate-200 border-b-4 border-b-slate-300 shadow-sm p-6 sm:p-7">
           <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
@@ -927,17 +1220,92 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
               </div>
               <span>{t("profile.titles")}</span>
             </h2>
-            <span className="text-xs font-black text-purple-800 bg-purple-50 border border-purple-200 px-3.5 py-1 rounded-full shadow-sm">
-              {titles.length} titre{titles.length > 1 ? "s" : ""}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-purple-800 bg-purple-50 border border-purple-200 px-3.5 py-1 rounded-full shadow-sm">
+                {totalTitlesCount} titre{totalTitlesCount > 1 ? "s" : ""}
+              </span>
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/shop")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-black text-xs border border-purple-300 active:translate-y-0.5 shadow-xs cursor-pointer"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Titres Boutique 💎</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 1. Titres débloqués dans la boutique */}
+            {unlockedShopTitles.map((shopTitle) => {
+              const isShopActive =
+                gamification.activeTitle === shopTitle.id ||
+                gamification.activeTitle === shopTitle.name;
+              return (
+                <div
+                  key={shopTitle.id}
+                  className={`rounded-2xl p-4 sm:p-5 border-2 transition-all flex flex-col justify-between ${
+                    isShopActive
+                      ? "bg-purple-50/90 border-purple-400 border-b-4 border-b-purple-600 shadow-md ring-2 ring-purple-300/40"
+                      : "bg-slate-50 border-slate-200 border-b-4 border-b-slate-300 hover:border-slate-300"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-1.5">
+                        <span>{shopTitle.name}</span>
+                      </h3>
+                      {isShopActive ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+                          <CheckCircle2 className="w-3 h-3" />
+                          {t("profile.active")}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-purple-100 text-purple-800 border border-purple-200">
+                          Boutique 💎
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-600 font-medium mb-3">
+                      {shopTitle.description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-2">
+                    <span className="text-[10px] font-black text-purple-600 uppercase tracking-wider">
+                      Titre Exclusif
+                    </span>
+                    {isOwnProfile && !isShopActive && (
+                      <button
+                        type="button"
+                        onClick={() => handleEquipShopTitle(shopTitle.id, shopTitle.name)}
+                        className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black border-b-4 border-purple-800 active:translate-y-0.5 transition-all shadow-sm cursor-pointer"
+                      >
+                        {t("profile.activateTitle")}
+                      </button>
+                    )}
+                    {isOwnProfile && isShopActive && (
+                      <button
+                        type="button"
+                        onClick={() => handleEquipShopTitle(shopTitle.id, shopTitle.name)}
+                        className="px-2.5 py-1 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold border-b-2 border-slate-300 cursor-pointer"
+                      >
+                        Retirer
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* 2. Titres de progression (Supabase) */}
             {titles.map((userTitle) => (
               <div
                 key={userTitle.id}
                 className={`rounded-2xl p-4 sm:p-5 border-2 transition-all flex flex-col justify-between ${
-                  userTitle.is_active
+                  userTitle.is_active && !gamification.activeTitle
                     ? "bg-purple-50/80 border-purple-300 border-b-4 border-b-purple-500 shadow-sm"
                     : "bg-slate-50 border-slate-200 border-b-4 border-b-slate-300 hover:border-slate-300"
                 }`}
@@ -947,7 +1315,7 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                     <h3 className="font-black text-slate-900 text-base flex items-center gap-1.5">
                       <span>{userTitle.titles?.name}</span>
                     </h3>
-                    {userTitle.is_active && (
+                    {userTitle.is_active && !gamification.activeTitle && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
                         <CheckCircle2 className="w-3 h-3" />
                         {t("profile.active")}
@@ -963,11 +1331,11 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                   <span className="text-[10px] font-bold text-slate-400">
                     {new Date(userTitle.earned_at).toLocaleDateString()}
                   </span>
-                  {isOwnProfile && !userTitle.is_active && (
+                  {isOwnProfile && (!userTitle.is_active || gamification.activeTitle) && (
                     <button
                       type="button"
                       onClick={() => setActiveTitle(userTitle.id)}
-                      className="px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black border-b-4 border-purple-800 active:translate-y-0.5 transition-all shadow-sm"
+                      className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black border-b-4 border-purple-800 active:translate-y-0.5 transition-all shadow-sm cursor-pointer"
                     >
                       {t("profile.activateTitle")}
                     </button>
@@ -977,15 +1345,25 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
             ))}
           </div>
 
-          {titles.length === 0 && (
+          {totalTitlesCount === 0 && (
             <div className="text-center py-12 px-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
               <div className="w-16 h-16 rounded-2xl bg-purple-50 border-2 border-purple-200 border-b-4 border-b-purple-300 flex items-center justify-center mx-auto mb-3 text-purple-400 text-3xl">
                 ⭐
               </div>
               <h4 className="text-sm font-black text-slate-700">Aucun titre honorifique pour le moment</h4>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                Atteins des paliers d'expérience et remporte des victoires pour débloquer des titres de prestige !
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto mb-4">
+                Atteins des paliers d'expérience ou obtiens des titres légendaires dans la Boutique TerraCoast !
               </p>
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/shop")}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs border-b-4 border-purple-800 shadow-sm active:translate-y-0.5 cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Explorer les Titres de la Boutique</span>
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -628,16 +628,16 @@ export function UserManagementPage({ onNavigate: _onNavigate }: UserManagementPa
                           <RotateCcw className="w-4 h-4" />
                         </button>
 
-                        {/* Bouton Octroyer Gemmes & Cœurs */}
+                        {/* Bouton Octroyer Gemmes & XP */}
                         <button
                           onClick={() => {
                             setSelectedUser(user);
                             setGrantGemsAmount("");
-                            setGrantLivesAmount("");
+                            setGrantXpAmount("");
                             setShowGrantResourcesModal(true);
                           }}
                           className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
-                          title="Octroyer Gemmes & Cœurs 💎❤️"
+                          title="Octroyer Gemmes & XP 💎⭐"
                         >
                           <Sparkles className="w-4 h-4" />
                         </button>

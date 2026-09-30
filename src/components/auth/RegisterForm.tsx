@@ -4,13 +4,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { detectUserLanguage } from '../../i18n/translations';
 import { supabase } from '../../lib/supabase';
 import {
-  UserPlus,
   User,
   Mail,
   Lock,
   Eye,
   EyeOff,
-  CheckCircle2,
   AlertCircle,
   Loader2,
   Sparkles,

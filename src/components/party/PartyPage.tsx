@@ -13,14 +13,10 @@ import {
   X,
   Sparkles,
   Clock,
-  Flame,
   ArrowRight,
-  Tv,
-  Lock,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
-import { useLanguage } from "../../contexts/LanguageContext";
 import { PATH_QUIZZES } from "../../lib/pathQuizzesData";
 import {
   type PartyPlayer,
@@ -130,15 +126,6 @@ const BUILTIN_PARTY_QUIZZES: QuizItem[] = [
   },
 ];
 
-const CATEGORY_CHIPS = [
-  { id: "all", label: "Tous les Quiz", emoji: "✨" },
-  { id: "continents", label: "Continents", emoji: "🌍" },
-  { id: "capitals", label: "Capitales", emoji: "🏛️" },
-  { id: "flags", label: "Drapeaux", emoji: "🚩" },
-  { id: "merveilles", label: "Merveilles", emoji: "🏔️" },
-  { id: "boss", label: "Défis Boss", emoji: "👑" },
-];
-
 function getQuizBadge(quiz: QuizItem): { emoji: string; label: string } {
   if (quiz.is_my_quiz) {
     return {
@@ -174,7 +161,6 @@ export function PartyPage() {
   const initialCode = normalizePartyPin(routeCode || queryCode || "");
 
   const { user, profile } = useAuth();
-  const { t } = useLanguage();
 
   // Navigation tab in Hub: "join" or "create"
   const [activeTab, setActiveTab] = useState<"join" | "create">(
@@ -847,7 +833,7 @@ export function PartyPage() {
       const mappedQuestions: PartyQuestion[] = finalQuestionsData.map((q: any, idx: number) => {
         let opts: string[] = [];
         if (Array.isArray(q.options) && q.options.length > 0) {
-          opts = q.options.map(String).filter((s) => s.trim().length > 0);
+          opts = q.options.map(String).filter((s: string) => s.trim().length > 0);
         }
 
         const correct = String(q.correct_answer || "").trim();

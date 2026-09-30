@@ -253,13 +253,13 @@ export function getSrsRecordSummary(userId: string | null): {
 } {
   const stats = getSrsStats(userId);
   const display =
-    stats.box5Count > 0
-      ? `Maîtrise : ${stats.box5Count} cartes en boîte 5 🧠`
+    stats.masteredCount > 0
+      ? `Maîtrise : ${stats.masteredCount} cartes en boîte 5 🧠`
       : `${stats.dueToday} cartes à réviser`;
 
   return {
     dueToday: stats.dueToday,
-    masteredCount: stats.box5Count,
+    masteredCount: stats.masteredCount,
     display,
   };
 }

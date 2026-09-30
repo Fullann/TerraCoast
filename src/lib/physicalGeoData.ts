@@ -108,6 +108,7 @@ export const PHYSICAL_GEO_ITEMS: PhysicalGeoItem[] = [
     options: ["Inde et Népal", "Népal et Chine", "Pakistan et Chine", "Bhoutan et Inde"],
     correctIndex: 1,
     explanation: "La crête sommitale de l'Everest marque la frontière internationale exacte entre le Népal et la région autonome du Tibet en Chine.",
+    anecdote: "Son sommet grandit d'environ 4 millimètres par an sous la poussée tectonique continue de la plaque indienne contre l'Eurasie.",
     photoUrl: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=1200&q=80",
   },
   {

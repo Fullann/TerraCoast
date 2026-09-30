@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ArrowLeft, Clock, Trophy, Flag, Volume2, VolumeX, Radio } from "lucide-react";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { useRadioGlobe } from "../../../contexts/RadioGlobeContext";
@@ -33,11 +34,8 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
   currentQuestionIndex,
   totalQuestions,
   progress,
-  lives,
-  maxLives = 5,
   streakFreezes = 0,
   isDoubleXp = false,
-  onRefillHearts,
 }) => {
   const { t } = useLanguage();
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());

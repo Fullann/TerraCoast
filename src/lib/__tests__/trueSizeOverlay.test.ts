@@ -2,12 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   generateTrueSizeSvgs,
   getCleanCountryFeature,
-  computeFitScale,
 } from "../trueSizeOverlay";
 import type { AtlasCountry } from "../atlasData";
 
 describe("trueSizeOverlay engine", () => {
-  const mockSwitzerland: AtlasCountry = {
+  const mockSwitzerland = {
     iso3: "CHE",
     name: "Suisse",
     capital: "Berne",
@@ -17,10 +16,9 @@ describe("trueSizeOverlay engine", () => {
     areaKm2: 41285,
     lat: 46.8,
     lng: 8.2,
-    densityKm2: 215,
-  };
+  } as unknown as AtlasCountry;
 
-  const mockFrance: AtlasCountry = {
+  const mockFrance = {
     iso3: "FRA",
     name: "France",
     capital: "Paris",
@@ -30,10 +28,9 @@ describe("trueSizeOverlay engine", () => {
     areaKm2: 643801,
     lat: 46.2,
     lng: 2.2,
-    densityKm2: 106,
-  };
+  } as unknown as AtlasCountry;
 
-  const mockMonaco: AtlasCountry = {
+  const mockMonaco = {
     iso3: "MCO",
     name: "Monaco",
     capital: "Monaco",
@@ -43,8 +40,7 @@ describe("trueSizeOverlay engine", () => {
     areaKm2: 2.02,
     lat: 43.73,
     lng: 7.42,
-    densityKm2: 19300,
-  };
+  } as unknown as AtlasCountry;
 
   it("extracts clean features without crashing", () => {
     const featCHE = getCleanCountryFeature(mockSwitzerland);

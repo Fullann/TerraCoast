@@ -349,6 +349,50 @@ export function getPlayerGamificationState(userId?: string): PlayerGamificationS
         savePlayerGamificationState(userId, state);
       }
     }
+
+    // Si l'utilisateur est connecté, fusionner les cosmétiques achetés en mode invité pour ne rien perdre
+    if (userId) {
+      const guestRaw = getStoredString("terracost_gamification_guest");
+      if (guestRaw) {
+        try {
+          const guestParsed = JSON.parse(guestRaw);
+          if (guestParsed.inventory) {
+            let merged = false;
+            (guestParsed.inventory.avatarFrames || []).forEach((f: string) => {
+              if (!state.inventory.avatarFrames.includes(f)) {
+                state.inventory.avatarFrames.push(f);
+                merged = true;
+              }
+            });
+            (guestParsed.inventory.titles || []).forEach((t: string) => {
+              if (!state.inventory.titles.includes(t)) {
+                state.inventory.titles.push(t);
+                merged = true;
+              }
+            });
+            (guestParsed.inventory.themes || []).forEach((th: string) => {
+              if (!state.inventory.themes.includes(th)) {
+                state.inventory.themes.push(th);
+                merged = true;
+              }
+            });
+            if (guestParsed.activeAvatarFrame && guestParsed.activeAvatarFrame !== "none" && state.activeAvatarFrame === "none") {
+              state.activeAvatarFrame = guestParsed.activeAvatarFrame;
+              merged = true;
+            }
+            if (guestParsed.activeTitle && !state.activeTitle) {
+              state.activeTitle = guestParsed.activeTitle;
+              merged = true;
+            }
+            if (merged) {
+              savePlayerGamificationState(userId, state);
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
   } catch (err) {
     console.warn("Could not read gamification state:", err);
   }
@@ -628,6 +672,61 @@ export function getActiveAvatarFrame(userId?: string): string {
  */
 export function getActiveTitle(userId?: string): string | null {
   return getPlayerGamificationState(userId).activeTitle || null;
+}
+
+/**
+ * Récupère le nom formaté et les détails du titre actif (shop ou personnalisé)
+ */
+export function getActiveTitleDetails(userId?: string): {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+} | null {
+  const activeId = getActiveTitle(userId);
+  if (!activeId) return null;
+  const shopItem = SHOP_CATALOG.find((it) => it.id === activeId || it.name === activeId);
+  if (shopItem) {
+    return {
+      id: shopItem.id,
+      name: shopItem.name,
+      description: shopItem.description,
+      icon: shopItem.icon,
+    };
+  }
+  return {
+    id: activeId,
+    name: activeId,
+    description: "",
+    icon: "⭐",
+  };
+}
+
+/**
+ * Récupère les titres de la boutique débloqués dans l'inventaire du joueur
+ */
+export function getUnlockedShopTitles(userId?: string): ShopItem[] {
+  const state = getPlayerGamificationState(userId);
+  const titles = state.inventory?.titles || [];
+  return SHOP_CATALOG.filter((it) => it.category === "title" && titles.includes(it.id));
+}
+
+/**
+ * Récupère les cadres d'avatar de la boutique débloqués dans l'inventaire du joueur
+ */
+export function getUnlockedShopFrames(userId?: string): ShopItem[] {
+  const state = getPlayerGamificationState(userId);
+  const frames = state.inventory?.avatarFrames || [];
+  return SHOP_CATALOG.filter((it) => it.category === "frame" && frames.includes(it.id));
+}
+
+/**
+ * Récupère les thèmes du globe débloqués dans l'inventaire du joueur
+ */
+export function getUnlockedShopThemes(userId?: string): ShopItem[] {
+  const state = getPlayerGamificationState(userId);
+  const themes = state.inventory?.themes || [];
+  return SHOP_CATALOG.filter((it) => it.category === "theme" && themes.includes(it.id));
 }
 
 /**

@@ -11,7 +11,6 @@ import {
   Languages,
   Mountain,
   Trophy,
-  Sparkles,
   Layers,
   BarChart3,
   HelpCircle,
@@ -24,7 +23,6 @@ import {
   ZoomOut,
   RefreshCw,
   Copy,
-  SlidersHorizontal,
   Eye,
 } from "lucide-react";
 import {

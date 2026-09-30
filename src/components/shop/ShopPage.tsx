@@ -60,47 +60,69 @@ export function ShopPage() {
         .from("profiles")
         .update({ frame_style: frameId || "none", updated_at: new Date().toISOString() })
         .eq("id", profile.id);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("terracoast:profile_updated", { detail: { userId: profile.id } })
+        );
+      }
     } catch (e) {
       console.error("Failed to sync frame to Supabase:", e);
     }
   };
 
   /**
-   * Sync title to Supabase user_titles table after buy
+   * Sync title to Supabase user_titles table after buy or equip
    */
-  const syncTitleToSupabase = async (itemId: string, itemName: string) => {
+  const syncTitleToSupabase = async (_itemId: string, itemName: string, itemDescription?: string) => {
     if (!profile?.id) return;
     try {
-      // Check if we need to find the title in the titles table first
-      const { data: existingTitle } = await supabase
+      const cleanName = itemName.replace(/[^\p{L}\p{N}\s]/gu, "").trim();
+      let { data: existingTitle } = await supabase
         .from("titles")
         .select("id")
-        .eq("name", itemName.replace(/[^\p{L}\p{N}\s]/gu, "").trim())
+        .eq("name", cleanName)
         .maybeSingle();
 
-      // If no matching title found in the DB, we can't sync
-      // The title system in Supabase requires a title row to exist
+      // If title does not exist yet in DB, create it
       if (!existingTitle) {
-        console.warn(`Title "${itemName}" not found in titles table, skipping Supabase sync`);
-        return;
+        const { data: createdTitle } = await supabase
+          .from("titles")
+          .insert({
+            name: cleanName,
+            description: itemDescription || "Titre exclusif de la Boutique TerraCoast",
+            requirement_type: "shop",
+            requirement_value: 0,
+            is_special: true,
+          })
+          .select("id")
+          .maybeSingle();
+
+        existingTitle = createdTitle;
       }
 
-      // Check if user already has this title
-      const { data: existing } = await supabase
+      if (!existingTitle) return;
+
+      // Deactivate all other titles first
+      await supabase
+        .from("user_titles")
+        .update({ is_active: false })
+        .eq("user_id", profile.id);
+
+      // Check if user already owns this title in user_titles
+      const { data: existingUserTitle } = await supabase
         .from("user_titles")
         .select("id")
         .eq("user_id", profile.id)
         .eq("title_id", existingTitle.id)
         .maybeSingle();
 
-      if (!existing) {
-        // Deactivate all existing titles first
+      if (existingUserTitle) {
         await supabase
           .from("user_titles")
-          .update({ is_active: false })
-          .eq("user_id", profile.id);
-
-        // Insert new title as active
+          .update({ is_active: true })
+          .eq("id", existingUserTitle.id);
+      } else {
         await supabase
           .from("user_titles")
           .insert({
@@ -109,6 +131,12 @@ export function ShopPage() {
             is_active: true,
             earned_at: new Date().toISOString(),
           });
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("terracoast:profile_updated", { detail: { userId: profile.id } })
+        );
       }
     } catch (e) {
       console.error("Failed to sync title to Supabase:", e);
@@ -129,7 +157,7 @@ export function ShopPage() {
       if (item.category === "frame") {
         await syncFrameToSupabase(item.id);
       } else if (item.category === "title") {
-        await syncTitleToSupabase(item.id, item.name);
+        await syncTitleToSupabase(item.id, item.name, item.description);
       }
     } else {
       playSound("error");
@@ -155,6 +183,21 @@ export function ShopPage() {
     // Sync equip/unequip to Supabase
     if (item.category === "frame") {
       await syncFrameToSupabase(targetId);
+    } else if (item.category === "title") {
+      if (targetId) {
+        await syncTitleToSupabase(item.id, item.name, item.description);
+      } else if (profile?.id) {
+        await supabase
+          .from("user_titles")
+          .update({ is_active: false })
+          .eq("user_id", profile.id);
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("terracoast:profile_updated", { detail: { userId: profile.id } })
+          );
+        }
+      }
     }
   };
 

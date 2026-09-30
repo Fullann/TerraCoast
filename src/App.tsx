@@ -227,6 +227,7 @@ function AppContent() {
           <Route path="site-config" element={<Lazy><SiteConfigPage /></Lazy>} />
           <Route path="path" element={<Lazy><PathManagementPage /></Lazy>} />
           <Route path="geodetective" element={<Lazy><GeoDetectiveManagementPage /></Lazy>} />
+          <Route path="geo-detective" element={<Navigate to="/admin/geodetective" replace />} />
           <Route path="homepage-testimonials-management" element={<Lazy><HomepageTestimonialsManagementPage /></Lazy>} />
         </Route>
       </Route>

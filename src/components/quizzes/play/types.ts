@@ -1,7 +1,9 @@
 import type { Database } from "../../../lib/database.types";
 import type { CountryGameEntry, CountryMetric } from "../../../lib/countryGameData";
 
-export type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
+export type Quiz = Omit<Database["public"]["Tables"]["quizzes"]["Row"], "category"> & {
+  category?: string | null;
+};
 export type Question = Database["public"]["Tables"]["questions"]["Row"];
 
 export interface QuizAnswer {

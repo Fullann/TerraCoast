@@ -53,7 +53,7 @@ import { PATH_QUIZZES } from "../../lib/pathQuizzesData";
 import { ConfirmModal } from "../common/ConfirmModal";
 import type { Database } from "../../lib/database.types";
 
-type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
+type Quiz = Database["public"]["Tables"]["quizzes"]["Row"] | import("../../lib/pathQuizzesData").Quiz;
 
 const PRESET_EMOJIS = [
   "🌍", "🌋", "🌊", "🧭", "🏛️", "🏜️", "🏔️", "🚀",
@@ -230,7 +230,7 @@ export function PathManagementPage() {
         modalSearch.trim() === "" ||
         q.title.toLowerCase().includes(modalSearch.toLowerCase()) ||
         (q.description && q.description.toLowerCase().includes(modalSearch.toLowerCase())) ||
-        (q.tags && q.tags.some((t) => t.toLowerCase().includes(modalSearch.toLowerCase())));
+        (q.tags && (q.tags as string[]).some((t: string) => t.toLowerCase().includes(modalSearch.toLowerCase())));
 
       const matchesCat = modalCategory === "all" || q.category === modalCategory;
       const matchesDiff = modalDifficulty === "all" || q.difficulty === modalDifficulty;

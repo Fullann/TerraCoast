@@ -5,6 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { languageNames, Language } from "../../i18n/translations";
 import { Avatar } from "../common/Avatar";
+import { equipShopItem, getPlayerGamificationState } from "../../lib/gamificationManager";
 import {
   Settings,
   Mail,
@@ -337,7 +338,13 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
         .update({ frame_style: style, updated_at: new Date().toISOString() })
         .eq("id", profile.id);
       if (updateError) throw updateError;
+      equipShopItem(profile.id, "frame", style === "none" ? null : style);
       await refreshProfile();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("terracoast:profile_updated", { detail: { userId: profile.id } })
+        );
+      }
       setMessage(t("settings.visualEffectsUpdated"));
     } catch (e) {
       console.error("Frame save failed:", e);
@@ -645,7 +652,7 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
               <Avatar
                 url={profile?.avatar_url}
                 pseudo={profile?.pseudo}
-                frameStyle={profile?.frame_style}
+                frameStyle={profile?.frame_style || getPlayerGamificationState(profile?.id).activeAvatarFrame}
                 size="lg"
               />
               <div className="flex-1">
@@ -657,11 +664,14 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                 </label>
                 <select
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
-                  value={profile?.frame_style || "none"}
+                  value={profile?.frame_style || getPlayerGamificationState(profile?.id).activeAvatarFrame || "none"}
                   disabled={frameSaving}
                   onChange={(e) => saveFrameStyle(e.target.value)}
                 >
                   <option value="none">{t("profile.frameNone")}</option>
+                  <option value="frame_flame">🔥 Flamme Incandescente (Boutique)</option>
+                  <option value="frame_compass">🧭 Rose des Vents (Boutique)</option>
+                  <option value="frame_crown">👑 Couronne d'Explorateur (Boutique)</option>
                   <option value="emerald">{t("profile.frameEmerald")}</option>
                   <option value="gold">{t("profile.frameGold")}</option>
                   <option value="rainbow">{t("profile.frameRainbow")}</option>

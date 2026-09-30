@@ -47,8 +47,83 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
         .from("profiles")
         .update({ frame_style: frameId || "none", updated_at: new Date().toISOString() })
         .eq("id", profile.id);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("terracoast:profile_updated", { detail: { userId: profile.id } })
+        );
+      }
     } catch (e) {
       console.error("Failed to sync frame to Supabase:", e);
+    }
+  };
+
+  const syncTitleToSupabase = async (_itemId: string, itemName: string, itemDescription?: string) => {
+    if (!profile?.id) return;
+    try {
+      const cleanName = itemName.replace(/[^\p{L}\p{N}\s]/gu, "").trim();
+      let { data: existingTitle } = await supabase
+        .from("titles")
+        .select("id")
+        .eq("name", cleanName)
+        .maybeSingle();
+
+      // If title does not exist yet in DB, create it
+      if (!existingTitle) {
+        const { data: createdTitle } = await supabase
+          .from("titles")
+          .insert({
+            name: cleanName,
+            description: itemDescription || "Titre exclusif de la Boutique TerraCoast",
+            requirement_type: "shop",
+            requirement_value: 0,
+            is_special: true,
+          })
+          .select("id")
+          .maybeSingle();
+
+        existingTitle = createdTitle;
+      }
+
+      if (!existingTitle) return;
+
+      // Deactivate all other titles first
+      await supabase
+        .from("user_titles")
+        .update({ is_active: false })
+        .eq("user_id", profile.id);
+
+      // Check if user already owns this title in user_titles
+      const { data: existingUserTitle } = await supabase
+        .from("user_titles")
+        .select("id")
+        .eq("user_id", profile.id)
+        .eq("title_id", existingTitle.id)
+        .maybeSingle();
+
+      if (existingUserTitle) {
+        await supabase
+          .from("user_titles")
+          .update({ is_active: true })
+          .eq("id", existingUserTitle.id);
+      } else {
+        await supabase
+          .from("user_titles")
+          .insert({
+            user_id: profile.id,
+            title_id: existingTitle.id,
+            is_active: true,
+            earned_at: new Date().toISOString(),
+          });
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("terracoast:profile_updated", { detail: { userId: profile.id } })
+        );
+      }
+    } catch (e) {
+      console.error("Failed to sync title to Supabase:", e);
     }
   };
 
@@ -64,6 +139,8 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
 
       if (item.category === "frame") {
         await syncFrameToSupabase(item.id);
+      } else if (item.category === "title") {
+        await syncTitleToSupabase(item.id, item.name, item.description);
       }
     } else {
       playSound("error");
@@ -88,6 +165,21 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
 
     if (item.category === "frame") {
       await syncFrameToSupabase(targetId);
+    } else if (item.category === "title") {
+      if (targetId) {
+        await syncTitleToSupabase(item.id, item.name, item.description);
+      } else if (profile?.id) {
+        await supabase
+          .from("user_titles")
+          .update({ is_active: false })
+          .eq("user_id", profile.id);
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("terracoast:profile_updated", { detail: { userId: profile.id } })
+          );
+        }
+      }
     }
   };
 

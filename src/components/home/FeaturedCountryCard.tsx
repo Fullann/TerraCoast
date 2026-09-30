@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, MapPin, Compass, Volume2, VolumeX, ArrowRight, ShieldCheck } from "lucide-react";
+import { Sparkles, MapPin, Compass, Volume2, VolumeX, ShieldCheck } from "lucide-react";
 import { getSiteConfig, type FeaturedCountryConfig } from "../../lib/siteConfigManager";
 import { getAtlasCountryByIso3 } from "../../lib/atlasData";
 import { getAudioAnecdoteForCountry } from "../../lib/audioAnecdotesData";

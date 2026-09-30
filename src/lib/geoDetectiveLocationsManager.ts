@@ -1,7 +1,6 @@
 import {
   SATELLITE_LOCATIONS,
   type SatelliteLocation,
-  type SatelliteCategory,
 } from "./geoDetectiveData";
 import { supabase } from "./supabase";
 

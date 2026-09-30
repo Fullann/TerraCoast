@@ -3,7 +3,6 @@ import { adminUpdateUserXp } from "../profileQueries";
 import { supabase } from "../../supabase";
 
 vi.mock("../../supabase", () => {
-  const updateMock = vi.fn();
   const selectMock = vi.fn();
   const singleMock = vi.fn();
   const eqMock = vi.fn();

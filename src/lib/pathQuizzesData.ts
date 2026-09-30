@@ -1,6 +1,8 @@
 import type { Database } from "./database.types";
 
-type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
+export type Quiz = Omit<Database["public"]["Tables"]["quizzes"]["Row"], "category"> & {
+  category: string;
+};
 type Question = Database["public"]["Tables"]["questions"]["Row"];
 
 export interface PathQuizBundle {

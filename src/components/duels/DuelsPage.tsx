@@ -15,13 +15,11 @@ import {
   Play,
   CheckCircle2,
   X,
-  AlertCircle,
   Gamepad2,
   Sparkles,
   Flame,
   Search,
   ChevronRight,
-  TrendingUp,
   Award,
   RefreshCw,
 } from "lucide-react";
@@ -123,7 +121,6 @@ export function DuelsPage({ initialTab }: { initialTab?: string }) {
 
   // State for quiz search inside matchmaking tab
   const [quizSearchQuery, setQuizSearchQuery] = useState("");
-  const [showQuizSelector, setShowQuizSelector] = useState(false);
 
   const filteredMatchmakingQuizzes = useMemo(() => {
     if (!quizSearchQuery.trim()) return matchmakingQuizzes;
@@ -865,7 +862,6 @@ export function DuelsPage({ initialTab }: { initialTab?: string }) {
                         type="button"
                         onClick={() => {
                           setQueueMode("random_bonus");
-                          setShowQuizSelector(false);
                         }}
                         className={`p-2.5 rounded-xl font-bold text-xs text-left transition-all border-b-2 flex items-center gap-2 ${
                           queueMode === "random_bonus"
@@ -886,7 +882,6 @@ export function DuelsPage({ initialTab }: { initialTab?: string }) {
                         type="button"
                         onClick={() => {
                           setQueueMode("targeted");
-                          setShowQuizSelector(true);
                         }}
                         className={`p-2.5 rounded-xl font-bold text-xs text-left transition-all border-b-2 flex items-center gap-2 ${
                           queueMode === "targeted"

@@ -16,7 +16,6 @@ import {
   Compass,
   Sparkles,
   Map as MapIcon,
-  Heart,
   ChevronDown,
   Settings,
   LogOut,
@@ -30,12 +29,9 @@ import { ShopModal } from "../shop/ShopModal";
 import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
 import {
   getPlayerGamificationState,
-  refillAllLives,
-  adminGrantResources,
   getUserLeagueProgress,
+  getActiveTitleDetails,
 } from "../../lib/gamificationManager";
-import { toast } from "../common/ToastContainer";
-import { playSound } from "../../lib/soundManager";
 import { MobileBottomNav } from "./MobileBottomNav";
 
 export function Navbar() {
@@ -58,9 +54,6 @@ export function Navbar() {
   const [gamification, setGamification] = useState(() =>
     getPlayerGamificationState(profile?.id)
   );
-  const [adminCustomGems, setAdminCustomGems] = useState("");
-  const [adminCustomLives, setAdminCustomLives] = useState("");
-  const [adminCustomPanelOpen, setAdminCustomPanelOpen] = useState(false);
 
   useEffect(() => {
     setGamification(getPlayerGamificationState(profile?.id));
@@ -671,7 +664,7 @@ export function Navbar() {
                   <Avatar
                     url={(profile as any)?.avatar_url}
                     pseudo={profile?.pseudo}
-                    frameStyle={(profile as any)?.frame_style}
+                    frameStyle={(profile as any)?.frame_style && (profile as any).frame_style !== "none" ? (profile as any).frame_style : gamification.activeAvatarFrame}
                     size="sm"
                   />
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block shrink-0" />
@@ -684,6 +677,12 @@ export function Navbar() {
                       <p className="font-black text-slate-900 text-sm truncate">
                         {profile?.pseudo}
                       </p>
+                      {getActiveTitleDetails(profile?.id) && (
+                        <p className="text-[11px] font-black text-purple-700 truncate mt-0.5 flex items-center gap-1">
+                          <span>{getActiveTitleDetails(profile?.id)?.icon || "⭐"}</span>
+                          <span>{getActiveTitleDetails(profile?.id)?.name}</span>
+                        </p>
+                      )}
                       <p className="text-xs text-slate-500 font-bold mt-0.5">
                         {t("profile.level")} {profile?.level || 1} • {profile?.experience_points || 0} XP
                       </p>

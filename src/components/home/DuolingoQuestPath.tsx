@@ -29,7 +29,7 @@ import { supabase } from "../../lib/supabase";
 import { triggerConfetti } from "../common/Confetti";
 import type { Database } from "../../lib/database.types";
 
-type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
+type Quiz = Database["public"]["Tables"]["quizzes"]["Row"] | import("../../lib/pathQuizzesData").Quiz;
 
 interface DuolingoQuestPathProps {
   userId?: string;
@@ -153,7 +153,7 @@ export function DuolingoQuestPath({ userId, onNodeStart }: DuolingoQuestPathProp
         quizSearch.trim() === "" ||
         q.title.toLowerCase().includes(quizSearch.toLowerCase()) ||
         (q.description && q.description.toLowerCase().includes(quizSearch.toLowerCase())) ||
-        (q.tags && q.tags.some((t) => t.toLowerCase().includes(quizSearch.toLowerCase())));
+        (q.tags && (q.tags as string[]).some((t: string) => t.toLowerCase().includes(quizSearch.toLowerCase())));
 
       const matchesCat = selectedCategory === "all" || q.category === selectedCategory;
       const matchesDiff = selectedDifficulty === "all" || q.difficulty === selectedDifficulty;

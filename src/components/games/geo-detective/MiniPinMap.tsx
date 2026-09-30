@@ -19,9 +19,6 @@ import {
   ZoomIn,
   ZoomOut,
   Compass,
-  Sliders,
-  MousePointer,
-  HelpCircle,
 } from "lucide-react";
 import { calculateHaversineDistance } from "../../../lib/geoDetectiveGame";
 

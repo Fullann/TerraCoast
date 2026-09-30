@@ -135,6 +135,9 @@ export const StreakModal: React.FC<StreakModalProps> = ({
                   onChange={(e) => onSaveFrameStyle?.(e.target.value)}
                 >
                   <option value="none">{t("profile.frameNone")}</option>
+                  <option value="frame_flame">🔥 Flamme Incandescente (Boutique)</option>
+                  <option value="frame_compass">🧭 Rose des Vents (Boutique)</option>
+                  <option value="frame_crown">👑 Couronne d'Explorateur (Boutique)</option>
                   <option value="emerald">{t("profile.frameEmerald")}</option>
                   <option value="gold">{t("profile.frameGold")}</option>
                   <option value="rainbow">{t("profile.frameRainbow")}</option>

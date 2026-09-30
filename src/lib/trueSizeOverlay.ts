@@ -4,7 +4,6 @@ import {
   geoCentroid,
   geoArea,
   geoDistance,
-  GeoProjection,
 } from "d3-geo";
 import { getCountryFeaturesMap } from "./silhouetteGame";
 import type { AtlasCountry } from "./atlasData";
@@ -217,12 +216,12 @@ export function generateTrueSizeSvgs(
     centerB = [width / 2, height / 2];
   }
 
-  const projA: GeoProjection = geoAzimuthalEqualArea()
+  const projA = geoAzimuthalEqualArea()
     .rotate([-centroidA[0], -centroidA[1]])
     .translate(centerA)
     .scale(finalScale);
 
-  const projB: GeoProjection = geoAzimuthalEqualArea()
+  const projB = geoAzimuthalEqualArea()
     .rotate([-centroidB[0], -centroidB[1]])
     .translate(centerB)
     .scale(finalScale);

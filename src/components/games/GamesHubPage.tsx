@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Flame,
   Trophy,
-  Calendar,
   Layers,
   Gamepad2,
   Crosshair,
@@ -189,7 +188,6 @@ export function GamesHubPage() {
         <section>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
             {gameModes.map((game) => {
-              const StatIcon = game.statIcon;
               return (
                 <div
                   key={game.id}

@@ -6,8 +6,6 @@ import {
   RotateCcw,
   Share2,
   ArrowRight,
-  Compass,
-  Sparkles,
 } from "lucide-react";
 import {
   startTravleGame,

@@ -39,7 +39,7 @@ interface QuizResultsScreenProps {
   mode: "solo" | "duel";
   quizId: string;
   quizTitle?: string;
-  quizCategory?: string;
+  quizCategory?: string | null;
   ghostChallenge?: GhostRunChallenge | null;
   totalScore: number;
   xpGained: number;
@@ -198,7 +198,7 @@ export const QuizResultsScreen: React.FC<QuizResultsScreenProps> = ({
     id: `ghost_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     quizId,
     quizTitle: quizTitle || "Quiz TerraCoast",
-    quizCategory,
+    quizCategory: quizCategory || undefined,
     challengerId: user?.id,
     challengerPseudo:
       user?.user_metadata?.username ||

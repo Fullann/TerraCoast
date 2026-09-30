@@ -36,9 +36,7 @@ import {
 import { isCountryConquered } from "../../lib/conquestManager";
 import { CountryDetailDrawer } from "./CountryDetailDrawer";
 import { CountryComparisonModal } from "./CountryComparisonModal";
-import { getPlayerGamificationState } from "../../lib/gamificationManager";
 import {
-  getGlobeThemeConfig,
   GLOBE_LAYER_OPTIONS,
   type GlobeLayerType,
 } from "../../lib/globeThemes";
@@ -85,7 +83,7 @@ const CONTINENT_CENTERS: Record<string, { center: [number, number]; zoom: number
 
 export function AtlasPage() {
   const { t, language } = useLanguage();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [viewMode, setViewMode] = useState<ViewMode>("map");
@@ -103,18 +101,6 @@ export function AtlasPage() {
   });
 
   const [selectedGlobeLayer, setSelectedGlobeLayer] = useState<GlobeLayerType>("satellite");
-
-  const [activeTheme, setActiveTheme] = useState(() =>
-    getPlayerGamificationState(profile?.id).activeTheme
-  );
-
-  useEffect(() => {
-    const handleUpdate = () => {
-      setActiveTheme(getPlayerGamificationState(profile?.id).activeTheme);
-    };
-    window.addEventListener("terracost_gamification_updated", handleUpdate);
-    return () => window.removeEventListener("terracost_gamification_updated", handleUpdate);
-  }, [profile?.id]);
 
   // Texture et ambiance selon le calque sélectionné (Politique, Satellite HD, Relief, Nocturne)
   const layerOption = GLOBE_LAYER_OPTIONS.find((l) => l.id === selectedGlobeLayer) || GLOBE_LAYER_OPTIONS[1];

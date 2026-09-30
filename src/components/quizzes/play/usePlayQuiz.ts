@@ -13,11 +13,10 @@ import { triggerConfetti } from "../../common/Confetti";
 import {
   completePathNode,
   getPlayerGamificationState,
-  deductLife,
-  refillAllLives,
-  buyShopItem,
   type PlayerGamificationState,
 } from "../../../lib/gamificationManager";
+import { getPathNodeQuiz } from "../../../lib/pathQuizzesData";
+import type { Language } from "../../../i18n/translations";
 import { recordPathStageAttempt } from "../../../lib/pathConfigManager";
 import type {
   Quiz,
@@ -1442,7 +1441,7 @@ export function usePlayQuiz({
     restartReviewMistakes,
     restartQuiz,
     pathNodeResult,
-    showHeartRefillModal: false,
+    showHeartRefillModal,
     setShowHeartRefillModal,
     handleHeartRefill,
     handleQuitOnNoHearts,

@@ -23,7 +23,6 @@ import {
   Star,
   ArrowRight,
   Sliders,
-  Sparkles,
 } from "lucide-react";
 import {
   getPlayerGamificationState,
@@ -732,7 +731,7 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 text-purple-800 rounded-xl font-black text-xs sm:text-sm shadow-sm">
               <span>🎨</span>
-              <span>{adminGamification.unlockedThemes?.length || 1} Thèmes</span>
+              <span>{adminGamification.inventory?.themes?.length || 1} Thèmes</span>
             </div>
           </div>
         </div>
@@ -964,7 +963,7 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
                     <span>🌟 Top 3 Reconnus</span>
                   </p>
                   <div className="space-y-1.5">
-                    {countryIntel.mostRecognizedCountries.slice(0, 3).map((c, i) => (
+                    {countryIntel.mostRecognizedCountries.slice(0, 3).map((c) => (
                       <div key={c.iso3} className="flex items-center justify-between text-xs">
                         <span className="font-bold text-slate-800 truncate">
                           {c.flagEmoji} {c.name}
@@ -983,7 +982,7 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
                     <span>⚠️ Top 3 Pièges Géo</span>
                   </p>
                   <div className="space-y-1.5">
-                    {countryIntel.mostFailedCountries.slice(0, 3).map((c, i) => (
+                    {countryIntel.mostFailedCountries.slice(0, 3).map((c) => (
                       <div key={c.iso3} className="flex items-center justify-between text-xs">
                         <span className="font-bold text-slate-800 truncate">
                           {c.flagEmoji} {c.name}
