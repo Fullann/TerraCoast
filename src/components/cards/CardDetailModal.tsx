@@ -149,6 +149,7 @@ export function CardDetailModal({
             interactive={true}
             showFlipButton={true}
             size="md"
+            langOverride={modalLang}
           />
 
           {isUnlocked && (

@@ -28,6 +28,7 @@ import {
   getCardsCatalog,
   getCollectionStats,
   canClaimDailyPack,
+  CARDS_CATALOG_UPDATED_EVENT,
   type PlayerCardsState,
 } from "../../lib/cardsManager";
 import {
@@ -82,28 +83,33 @@ export function TerraDexPage() {
 
   // Compte à rebours booster quotidien
   const [dailyRemainingFormatted, setDailyRemainingFormatted] = useState("");
+  const [catalogVersion, setCatalogVersion] = useState(0);
 
   const refreshState = () => {
     setCardsState(getPlayerCardsState(userId));
     setGamification(getPlayerGamificationState(userId));
+    setCatalogVersion((v) => v + 1);
   };
 
   useEffect(() => {
     refreshState();
     const handleCardsUpdate = () => refreshState();
     const handleGemsUpdate = () => refreshState();
+    const handleCatalogUpdate = () => refreshState();
 
     window.addEventListener("terracoast_cards_updated", handleCardsUpdate);
     window.addEventListener("terracost_gamification_updated", handleGemsUpdate);
+    window.addEventListener(CARDS_CATALOG_UPDATED_EVENT, handleCatalogUpdate);
     return () => {
       window.removeEventListener("terracoast_cards_updated", handleCardsUpdate);
       window.removeEventListener("terracost_gamification_updated", handleGemsUpdate);
+      window.removeEventListener(CARDS_CATALOG_UPDATED_EVENT, handleCatalogUpdate);
     };
   }, [userId]);
 
   const stats = useMemo(() => getCollectionStats(userId), [cardsState, userId]);
   const dailyPackStatus = useMemo(() => canClaimDailyPack(userId), [cardsState, userId]);
-  const catalog = useMemo(() => getCardsCatalog(), [cardsState]);
+  const catalog = useMemo(() => getCardsCatalog(), [cardsState, catalogVersion]);
 
   // Compte à rebours dynamique du booster journalier
   useEffect(() => {
@@ -739,7 +745,7 @@ export function TerraDexPage() {
           </div>
 
           {filteredCards.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 justify-items-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 justify-items-center">
               {filteredCards.map((card) => {
                 const entry = cardsState.ownedCards[card.id];
                 const isUnlocked = Boolean(entry);

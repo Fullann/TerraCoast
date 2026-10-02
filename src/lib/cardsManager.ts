@@ -47,6 +47,14 @@ const CARDS_OVERRIDES_KEY = "terracoast_cards_overrides_v1";
 const DELETED_CARDS_KEY = "terracoast_deleted_cards_v1";
 const memoryCardsStore = new Map<string, string>();
 
+export const CARDS_CATALOG_UPDATED_EVENT = "terracoast_cards_catalog_updated";
+
+function notifyCatalogUpdated(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(CARDS_CATALOG_UPDATED_EVENT));
+  }
+}
+
 function getStorageKey(userId?: string): string {
   return `${STORAGE_PREFIX}${userId || "guest"}`;
 }
@@ -181,6 +189,7 @@ export function adminSaveCard(card: TerraCard): { success: boolean; message: str
   if (isBuiltIn) {
     overrides[card.id] = card;
     setStoredString(CARDS_OVERRIDES_KEY, JSON.stringify(overrides));
+    notifyCatalogUpdated();
     return { success: true, message: `Carte « ${card.name} » mise à jour avec succès.` };
   }
 
@@ -191,6 +200,7 @@ export function adminSaveCard(card: TerraCard): { success: boolean; message: str
     customCards.push(card);
   }
   setStoredString(CUSTOM_CARDS_KEY, JSON.stringify(customCards));
+  notifyCatalogUpdated();
   return { success: true, message: `Carte « ${card.name} » enregistrée dans le catalogue.` };
 }
 
@@ -204,6 +214,7 @@ export function adminUpdateCardRarity(cardId: string, newRarity: CardRarity): { 
   if (customCard) {
     customCard.rarity = newRarity;
     setStoredString(CUSTOM_CARDS_KEY, JSON.stringify(customCards));
+    notifyCatalogUpdated();
     return { success: true, message: `Rareté de « ${customCard.name} » passée à ${newRarity}.` };
   }
 
@@ -215,6 +226,7 @@ export function adminUpdateCardRarity(cardId: string, newRarity: CardRarity): { 
   const overrides = getCardsOverrides();
   overrides[cardId] = { ...(overrides[cardId] || {}), rarity: newRarity };
   setStoredString(CARDS_OVERRIDES_KEY, JSON.stringify(overrides));
+  notifyCatalogUpdated();
   return { success: true, message: `Rareté de « ${baseCard.name} » passée à ${newRarity}.` };
 }
 
@@ -229,6 +241,7 @@ export function adminDeleteCard(cardId: string): { success: boolean; message: st
     const deletedName = customCards[customIdx].name;
     customCards.splice(customIdx, 1);
     setStoredString(CUSTOM_CARDS_KEY, JSON.stringify(customCards));
+    notifyCatalogUpdated();
     return { success: true, message: `Carte personnalisée « ${deletedName} » supprimée.` };
   }
 
@@ -241,6 +254,7 @@ export function adminDeleteCard(cardId: string): { success: boolean; message: st
   if (!deletedIds.includes(cardId)) {
     deletedIds.push(cardId);
     setStoredString(DELETED_CARDS_KEY, JSON.stringify(deletedIds));
+    notifyCatalogUpdated();
   }
   return { success: true, message: `Carte « ${baseCard.name} » masquée du catalogue.` };
 }
@@ -251,6 +265,7 @@ export function adminDeleteCard(cardId: string): { success: boolean; message: st
 export function adminRestoreCard(cardId: string): { success: boolean; message: string } {
   const deletedIds = getDeletedCardIds().filter((id) => id !== cardId);
   setStoredString(DELETED_CARDS_KEY, JSON.stringify(deletedIds));
+  notifyCatalogUpdated();
   return { success: true, message: "Carte restaurée avec succès." };
 }
 
@@ -268,6 +283,7 @@ export function adminResetCardsCatalog(): { success: boolean; message: string } 
   memoryCardsStore.delete(CUSTOM_CARDS_KEY);
   memoryCardsStore.delete(CARDS_OVERRIDES_KEY);
   memoryCardsStore.delete(DELETED_CARDS_KEY);
+  notifyCatalogUpdated();
   return { success: true, message: "Catalogue restauré aux 60 cartes d'origine." };
 }
 
@@ -304,6 +320,7 @@ export function adminImportCardsCatalog(jsonString: string): { success: boolean;
 
     setStoredString(CUSTOM_CARDS_KEY, JSON.stringify(customCards));
     setStoredString(CARDS_OVERRIDES_KEY, JSON.stringify(overrides));
+    notifyCatalogUpdated();
 
     return {
       success: true,

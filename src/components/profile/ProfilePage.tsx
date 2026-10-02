@@ -18,9 +18,11 @@ import { playSound } from "../../lib/soundManager";
 import {
   getPlayerCardsState,
   getCollectionStats,
+  getCardsCatalog,
+  CARDS_CATALOG_UPDATED_EVENT,
   type PlayerCardsState,
 } from "../../lib/cardsManager";
-import { TERRA_CARDS_CATALOG } from "../../lib/cardsData";
+import { type TerraCard } from "../../lib/cardsData";
 import { CollectibleCard } from "../cards/CollectibleCard";
 import {
   getPlayerGamificationState,
@@ -203,10 +205,12 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
     window.addEventListener("terracost_gamification_updated", handleGamificationUpdated);
     window.addEventListener("terracoast:profile_updated", handleGamificationUpdated);
     window.addEventListener("terracoast_cards_updated", handleGamificationUpdated);
+    window.addEventListener(CARDS_CATALOG_UPDATED_EVENT, handleGamificationUpdated);
     return () => {
       window.removeEventListener("terracost_gamification_updated", handleGamificationUpdated);
       window.removeEventListener("terracoast:profile_updated", handleGamificationUpdated);
       window.removeEventListener("terracoast_cards_updated", handleGamificationUpdated);
+      window.removeEventListener(CARDS_CATALOG_UPDATED_EVENT, handleGamificationUpdated);
     };
   }, [targetUserId]);
 
@@ -625,13 +629,14 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
   const cardStats = useMemo(() => getCollectionStats(targetUserId), [cardsState, targetUserId]);
 
   const showcaseCards = useMemo(() => {
+    const catalog = getCardsCatalog();
     if (cardsState.favoriteCardIds && cardsState.favoriteCardIds.length > 0) {
       return cardsState.favoriteCardIds
-        .map((id) => TERRA_CARDS_CATALOG.find((c) => c.id === id))
-        .filter(Boolean) as typeof TERRA_CARDS_CATALOG;
+        .map((id) => catalog.find((c) => c.id === id))
+        .filter(Boolean) as TerraCard[];
     }
     const ownedIds = Object.keys(cardsState.ownedCards);
-    return TERRA_CARDS_CATALOG.filter((c) => ownedIds.includes(c.id)).slice(0, 3);
+    return catalog.filter((c) => ownedIds.includes(c.id)).slice(0, 3);
   }, [cardsState.favoriteCardIds, cardsState.ownedCards]);
 
   const handleEquipFrame = async (frameId: string) => {

@@ -18,7 +18,7 @@ import {
   RARITY_TRANSLATIONS,
   CONTINENT_TRANSLATIONS,
 } from "../../lib/cardsTranslationService";
-import { useLanguage } from "../../contexts/LanguageContext";
+import type { Language } from "../../i18n/translations";
 
 interface CollectibleCardProps {
   card: TerraCard;
@@ -27,6 +27,7 @@ interface CollectibleCardProps {
   interactive?: boolean;
   showFlipButton?: boolean;
   size?: "sm" | "md" | "lg";
+  langOverride?: Language;
   onClick?: () => void;
   onAnswerTrivia?: (index: number) => void;
   triviaFeedback?: { correct: boolean; message: string } | null;
@@ -39,6 +40,7 @@ export function CollectibleCard({
   interactive = true,
   showFlipButton = true,
   size = "md",
+  langOverride,
   onClick,
   onAnswerTrivia,
   triviaFeedback,
@@ -50,16 +52,17 @@ export function CollectibleCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const { language } = useLanguage();
-  const translated = useTranslatedCard(card) || card;
+  const effectiveLang = langOverride || language;
+  const translated = useTranslatedCard(card, effectiveLang) || card;
 
   const rarityMeta = RARITY_CONFIG[card.rarity];
   const categoryMeta = CATEGORY_CONFIG[card.category];
   const isShiny = Boolean(entry?.shiny);
   const count = entry?.count || 0;
 
-  const localizedRarity = RARITY_TRANSLATIONS[language]?.[card.rarity] || rarityMeta.label;
-  const localizedCategory = CATEGORY_TRANSLATIONS[language]?.[card.category] || categoryMeta.label;
-  const localizedContinent = CONTINENT_TRANSLATIONS[language]?.[card.continent] || card.continent;
+  const localizedRarity = RARITY_TRANSLATIONS[effectiveLang]?.[card.rarity] || rarityMeta.label;
+  const localizedCategory = CATEGORY_TRANSLATIONS[effectiveLang]?.[card.category] || categoryMeta.label;
+  const localizedContinent = CONTINENT_TRANSLATIONS[effectiveLang]?.[card.continent] || card.continent;
 
   // 3D Tilt handler au survol de la souris
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
@@ -90,7 +93,7 @@ export function CollectibleCard({
 
   // Dimensions selon taille
   const sizeClasses = {
-    sm: "w-44 min-w-[176px] h-64 min-h-[256px] text-[10px]",
+    sm: "w-[152px] min-w-[144px] sm:w-44 sm:min-w-[176px] h-[240px] min-h-[235px] sm:h-64 sm:min-h-[256px] text-[10px]",
     md: "w-60 sm:w-64 min-w-[240px] sm:min-w-[256px] h-[370px] sm:h-[400px] min-h-[370px] sm:min-h-[400px] text-xs",
     lg: "w-72 sm:w-80 min-w-[288px] sm:min-w-[320px] h-[460px] sm:h-[500px] min-h-[460px] sm:min-h-[500px] text-sm",
   }[size];

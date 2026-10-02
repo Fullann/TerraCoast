@@ -526,7 +526,7 @@ export function BoosterOpeningModal({
                   onTouchStart={(e) => {
                     if (e.touches.length > 0) handleTearStart(e.touches[0].clientX);
                   }}
-                  className="w-full h-9 bg-slate-950/95 border-y-2 border-dashed border-amber-300/80 relative flex items-center justify-between px-3 cursor-grab active:cursor-grabbing z-30 overflow-hidden shadow-lg select-none"
+                  className="w-full h-9 bg-slate-950/95 border-y-2 border-dashed border-amber-300/80 relative flex items-center justify-between px-3 cursor-grab active:cursor-grabbing z-30 overflow-hidden shadow-lg select-none touch-none"
                   title="Glissez de gauche à droite pour déchirer le pack"
                 >
                   {/* Fente d'ouverture lumineuse progressive */}

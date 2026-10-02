@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import {
   SHOP_CATALOG,
@@ -22,6 +23,7 @@ interface ShopModalProps {
 }
 
 export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModalProps) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const [gamification, setGamification] = useState<PlayerGamificationState>(() =>
     getPlayerGamificationState(profile?.id)
@@ -237,7 +239,7 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
             type="button"
             onClick={() => {
               onClose();
-              window.location.href = "/terradex";
+              navigate("/terradex");
             }}
             className="text-[11px] font-black bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-xl transition-all shadow-xs shrink-0 cursor-pointer"
           >
