@@ -55,6 +55,7 @@ const TravleGamePage = lazyWithRetry(() => import("./components/games/travle/Tra
 const MapBlitzGamePage = lazyWithRetry(() => import("./components/games/map-blitz/MapBlitzGamePage").then(m => ({ default: m.MapBlitzGamePage })));
 const PhysicalGeoGamePage = lazyWithRetry(() => import("./components/games/physical-geo/PhysicalGeoGamePage").then(m => ({ default: m.PhysicalGeoGamePage })));
 const ShopPage = lazyWithRetry(() => import("./components/shop/ShopPage").then(m => ({ default: m.ShopPage })));
+const TerraDexPage = lazyWithRetry(() => import("./components/cards/TerraDexPage").then(m => ({ default: m.TerraDexPage })));
 
 // Admin Pages (Lazy Loading avec reprise automatique)
 const AdminPage = lazyWithRetry(() => import("./components/admin/AdminPage").then(m => ({ default: m.AdminPage })));
@@ -75,6 +76,7 @@ const PathManagementPage = lazyWithRetry(() => import("./components/admin/PathMa
 const CountryTrackingPage = lazyWithRetry(() => import("./components/admin/CountryTrackingPage").then(m => ({ default: m.CountryTrackingPage })));
 const SiteConfigPage = lazyWithRetry(() => import("./components/admin/SiteConfigPage").then(m => ({ default: m.SiteConfigPage })));
 const GeoDetectiveManagementPage = lazyWithRetry(() => import("./components/admin/GeoDetectiveManagementPage").then(m => ({ default: m.GeoDetectiveManagementPage })));
+const CardsManagementPage = lazyWithRetry(() => import("./components/admin/CardsManagementPage").then(m => ({ default: m.CardsManagementPage })));
 
 // Loader affiché pendant le chargement des pages lazy
 function PageLoader() {
@@ -193,6 +195,8 @@ function AppContent() {
         <Route path="/games/map-blitz" element={<Lazy><MapBlitzGamePage /></Lazy>} />
         <Route path="/games/physical-geo" element={<Lazy><PhysicalGeoGamePage /></Lazy>} />
         <Route path="/shop" element={<Lazy><ShopPage /></Lazy>} />
+        <Route path="/terradex" element={<Lazy><TerraDexPage /></Lazy>} />
+        <Route path="/cards" element={<Lazy><TerraDexPage /></Lazy>} />
         <Route path="/quizzes/create" element={<Lazy><CreateQuizPage /></Lazy>} />
         <Route path="/quizzes/edit/:quizId" element={<Lazy><EditQuizPage /></Lazy>} />
         <Route path="/quizzes/play/:quizId" element={<Lazy><PlayQuizPage /></Lazy>} />
@@ -228,6 +232,7 @@ function AppContent() {
           <Route path="path" element={<Lazy><PathManagementPage /></Lazy>} />
           <Route path="geodetective" element={<Lazy><GeoDetectiveManagementPage /></Lazy>} />
           <Route path="geo-detective" element={<Navigate to="/admin/geodetective" replace />} />
+          <Route path="cards" element={<Lazy><CardsManagementPage /></Lazy>} />
           <Route path="homepage-testimonials-management" element={<Lazy><HomepageTestimonialsManagementPage /></Lazy>} />
         </Route>
       </Route>

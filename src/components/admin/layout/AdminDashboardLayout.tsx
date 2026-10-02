@@ -47,6 +47,7 @@ export function AdminDashboardLayout() {
     if (path.includes('/admin/analytics')) return 'admin-analytics';
     if (path.includes('/admin/countries')) return 'country-tracking';
     if (path.includes('/admin/site-config')) return 'site-config';
+    if (path.includes('/admin/cards')) return 'cards-management';
     if (path.includes('/admin/path')) return 'path-management';
     if (path.includes('/admin/geodetective')) return 'geodetective-management';
     if (path.includes('/admin/quizzes')) return 'quiz-management';
@@ -125,6 +126,13 @@ export function AdminDashboardLayout() {
           path: "/admin/geojson",
           label: t("admin.nav.geojsonMaps") || "Subdivisions Régionales GeoJSON",
           icon: <Map className="w-4 h-4 text-amber-600" />,
+        },
+        {
+          view: "cards-management",
+          path: "/admin/cards",
+          label: "Cartes TerraDex & Raretés",
+          badge: "Cartes",
+          icon: <Sparkles className="w-4 h-4 text-amber-500" />,
         },
       ],
     },

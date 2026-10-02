@@ -16,6 +16,13 @@ import { getConquestStats } from "../../lib/conquestManager";
 import { toast } from "../common/ToastContainer";
 import { playSound } from "../../lib/soundManager";
 import {
+  getPlayerCardsState,
+  getCollectionStats,
+  type PlayerCardsState,
+} from "../../lib/cardsManager";
+import { TERRA_CARDS_CATALOG } from "../../lib/cardsData";
+import { CollectibleCard } from "../cards/CollectibleCard";
+import {
   getPlayerGamificationState,
   equipShopItem,
   getActiveTitleDetails,
@@ -178,21 +185,28 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
   const [gamification, setGamification] = useState<PlayerGamificationState>(() =>
     getPlayerGamificationState(targetUserId)
   );
+  const [cardsState, setCardsState] = useState<PlayerCardsState>(() =>
+    getPlayerCardsState(targetUserId)
+  );
 
   useEffect(() => {
     setCurrentFed(getUserFederation(targetUserId));
     setGamification(getPlayerGamificationState(targetUserId));
+    setCardsState(getPlayerCardsState(targetUserId));
   }, [targetUserId]);
 
   useEffect(() => {
     const handleGamificationUpdated = () => {
       setGamification(getPlayerGamificationState(targetUserId));
+      setCardsState(getPlayerCardsState(targetUserId));
     };
     window.addEventListener("terracost_gamification_updated", handleGamificationUpdated);
     window.addEventListener("terracoast:profile_updated", handleGamificationUpdated);
+    window.addEventListener("terracoast_cards_updated", handleGamificationUpdated);
     return () => {
       window.removeEventListener("terracost_gamification_updated", handleGamificationUpdated);
       window.removeEventListener("terracoast:profile_updated", handleGamificationUpdated);
+      window.removeEventListener("terracoast_cards_updated", handleGamificationUpdated);
     };
   }, [targetUserId]);
 
@@ -607,6 +621,18 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
   }, [targetUserId, gamification.inventory?.titles]);
 
   const totalTitlesCount = titles.length + unlockedShopTitles.length;
+
+  const cardStats = useMemo(() => getCollectionStats(targetUserId), [cardsState, targetUserId]);
+
+  const showcaseCards = useMemo(() => {
+    if (cardsState.favoriteCardIds && cardsState.favoriteCardIds.length > 0) {
+      return cardsState.favoriteCardIds
+        .map((id) => TERRA_CARDS_CATALOG.find((c) => c.id === id))
+        .filter(Boolean) as typeof TERRA_CARDS_CATALOG;
+    }
+    const ownedIds = Object.keys(cardsState.ownedCards);
+    return TERRA_CARDS_CATALOG.filter((c) => ownedIds.includes(c.id)).slice(0, 3);
+  }, [cardsState.favoriteCardIds, cardsState.ownedCards]);
 
   const handleEquipFrame = async (frameId: string) => {
     if (!isOwnProfile || !currentUserProfile) return;
@@ -1208,6 +1234,117 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* 🎴 VITRINE & COLLECTION TERRADEX */}
+        <div className="bg-white rounded-3xl border-2 border-slate-200 border-b-4 border-b-slate-300 shadow-sm p-6 sm:p-7">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-100 border-2 border-indigo-200 border-b-4 border-b-indigo-300 flex items-center justify-center text-indigo-600 shadow-sm">
+                <span>🎴</span>
+              </div>
+              <span>Collection TerraDex</span>
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-indigo-900 bg-indigo-50 border border-indigo-200 px-3.5 py-1 rounded-full shadow-sm">
+                {cardStats.totalCollected} / {cardStats.totalCards} cartes ({cardStats.percentage}%)
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate("/terradex")}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs uppercase tracking-wider active:translate-y-0.5 shadow-sm cursor-pointer"
+              >
+                <span>Ouvrir l'Album</span>
+                <span>→</span>
+              </button>
+            </div>
+          </div>
+
+          {/* En-tête statistiques de collection */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-center">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                Rang Collectionneur
+              </span>
+              <span className="text-xs sm:text-sm font-black text-slate-900 mt-0.5 flex items-center justify-center gap-1">
+                <span>{cardStats.collectorRank.badge}</span>
+                <span className="truncate">{cardStats.collectorRank.title}</span>
+              </span>
+            </div>
+
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-center">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                Complétion Album
+              </span>
+              <span className="text-base sm:text-lg font-black text-indigo-600 mt-0.5 block font-mono">
+                {cardStats.percentage}%
+              </span>
+            </div>
+
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-center">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                Poussière d'Étoile 🪐
+              </span>
+              <span className="text-base sm:text-lg font-black text-purple-700 mt-0.5 block font-mono">
+                {cardStats.stardust}
+              </span>
+            </div>
+
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-center">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                Boosters Déballés
+              </span>
+              <span className="text-base sm:text-lg font-black text-amber-600 mt-0.5 block font-mono">
+                {cardStats.totalPacksOpened} 📦
+              </span>
+            </div>
+          </div>
+
+          {/* Vitrine des 3 cartes favorites ou plus rares */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                <span>Vitrine d'Honneur des Cartes</span>
+              </h3>
+              {isOwnProfile && (
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Épinglables depuis l'inspecteur du TerraDex
+                </span>
+              )}
+            </div>
+
+            {showcaseCards.length > 0 ? (
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 p-4 rounded-3xl bg-slate-900 border border-slate-800">
+                {showcaseCards.map((c) => (
+                  <div key={c.id} className="flex flex-col items-center">
+                    <CollectibleCard
+                      card={c}
+                      entry={cardsState.ownedCards[c.id]}
+                      isUnlocked={true}
+                      size="sm"
+                      interactive={true}
+                      showFlipButton={false}
+                      onClick={() => navigate("/terradex")}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                <p className="text-xs text-slate-600 font-bold">
+                  Aucune carte débloquée pour l'instant.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate("/terradex")}
+                  className="mt-2 text-xs font-black text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                >
+                  Ouvrir votre premier booster gratuit dans le TerraDex !
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

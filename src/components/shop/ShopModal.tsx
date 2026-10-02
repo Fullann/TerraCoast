@@ -227,6 +227,24 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
         </div>
 
         {/* 👑 Console Rapide Administrateur */}
+        {/* Banner TerraDex */}
+        <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 px-4 py-2 flex items-center justify-between text-white border-b border-indigo-800">
+          <div className="flex items-center gap-2 text-xs font-black">
+            <span>🎴</span>
+            <span className="truncate">Nouveau : Boosters & Cartes TerraDex !</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              window.location.href = "/terradex";
+            }}
+            className="text-[11px] font-black bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-xl transition-all shadow-xs shrink-0 cursor-pointer"
+          >
+            Explorer →
+          </button>
+        </div>
+
         {profile?.role === "admin" && (
           <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-b border-amber-200/80 px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs font-black text-amber-900">

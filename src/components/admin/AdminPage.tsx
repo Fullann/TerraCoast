@@ -23,6 +23,7 @@ import {
   Star,
   ArrowRight,
   Sliders,
+  Sparkles,
 } from "lucide-react";
 import {
   getPlayerGamificationState,
@@ -506,6 +507,7 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
       "category-management": "/admin/categories",
       "difficulty-management": "/admin/difficulties",
       "quiz-type-management": "/admin/types",
+      "cards-management": "/admin/cards",
     };
     navigate(viewToPath[view] ?? `/admin/${view}`);
     onNavigate?.(view);
@@ -1215,6 +1217,32 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
               </p>
             </div>
             <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
+              <span>Gérer les cartes</span>
+              <ArrowRight className="w-3 h-3" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => goToSection("cards-management", "cartes")}
+            className="p-4 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/40 transition-all text-left group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2 rounded-lg bg-amber-100 text-amber-700 group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-4 h-4" />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded-full">
+                  TerraDex
+                </span>
+              </div>
+              <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-amber-700 transition-colors">
+                Cartes TerraDex & Raretés
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                Catalogue de cartes, création, attribution des raretés et drop rates des boosters.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700 mt-3 pt-2 border-t border-slate-100 group-hover:translate-x-0.5 transition-transform">
               <span>Gérer les cartes</span>
               <ArrowRight className="w-3 h-3" />
             </div>

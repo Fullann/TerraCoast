@@ -26,6 +26,8 @@ import { triggerConfetti } from "../common/Confetti";
 import { playSound } from "../../lib/soundManager";
 import { toast } from "../common/ToastContainer";
 import { Avatar } from "../common/Avatar";
+import { BOOSTER_PACKS, type BoosterPack } from "../../lib/cardsData";
+import { BoosterOpeningModal } from "../cards/BoosterOpeningModal";
 
 export function ShopPage() {
   const navigate = useNavigate();
@@ -34,8 +36,9 @@ export function ShopPage() {
     getPlayerGamificationState(profile?.id)
   );
   const [selectedCategory, setSelectedCategory] = useState<
-    "all" | "consumable" | "theme" | "frame" | "title"
+    "all" | "consumable" | "theme" | "frame" | "title" | "cards"
   >("all");
+  const [activeBoosterPack, setActiveBoosterPack] = useState<BoosterPack | null>(null);
   const [adminCustomGems, setAdminCustomGems] = useState("");
   const [adminCustomLives, setAdminCustomLives] = useState("");
 
@@ -464,6 +467,7 @@ export function ShopPage() {
           {[
             { id: "all", label: "Tout le catalogue", icon: ShoppingBag },
             { id: "consumable", label: "Boosters & Vies", icon: Zap },
+            { id: "cards", label: "Boosters TerraDex 🎴", icon: Sparkles },
             { id: "theme", label: "Thèmes de Globe 3D", icon: Globe2 },
             { id: "frame", label: "Cadres d'Avatar", icon: Smile },
             { id: "title", label: "Titres Honorifiques", icon: Award },
@@ -487,6 +491,80 @@ export function ShopPage() {
             );
           })}
         </div>
+
+        {/* SECTION BOOSTERS TERRADEX */}
+        {(selectedCategory === "all" || selectedCategory === "cards") && (
+          <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 rounded-3xl p-6 sm:p-7 border border-indigo-700/50 shadow-xl text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-amber-400 bg-amber-950/70 border border-amber-700 px-3 py-1 rounded-full">
+                  Nouveauté TerraDex 🎴
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black mt-2">
+                  Boosters de Cartes à Collectionner
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Débloquez des cartes rares, complétez votre Pokédex de géographie et forgez les pièces manquantes avec la poussière d'étoile !
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate("/terradex")}
+                className="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5 self-start sm:self-center shrink-0 cursor-pointer"
+              >
+                <span>Voir mon TerraDex</span>
+                <span>→</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {BOOSTER_PACKS.map((pack) => {
+                const canAfford = pack.priceGems === 0 || gamification.gems >= pack.priceGems;
+                return (
+                  <div
+                    key={pack.id}
+                    className="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80 flex flex-col justify-between hover:border-indigo-400 transition-all shadow-md group"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div
+                          className={`w-10 h-10 rounded-xl bg-gradient-to-br ${pack.gradient} flex items-center justify-center text-xl shadow-inner`}
+                        >
+                          {pack.icon}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                          {pack.badge || `${pack.cardsCount} cartes`}
+                        </span>
+                      </div>
+
+                      <h4 className="font-black text-white text-sm mb-1 group-hover:text-indigo-300 transition-colors">
+                        {pack.name}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 leading-snug font-medium mb-3">
+                        {pack.description}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={!canAfford}
+                      onClick={() => setActiveBoosterPack(pack)}
+                      className={`w-full py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
+                        canAfford
+                          ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white active:scale-95"
+                          : "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed"
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{pack.priceGems === 0 ? "Ouvrir (Gratuit)" : `Ouvrir (${pack.priceGems} 💎)`}</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Grille des Articles */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -661,6 +739,16 @@ export function ShopPage() {
           })}
         </div>
       </div>
+
+      {activeBoosterPack && (
+        <BoosterOpeningModal
+          isOpen={Boolean(activeBoosterPack)}
+          onClose={() => setActiveBoosterPack(null)}
+          pack={activeBoosterPack}
+          userId={profile?.id}
+          onPackOpened={refreshState}
+        />
+      )}
     </div>
   );
 }
