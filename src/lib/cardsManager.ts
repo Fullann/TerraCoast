@@ -17,6 +17,7 @@ import {
   getPlayerGamificationState,
   savePlayerGamificationState,
 } from "./gamificationManager";
+import { supabase } from "./supabase";
 
 export interface PlayerCardEntry {
   count: number;
@@ -365,12 +366,75 @@ export function getPlayerCardsState(userId?: string): PlayerCardsState {
   }
 }
 
+let syncTimeout: any = null;
+
 /**
- * Sauvegarde l'état de la collection et émet un événement réactif
+ * Synchronise l'état des cartes avec le compte cloud Supabase
+ */
+export async function syncCardsToCloud(userId: string, state: PlayerCardsState): Promise<void> {
+  if (!userId || userId === "guest") return;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && user.id === userId) {
+      await supabase.auth.updateUser({
+        data: {
+          terracoast_cards_state: state,
+        },
+      });
+    }
+  } catch {
+    // Synchronisation cloud non-bloquante
+  }
+}
+
+/**
+ * Hydrate et fusionne les cartes depuis le cloud Supabase vers le local
+ */
+export async function hydrateCardsFromCloud(userId: string): Promise<PlayerCardsState | null> {
+  if (!userId || userId === "guest") return null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && user.id === userId && user.user_metadata?.terracoast_cards_state) {
+      const cloudState = user.user_metadata.terracoast_cards_state as PlayerCardsState;
+      const localState = getPlayerCardsState(userId);
+
+      // Fusion intelligente des cartes
+      const mergedOwned = { ...(localState.ownedCards || {}) };
+      Object.entries(cloudState.ownedCards || {}).forEach(([cardId, entry]) => {
+        if (!mergedOwned[cardId] || entry.count > mergedOwned[cardId].count) {
+          mergedOwned[cardId] = entry;
+        } else if (entry.shiny && !mergedOwned[cardId].shiny) {
+          mergedOwned[cardId].shiny = true;
+        }
+      });
+
+      const mergedState: PlayerCardsState = {
+        ownedCards: mergedOwned,
+        stardust: Math.max(localState.stardust || 0, cloudState.stardust || 0),
+        totalPacksOpened: Math.max(localState.totalPacksOpened || 0, cloudState.totalPacksOpened || 0),
+        lastDailyPackClaimedAt: localState.lastDailyPackClaimedAt || cloudState.lastDailyPackClaimedAt,
+        favoriteCardIds:
+          localState.favoriteCardIds && localState.favoriteCardIds.length > 0
+            ? localState.favoriteCardIds
+            : cloudState.favoriteCardIds || [],
+      };
+
+      savePlayerCardsState(userId, mergedState, false);
+      return mergedState;
+    }
+  } catch {
+    // Mode dégradé hors ligne
+  }
+  return null;
+}
+
+/**
+ * Sauvegarde l'état de la collection et émet un événement réactif (avec sync cloud optionnelle)
  */
 export function savePlayerCardsState(
   userId: string | undefined,
-  state: PlayerCardsState
+  state: PlayerCardsState,
+  syncCloud: boolean = true
 ): void {
   const key = getStorageKey(userId);
   try {
@@ -379,6 +443,12 @@ export function savePlayerCardsState(
       window.dispatchEvent(
         new CustomEvent("terracoast_cards_updated", { detail: { userId, state } })
       );
+    }
+    if (syncCloud && userId && userId !== "guest") {
+      if (syncTimeout) clearTimeout(syncTimeout);
+      syncTimeout = setTimeout(() => {
+        syncCardsToCloud(userId, state);
+      }, 1500);
     }
   } catch (e) {
     console.error("Error saving cards state:", e);

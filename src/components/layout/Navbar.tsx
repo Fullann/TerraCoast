@@ -32,6 +32,7 @@ import {
   getUserLeagueProgress,
   getActiveTitleDetails,
 } from "../../lib/gamificationManager";
+import { canClaimDailyPack } from "../../lib/cardsManager";
 import { MobileBottomNav } from "./MobileBottomNav";
 
 export function Navbar() {
@@ -54,17 +55,27 @@ export function Navbar() {
   const [gamification, setGamification] = useState(() =>
     getPlayerGamificationState(profile?.id)
   );
+  const [dailyPackAvailable, setDailyPackAvailable] = useState(() =>
+    canClaimDailyPack(profile?.id).available
+  );
 
   useEffect(() => {
     setGamification(getPlayerGamificationState(profile?.id));
+    setDailyPackAvailable(canClaimDailyPack(profile?.id).available);
 
     const handleUpdate = () => {
       setGamification(getPlayerGamificationState(profile?.id));
     };
 
+    const handleCardsUpdate = () => {
+      setDailyPackAvailable(canClaimDailyPack(profile?.id).available);
+    };
+
     window.addEventListener("terracost_gamification_updated", handleUpdate);
+    window.addEventListener("terracoast_cards_updated", handleCardsUpdate);
     return () => {
       window.removeEventListener("terracost_gamification_updated", handleUpdate);
+      window.removeEventListener("terracoast_cards_updated", handleCardsUpdate);
     };
   }, [profile?.id]);
 
@@ -305,6 +316,9 @@ export function Navbar() {
                   >
                     <Compass className="w-4 h-4 text-teal-600 shrink-0" />
                     <span className="hidden lg:inline">ATLAS</span>
+                    {dailyPackAvailable && (
+                      <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white animate-pulse shrink-0" />
+                    )}
                     <ChevronDown
                       className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${
                         openDropdown === "atlas" ? "rotate-180 text-teal-600" : ""
@@ -367,23 +381,31 @@ export function Navbar() {
                           setOpenDropdown(null);
                           navigate("/terradex");
                         }}
-                        className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-indigo-50 transition-all text-left group mt-1 border-t border-slate-100"
+                        className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-indigo-50 transition-all text-left group mt-1 border-t border-slate-100"
                       >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg shadow-sm">
-                          🎴
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-black text-sm text-slate-800 group-hover:text-indigo-800">
-                              Le TerraDex
-                            </span>
-                            <span className="text-[9px] bg-indigo-600 text-white font-black px-1 rounded">
-                              CARTES
-                            </span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center text-lg shadow-sm">
+                            🎴
                           </div>
-                          <p className="text-[11px] text-slate-500 font-semibold">
-                            60 cartes à collectionner & boosters
-                          </p>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-black text-sm text-slate-800 group-hover:text-indigo-800">
+                                Le TerraDex
+                              </span>
+                              {dailyPackAvailable ? (
+                                <span className="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.5 rounded-full animate-bounce shadow-xs">
+                                  🎁 DISPO
+                                </span>
+                              ) : (
+                                <span className="text-[9px] bg-indigo-600 text-white font-black px-1 rounded">
+                                  CARTES
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-semibold">
+                              {dailyPackAvailable ? "Booster gratuit prêt à ouvrir !" : "60 cartes à collectionner & boosters"}
+                            </p>
+                          </div>
                         </div>
                       </button>
                     </div>
@@ -778,10 +800,17 @@ export function Navbar() {
                         setOpenDropdown(null);
                         navigate("/terradex");
                       }}
-                      className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl hover:bg-indigo-50 font-black text-xs text-slate-700 hover:text-indigo-700 transition-colors text-left"
+                      className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-indigo-50 font-black text-xs text-slate-700 hover:text-indigo-700 transition-colors text-left"
                     >
-                      <Sparkles className="w-4 h-4 text-indigo-600" />
-                      <span>Mon TerraDex (Cartes 🎴)</span>
+                      <div className="flex items-center gap-2.5">
+                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                        <span>Mon TerraDex (Cartes 🎴)</span>
+                      </div>
+                      {dailyPackAvailable && (
+                        <span className="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.5 rounded-full animate-bounce">
+                          🎁 DISPO
+                        </span>
+                      )}
                     </button>
 
                     <button

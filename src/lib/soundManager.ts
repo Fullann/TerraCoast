@@ -18,6 +18,24 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
+// Déverrouillage automatique au premier tap / interaction (indispensable sous Safari iOS)
+if (typeof window !== "undefined") {
+  const unlockAudio = () => {
+    try {
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+    } catch {}
+    window.removeEventListener("pointerdown", unlockAudio);
+    window.removeEventListener("touchstart", unlockAudio);
+    window.removeEventListener("keydown", unlockAudio);
+  };
+  window.addEventListener("pointerdown", unlockAudio, { passive: true });
+  window.addEventListener("touchstart", unlockAudio, { passive: true });
+  window.addEventListener("keydown", unlockAudio, { passive: true });
+}
+
 const SOUND_STORAGE_KEY = "terracoast_sound_enabled";
 
 export function isSoundEnabled(): boolean {

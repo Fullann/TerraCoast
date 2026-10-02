@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   X,
   Award,
@@ -6,7 +7,11 @@ import {
   Hammer,
   Star,
   Globe,
+  Share2,
+  Compass,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { renderTerraCardShareCanvas } from "../../lib/visualShareCard";
 import {
   type TerraCard,
   RARITY_CONFIG,
@@ -48,14 +53,23 @@ export function CardDetailModal({
   onClose,
   onStateChanged,
 }: CardDetailModalProps) {
+  const navigate = useNavigate();
+  const { profile } = useAuth();
   const { language } = useLanguage();
   const [modalLang, setModalLang] = useState<Language>(language);
   const [selectedTriviaOption, setSelectedTriviaOption] = useState<number | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
   const [triviaFeedback, setTriviaFeedback] = useState<{
     correct: boolean;
     message: string;
     explanation?: string;
   } | null>(null);
+
+  useEffect(() => {
+    setSelectedTriviaOption(null);
+    setTriviaFeedback(null);
+    setModalLang(language);
+  }, [card?.id, language]);
 
   const rawTranslated = useTranslatedCard(card, modalLang);
 
@@ -120,6 +134,25 @@ export function CardDetailModal({
     onStateChanged?.();
   };
 
+  const handleShareCard = async () => {
+    if (!card) return;
+    setIsSharing(true);
+    playSound("click");
+    try {
+      const dataUrl = await renderTerraCardShareCanvas(translated, entry, profile?.pseudo);
+      const link = document.createElement("a");
+      link.download = `terracoast_card_${card.number}_${card.id}.png`;
+      link.href = dataUrl;
+      link.click();
+      playSound("success");
+      toast.success("Image de la carte téléchargée avec succès ! 🎴");
+    } catch {
+      toast.error("Impossible de générer l'image de la carte.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const formattedNumber = `#${String(card.number).padStart(3, "0")}`;
 
   return (
@@ -153,7 +186,7 @@ export function CardDetailModal({
           />
 
           {isUnlocked && (
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={handleToggleFavorite}
@@ -168,7 +201,18 @@ export function CardDetailModal({
                     isFavorite ? "fill-amber-950 text-amber-950" : "text-amber-400"
                   }`}
                 />
-                <span>{isFavorite ? "Épinglée en vitrine" : "Épingler en vitrine (Profil)"}</span>
+                <span>{isFavorite ? "En vitrine" : "Épingler (Profil)"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareCard}
+                disabled={isSharing}
+                className="py-1.5 px-3 rounded-xl text-xs font-black bg-indigo-600 hover:bg-indigo-500 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+                title="Télécharger l'image officielle de la carte"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>{isSharing ? "Génération..." : "Partager 📤"}</span>
               </button>
             </div>
           )}
@@ -267,6 +311,42 @@ export function CardDetailModal({
               <p className="text-xs text-amber-950 font-medium leading-relaxed">
                 {translated.funFact}
               </p>
+            </div>
+
+            {/* Passerelle Cartographique : Atlas 3D & Conquête */}
+            <div className="bg-gradient-to-r from-sky-50 to-indigo-50 rounded-2xl p-3.5 border border-sky-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+              <div className="text-left">
+                <span className="text-[10px] font-black uppercase tracking-wider text-sky-800 block">
+                  Passerelle Cartographique 🗺️
+                </span>
+                <span className="text-xs text-slate-600 font-medium">
+                  Explorez « {translated.name} » en direct dans nos modes de jeu
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/atlas?search=${encodeURIComponent(card.name)}`);
+                  }}
+                  className="flex-1 sm:flex-none py-1.5 px-3 rounded-xl bg-white hover:bg-sky-100 text-sky-800 border border-sky-300 text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                >
+                  <Globe className="w-3.5 h-3.5 text-sky-600" />
+                  <span>Atlas 3D</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/conquest?search=${encodeURIComponent(card.name)}`);
+                  }}
+                  className="flex-1 sm:flex-none py-1.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Conquête ⚔️</span>
+                </button>
+              </div>
             </div>
 
             {/* Quiz Flash Bonus */}

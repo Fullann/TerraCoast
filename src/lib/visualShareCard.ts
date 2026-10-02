@@ -1,3 +1,6 @@
+import type { TerraCard } from "./cardsData";
+import type { PlayerCardEntry } from "./cardsManager";
+
 export interface ShareCardData {
   title: string;
   subtitle?: string;
@@ -524,4 +527,178 @@ export function drawConquestCollectorCard(
   ctx.fillStyle = "#475569";
   ctx.font = "14px sans-serif";
   ctx.fillText("Carte holographique officielle générée sur TerraCoast", 50, 1010);
+}
+
+/**
+ * 🎴 Génère une image PNG haute résolution d'une carte TerraDex pour partage réseaux sociaux
+ */
+export async function renderTerraCardShareCanvas(
+  card: TerraCard,
+  entry?: PlayerCardEntry,
+  playerPseudo?: string
+): Promise<string> {
+  const canvas = document.createElement("canvas");
+  const w = 720;
+  const h = 1000;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context not available");
+
+  // Rareté & Couleurs
+  const rarityColors: Record<string, { main: string; glow: string; label: string }> = {
+    common: { main: "#94a3b8", glow: "#64748b", label: "COMMUNE ★" },
+    rare: { main: "#38bdf8", glow: "#0284c7", label: "RARE ★★" },
+    epic: { main: "#c084fc", glow: "#9333ea", label: "ÉPIQUE ★★★" },
+    legendary: { main: "#fbbf24", glow: "#d97706", label: "LÉGENDAIRE ★★★★" },
+    mythic: { main: "#f472b6", glow: "#db2777", label: "MYTHIQUE ★★★★★" },
+  };
+  const rarity = rarityColors[card.rarity] || rarityColors.common;
+  const isShiny = Boolean(entry?.shiny);
+
+  // 1. Fond sombre luxueux dégradé
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+  bgGrad.addColorStop(0, "#090d16");
+  bgGrad.addColorStop(0.5, "#0f172a");
+  bgGrad.addColorStop(1, "#020617");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // 2. Halo d'ambiance cosmique centré
+  const glowGrad = ctx.createRadialGradient(w / 2, 280, 50, w / 2, 280, 360);
+  glowGrad.addColorStop(0, isShiny ? "rgba(244, 114, 182, 0.25)" : `${rarity.glow}33`);
+  glowGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = glowGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // 3. Cadre orné extérieur
+  ctx.strokeStyle = isShiny ? "#fbcfe8" : rarity.main;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  drawRoundedRect(ctx, 30, 30, w - 60, h - 60, 28);
+  ctx.stroke();
+
+  // Filet intérieur subtil
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  drawRoundedRect(ctx, 42, 42, w - 84, h - 84, 20);
+  ctx.stroke();
+
+  // 4. En-tête : Numéro Pokédex + Badge TerraDex + Rareté
+  ctx.fillStyle = "#fbbf24";
+  ctx.font = "bold 20px monospace";
+  const cardNum = `#${String(card.number).padStart(3, "0")}`;
+  ctx.fillText(`🎴 TerraDex • ${cardNum}`, 60, 78);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = isShiny ? "#ec4899" : rarity.main;
+  ctx.font = "bold 18px sans-serif";
+  ctx.fillText(isShiny ? `✨ HOLO FOIL • ${rarity.label}` : rarity.label, w - 60, 78);
+  ctx.textAlign = "left";
+
+  // 5. Médaillon central 3D
+  const boxY = 110;
+  const boxH = 260;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+  ctx.strokeStyle = `${rarity.main}55`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  drawRoundedRect(ctx, 60, boxY, w - 120, boxH, 24);
+  ctx.fill();
+  ctx.stroke();
+
+  // Symbole central (drapeau ou icône)
+  ctx.font = "95px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(card.flag || card.icon, w / 2, boxY + 115);
+
+  // Nom de la carte
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 38px sans-serif";
+  ctx.fillText(card.name, w / 2, boxY + 185);
+
+  // Slogan
+  ctx.fillStyle = isShiny ? "#f472b6" : rarity.main;
+  ctx.font = "italic 19px sans-serif";
+  ctx.fillText(`« ${card.tagline} »`, w / 2, boxY + 225);
+  ctx.textAlign = "left";
+
+  // 6. Données Cartographiques (Stats)
+  const statsY = 400;
+  const statsEntries = Object.entries(card.stats).slice(0, 4);
+  const colW = (w - 120 - 15) / 2;
+  const rowH = 75;
+
+  statsEntries.forEach(([k, v], idx) => {
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    const x = 60 + col * (colW + 15);
+    const y = statsY + row * (rowH + 12);
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    drawRoundedRect(ctx, x, y, colW, rowH, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "bold 13px sans-serif";
+    ctx.fillText(k.replace(/_/g, " "), x + 16, y + 28);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 18px sans-serif";
+    ctx.fillText(String(v), x + 16, y + 56);
+  });
+
+  // 7. Anecdote / Le saviez-vous ?
+  const factY = 600;
+  const factH = 260;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  drawRoundedRect(ctx, 60, factY, w - 120, factH, 20);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#f59e0b";
+  ctx.font = "bold 20px sans-serif";
+  ctx.fillText("💡 Le Saviez-vous ?", 85, factY + 45);
+
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "18px sans-serif";
+  const words = (card.funFact || card.description).split(" ");
+  let curLine = "";
+  let textY = factY + 85;
+  for (const word of words) {
+    const testLine = curLine + word + " ";
+    if (ctx.measureText(testLine).width > w - 170) {
+      ctx.fillText(curLine, 85, textY);
+      curLine = word + " ";
+      textY += 30;
+    } else {
+      curLine = testLine;
+    }
+  }
+  ctx.fillText(curLine, 85, textY);
+
+  // 8. Footer Collector & Signature
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "bold 17px sans-serif";
+  ctx.fillText(`🎮 Collectionné par : ${playerPseudo || "Explorateur"}`, 60, 920);
+
+  ctx.fillStyle = rarity.main;
+  ctx.font = "bold 17px sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("🌍 terracoast.ch", w - 60, 920);
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = "#475569";
+  ctx.font = "14px sans-serif";
+  ctx.fillText("Carte officielle TerraDex • Géographie mondiale & TCG", 60, 945);
+
+  return canvas.toDataURL("image/png");
 }

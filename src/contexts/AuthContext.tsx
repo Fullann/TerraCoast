@@ -10,6 +10,7 @@ import {
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { Database } from "../lib/database.types";
+import { hydrateCardsFromCloud } from "../lib/cardsManager";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       const profileData = await fetchProfile(user.id);
       setProfile(profileData);
+      hydrateCardsFromCloud(user.id).catch(() => {});
     }
   }, [user, fetchProfile]);
 

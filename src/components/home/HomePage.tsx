@@ -21,6 +21,12 @@ import {
   getUserLeagueProgress,
 } from "../../lib/gamificationManager";
 import { FeaturedCountryCard } from "./FeaturedCountryCard";
+import { BOOSTER_PACKS, type BoosterPack } from "../../lib/cardsData";
+import {
+  canClaimDailyPack,
+  getCollectionStats,
+} from "../../lib/cardsManager";
+import { BoosterOpeningModal } from "../cards/BoosterOpeningModal";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"];
@@ -47,6 +53,27 @@ export function HomePage() {
     dailyPoints: 0,
     maxDailyPoints: 0,
   });
+  const [activeBoosterPack, setActiveBoosterPack] = useState<BoosterPack | null>(null);
+  const [dailyStatus, setDailyStatus] = useState(() => canClaimDailyPack(profile?.id));
+  const [collectionStats, setCollectionStats] = useState(() => getCollectionStats(profile?.id));
+
+  useEffect(() => {
+    const updateDaily = () => {
+      setDailyStatus(canClaimDailyPack(profile?.id));
+      setCollectionStats(getCollectionStats(profile?.id));
+    };
+
+    updateDaily();
+    const interval = setInterval(updateDaily, 15000);
+    return () => clearInterval(interval);
+  }, [profile?.id]);
+
+  const formatRemainingTime = (ms: number) => {
+    if (ms <= 0) return "";
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${mins.toString().padStart(2, "0")}m`;
+  };
 
   useEffect(() => {
     if (!profile) return;
@@ -507,6 +534,81 @@ export function HomePage() {
             </div>
           </div>
 
+          {/* 3.5. TerraDex & Booster Quotidien */}
+          <div className="card-duo p-5 bg-gradient-to-br from-indigo-950 via-slate-900 to-amber-950/40 text-white border-amber-500/30 shadow-xl relative overflow-hidden group">
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/20 transition-all duration-700" />
+            
+            <div className="flex items-center justify-between mb-3 relative z-10">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">🎴</span>
+                <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                  TerraDex Géographique
+                </span>
+              </div>
+              {dailyStatus.available ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-md animate-pulse">
+                  <span>🎁</span> DISPO
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                  ⏳ {formatRemainingTime(dailyStatus.remainingMs)}
+                </span>
+              )}
+            </div>
+
+            <div className="relative z-10">
+              <h3 className="text-base font-black text-white group-hover:text-amber-300 transition-colors flex items-center justify-between">
+                <span>Album & Booster</span>
+                <span className="text-xs font-black text-amber-400">
+                  {collectionStats.totalCollected}/{collectionStats.totalCards}
+                </span>
+              </h3>
+              
+              <p className="text-xs text-slate-300 mt-1 mb-3">
+                {dailyStatus.available
+                  ? "Votre pack de 3 cartes gratuites est disponible ! Ouvrez-le maintenant pour enrichir votre album."
+                  : `Album complété à ${collectionStats.percentage}%. Consultez votre vitrine ou obtenez de nouvelles cartes !`}
+              </p>
+
+              <div className="w-full bg-slate-800/80 rounded-full h-2 p-0.5 mb-4 border border-slate-700/50">
+                <div
+                  className="bg-gradient-to-r from-amber-400 via-amber-500 to-emerald-400 h-full rounded-full transition-all duration-700"
+                  style={{ width: `${Math.max(4, collectionStats.percentage)}%` }}
+                />
+              </div>
+
+              {dailyStatus.available ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const pack = BOOSTER_PACKS.find((p) => p.id === "pack_daily") || BOOSTER_PACKS[0];
+                      setActiveBoosterPack(pack);
+                    }}
+                    className="w-full py-2.5 px-4 btn-duo btn-duo-green text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40"
+                  >
+                    <span>🎁</span> OUVRIR MON PACK DU JOUR (3 CARTES)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/terradex")}
+                    className="w-full py-2 px-3 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                  >
+                    Voir mon TerraDex ({collectionStats.percentage}% complété) →
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => navigate("/terradex")}
+                  className="w-full py-2.5 px-4 btn-duo btn-duo-purple text-xs font-black flex items-center justify-center gap-2"
+                >
+                  <span>🎴</span> EXPLORER MON TERRADEX
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* 4. Carte de Conquête & Pokédex Géographique */}
           <div
             onClick={() => navigate("/conquest")}
@@ -611,6 +713,23 @@ export function HomePage() {
           }
         }}
       />
+
+      {activeBoosterPack && (
+        <BoosterOpeningModal
+          isOpen={true}
+          onClose={() => {
+            setActiveBoosterPack(null);
+            setDailyStatus(canClaimDailyPack(profile?.id));
+            setCollectionStats(getCollectionStats(profile?.id));
+          }}
+          pack={activeBoosterPack}
+          userId={profile?.id}
+          onPackOpened={() => {
+            setDailyStatus(canClaimDailyPack(profile?.id));
+            setCollectionStats(getCollectionStats(profile?.id));
+          }}
+        />
+      )}
     </div>
   );
 }
