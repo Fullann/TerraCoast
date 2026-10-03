@@ -1038,6 +1038,68 @@ export interface Database {
           created_at?: string
         }
       }
+      terra_cards: {
+        Row: {
+          id: string
+          number: number
+          name: string
+          category: string
+          rarity: string
+          continent: string
+          flag: string | null
+          icon: string
+          tagline: string
+          description: string
+          stats: Json
+          fun_fact: string
+          quote: string | null
+          color_scheme: Json
+          trivia: Json
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          number: number
+          name: string
+          category: string
+          rarity: string
+          continent: string
+          flag?: string | null
+          icon: string
+          tagline: string
+          description: string
+          stats: Json
+          fun_fact: string
+          quote?: string | null
+          color_scheme: Json
+          trivia: Json
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          number?: number
+          name?: string
+          category?: string
+          rarity?: string
+          continent?: string
+          flag?: string | null
+          icon?: string
+          tagline?: string
+          description?: string
+          stats?: Json
+          fun_fact?: string
+          quote?: string | null
+          color_scheme?: Json
+          trivia?: Json
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Functions: {
       log_admin_event: {

@@ -29,6 +29,7 @@ import {
   getCollectionStats,
   canClaimDailyPack,
   CARDS_CATALOG_UPDATED_EVENT,
+  syncCardsCatalogFromSupabase,
   type PlayerCardsState,
 } from "../../lib/cardsManager";
 import {
@@ -93,6 +94,7 @@ export function TerraDexPage() {
 
   useEffect(() => {
     refreshState();
+    syncCardsCatalogFromSupabase();
     const handleCardsUpdate = () => refreshState();
     const handleGemsUpdate = () => refreshState();
     const handleCatalogUpdate = () => refreshState();

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, type ChangeEvent } from "react";
+import { useState, useEffect, useMemo, useRef, type ChangeEvent } from "react";
 import {
   Sparkles,
   Plus,
@@ -31,6 +31,7 @@ import {
   adminResetCardsCatalog,
   adminExportCardsCatalog,
   adminImportCardsCatalog,
+  syncCardsCatalogFromSupabase,
 } from "../../lib/cardsManager";
 import { CollectibleCard } from "../cards/CollectibleCard";
 import { playSound } from "../../lib/soundManager";
@@ -58,6 +59,14 @@ export function CardsManagementPage() {
   const catalog = useMemo(() => getCardsCatalog(), [refreshTrigger]);
 
   const forceRefresh = () => setRefreshTrigger((prev) => prev + 1);
+
+  useEffect(() => {
+    syncCardsCatalogFromSupabase().then((res) => {
+      if (res.success) {
+        forceRefresh();
+      }
+    });
+  }, []);
 
   // Statistiques calculées du catalogue
   const stats = useMemo(() => {

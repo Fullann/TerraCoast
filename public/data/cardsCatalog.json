@@ -1,0 +1,2129 @@
+[
+  {
+    "id": "card_country_fr",
+    "number": 1,
+    "name": "France",
+    "category": "country",
+    "rarity": "common",
+    "continent": "Europe",
+    "flag": "🇫🇷",
+    "icon": "🥐",
+    "tagline": "L'Hexagone des Lumières",
+    "description": "Pays le plus visité au monde, célèbre pour son patrimoine culturel, sa gastronomie et sa diversité géographique s'étendant sur 12 fuseaux horaires grâce à ses territoires d'outre-mer.",
+    "stats": {
+      "Capitale": "Paris",
+      "Population": "68 millions",
+      "Superficie": "551 695 km²",
+      "Point_Culminant": "Mont Blanc (4 809 m)",
+      "Fuseaux_Horaires": "12 (record mondial)"
+    },
+    "funFact": "Grâce à ses départements et territoires d'outre-mer disséminés sur le globe, la France est le pays possédant le plus de fuseaux horaires au monde !",
+    "quote": "Liberté, Égalité, Fraternité",
+    "colorScheme": {
+      "from": "from-blue-600",
+      "via": "via-white",
+      "to": "to-red-600",
+      "accent": "#2563EB"
+    },
+    "trivia": {
+      "question": "Quel pays détient le record mondial du plus grand nombre de fuseaux horaires ?",
+      "options": [
+        "La Russie",
+        "La France",
+        "Les États-Unis",
+        "Le Royaume-Uni"
+      ],
+      "correctIndex": 1,
+      "explanation": "Avec ses territoires d'outre-mer, la France couvre 12 fuseaux horaires différents, devançant les États-Unis et la Russie (11 chacun)."
+    }
+  },
+  {
+    "id": "card_country_ch",
+    "number": 2,
+    "name": "Suisse",
+    "category": "country",
+    "rarity": "rare",
+    "continent": "Europe",
+    "flag": "🇨🇭",
+    "icon": "🏔️",
+    "tagline": "Le Cœur Alpin & Fédéral",
+    "description": "Confédération de 26 cantons nichée au cœur des Alpes, pionnière de la démocratie directe, du chocolat, des montres de précision et de la neutralité perpétuelle.",
+    "stats": {
+      "Capitale_Fédérale": "Berne",
+      "Population": "8.9 millions",
+      "Superficie": "41 285 km²",
+      "Langues_Officielles": "4 (Allemand, Français, Italien, Romanche)",
+      "Sommet_Emblématique": "Cervin (4 478 m)"
+    },
+    "funFact": "La Suisse n'a pas de capitale officielle dans sa Constitution : Berne est désignée comme 'ville fédérale' abritant le gouvernement.",
+    "quote": "Unus pro omnibus, omnes pro uno",
+    "colorScheme": {
+      "from": "from-red-600",
+      "to": "to-red-700",
+      "accent": "#DC2626"
+    },
+    "trivia": {
+      "question": "Combien de langues nationales officielles la Suisse compte-t-elle ?",
+      "options": [
+        "2 langues",
+        "3 langues",
+        "4 langues",
+        "5 langues"
+      ],
+      "correctIndex": 2,
+      "explanation": "La Suisse reconnaît 4 langues nationales : l'allemand, le français, l'italien et le romanche."
+    }
+  },
+  {
+    "id": "card_country_jp",
+    "number": 3,
+    "name": "Japon",
+    "category": "country",
+    "rarity": "rare",
+    "continent": "Asie",
+    "flag": "🇯🇵",
+    "icon": "⛩️",
+    "tagline": "L'Archipel du Soleil Levant",
+    "description": "Composé de 14 125 îles, le Japon allie traditions millénaires, sanctuaires shintoïstes et mégapoles futuristes à la pointe de la technologie ferroviaire et robotique.",
+    "stats": {
+      "Capitale": "Tokyo",
+      "Population": "125 millions",
+      "Superficie": "377 975 km²",
+      "Nombre_d_Îles": "14 125",
+      "Volcan_Sacré": "Mont Fuji (3 776 m)"
+    },
+    "funFact": "Tokyo est l'aire métropolitaine la plus peuplée de la planète avec plus de 37 millions d'habitants dans son grand bassin urbain.",
+    "quote": "L'effort continu est le secret de la réussite",
+    "colorScheme": {
+      "from": "from-rose-500",
+      "to": "to-red-700",
+      "accent": "#E11D48"
+    },
+    "trivia": {
+      "question": "Quel est le point culminant et volcan sacré emblématique du Japon ?",
+      "options": [
+        "Mont Aso",
+        "Mont Fuji",
+        "Mont Kita",
+        "Mont Ontake"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le Mont Fuji (Fuji-san) culmine à 3 776 mètres d'altitude et est un stratovolcan actif considéré comme sacré."
+    }
+  },
+  {
+    "id": "card_country_br",
+    "number": 4,
+    "name": "Brésil",
+    "category": "country",
+    "rarity": "common",
+    "continent": "Amériques",
+    "flag": "🇧🇷",
+    "icon": "🦜",
+    "tagline": "Le Géant Émeraude d'Amérique du Sud",
+    "description": "Plus grand pays d'Amérique du Sud, abritant la majeure partie de la forêt amazonienne, le fleuve Amazone, le carnaval de Rio et une biodiversité inégalée.",
+    "stats": {
+      "Capitale": "Brasília",
+      "Population": "215 millions",
+      "Superficie": "8 515 767 km²",
+      "Fleuve_Majeur": "Amazone (6 992 km)",
+      "Langue": "Portugais"
+    },
+    "funFact": "Le Brésil est frontalier avec tous les pays d'Amérique du Sud à l'exception de deux : l'Équateur et le Chili !",
+    "quote": "Ordem e Progresso",
+    "colorScheme": {
+      "from": "from-emerald-500",
+      "via": "via-yellow-400",
+      "to": "to-blue-600",
+      "accent": "#10B981"
+    },
+    "trivia": {
+      "question": "Quels sont les deux seuls pays d'Amérique du Sud qui ne partagent PAS de frontière avec le Brésil ?",
+      "options": [
+        "Chili et Équateur",
+        "Pérou et Colombie",
+        "Argentine et Uruguay",
+        "Bolivie et Paraguay"
+      ],
+      "correctIndex": 0,
+      "explanation": "Le Chili et l'Équateur sont les deux seuls pays du continent sud-américain à n'avoir aucune frontière terrestre avec le Brésil."
+    }
+  },
+  {
+    "id": "card_country_is",
+    "number": 5,
+    "name": "Islande",
+    "category": "country",
+    "rarity": "epic",
+    "continent": "Europe",
+    "flag": "🇮🇸",
+    "icon": "🌋",
+    "tagline": "Terre de Feu et de Glace",
+    "description": "Île volcanique située sur la dorsale médio-atlantique où les volcans sous-glaciaires, les geysers bouillonnants et les aurores boréales façonnent un paysage d'un autre monde.",
+    "stats": {
+      "Capitale": "Reykjavik",
+      "Population": "390 000 hab.",
+      "Énergie": "100% renouvelable",
+      "Volcans_Actifs": "Plus de 30 systèmes",
+      "Particularité": "Pas de moustiques ni d'armée"
+    },
+    "funFact": "En Islande, près de 100% de l'électricité et du chauffage provient de sources renouvelables (géothermie et hydroélectricité).",
+    "colorScheme": {
+      "from": "from-sky-400",
+      "via": "via-indigo-600",
+      "to": "to-amber-500",
+      "accent": "#0284C7"
+    },
+    "trivia": {
+      "question": "Quelle est la particularité écologique majeure de la production énergétique islandaise ?",
+      "options": [
+        "100% nucléaire",
+        "100% issue des énergies renouvelables",
+        "Majoritairement au charbon",
+        "Importée à 80%"
+      ],
+      "correctIndex": 1,
+      "explanation": "L'Islande tire la quasi-totalité de son électricité et de son chauffage de la géothermie et des barrages hydroélectriques."
+    }
+  },
+  {
+    "id": "card_country_eg",
+    "number": 6,
+    "name": "Égypte",
+    "category": "country",
+    "rarity": "rare",
+    "continent": "Afrique",
+    "flag": "🇪🇬",
+    "icon": "🏺",
+    "tagline": "Le Don Éternel du Nil",
+    "description": "Berceau de l'une des plus anciennes et grandioses civilisations de l'humanité, carrefour stratégique entre l'Afrique et l'Asie grâce au canal de Suez.",
+    "stats": {
+      "Capitale": "Le Caire",
+      "Population": "110 millions",
+      "Superficie": "1 002 450 km²",
+      "Fleuve_Vital": "Le Nil (6 650 km)",
+      "Merveille_Antique": "Pyramide de Khéops"
+    },
+    "funFact": "Plus de 95% de la population égyptienne vit concentrée sur seulement 4% du territoire national, le long de la vallée fertile du Nil.",
+    "colorScheme": {
+      "from": "from-amber-500",
+      "via": "via-stone-100",
+      "to": "to-stone-900",
+      "accent": "#D97706"
+    },
+    "trivia": {
+      "question": "Quel pourcentage approximatif de la population égyptienne habite le long du Nil ?",
+      "options": [
+        "Environ 50%",
+        "Environ 75%",
+        "Plus de 95%",
+        "Moins de 30%"
+      ],
+      "correctIndex": 2,
+      "explanation": "Plus de 95% des Égyptiens résident dans la bande fertile du Nil et son delta, le reste du pays étant désertique."
+    }
+  },
+  {
+    "id": "card_country_bt",
+    "number": 7,
+    "name": "Bhoutan",
+    "category": "country",
+    "rarity": "legendary",
+    "continent": "Asie",
+    "flag": "🇧🇹",
+    "icon": "🐉",
+    "tagline": "Le Royaume du Bonheur National Brut",
+    "description": "Royaume himalayen préservé, pionnier mondial de l'indice de Bonheur National Brut (BNB) et seul pays au monde à présenter un bilan carbone négatif.",
+    "stats": {
+      "Capitale": "Thimphou",
+      "Population": "780 000 hab.",
+      "Bilan_Carbone": "Négatif (absorbe plus de CO₂)",
+      "Forêts": "Plus de 70% du territoire",
+      "Altitude_Moyenne": "Plus de 3 000 m"
+    },
+    "funFact": "La constitution du Bhoutan oblige le pays à maintenir au moins 60% de son territoire sous couverture forestière pour l'éternité.",
+    "colorScheme": {
+      "from": "from-amber-400",
+      "to": "to-orange-600",
+      "accent": "#F59E0B"
+    },
+    "trivia": {
+      "question": "Quelle mesure novatrice le Bhoutan a-t-il créée à la place du PIB pour évaluer son développement ?",
+      "options": [
+        "Le Bonheur National Brut (BNB)",
+        "L'Indice Zen",
+        "Le Taux de Méditation",
+        "Le Quotient d'Himalaya"
+      ],
+      "correctIndex": 0,
+      "explanation": "Le 4ème roi du Bhoutan a institué le Bonheur National Brut (BNB) en 1972, priorisant le bien-être spirituel et environnemental."
+    }
+  },
+  {
+    "id": "card_country_ca",
+    "number": 8,
+    "name": "Canada",
+    "category": "country",
+    "rarity": "common",
+    "continent": "Amériques",
+    "flag": "🇨🇦",
+    "icon": "🍁",
+    "tagline": "D'un Océan à l'Autre (A Mari Usque Ad Mare)",
+    "description": "Deuxième pays du globe par sa superficie, le Canada possède plus de lacs que tout le reste du monde réuni et la plus longue façade côtière terrestre.",
+    "stats": {
+      "Capitale": "Ottawa",
+      "Population": "40 millions",
+      "Superficie": "9 984 670 km²",
+      "Côtes": "202 080 km (record mondial)",
+      "Lacs": "Plus de 2 millions"
+    },
+    "funFact": "Le Canada abrite plus de 60% des lacs naturels de la planète entière !",
+    "colorScheme": {
+      "from": "from-red-600",
+      "via": "via-white",
+      "to": "to-red-600",
+      "accent": "#DC2626"
+    },
+    "trivia": {
+      "question": "Quel pays possède le plus long littoral côtier du monde ?",
+      "options": [
+        "La Russie",
+        "L'Indonésie",
+        "Le Canada",
+        "L'Australie"
+      ],
+      "correctIndex": 2,
+      "explanation": "Le Canada possède 202 080 km de côtes baignées par trois océans : Atlantique, Pacifique et Arctique."
+    }
+  },
+  {
+    "id": "card_country_au",
+    "number": 9,
+    "name": "Australie",
+    "category": "country",
+    "rarity": "common",
+    "continent": "Océanie",
+    "flag": "🇦🇺",
+    "icon": "🦘",
+    "tagline": "Le Continent Île de l'Outback",
+    "description": "Seul pays qui occupe à lui seul tout un continent, célèbre pour sa faune marsupiale unique, ses déserts ocres et la Grande Barrière de Corail.",
+    "stats": {
+      "Capitale": "Canberra",
+      "Population": "26 millions",
+      "Superficie": "7 692 024 km²",
+      "Faune_Endémique": "80% des espèces",
+      "Site_Sacré": "Uluru (Ayers Rock)"
+    },
+    "funFact": "L'Australie compte environ 50 millions de kangourous, soit presque le double de sa population humaine !",
+    "colorScheme": {
+      "from": "from-blue-700",
+      "via": "via-amber-500",
+      "to": "to-emerald-600",
+      "accent": "#1D4ED8"
+    },
+    "trivia": {
+      "question": "Quelle est la capitale officielle de l'Australie, choisie comme compromis entre Sydney et Melbourne ?",
+      "options": [
+        "Sydney",
+        "Melbourne",
+        "Brisbane",
+        "Canberra"
+      ],
+      "correctIndex": 3,
+      "explanation": "Canberra a été fondée en 1913 en tant que ville nouvelle et capitale de compromis entre les rivales Sydney et Melbourne."
+    }
+  },
+  {
+    "id": "card_country_mg",
+    "number": 10,
+    "name": "Madagascar",
+    "category": "country",
+    "rarity": "epic",
+    "continent": "Afrique",
+    "flag": "🇲🇬",
+    "icon": "🦎",
+    "tagline": "Le Sanctuaire Évolutif de l'Océan Indien",
+    "description": "Isolée depuis 88 millions d'années, cette immense île rouge abrite une faune et une flore que l'on ne trouve nulle part ailleurs sur Terre.",
+    "stats": {
+      "Capitale": "Antananarivo",
+      "Population": "29 millions",
+      "Superficie": "587 041 km²",
+      "Endémisme": "90% de la biodiversité",
+      "Arbre_Roi": "Baobab (6 espèces endémiques)"
+    },
+    "funFact": "Sur les 8 espèces de baobabs qui existent sur la planète, 6 ne poussent qu'à Madagascar !",
+    "colorScheme": {
+      "from": "from-emerald-600",
+      "via": "via-white",
+      "to": "to-red-600",
+      "accent": "#059669"
+    },
+    "trivia": {
+      "question": "Combien d'espèces de baobabs sur les 8 existantes dans le monde sont strictement endémiques de Madagascar ?",
+      "options": [
+        "2 espèces",
+        "4 espèces",
+        "6 espèces",
+        "Toutes les 8"
+      ],
+      "correctIndex": 2,
+      "explanation": "Madagascar possède 6 espèces de baobabs endémiques, tandis qu'une seule se trouve sur le continent africain et une en Australie."
+    }
+  },
+  {
+    "id": "card_country_no",
+    "number": 11,
+    "name": "Norvège",
+    "category": "country",
+    "rarity": "rare",
+    "continent": "Europe",
+    "flag": "🇳🇴",
+    "icon": "⚓",
+    "tagline": "Le Royaume des Fjords Majestueux",
+    "description": "Pays scandinave découpé par des fjords spectaculaires creusés par les glaciers, terre des Vikings, du soleil de minuit et des aurores boréales.",
+    "stats": {
+      "Capitale": "Oslo",
+      "Population": "5.5 millions",
+      "Fjords": "Plus de 1 190 fjords répertoriés",
+      "Fonds_Souverain": "Le plus important du monde (~1 400 Md$)"
+    },
+    "funFact": "Le fjord de Sognefjord s'enfonce sur plus de 204 kilomètres à l'intérieur des terres norvégiennes et plonge à 1 308 mètres de profondeur.",
+    "colorScheme": {
+      "from": "from-blue-600",
+      "via": "via-red-600",
+      "to": "to-white",
+      "accent": "#DC2626"
+    },
+    "trivia": {
+      "question": "Comment appelle-t-on une vallée glaciaire très profonde inondée par la mer, typique de la Norvège ?",
+      "options": [
+        "Un ria",
+        "Un fjord",
+        "Un atoll",
+        "Un canyon"
+      ],
+      "correctIndex": 1,
+      "explanation": "Un fjord est une ancienne vallée glaciaire aux parois abruptes envahie par la mer après la fonte des glaces."
+    }
+  },
+  {
+    "id": "card_country_in",
+    "number": 12,
+    "name": "Inde",
+    "category": "country",
+    "rarity": "common",
+    "continent": "Asie",
+    "flag": "🇮🇳",
+    "icon": "🪷",
+    "tagline": "Le Sous-Continent aux Mille Couleurs",
+    "description": "Pays le plus peuplé de la Terre, berceau de l'hindouisme, du bouddhisme, du yoga, du Taj Mahal et d'une diversité culturelle et linguistique vertigineuse.",
+    "stats": {
+      "Capitale": "New Delhi",
+      "Population": "1.43 milliard",
+      "Superficie": "3 287 263 km²",
+      "Langues_Reconnues": "22 langues officielles",
+      "Monument": "Taj Mahal"
+    },
+    "funFact": "L'Inde compte plus de 19 500 dialectes et langues maternelles parlés à travers son immense territoire !",
+    "colorScheme": {
+      "from": "from-orange-500",
+      "via": "via-white",
+      "to": "to-emerald-600",
+      "accent": "#EA580C"
+    },
+    "trivia": {
+      "question": "Combien de langues officielles sont reconnues par la Constitution de l'Inde dans sa 8ème annexe ?",
+      "options": [
+        "2 langues",
+        "12 langues",
+        "22 langues",
+        "50 langues"
+      ],
+      "correctIndex": 2,
+      "explanation": "La Constitution indienne reconnaît officiellement 22 langues régionales en plus de l'hindi et de l'anglais utilisés au niveau fédéral."
+    }
+  },
+  {
+    "id": "card_country_gr",
+    "number": 13,
+    "name": "Grèce",
+    "category": "country",
+    "rarity": "rare",
+    "continent": "Europe",
+    "flag": "🇬🇷",
+    "icon": "🏛️",
+    "tagline": "Le Berceau de la Méditerranée",
+    "description": "Terre natale de la démocratie, de la philosophie, des Jeux Olympiques et du mot 'géographie' lui-même (Gê = la Terre, graphein = décrire).",
+    "stats": {
+      "Capitale": "Athènes",
+      "Population": "10.4 millions",
+      "Nombre_d_Îles": "Environ 6 000 îles et îlots",
+      "Patrimoine_UNESCO": "19 sites majeurs"
+    },
+    "funFact": "C'est l'érudit grec Ératosthène qui, dès le IIIe siècle avant J.-C., a calculé avec une précision stupéfiante la circonférence de la Terre avec une simple ombre !",
+    "colorScheme": {
+      "from": "from-sky-500",
+      "via": "via-white",
+      "to": "to-blue-700",
+      "accent": "#0284C7"
+    },
+    "trivia": {
+      "question": "Quel savant grec de l'Antiquité a calculé la circonférence de la Terre à Alexandrie ?",
+      "options": [
+        "Aristote",
+        "Ératosthène",
+        "Pythagore",
+        "Platon"
+      ],
+      "correctIndex": 1,
+      "explanation": "Ératosthène de Cyrène (276-194 av. J.-C.) a mesuré l'ombre du soleil à Alexandrie et Syène pour calculer la rotondité terrestre."
+    }
+  },
+  {
+    "id": "card_country_nz",
+    "number": 14,
+    "name": "Nouvelle-Zélande",
+    "category": "country",
+    "rarity": "epic",
+    "continent": "Océanie",
+    "flag": "🇳🇿",
+    "icon": "🥝",
+    "tagline": "Aotearoa, Terre du Long Nuage Blanc",
+    "description": "Deux grandes îles du Pacifique Sud célébrées pour leurs paysages sauvages grandioses, la culture vibrante des Maoris et l'emblématique oiseau kiwi.",
+    "stats": {
+      "Capitale": "Wellington",
+      "Population": "5.2 millions",
+      "Particularité": "Première nation à accorder le droit de vote aux femmes (1893)",
+      "Nom_Māori": "Aotearoa"
+    },
+    "funFact": "La Nouvelle-Zélande a été la toute première nation autonome au monde à accorder le droit de vote aux femmes en 1893.",
+    "colorScheme": {
+      "from": "from-blue-800",
+      "via": "via-red-600",
+      "to": "to-slate-900",
+      "accent": "#1E40AF"
+    },
+    "trivia": {
+      "question": "En quelle année la Nouvelle-Zélande a-t-elle accordé le droit de vote aux femmes, devançant toutes les autres nations ?",
+      "options": [
+        "1893",
+        "1918",
+        "1944",
+        "1971"
+      ],
+      "correctIndex": 0,
+      "explanation": "En septembre 1893, la Nouvelle-Zélande est devenue le premier pays autonome à octroyer le droit de vote à toutes les femmes."
+    }
+  },
+  {
+    "id": "card_country_pe",
+    "number": 15,
+    "name": "Pérou",
+    "category": "country",
+    "rarity": "rare",
+    "continent": "Amériques",
+    "flag": "🇵🇪",
+    "icon": "🦙",
+    "tagline": "Terre Sacrée des Incas et des Andes",
+    "description": "Traversé par la majestueuse cordillère des Andes et bordé par l'océan Pacifique, le Pérou abrite la cité perchée du Machu Picchu et la source du fleuve Amazone.",
+    "stats": {
+      "Capitale": "Lima",
+      "Population": "34 millions",
+      "Merveille_du_Monde": "Machu Picchu (2 430 m)",
+      "Lac_d_Altitude": "Lac Titicaca (3 812 m)"
+    },
+    "funFact": "Le Pérou est la patrie d'origine de la pomme de terre : les agriculteurs andins y cultivent plus de 4 000 variétés différentes !",
+    "colorScheme": {
+      "from": "from-red-600",
+      "via": "via-white",
+      "to": "to-red-600",
+      "accent": "#DC2626"
+    },
+    "trivia": {
+      "question": "Quel aliment de base universel trouve son origine botanique et plus de 4 000 variétés au Pérou ?",
+      "options": [
+        "Le maïs",
+        "La pomme de terre",
+        "Le blé",
+        "Le riz"
+      ],
+      "correctIndex": 1,
+      "explanation": "La pomme de terre a été domestiquée par les peuples des Andes péruviennes il y a plus de 7 000 ans."
+    }
+  },
+  {
+    "id": "card_country_ma",
+    "number": 16,
+    "name": "Maroc",
+    "category": "country",
+    "rarity": "common",
+    "continent": "Afrique",
+    "flag": "🇲🇦",
+    "icon": "🕌",
+    "tagline": "La Porte de l'Atlas et du Sahara",
+    "description": "Royaume millénaire aux portes de l'Europe, baigné par l'Atlantique et la Méditerranée, réputé pour ses médinas impériales, ses oasis et les cimes enneigées du Haut Atlas.",
+    "stats": {
+      "Capitale": "Rabat",
+      "Population": "37 millions",
+      "Sommet": "Djebel Toubkal (4 167 m)",
+      "Détroit": "À 14 km de l'Espagne (Gibraltar)"
+    },
+    "funFact": "L'Université Al Quaraouiyine à Fès, fondée en 859 par Fatima al-Fihriya, est la plus ancienne université encore en activité au monde reconnue par l'UNESCO.",
+    "colorScheme": {
+      "from": "from-red-600",
+      "via": "via-emerald-700",
+      "to": "to-amber-500",
+      "accent": "#B91C1C"
+    },
+    "trivia": {
+      "question": "Quelle est la distance minimale séparant le Maroc et les côtes espagnoles au niveau du détroit de Gibraltar ?",
+      "options": [
+        "14 km",
+        "42 km",
+        "75 km",
+        "110 km"
+      ],
+      "correctIndex": 0,
+      "explanation": "Au point le plus resserré du détroit de Gibraltar, seulement 14,4 kilomètres séparent l'Afrique de l'Europe."
+    }
+  },
+  {
+    "id": "card_country_va",
+    "number": 17,
+    "name": "Cité du Vatican",
+    "category": "country",
+    "rarity": "mythic",
+    "continent": "Europe",
+    "flag": "🇻🇦",
+    "icon": "🗝️",
+    "tagline": "Le Plus Petit État Souverain de la Terre",
+    "description": "Enclave au cœur de Rome, le Vatican est le plus petit État indépendant du monde par sa superficie et sa population, abritant la Basilique Saint-Pierre et la Chapelle Sixtine.",
+    "stats": {
+      "Capitale": "Cité du Vatican",
+      "Population": "Environ 800 habitants",
+      "Superficie": "0.49 km² (49 hectares)",
+      "Garde": "Garde Suisse Pontificale depuis 1506",
+      "Statut": "Patrimoine Mondial UNESCO intégral"
+    },
+    "funFact": "Le Vatican est le seul pays au monde entièrement inscrit au patrimoine mondial de l'UNESCO dans son intégralité territoriale !",
+    "quote": "Miserando atque eligendo",
+    "colorScheme": {
+      "from": "from-yellow-400",
+      "via": "via-amber-300",
+      "to": "to-white",
+      "accent": "#EAB308"
+    },
+    "trivia": {
+      "question": "Quelle est la superficie totale approximative de la Cité du Vatican ?",
+      "options": [
+        "0.49 km²",
+        "2.5 km²",
+        "10 km²",
+        "25 km²"
+      ],
+      "correctIndex": 0,
+      "explanation": "Le Vatican s'étend sur seulement 0,49 kilomètre carré (49 hectares), ce qui en fait le plus petit État souverain de la planète."
+    }
+  },
+  {
+    "id": "card_country_sg",
+    "number": 18,
+    "name": "Singapour",
+    "category": "country",
+    "rarity": "legendary",
+    "continent": "Asie",
+    "flag": "🇸🇬",
+    "icon": "🦁",
+    "tagline": "La Cité-Jardin Flottante du Détroit",
+    "description": "Cité-État insulaire d'Asie du Sud-Est, carrefour maritime mondial majeur et modèle mondial d'architecture biophilique avec ses emblématiques Supertrees de Gardens by the Bay.",
+    "stats": {
+      "Capitale": "Singapour",
+      "Population": "5.9 millions",
+      "Superficie": "734 km²",
+      "Verdure": "Près de 50% de couverture végétale",
+      "Symbole": "Le Merlion (lion-poisson)"
+    },
+    "funFact": "Singapour a augmenté sa superficie terrestre de plus de 25% depuis son indépendance en 1965 grâce au remblaiement sur la mer !",
+    "colorScheme": {
+      "from": "from-red-600",
+      "via": "via-white",
+      "to": "to-emerald-500",
+      "accent": "#DC2626"
+    },
+    "trivia": {
+      "question": "Quelle créature mythologique mi-lion mi-poisson est le symbole national officiel de Singapour ?",
+      "options": [
+        "Le Sphinx",
+        "Le Merlion",
+        "La Chimère",
+        "Le Griffon"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le Merlion possède une tête de lion (évoquant le nom Sanskrit Singapura, la 'Cité du Lion') et un corps de poisson rappelant son passé de village de pêcheurs."
+    }
+  },
+  {
+    "id": "card_region_vd",
+    "number": 19,
+    "name": "Canton de Vaud",
+    "category": "region",
+    "rarity": "rare",
+    "continent": "Europe",
+    "icon": "🍇",
+    "tagline": "Vignobles de Lavaux & Rives du Léman",
+    "description": "Plus grand canton romand par sa population, s'étendant du Jura aux Alpes vaudoises et abritant les célèbres vignobles en terrasses de Lavaux surplombant le Léman.",
+    "stats": {
+      "Chef_lieu": "Lausanne (Capitale Olympique)",
+      "Population": "830 000 hab.",
+      "UNESCO": "Vignoble en terrasses de Lavaux",
+      "Lac": "Lac Léman"
+    },
+    "funFact": "Les terrasses de Lavaux, façonnées par les moines cisterciens au XIIe siècle, bénéficient de 'trois soleils' : l'astre, le reflet du lac et la chaleur restituée par les murs en pierre.",
+    "quote": "Liberté et Patrie",
+    "colorScheme": {
+      "from": "from-emerald-600",
+      "to": "to-lime-600",
+      "accent": "#059669"
+    },
+    "trivia": {
+      "question": "De quels 'trois soleils' bénéficie le vignoble en terrasses de Lavaux dans le canton de Vaud ?",
+      "options": [
+        "Le soleil direct, la réflexion du lac et la chaleur emmagasinée dans les murs",
+        "Trois étoiles dans le ciel",
+        "Trois saisons ensoleillées",
+        "Trois variétés de raisins dorés"
+      ],
+      "correctIndex": 0,
+      "explanation": "Les trois soleils désignent le soleil direct, le rayonnement réfléchi par la surface du Léman et la chaleur nocturne restituée par les murs en pierre sèche."
+    }
+  },
+  {
+    "id": "card_region_vs",
+    "number": 20,
+    "name": "Canton du Valais",
+    "category": "region",
+    "rarity": "rare",
+    "continent": "Europe",
+    "icon": "⛷️",
+    "tagline": "Le Royaume des 45 Sommets de plus de 4000 m",
+    "description": "Canton bilingue niché dans la haute vallée du Rhône, abritant le glacier d'Aletsch (le plus grand des Alpes), les bisses ancestraux et l'iconique pyramide du Cervin.",
+    "stats": {
+      "Chef_lieu": "Sion (la plus ancienne ville de Suisse)",
+      "Sommets_4000m": "45 sommets",
+      "Glacier_Majeur": "Grand Glacier d'Aletsch (23 km)",
+      "Sommet_Star": "Le Cervin / Matterhorn (4 478 m)"
+    },
+    "funFact": "Le Valais abrite à lui seul plus de la moitié des sommets de plus de 4 000 mètres de toutes les Alpes !",
+    "colorScheme": {
+      "from": "from-red-600",
+      "via": "via-white",
+      "to": "to-sky-500",
+      "accent": "#E11D48"
+    },
+    "trivia": {
+      "question": "Quel est le plus long glacier de l'arc alpin situé dans le canton du Valais ?",
+      "options": [
+        "La Mer de Glace",
+        "Le Glacier d'Aletsch",
+        "Le Glacier du Gorner",
+        "Le Glacier des Bossons"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le glacier d'Aletsch s'étend sur environ 23 kilomètres et contient 11 milliards de tonnes de glace."
+    }
+  },
+  {
+    "id": "card_region_ge",
+    "number": 21,
+    "name": "Canton de Genève",
+    "category": "region",
+    "rarity": "rare",
+    "continent": "Europe",
+    "icon": "🕊️",
+    "tagline": "Capitale Mondiale de la Paix",
+    "description": "Bordée par la France sur plus de 95% de sa frontière, Genève est le siège européen de l'ONU, de la Croix-Rouge et du CERN, célèbre pour son Jet d'eau de 140 mètres.",
+    "stats": {
+      "Chef_lieu": "Genève",
+      "Organisations": "Plus de 40 ONG & agences de l'ONU",
+      "Jet_d_eau": "140 mètres de hauteur (500 L/s)",
+      "Recherche": "CERN & Grand Collisionneur de Hadrons (LHC)"
+    },
+    "funFact": "Le Jet d'eau de Genève propulse l'eau à 200 km/h jusqu'à 140 mètres de hauteur, maintenant 7 000 litres d'eau suspendus dans les airs en permanence !",
+    "quote": "Post tenebras lux",
+    "colorScheme": {
+      "from": "from-amber-500",
+      "to": "to-yellow-600",
+      "accent": "#D97706"
+    },
+    "trivia": {
+      "question": "Quelle célèbre institution scientifique internationale possède son Grand Collisionneur de Hadrons (LHC) à la frontière franco-genevoise ?",
+      "options": [
+        "La NASA",
+        "Le CERN",
+        "L'ESA",
+        "Le MIT"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le CERN (Organisation européenne pour la recherche nucléaire) a son siège à Meyrin dans le canton de Genève."
+    }
+  },
+  {
+    "id": "card_region_be",
+    "number": 22,
+    "name": "Canton de Berne",
+    "category": "region",
+    "rarity": "common",
+    "continent": "Europe",
+    "icon": "🐻",
+    "tagline": "Cœur Fédéral et Médiéval de l'Aar",
+    "description": "Deuxième plus grand canton suisse par la superficie et la population, Berne relie les lacs du Plateau aux sommets légendaires de l'Eiger, du Mönch et de la Jungfrau.",
+    "stats": {
+      "Chef_lieu": "Berne (Patrimoine mondial UNESCO)",
+      "Emblème": "L'Ours bernois",
+      "Sommet_Mythique": "Trio Eiger-Mönch-Jungfrau",
+      "Rivière": "L'Aar"
+    },
+    "funFact": "La vieille ville de Berne est entourée sur trois côtés par une boucle spectaculaire formée par la rivière Aar aux eaux turquoises.",
+    "colorScheme": {
+      "from": "from-red-600",
+      "via": "via-yellow-400",
+      "to": "to-black",
+      "accent": "#DC2626"
+    },
+    "trivia": {
+      "question": "Quel animal est le symbole héraldique historique et la mascotte vivante de la ville de Berne ?",
+      "options": [
+        "L'aigle",
+        "L'ours",
+        "Le lion",
+        "Le chamois"
+      ],
+      "correctIndex": 1,
+      "explanation": "L'ours est le symbole officiel du canton et de la ville de Berne, représenté sur le blason et visible dans la célèbre Fosse aux Ours."
+    }
+  },
+  {
+    "id": "card_region_bretagne",
+    "number": 23,
+    "name": "Bretagne",
+    "category": "region",
+    "rarity": "common",
+    "continent": "Europe",
+    "icon": "🌊",
+    "tagline": "Péninsule Celtique & Granit Rose",
+    "description": "Région de l'ouest de la France bordée par la Manche et l'Atlantique, fière de ses légendes arthuriennes (forêt de Brocéliande), de ses menhirs de Carnac et de ses phares.",
+    "stats": {
+      "Chef_lieu": "Rennes",
+      "Littoral": "2 700 km de côtes découpées",
+      "Mégalithes": "Plus de 3 000 menhirs à Carnac",
+      "Drapeau": "Le Gwenn ha Du"
+    },
+    "funFact": "La Bretagne concentre à elle seule plus du tiers de toute la façade maritime de la France métropolitaine !",
+    "colorScheme": {
+      "from": "from-slate-900",
+      "via": "via-slate-600",
+      "to": "to-white",
+      "accent": "#0F172A"
+    },
+    "trivia": {
+      "question": "Comment s'appelle le drapeau officiel de la Bretagne à neuf bandes noires et blanches et semis d'hermines ?",
+      "options": [
+        "Gwenn ha Du",
+        "Kroaz Du",
+        "Tricolore",
+        "Fleur de Lys"
+      ],
+      "correctIndex": 0,
+      "explanation": "Le Gwenn ha Du (Blanc et Noir en breton) a été conçu en 1925 par l'architecte Morvan Marchal."
+    }
+  },
+  {
+    "id": "card_region_bavaria",
+    "number": 24,
+    "name": "Bavière",
+    "category": "region",
+    "rarity": "rare",
+    "continent": "Europe",
+    "icon": "🏰",
+    "tagline": "Terre des Châteaux Alpins",
+    "description": "Le plus vaste État fédéré d'Allemagne, renommé pour ses châteaux féeriques comme Neuschwanstein, ses forêts alpines, ses traditions et son pôle d'ingénierie de pointe.",
+    "stats": {
+      "Capitale": "Munich",
+      "Superficie": "70 550 km²",
+      "Château_Célèbre": "Neuschwanstein",
+      "Sommet_Allemand": "Zugspitze (2 962 m)"
+    },
+    "funFact": "Le château de Neuschwanstein, commandé par Louis II de Bavière, a directement inspiré le château de la Belle au Bois Dormant de Walt Disney.",
+    "colorScheme": {
+      "from": "from-sky-400",
+      "via": "via-white",
+      "to": "to-blue-600",
+      "accent": "#0284C7"
+    },
+    "trivia": {
+      "question": "Quel souverain bavarois a ordonné la construction du féerique château de Neuschwanstein au XIXe siècle ?",
+      "options": [
+        "Guillaume II",
+        "Louis II de Bavière",
+        "Frédéric Barberousse",
+        "Otto von Bismarck"
+      ],
+      "correctIndex": 1,
+      "explanation": "Louis II de Bavière, surnommé le 'Roi de conte de fées', a fait ériger Neuschwanstein à partir de 1869."
+    }
+  },
+  {
+    "id": "card_region_california",
+    "number": 25,
+    "name": "Californie",
+    "category": "region",
+    "rarity": "common",
+    "continent": "Amériques",
+    "icon": "🌴",
+    "tagline": "The Golden State : Du Pacifique aux Séquoias",
+    "description": "État le plus peuplé des USA et l'une des plus puissantes économies mondiales, s'étendant des falaises de Big Sur à la Silicon Valley et au parc de Yosemite.",
+    "stats": {
+      "Capitale": "Sacramento",
+      "Plus_Grande_Ville": "Los Angeles",
+      "Population": "39 millions",
+      "Arbres_Géants": "Séquoias millénaires (Général Sherman)",
+      "Point_le_Plus_Bas": "Vallée de la Mort (-86 m)"
+    },
+    "funFact": "Le Général Sherman, un séquoia géant du parc national de Sequoia en Californie, est le plus grand organisme vivant non-clonal en volume sur Terre !",
+    "colorScheme": {
+      "from": "from-amber-400",
+      "via": "via-orange-500",
+      "to": "to-sky-500",
+      "accent": "#F59E0B"
+    },
+    "trivia": {
+      "question": "Quel arbre situé en Californie est considéré comme le plus grand organisme vivant en volume sur Terre ?",
+      "options": [
+        "Hyperion",
+        "Le Général Sherman",
+        "Le Chêne de Guernica",
+        "Le Baobab de Sunland"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le séquoia géant 'Général Sherman' possède un volume d'environ 1 487 mètres cubes de bois !"
+    }
+  },
+  {
+    "id": "card_region_kyoto",
+    "number": 26,
+    "name": "Préfecture de Kyoto",
+    "category": "region",
+    "rarity": "epic",
+    "continent": "Asie",
+    "icon": "⛩️",
+    "tagline": "Le Cœur Spirituel aux 2 000 Temples",
+    "description": "Ancienne capitale impériale du Japon pendant plus de mille ans, sanctuaire des jardins zen, des ruelles de geishas de Gion et des forêts de bambous d'Arashiyama.",
+    "stats": {
+      "Chef_lieu": "Kyoto",
+      "Patrimoine_UNESCO": "17 monuments historiques",
+      "Temples_et_Sanctuaires": "Plus de 2 000",
+      "Statut_Historique": "Capitale impériale de 794 à 1868"
+    },
+    "funFact": "Kyoto a été délibérément retirée de la liste des cibles potentielles de bombardements atomiques en 1945 en raison de sa valeur culturelle inestimable pour l'humanité.",
+    "colorScheme": {
+      "from": "from-rose-600",
+      "via": "via-amber-400",
+      "to": "to-stone-900",
+      "accent": "#E11D48"
+    },
+    "trivia": {
+      "question": "Pendant combien de siècles environ Kyoto a-t-elle été la capitale impériale du Japon avant Tokyo ?",
+      "options": [
+        "Environ 1 siècle",
+        "Plus de 10 siècles (plus de 1000 ans)",
+        "Seulement 50 ans",
+        "3 siècles"
+      ],
+      "correctIndex": 1,
+      "explanation": "Kyoto a été la capitale impériale ininterrompue de 794 à la restauration de Meiji en 1868 (près de 1 100 ans)."
+    }
+  },
+  {
+    "id": "card_region_tuscany",
+    "number": 27,
+    "name": "Toscane",
+    "category": "region",
+    "rarity": "rare",
+    "continent": "Europe",
+    "icon": "🍷",
+    "tagline": "Collines de Cyprès, Berceau de la Renaissance",
+    "description": "Région du centre de l'Italie qui a vu naître Léonard de Vinci, Michel-Ange et Dante, caractérisée par ses douces collines bordées de cyprès et ses cités médiévales.",
+    "stats": {
+      "Chef_lieu": "Florence",
+      "Sites_UNESCO": "8 sites majeurs (Florence, Sienne, Pise...)",
+      "Vins_Célèbres": "Chianti, Brunello di Montalcino"
+    },
+    "funFact": "Le dialecte toscan parlé par Dante Alighieri dans la Divine Comédie est devenu la base fondatrice de la langue italienne moderne !",
+    "colorScheme": {
+      "from": "from-amber-600",
+      "via": "via-emerald-700",
+      "to": "to-stone-700",
+      "accent": "#D97706"
+    },
+    "trivia": {
+      "question": "Quelle célèbre tour penchée haute de 56 mètres se dresse dans la ville toscane de Pise ?",
+      "options": [
+        "La Tour Eiffel",
+        "Le Campanile de Giotto",
+        "La Tour de Pise",
+        "La Tour de l'Horloge"
+      ],
+      "correctIndex": 2,
+      "explanation": "La Tour de Pise a commencé à s'incliner dès le début de sa construction en 1173 en raison d'un sol argileux et meuble."
+    }
+  },
+  {
+    "id": "card_region_andalucia",
+    "number": 28,
+    "name": "Andalousie",
+    "category": "region",
+    "rarity": "common",
+    "continent": "Europe",
+    "icon": "💃",
+    "tagline": "Palais Mauresques & Passion Flamenca",
+    "description": "Terre du sud de l'Espagne façonnée par huit siècles de présence arabo-andalouse (Al-Andalus), abritant l'Alhambra de Grenade et les oliveraies à perte de vue.",
+    "stats": {
+      "Capitale": "Séville",
+      "Joyau_Architectural": "Alhambra de Grenade",
+      "Production": "1ère région oléicole mondiale (huile d'olive)"
+    },
+    "funFact": "L'Andalousie produit à elle seule près d'un tiers de toute l'huile d'olive consommée sur la planète !",
+    "colorScheme": {
+      "from": "from-emerald-600",
+      "via": "via-white",
+      "to": "to-emerald-600",
+      "accent": "#059669"
+    },
+    "trivia": {
+      "question": "Quel célèbre complexe palatial nasride surplombe la ville de Grenade en Andalousie ?",
+      "options": [
+        "L'Escurial",
+        "L'Alhambra",
+        "La Mezquita",
+        "L'Alcázar"
+      ],
+      "correctIndex": 1,
+      "explanation": "L'Alhambra (la Rouge en arabe) est le chef-d'œuvre suprême de l'architecture islamique en Europe occidentale."
+    }
+  },
+  {
+    "id": "card_region_lapland",
+    "number": 29,
+    "name": "Laponie (Sápmi)",
+    "category": "region",
+    "rarity": "epic",
+    "continent": "Europe",
+    "icon": "🦌",
+    "tagline": "La Toundra Blanche des Samis",
+    "description": "Vaste contrée arctique partagée entre la Norvège, la Suède, la Finlande et la Russie, patrie ancestrale du peuple Sami, des troupeaux de rennes et des nuits polaires.",
+    "stats": {
+      "Peuple_Autochtone": "Les Samis",
+      "Phénomène_Hivernal": "Nuit polaire (Kaamos)",
+      "Phénomène_Estival": "Soleil de minuit (24h/24 de jour)"
+    },
+    "funFact": "En Laponie finlandaise, le nombre de rennes (~200 000) dépasse le nombre total d'habitants humains (~180 000) !",
+    "colorScheme": {
+      "from": "from-blue-600",
+      "via": "via-sky-300",
+      "to": "to-indigo-900",
+      "accent": "#2563EB"
+    },
+    "trivia": {
+      "question": "Quel peuple autochtone élève traditionnellement les rennes dans la région arctique du Sápmi (Laponie) ?",
+      "options": [
+        "Les Inuits",
+        "Les Samis",
+        "Les Berbères",
+        "Les Maoris"
+      ],
+      "correctIndex": 1,
+      "explanation": "Les Samis sont le seul peuple autochtone reconnu de l'Union européenne, perpétuant l'élevage pastoral du renne."
+    }
+  },
+  {
+    "id": "card_region_quebec",
+    "number": 30,
+    "name": "Québec",
+    "category": "region",
+    "rarity": "rare",
+    "continent": "Amériques",
+    "icon": "⚜️",
+    "tagline": "La Belle Province Francophone d'Amérique",
+    "description": "Plus vaste province du Canada, bastion vibrant de la langue française en Amérique du Nord, traversée par le majestueux fleuve Saint-Laurent jusqu'au fjord du Saguenay.",
+    "stats": {
+      "Capitale": "Québec (seule ville fortifiée d'Amérique du Nord)",
+      "Métropole": "Montréal",
+      "Superficie": "1 542 056 km² (3 fois la France)",
+      "Langue_Officielle": "Français"
+    },
+    "funFact": "Le Québec produit à lui seul plus de 70% de tout le sirop d'érable consommé sur Terre !",
+    "quote": "Je me souviens",
+    "colorScheme": {
+      "from": "from-blue-700",
+      "via": "via-white",
+      "to": "to-blue-800",
+      "accent": "#1D4ED8"
+    },
+    "trivia": {
+      "question": "Quelle proportion de la production mondiale de sirop d'érable provient de la province de Québec ?",
+      "options": [
+        "Environ 10%",
+        "Environ 35%",
+        "Plus de 70%",
+        "99%"
+      ],
+      "correctIndex": 2,
+      "explanation": "Grâce à ses érablières denses, le Québec est de loin le premier producteur planétaire de sirop d'érable."
+    }
+  },
+  {
+    "id": "card_lang_euskara",
+    "number": 31,
+    "name": "Langue Basque (Euskara)",
+    "category": "language",
+    "rarity": "legendary",
+    "continent": "Europe",
+    "icon": "📜",
+    "tagline": "Le Plus Grand Mystère Linguistique d'Europe",
+    "description": "L'Euskara est un isolât linguistique complet : elle n'a aucun lien de parenté connu avec aucune autre langue sur Terre et précède l'arrivée des langues indo-européennes.",
+    "stats": {
+      "Famille": "Isolât (unique au monde)",
+      "Locuteurs": "Environ 750 000",
+      "Région": "Pays Basque (France & Espagne)",
+      "Âge_Estimé": "Plusieurs millénaires avant notre ère"
+    },
+    "funFact": "Malgré des siècles de recherches comparatives, aucun linguiste n'a réussi à rattacher la langue basque à une quelconque autre famille linguistique vivante ou disparue !",
+    "colorScheme": {
+      "from": "from-emerald-700",
+      "via": "via-red-600",
+      "to": "to-white",
+      "accent": "#047857"
+    },
+    "trivia": {
+      "question": "À quelle famille linguistique appartient la langue basque (Euskara) ?",
+      "options": [
+        "Langues celtiques",
+        "Langues romanes",
+        "Isolât (aucune famille connue)",
+        "Langues germaniques"
+      ],
+      "correctIndex": 2,
+      "explanation": "L'euskara est un isolât linguistique : il ne descend d'aucune famille connue et a survécu à la romanisation de l'Europe."
+    }
+  },
+  {
+    "id": "card_lang_romansh",
+    "number": 32,
+    "name": "Le Romanche",
+    "category": "language",
+    "rarity": "epic",
+    "continent": "Europe",
+    "icon": "🏔️",
+    "tagline": "La 4ème Voix Alpine de la Suisse",
+    "description": "Langue romane descendante directe du latin vulgaire parlé par les légionnaires romains dans la province de Rhétie, préservée dans les hautes vallées du canton des Grisons.",
+    "stats": {
+      "Famille": "Rhéto-romane (Indo-européenne)",
+      "Locuteurs": "Environ 60 000",
+      "Statut": "Langue nationale suisse depuis 1938",
+      "Canton": "Grisons (Graubünden)"
+    },
+    "funFact": "Le romanche compte 5 idiomes régionaux distincts avant qu'une langue écrite unifiée (le Rumantsch Grischun) ne soit créée en 1982.",
+    "colorScheme": {
+      "from": "from-red-600",
+      "to": "to-slate-800",
+      "accent": "#DC2626"
+    },
+    "trivia": {
+      "question": "Dans quel canton suisse le romanche est-il principalement parlé et reconnu comme langue officielle ?",
+      "options": [
+        "Valais",
+        "Grisons",
+        "Tessin",
+        "Uri"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le romanche est parlé dans le canton trilingue des Grisons (allemand, italien, romanche)."
+    }
+  },
+  {
+    "id": "card_lang_arabic",
+    "number": 33,
+    "name": "L'Arabe Classique",
+    "category": "language",
+    "rarity": "rare",
+    "continent": "Afrique",
+    "icon": "✒️",
+    "tagline": "L'Art Calligraphique des 300 Millions",
+    "description": "L'une des six langues officielles de l'ONU, langue sémitique d'une immense richesse lexicale s'écrivant de droite à gauche avec un alphabet cursif de 28 lettres.",
+    "stats": {
+      "Famille": "Sémitique (Afro-asiatique)",
+      "Locuteurs": "Plus de 350 millions",
+      "Sens_de_lecture": "De droite à gauche (RTL)",
+      "Alphabet": "28 lettres consonantiques"
+    },
+    "funFact": "L'arabe possède un vocabulaire d'une finesse légendaire : il existe des dizaines de mots spécifiques pour décrire les différents états de la pluie, du vent ou du désert !",
+    "colorScheme": {
+      "from": "from-emerald-700",
+      "via": "via-amber-500",
+      "to": "to-stone-900",
+      "accent": "#047857"
+    },
+    "trivia": {
+      "question": "Combien de lettres compte l'alphabet arabe classique ?",
+      "options": [
+        "22 lettres",
+        "26 lettres",
+        "28 lettres",
+        "32 lettres"
+      ],
+      "correctIndex": 2,
+      "explanation": "L'alphabet arabe est un abjad composé de 28 lettres fondamentales."
+    }
+  },
+  {
+    "id": "card_lang_japanese",
+    "number": 34,
+    "name": "Le Japonais",
+    "category": "language",
+    "rarity": "rare",
+    "continent": "Asie",
+    "icon": "🎌",
+    "tagline": "L'Harmonie des Trois Écritures",
+    "description": "Langue fascinante qui combine harmonieusement trois systèmes d'écriture simultanés : les Kanji (idéogrammes d'origine chinoise), les Hiragana et les Katakana.",
+    "stats": {
+      "Famille": "Japonique",
+      "Locuteurs": "125 millions",
+      "Systèmes": "Kanji + Hiragana + Katakana",
+      "Politesse": "Système complexe de Keigo (niveaux d'honneur)"
+    },
+    "funFact": "Pour lire un journal japonais standard, il faut maîtriser au minimum les 2 136 'Jōyō Kanji' officiels enseignés durant la scolarité obligatoire !",
+    "colorScheme": {
+      "from": "from-rose-500",
+      "to": "to-stone-900",
+      "accent": "#F43F5E"
+    },
+    "trivia": {
+      "question": "Combien de systèmes d'écriture graphiques distincts le japonais utilise-t-il au quotidien ?",
+      "options": [
+        "1 seul",
+        "2 systèmes",
+        "3 systèmes (Kanji, Hiragana, Katakana)",
+        "5 alphabets"
+      ],
+      "correctIndex": 2,
+      "explanation": "Le japonais mêle les sinogrammes (Kanji) et deux syllabaires phonétiques indigènes (Hiragana pour la grammaire, Katakana pour les emprunts)."
+    }
+  },
+  {
+    "id": "card_lang_swahili",
+    "number": 35,
+    "name": "Le Kiswahili",
+    "category": "language",
+    "rarity": "common",
+    "continent": "Afrique",
+    "icon": "🦁",
+    "tagline": "La Grande Voix Panafricaine",
+    "description": "Langue bantoue enrichie de vocabulaire arabe, langue véhiculaire majeure parlée par plus de 200 millions de personnes d'un océan à l'autre en Afrique de l'Est.",
+    "stats": {
+      "Famille": "Bantoue (Niger-Congo)",
+      "Locuteurs": "Plus de 200 millions",
+      "Pays": "Tanzanie, Kenya, Ouganda, RDC, Rwanda...",
+      "Mot_Célèbre": "Safari (qui signifie 'voyage')"
+    },
+    "funFact": "Le célèbre mot 'Safari' utilisé dans toutes les langues du monde est un mot d'origine swahilie qui signifie tout simplement 'voyage' !",
+    "colorScheme": {
+      "from": "from-amber-500",
+      "via": "via-emerald-600",
+      "to": "to-blue-700",
+      "accent": "#D97706"
+    },
+    "trivia": {
+      "question": "Que signifie littéralement le mot swahili 'Safari' ?",
+      "options": [
+        "Chasse",
+        "Voyage",
+        "Lion",
+        "Forêt"
+      ],
+      "correctIndex": 1,
+      "explanation": "En swahili, safari vient de l'arabe 'safar' et signifie littéralement voyage ou expédition."
+    }
+  },
+  {
+    "id": "card_lang_irish",
+    "number": 36,
+    "name": "Le Gaélique Irlandais (Gaeilge)",
+    "category": "language",
+    "rarity": "rare",
+    "continent": "Europe",
+    "icon": "☘️",
+    "tagline": "L'Âme Poétique de l'Île d'Émeraude",
+    "description": "Langue celtique millénaire dotée de l'une des plus anciennes traditions littéraires vernaculaires d'Europe occidentale après le grec et le latin.",
+    "stats": {
+      "Famille": "Celtique Goidélique",
+      "Statut": "Première langue officielle d'Irlande",
+      "Régions_Clés": "Les Gaeltachtaí"
+    },
+    "funFact": "En gaélique irlandais, il n'existe pas de mot simple équivalent exact à 'oui' ou 'non' : on répète le verbe à la forme affirmative ou négative !",
+    "colorScheme": {
+      "from": "from-emerald-600",
+      "via": "via-white",
+      "to": "to-orange-500",
+      "accent": "#059669"
+    },
+    "trivia": {
+      "question": "Comment appelle-t-on les régions d'Irlande où le gaélique irlandais est encore la langue quotidienne dominante ?",
+      "options": [
+        "Les Gaeltachtaí",
+        "Les Highlands",
+        "Les Cantons",
+        "Les Townlands"
+      ],
+      "correctIndex": 0,
+      "explanation": "Les Gaeltacht (pluriel Gaeltachtaí) désignent les zones rurales de l'ouest irlandais où le gaélique reste la langue vivante prédominante."
+    }
+  },
+  {
+    "id": "card_lang_quechua",
+    "number": 37,
+    "name": "Le Quechua (Runasimi)",
+    "category": "language",
+    "rarity": "epic",
+    "continent": "Amériques",
+    "icon": "🌽",
+    "tagline": "La Voix Vivante des Empereurs Incas",
+    "description": "Langue de communication officielle de l'immense empire Inca (Tawantinsuyu), le Quechua est toujours la langue autochtone la plus parlée de toutes les Amériques avec 8 à 10 millions de locuteurs.",
+    "stats": {
+      "Famille": "Quechua",
+      "Locuteurs": "8 à 10 millions",
+      "Région": "Andes (Pérou, Bolivie, Équateur)",
+      "Nom_Natif": "Runasimi ('la langue des êtres humains')"
+    },
+    "funFact": "Des mots français très courants comme 'condor', 'puma', 'lama', 'coca', 'quinoa' ou 'guano' proviennent tous directement du Quechua !",
+    "colorScheme": {
+      "from": "from-amber-600",
+      "via": "via-rose-600",
+      "to": "to-teal-700",
+      "accent": "#D97706"
+    },
+    "trivia": {
+      "question": "Lequel de ces mots français provient directement de la langue quechua ?",
+      "options": [
+        "Condor",
+        "Tigre",
+        "Éléphant",
+        "Girafe"
+      ],
+      "correctIndex": 0,
+      "explanation": "Le mot condor vient du mot quechua 'kuntur', tout comme puma, lama et quinoa."
+    }
+  },
+  {
+    "id": "card_lang_mandarin",
+    "number": 38,
+    "name": "Le Mandarin (Putonghua)",
+    "category": "language",
+    "rarity": "common",
+    "continent": "Asie",
+    "icon": "🐉",
+    "tagline": "La Première Langue Maternelle du Monde",
+    "description": "Langue tonale à quatre tons mélodiques parlée par près d'un milliard de locuteurs natifs, transcrite grâce à un répertoire d'idéogrammes vieux de plus de trois mille ans.",
+    "stats": {
+      "Famille": "Sino-tibétaine",
+      "Locuteurs_Natifs": "Plus de 920 millions (1er mondial)",
+      "Structure": "Langue tonale (4 tons + ton neutre)",
+      "Caractères": "Hanzi (simplifiés et traditionnels)"
+    },
+    "funFact": "En mandarin, une même syllabe comme 'ma' peut signifier 'maman' (mā), 'chanvre' (má), 'cheval' (mǎ) ou 'injurier' (mà) selon le ton utilisé !",
+    "colorScheme": {
+      "from": "from-red-600",
+      "to": "to-yellow-500",
+      "accent": "#DC2626"
+    },
+    "trivia": {
+      "question": "Combien de tons mélodiques distincts caractérisent la prononciation du chinois mandarin standard ?",
+      "options": [
+        "2 tons",
+        "4 tons principaux (+ 1 neutre)",
+        "7 tons",
+        "Aucun ton"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le mandarin utilise 4 tons principaux (plat, montant, descendant-montant, descendant) qui changent totalement le sens des mots."
+    }
+  },
+  {
+    "id": "card_lang_greek",
+    "number": 39,
+    "name": "L'Alphabet Grec",
+    "category": "language",
+    "rarity": "rare",
+    "continent": "Europe",
+    "icon": "🏺",
+    "tagline": "La Matrice des Sciences et de la Géographie",
+    "description": "Premier système d'écriture alphabétique complet à avoir attribué des lettres distinctes pour chaque voyelle et consonne, père des alphabets latin et cyrillique.",
+    "stats": {
+      "Famille": "Hellénique (Indo-européenne)",
+      "Lettres": "24 lettres (d'Alpha à Oméga)",
+      "Invention": "Vers le VIIIe siècle avant J.-C.",
+      "Héritage": "Père des alphabets latin et cyrillique"
+    },
+    "funFact": "Le mot 'alphabet' est formé tout simplement à partir de la réunion des deux premières lettres grecques : Alpha (Α) et Bêta (Β) !",
+    "colorScheme": {
+      "from": "from-sky-500",
+      "via": "via-blue-600",
+      "to": "to-white",
+      "accent": "#0284C7"
+    },
+    "trivia": {
+      "question": "D'où provient étymologiquement le mot 'alphabet' ?",
+      "options": [
+        "Des deux premières lettres grecques Alpha et Bêta",
+        "Du mot arabe Al-Bayt",
+        "D'un roi antique d'Alexandrie",
+        "Du latin Albus"
+      ],
+      "correctIndex": 0,
+      "explanation": "Le mot alphabet dérive directement de la récitation des lettres Alpha (Α) et Bêta (Β)."
+    }
+  },
+  {
+    "id": "card_lang_inuktitut",
+    "number": 40,
+    "name": "L'Inuktitut",
+    "category": "language",
+    "rarity": "legendary",
+    "continent": "Amériques",
+    "icon": "❄️",
+    "tagline": "L'Écriture Syllabique du Grand Nord Polaire",
+    "description": "Langue polysynthétique parlée par les Inuits à travers l'Arctique canadien et le Nunavut, s'écrivant à l'aide d'un élégant syllabaire géométrique adapté aux conditions polaires.",
+    "stats": {
+      "Famille": "Eskimo-aléoute",
+      "Locuteurs": "Environ 40 000",
+      "Territoire": "Nunavut, Nunavik (Canada)",
+      "Type": "Langue polysynthétique (un mot = une phrase)"
+    },
+    "funFact": "En inuktitut, un seul mot très long peut exprimer une phrase complexe entière en combinant de nombreux suffixes emboîtés !",
+    "colorScheme": {
+      "from": "from-sky-300",
+      "via": "via-teal-400",
+      "to": "to-indigo-900",
+      "accent": "#0EA5E9"
+    },
+    "trivia": {
+      "question": "Quel territoire canadien a pour langue officielle autochtone l'Inuktitut ?",
+      "options": [
+        "Le Nunavut",
+        "L'Alberta",
+        "Le Manitoba",
+        "La Nouvelle-Écosse"
+      ],
+      "correctIndex": 0,
+      "explanation": "Créé en 1999, le Nunavut ('notre terre' en inuktitut) a l'inuktitut parmi ses langues officielles prédominantes."
+    }
+  },
+  {
+    "id": "card_figure_magellan",
+    "number": 41,
+    "name": "Ferdinand Magellan",
+    "category": "figure",
+    "rarity": "legendary",
+    "continent": "Monde",
+    "icon": "⛵",
+    "tagline": "Le Premier Tour du Monde Terrestre",
+    "description": "Navigateur portugais au service de l'Espagne, il a découvert le passage entre l'Atlantique et le Pacifique (le détroit de Magellan) et dirigé l'expédition qui a bouclé le premier tour du monde.",
+    "stats": {
+      "Époque": "1480 - 1521",
+      "Nationalité": "Portugaise",
+      "Exploit": "Première circumnavigation globale (1519-1522)",
+      "Navire_de_Retour": "La Victoria (capitaine Juan Sebastián Elcano)"
+    },
+    "funFact": "C'est Magellan qui a baptisé le plus grand océan de la planète 'Océan Pacifique', car ses eaux lui avaient paru exceptionnellement calmes après la tempête du détroit !",
+    "quote": "La mer est dangereuse et ses tempêtes terribles, mais ces obstacles ne sont pas une raison de rester au rivage.",
+    "colorScheme": {
+      "from": "from-blue-700",
+      "via": "via-amber-500",
+      "to": "to-slate-900",
+      "accent": "#1D4ED8"
+    },
+    "trivia": {
+      "question": "Pourquoi Ferdinand Magellan a-t-il baptisé l'Océan Pacifique de ce nom ?",
+      "options": [
+        "Parce qu'il y a trouvé des eaux calmes et paisibles après avoir franchi le cap Horn",
+        "En hommage au roi d'Espagne Don Pacifico",
+        "À cause de la faune docile qu'il y a rencontrée",
+        "En référence au traité de paix de Tordesillas"
+      ],
+      "correctIndex": 0,
+      "explanation": "Après avoir bravé les pires tempêtes au sud du continent américain, Magellan a trouvé l'océan d'une sérénité remarquable et l'a qualifié de 'Pacifique'."
+    }
+  },
+  {
+    "id": "card_figure_ibnbattuta",
+    "number": 42,
+    "name": "Ibn Battuta",
+    "category": "figure",
+    "rarity": "legendary",
+    "continent": "Monde",
+    "icon": "🐪",
+    "tagline": "Le Plus Grand Voyageur de l'Histoire Pré-Moderne",
+    "description": "Explorateur marocain d'origine berbère, il a parcouru plus de 117 000 kilomètres pendant 30 ans à travers 44 pays modernes d'Afrique, du Moyen-Orient, d'Asie centrale, d'Inde et de Chine.",
+    "stats": {
+      "Époque": "1304 - 1369",
+      "Origine": "Tanger (Maroc)",
+      "Distance_Parcourue": "Plus de 117 000 km (3 fois Marco Polo)",
+      "Récit_Majeur": "La Rihla (Le Voyage)"
+    },
+    "funFact": "Ibn Battuta a voyagé trois fois plus loin que Marco Polo, couvrant presque l'intégralité du monde islamique médiéval et au-delà sans jamais repasser deux fois par le même chemin !",
+    "quote": "Voyager vous laisse d'abord sans voix, puis vous transforme en conteur.",
+    "colorScheme": {
+      "from": "from-amber-600",
+      "via": "via-emerald-700",
+      "to": "to-yellow-500",
+      "accent": "#D97706"
+    },
+    "trivia": {
+      "question": "Combien de kilomètres environ Ibn Battuta a-t-il parcourus au cours de ses 30 années de pérégrinations ?",
+      "options": [
+        "Environ 10 000 km",
+        "Environ 40 000 km",
+        "Plus de 117 000 km",
+        "Plus d'un million de km"
+      ],
+      "correctIndex": 2,
+      "explanation": "Ibn Battuta a couvert environ 117 000 km, un record absolu pour un être humain avant l'avènement des moteurs à vapeur !"
+    }
+  },
+  {
+    "id": "card_figure_marcopolo",
+    "number": 43,
+    "name": "Marco Polo",
+    "category": "figure",
+    "rarity": "rare",
+    "continent": "Monde",
+    "icon": "📜",
+    "tagline": "L'Éclaireur de la Route de la Soie",
+    "description": "Marchand vénitien dont le voyage épique de 24 ans jusqu'à la cour de l'empereur mongol Kubilai Khan a révélé les trésors de l'Extrême-Orient à l'Europe médiévale.",
+    "stats": {
+      "Époque": "1254 - 1324",
+      "Origine": "République de Venise",
+      "Séjour_en_Chine": "17 ans au service de Kubilai Khan",
+      "Livre": "Le Livre des Merveilles (Devisement du monde)"
+    },
+    "funFact": "C'est en prison à Gênes que Marco Polo a dicté l'intégralité de ses voyages à son compagnon de cellule Rustichello de Pise !",
+    "colorScheme": {
+      "from": "from-amber-700",
+      "to": "to-stone-800",
+      "accent": "#B45309"
+    },
+    "trivia": {
+      "question": "Où Marco Polo a-t-il rédigé et dicté son célèbre 'Livre des Merveilles' ?",
+      "options": [
+        "Dans un palais à Venise",
+        "En prison à Gênes",
+        "À la cour de Pékin",
+        "Sur son navire de retour"
+      ],
+      "correctIndex": 1,
+      "explanation": "Fait prisonnier de guerre par les Génois, Marco Polo a profité de sa captivité pour dicter ses mémoires à Rustichello."
+    }
+  },
+  {
+    "id": "card_figure_amundsen",
+    "number": 44,
+    "name": "Roald Amundsen",
+    "category": "figure",
+    "rarity": "epic",
+    "continent": "Monde",
+    "icon": "🧊",
+    "tagline": "Le Conquérant des Deux Pôles",
+    "description": "Explorateur polaire norvégien d'exception, premier être humain à atteindre le Pôle Sud le 14 décembre 1911 et premier à franchir le mythique passage du Nord-Ouest.",
+    "stats": {
+      "Époque": "1872 - 1928",
+      "Origine": "Norvège",
+      "Exploits": "Pôle Sud (1911) & Passage du Nord-Ouest (1903-1906)",
+      "Méthode": "Apprentissage des techniques de survie des Inuits et chiens de traîneau"
+    },
+    "funFact": "Amundsen a remporté la course au Pôle Sud face à l'Anglais Robert Falcon Scott notamment grâce à sa maîtrise experte des chiens de traîneaux inuits et des skis nordiques.",
+    "colorScheme": {
+      "from": "from-sky-500",
+      "via": "via-blue-800",
+      "to": "to-slate-900",
+      "accent": "#0284C7"
+    },
+    "trivia": {
+      "question": "En quelle année Roald Amundsen est-il devenu le premier homme à planter son drapeau au Pôle Sud ?",
+      "options": [
+        "1885",
+        "1911",
+        "1928",
+        "1953"
+      ],
+      "correctIndex": 1,
+      "explanation": "L'expédition menée par Amundsen a atteint le Pôle Sud géographique le 14 décembre 1911."
+    }
+  },
+  {
+    "id": "card_figure_humboldt",
+    "number": 45,
+    "name": "Alexander von Humboldt",
+    "category": "figure",
+    "rarity": "legendary",
+    "continent": "Monde",
+    "icon": "🌿",
+    "tagline": "Le Père de la Géographie Moderne",
+    "description": "Naturaliste et explorateur prussien de génie, pionnier de l'écologie globale et de la biogéographie, dont les explorations en Amérique latine ont révolutionné la compréhension de la Terre.",
+    "stats": {
+      "Époque": "1769 - 1859",
+      "Origine": "Prusse (Berlin)",
+      "Expédition": "Amérique espagnole (1799-1804)",
+      "Œuvre_Monumentale": "Cosmos (Essai d'une description physique du monde)"
+    },
+    "funFact": "Alexander von Humboldt est l'être humain qui a donné son nom au plus grand nombre de lieux géographiques, courants marins, animaux et végétaux sur Terre !",
+    "quote": "La nature est un tout vivant où tout est en interaction réciproque.",
+    "colorScheme": {
+      "from": "from-emerald-700",
+      "via": "via-lime-600",
+      "to": "to-stone-800",
+      "accent": "#047857"
+    },
+    "trivia": {
+      "question": "Quel courant marin d'eau froide longeant les côtes du Chili et du Pérou porte le nom d'Alexander von Humboldt ?",
+      "options": [
+        "Le Gulf Stream",
+        "Le Courant de Humboldt",
+        "Le Courant des Canaries",
+        "Le Kuroshio"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le courant de Humboldt (ou courant du Pérou) est un puissant courant océanique froid découvert et mesuré par Humboldt en 1802."
+    }
+  },
+  {
+    "id": "card_figure_cartier",
+    "number": 46,
+    "name": "Jacques Cartier",
+    "category": "figure",
+    "rarity": "common",
+    "continent": "Monde",
+    "icon": "⚓",
+    "tagline": "Le Navigateur du Saint-Laurent",
+    "description": "Navigateur malouin mandaté par le roi François Ier, il a exploré le golfe et le fleuve Saint-Laurent en 1534, nommant pour la première fois le Canada.",
+    "stats": {
+      "Époque": "1491 - 1557",
+      "Origine": "Saint-Malo (Bretagne)",
+      "Découverte": "Le Fleuve Saint-Laurent et le site de Montréal (Hochelaga)"
+    },
+    "funFact": "Le mot 'Canada' provient du mot iroquois 'kanata' (signifiant village), que Jacques Cartier a mal interprété comme désignant tout le pays !",
+    "colorScheme": {
+      "from": "from-blue-700",
+      "via": "via-white",
+      "to": "to-blue-900",
+      "accent": "#1D4ED8"
+    },
+    "trivia": {
+      "question": "Que signifiait à l'origine le mot autochtone iroquois 'kanata' qui a donné le nom du Canada à Jacques Cartier ?",
+      "options": [
+        "Grand fleuve",
+        "Village ou campement",
+        "Terre des neiges",
+        "Montagne dorée"
+      ],
+      "correctIndex": 1,
+      "explanation": "Les guides autochtones désignèrent leur village par 'kanata', que Cartier comprit comme le nom de toute la contrée."
+    }
+  },
+  {
+    "id": "card_figure_baret",
+    "number": 47,
+    "name": "Jeanne Baret",
+    "category": "figure",
+    "rarity": "epic",
+    "continent": "Monde",
+    "icon": "🌺",
+    "tagline": "La Première Femme à Faire le Tour du Globe",
+    "description": "Botaniste et exploratrice française d'exception, elle s'est déguisée en homme sous le nom de 'Jean Baret' pour embarquer sur l'expédition de Bougainville en 1766 et collecter des milliers de plantes.",
+    "stats": {
+      "Époque": "1740 - 1807",
+      "Origine": "France (Bourgogne)",
+      "Exploit": "1ère femme documentée à accomplir un tour du monde (1766-1775)",
+      "Contribution": "Collecte de la bougainvillée et de spécimens botaniques rares"
+    },
+    "funFact": "C'est en réalité Jeanne Baret qui a découvert et récolté au Brésil la célèbre plante grimpante aux fleurs éclatantes baptisée plus tard 'Bougainvillée' !",
+    "colorScheme": {
+      "from": "from-pink-600",
+      "via": "via-purple-500",
+      "to": "to-emerald-600",
+      "accent": "#DB2777"
+    },
+    "trivia": {
+      "question": "Comment Jeanne Baret a-t-elle réussi à embarquer sur l'expédition de Bougainville en 1766 malgré l'interdiction royale faite aux femmes ?",
+      "options": [
+        "En se déguisant en valet masculin sous le nom de Jean Baret",
+        "Avec une autorisation secrète du Roi",
+        "En se cachant dans une cale pendant 2 ans",
+        "En tant que médecin en chef"
+      ],
+      "correctIndex": 0,
+      "explanation": "Pour contourner l'ordonnance royale qui interdisait les femmes à bord des vaisseaux du Roi, elle s'est travestie en homme."
+    }
+  },
+  {
+    "id": "card_figure_gagarine",
+    "number": 48,
+    "name": "Youri Gagarine",
+    "category": "figure",
+    "rarity": "mythic",
+    "continent": "Monde",
+    "icon": "🚀",
+    "tagline": "Le Premier Regard de l'Humanité sur la Terre",
+    "description": "Pilote et cosmonaute soviétique, premier être humain à voyager dans l'espace le 12 avril 1961 à bord de Vostok 1, offrant à l'humanité sa première contemplation globale de la planète bleue.",
+    "stats": {
+      "Époque": "1934 - 1968",
+      "Origine": "Union Soviétique",
+      "Vol_Historique": "12 avril 1961 (108 minutes autour de la Terre)",
+      "Vaisseau": "Vostok 1",
+      "Altitude_Max": "327 km"
+    },
+    "funFact": "En observant pour la toute première fois la courbure et l'atmosphère terrestre depuis l'orbite, Gagarine s'est exclamé dans sa radio : 'Je vois la Terre ! Elle est si magnifique, elle est bleue !'",
+    "quote": "Je vois la Terre... Elle est bleue !",
+    "colorScheme": {
+      "from": "from-indigo-600",
+      "via": "via-sky-400",
+      "to": "to-slate-950",
+      "accent": "#4F46E5"
+    },
+    "trivia": {
+      "question": "Combien de temps a duré le premier vol spatial orbital de Youri Gagarine autour de la Terre le 12 avril 1961 ?",
+      "options": [
+        "108 minutes",
+        "24 heures",
+        "3 jours",
+        "45 minutes"
+      ],
+      "correctIndex": 0,
+      "explanation": "Le vol historique de Vostok 1 a duré exactement 1 heure et 48 minutes (108 minutes)."
+    }
+  },
+  {
+    "id": "card_figure_mercator",
+    "number": 49,
+    "name": "Gérard Mercator",
+    "category": "figure",
+    "rarity": "rare",
+    "continent": "Monde",
+    "icon": "🗺️",
+    "tagline": "L'Architecte de la Cartographie Mondiale",
+    "description": "Géographe et cartographe flamand du XVIe siècle, inventeur de la fameuse projection cartographique cylindrique conforme de 1569 qui a guidé tous les navigateurs modernes.",
+    "stats": {
+      "Époque": "1512 - 1594",
+      "Origine": "Flandre (Rupelmonde)",
+      "Invention": "La projection de Mercator (lignes de cap droites)",
+      "Concept": "Premier à utiliser le mot 'Atlas' pour un recueil de cartes"
+    },
+    "funFact": "C'est Gérard Mercator qui a été le tout premier au monde à utiliser le mot mythologique 'Atlas' pour désigner un recueil relié de cartes géographiques !",
+    "colorScheme": {
+      "from": "from-amber-600",
+      "to": "to-stone-900",
+      "accent": "#D97706"
+    },
+    "trivia": {
+      "question": "Quel mot désignant aujourd'hui un livre de cartes géographiques Gérard Mercator a-t-il été le premier à employer ?",
+      "options": [
+        "Atlas",
+        "Mappemonde",
+        "Portulan",
+        "Globe"
+      ],
+      "correctIndex": 0,
+      "explanation": "Mercator a choisi le titan Atlas de la mythologie soutenant la voûte céleste pour nommer son recueil de cartes."
+    }
+  },
+  {
+    "id": "card_figure_bell",
+    "number": 50,
+    "name": "Gertrude Bell",
+    "category": "figure",
+    "rarity": "epic",
+    "continent": "Monde",
+    "icon": "🏜️",
+    "tagline": "L'Exploratrice et Cartographe des Sables",
+    "description": "Écrivaine, archéologue, alpiniste et diplomate britannique, elle a traversé à dos de dromadaire des déserts inexplorés du Moyen-Orient et tracé les cartes de régions alors inconnues.",
+    "stats": {
+      "Époque": "1868 - 1926",
+      "Origine": "Royaume-Uni",
+      "Surnom": "La Reine des Sables / Khatun",
+      "Fondation": "Musée archéologique national d'Irak"
+    },
+    "funFact": "Première femme diplômée avec mention très bien en histoire moderne à l'université d'Oxford, Gertrude Bell parlait couramment l'arabe, le persan, le turc, le français et l'allemand !",
+    "colorScheme": {
+      "from": "from-amber-500",
+      "via": "via-orange-600",
+      "to": "to-yellow-700",
+      "accent": "#EA580C"
+    },
+    "trivia": {
+      "question": "Quel grand musée archéologique célèbre du Moyen-Orient Gertrude Bell a-t-elle fondé à Bagdad en 1926 ?",
+      "options": [
+        "Le Musée national d'Irak",
+        "Le Musée du Louvre",
+        "Le Musée du Caire",
+        "Le Musée de Palmyre"
+      ],
+      "correctIndex": 0,
+      "explanation": "Gertrude Bell a consacré les dernières années de sa vie à préserver le patrimoine mésopotamien en créant le Musée national d'Irak."
+    }
+  },
+  {
+    "id": "card_wonder_everest",
+    "number": 51,
+    "name": "Mont Everest (Chomolungma)",
+    "category": "wonder",
+    "rarity": "legendary",
+    "continent": "Asie",
+    "icon": "🏔️",
+    "tagline": "Le Toit du Monde",
+    "description": "Point culminant de la Terre à 8 848 mètres d'altitude dans l'Himalaya à la frontière népalo-tibétaine, baptisé Sagarmāthā au Népal et Chomolungma ('Déesse mère du monde') au Tibet.",
+    "stats": {
+      "Altitude": "8 848.86 m (mesure officielle)",
+      "Massif": "Himalaya",
+      "Frontière": "Népal / Chine (Tibet)",
+      "Première_Ascension": "29 mai 1953 (Edmund Hillary & Tenzing Norgay)"
+    },
+    "funFact": "En raison de la poussée tectonique continue de la plaque indienne sous la plaque eurasienne, l'Everest grandit encore d'environ 4 millimètres chaque année !",
+    "colorScheme": {
+      "from": "from-sky-300",
+      "via": "via-slate-200",
+      "to": "to-blue-900",
+      "accent": "#0284C7"
+    },
+    "trivia": {
+      "question": "Quelle est l'altitude officielle précise et conjointe du Mont Everest reconnue par le Népal et la Chine ?",
+      "options": [
+        "8 848.86 m",
+        "8 516 m",
+        "9 100 m",
+        "7 950 m"
+      ],
+      "correctIndex": 0,
+      "explanation": "En décembre 2020, le Népal et la Chine ont conjointement officialisé la nouvelle altitude mesurée par satellite : 8 848,86 m."
+    }
+  },
+  {
+    "id": "card_wonder_mariana",
+    "number": 52,
+    "name": "Fosse des Mariannes (Abysse Challenger)",
+    "category": "wonder",
+    "rarity": "mythic",
+    "continent": "Océanie",
+    "icon": "🌊",
+    "tagline": "Le Point le Plus Profond de la Planète Bleue",
+    "description": "Bordée par l'océan Pacifique occidental, la fosse plonge à près de 11 000 mètres sous la surface dans l'obscurité totale et une pression écrasante supérieure à 1 000 fois la pression atmosphérique.",
+    "stats": {
+      "Profondeur_Max": "10 994 mètres (Challenger Deep)",
+      "Localisation": "Océan Pacifique Nord-Ouest",
+      "Pression": "Plus de 1 086 bars (1 tonne par cm²)",
+      "Température": "1 à 4 °C"
+    },
+    "funFact": "Si l'on plaçait le Mont Everest au fond de l'abysse Challenger, son sommet resterait encore immergé sous plus de deux kilomètres d'eau !",
+    "colorScheme": {
+      "from": "from-blue-950",
+      "via": "via-slate-900",
+      "to": "to-cyan-900",
+      "accent": "#083344"
+    },
+    "trivia": {
+      "question": "À quelle profondeur approximative plonge le point le plus bas de la Terre dans la fosse des Mariannes ?",
+      "options": [
+        "Environ 4 000 m",
+        "Environ 7 500 m",
+        "Près de 11 000 m (10 994 m)",
+        "Plus de 25 000 m"
+      ],
+      "correctIndex": 2,
+      "explanation": "Le point le plus profond jamais mesuré est l'abysse Challenger dans la fosse des Mariannes à environ 10 994 mètres."
+    }
+  },
+  {
+    "id": "card_wonder_aurora",
+    "number": 53,
+    "name": "Aurores Boréales & Australes",
+    "category": "wonder",
+    "rarity": "rare",
+    "continent": "Monde",
+    "icon": "🌌",
+    "tagline": "La Danse Électromagnétique Céleste",
+    "description": "Phénomène lumineux atmosphérique féerique provoqué par la collision entre les particules chargées du vent solaire et les gaz de la haute atmosphère guidés par le champ magnétique terrestre.",
+    "stats": {
+      "Altitude": "100 à 300 km au-dessus du sol",
+      "Couleurs": "Vert (oxygène bas), Rouge (oxygène haut), Violet/Bleu (azote)",
+      "Zones": "Ovales auroraux polaires"
+    },
+    "funFact": "La couleur verte la plus fréquente des aurores boréales est émise par des atomes d'oxygène excités situés à environ 100 kilomètres d'altitude !",
+    "colorScheme": {
+      "from": "from-emerald-400",
+      "via": "via-teal-600",
+      "to": "to-violet-950",
+      "accent": "#10B981"
+    },
+    "trivia": {
+      "question": "Quel élément chimique présent dans l'atmosphère est responsable de la couleur verte prédominante des aurores boréales ?",
+      "options": [
+        "L'oxygène",
+        "L'hydrogène",
+        "Le carbone",
+        "Le néon"
+      ],
+      "correctIndex": 0,
+      "explanation": "L'oxygène heurté par les électrons solaires émet une lumière verte fluorescente caractéristique à 557,7 nm de longueur d'onde."
+    }
+  },
+  {
+    "id": "card_wonder_amazon",
+    "number": 54,
+    "name": "Forêt Amazonienne",
+    "category": "wonder",
+    "rarity": "common",
+    "continent": "Amériques",
+    "icon": "🌳",
+    "tagline": "Le Plus Vaste Sanctuaire Végétal du Monde",
+    "description": "Plus grande forêt tropicale humide de la Terre, s'étendant sur 5,5 millions de km² et 9 pays, abritant 10% de toutes les espèces animales et végétales connues.",
+    "stats": {
+      "Superficie": "5.5 millions de km²",
+      "Pays": "Brésil (60%), Pérou, Colombie, Bolivie...",
+      "Arbres": "Estimés à près de 390 milliards",
+      "Fleuve": "L'Amazone (débit de 209 000 m³/s)"
+    },
+    "funFact": "Le fleuve Amazone déverse dans l'océan Atlantique un volume d'eau douce équivalent à 20% de tout le débit fluvial de la Terre réuni !",
+    "colorScheme": {
+      "from": "from-emerald-600",
+      "via": "via-green-700",
+      "to": "to-teal-900",
+      "accent": "#059669"
+    },
+    "trivia": {
+      "question": "Quel pourcentage du débit total d'eau douce arrivant dans les océans mondiaux est fourni par le fleuve Amazone à lui seul ?",
+      "options": [
+        "Environ 2%",
+        "Environ 5%",
+        "Environ 20%",
+        "Plus de 50%"
+      ],
+      "correctIndex": 2,
+      "explanation": "L'Amazone est si gigantesque qu'il fournit à lui seul un cinquième (20%) de toute l'eau douce déversée dans les océans du globe."
+    }
+  },
+  {
+    "id": "card_wonder_uyuni",
+    "number": 55,
+    "name": "Salar d'Uyuni",
+    "category": "wonder",
+    "rarity": "epic",
+    "continent": "Amériques",
+    "icon": "🪞",
+    "tagline": "Le Plus Grand Miroir Naturel de la Terre",
+    "description": "Étendue blanche aveuglante de plus de 10 500 km² de sel perchée à 3 650 m d'altitude dans l'Altiplano bolivien, qui se transforme en miroir parfait du ciel lors des pluies.",
+    "stats": {
+      "Altitude": "3 656 mètres",
+      "Superficie": "10 582 km²",
+      "Pays": "Bolivie (Potosí)",
+      "Ressource": "L'un des plus grands gisements de lithium au monde"
+    },
+    "funFact": "Le Salar d'Uyuni est si plat et réfléchissant que les agences spatiales comme la NASA l'utilisent pour calibrer les altimètres laser de leurs satellites en orbite !",
+    "colorScheme": {
+      "from": "from-sky-300",
+      "via": "via-white",
+      "to": "to-cyan-600",
+      "accent": "#0284C7"
+    },
+    "trivia": {
+      "question": "Dans quel pays d'Amérique du Sud se trouve le spectaculaire désert de sel du Salar d'Uyuni ?",
+      "options": [
+        "Chili",
+        "Bolivie",
+        "Argentine",
+        "Colombie"
+      ],
+      "correctIndex": 1,
+      "explanation": "Le Salar d'Uyuni est situé au sud-ouest de la Bolivie, dans le département de Potosí."
+    }
+  },
+  {
+    "id": "card_wonder_sahara",
+    "number": 56,
+    "name": "Désert du Sahara",
+    "category": "wonder",
+    "rarity": "common",
+    "continent": "Afrique",
+    "icon": "🏜️",
+    "tagline": "L'Océan Doré de Dunes et de Roches",
+    "description": "Plus grand désert chaud de la planète, s'étendant sur plus de 9,2 millions de km² à travers 11 pays, d'une superficie presque équivalente à celle des États-Unis.",
+    "stats": {
+      "Superficie": "9.2 millions de km²",
+      "Type": "Ergs (sable 20%), Regs (cailloux 80%)",
+      "Pays": "11 pays d'Afrique du Nord et du Sahel"
+    },
+    "funFact": "Contrairement à l'image d'Épinal des cartes postales, les dunes de sable (ergs) ne représentent qu'environ 20% du Sahara : le reste est composé de plateaux rocheux et de plaines caillouteuses !",
+    "colorScheme": {
+      "from": "from-amber-400",
+      "via": "via-orange-500",
+      "to": "to-yellow-700",
+      "accent": "#F59E0B"
+    },
+    "trivia": {
+      "question": "Quel pourcentage approximatif de la surface totale du Sahara est constitué de dunes de sable (ergs) ?",
+      "options": [
+        "Environ 20%",
+        "Plus de 80%",
+        "Près de 100%",
+        "Moins de 2%"
+      ],
+      "correctIndex": 0,
+      "explanation": "Les ergs sablonneux ne forment qu'un cinquième du désert, l'essentiel étant constitué de regs (cailloux) et de djebels."
+    }
+  },
+  {
+    "id": "card_wonder_silfra",
+    "number": 57,
+    "name": "Fissure de Silfra",
+    "category": "wonder",
+    "rarity": "rare",
+    "continent": "Europe",
+    "icon": "🤿",
+    "tagline": "Nager Entre Deux Continents",
+    "description": "Fissure tectonique spectaculaire située dans le parc national de Thingvellir en Islande, où l'on peut nager littéralement entre les plaques tectoniques nord-américaine et eurasienne.",
+    "stats": {
+      "Localisation": "Thingvellir (Islande)",
+      "Visibilité_Sous_Marine": "Plus de 100 mètres (l'eau la plus pure du monde)",
+      "Écartement": "Les deux continents s'écartent de 2 cm par an"
+    },
+    "funFact": "L'eau glaciaire qui remplit Silfra est filtrée à travers la roche volcanique pendant 30 à 100 ans avant d'atteindre la faille, lui donnant une pureté et une transparence cristalline absolue !",
+    "colorScheme": {
+      "from": "from-cyan-400",
+      "via": "via-blue-600",
+      "to": "to-teal-800",
+      "accent": "#06B6D4"
+    },
+    "trivia": {
+      "question": "Entre quelles deux plaques tectoniques majeures la fissure de Silfra permet-elle de plonger en Islande ?",
+      "options": [
+        "Plaque Nord-Américaine et Plaque Eurasienne",
+        "Plaque Pacifique et Plaque Africaine",
+        "Plaque Sud-Américaine et Plaque Indo-Australienne",
+        "Plaque Antarctique et Plaque Caraïbe"
+      ],
+      "correctIndex": 0,
+      "explanation": "Silfra est la seule faille au monde où l'on peut plonger directement dans le fossé séparant l'Eurasie de l'Amérique du Nord."
+    }
+  },
+  {
+    "id": "card_wonder_barrier",
+    "number": 58,
+    "name": "Grande Barrière de Corail",
+    "category": "wonder",
+    "rarity": "rare",
+    "continent": "Océanie",
+    "icon": "🪸",
+    "tagline": "La Plus Grande Structure Vivante Visible Depuis l'Espace",
+    "description": "Écosystème marin colossal composé de plus de 2 900 récifs coralliens et 900 îles, s'étirant sur 2 300 kilomètres au large des côtes du Queensland en Australie.",
+    "stats": {
+      "Longueur": "2 300 kilomètres",
+      "Espèces_de_Poissons": "Plus de 1 500 espèces",
+      "Coraux": "Plus de 400 espèces de coraux durs",
+      "Visibilité": "Visible depuis l'orbite spatiale"
+    },
+    "funFact": "La Grande Barrière est la plus grande structure organique construite par des êtres vivants sur Terre, s'étendant sur une surface plus grande que l'Italie ou le Royaume-Uni !",
+    "colorScheme": {
+      "from": "from-teal-400",
+      "via": "via-cyan-500",
+      "to": "to-blue-700",
+      "accent": "#14B8A6"
+    },
+    "trivia": {
+      "question": "Au large de quel État australien s'étend la majeure partie de la Grande Barrière de Corail ?",
+      "options": [
+        "Queensland",
+        "Victoria",
+        "Tasmanie",
+        "Australie Occidentale"
+      ],
+      "correctIndex": 0,
+      "explanation": "La Grande Barrière s'étend le long de la côte nord-est de l'État du Queensland."
+    }
+  },
+  {
+    "id": "card_wonder_iguazu",
+    "number": 59,
+    "name": "Chutes d'Iguazú",
+    "category": "wonder",
+    "rarity": "rare",
+    "continent": "Amériques",
+    "icon": "🌊",
+    "tagline": "Le Tonnerre d'Eau des Deux Frontières",
+    "description": "Amphithéâtre naturel monumental de 275 cascades s'étirant sur près de 3 kilomètres à la frontière entre l'Argentine et le Brésil, entouré d'une jungle tropicale luxuriante.",
+    "stats": {
+      "Nombre_de_Cascades": "Environ 275 cascades",
+      "Hauteur_Max": "82 mètres (Gorge du Diable / Garganta del Diablo)",
+      "Frontière": "Argentine (Misiones) / Brésil (Paraná)",
+      "Débit_Moyen": "1 500 à 1 700 m³ par seconde"
+    },
+    "funFact": "En découvrant pour la première fois les chutes d'Iguazú, la Première Dame américaine Eleanor Roosevelt se serait exclamée avec compassion : 'Pauvre Niagara !' !",
+    "colorScheme": {
+      "from": "from-emerald-500",
+      "via": "via-cyan-600",
+      "to": "to-blue-800",
+      "accent": "#10B981"
+    },
+    "trivia": {
+      "question": "Comment s'appelle le gouffre principal en fer à cheval haut de 82 mètres des chutes d'Iguazú ?",
+      "options": [
+        "La Gorge du Diable (Garganta del Diablo)",
+        "Le Saut de l'Ange",
+        "La Fosse aux Lions",
+        "Le Gouffre de Padirac"
+      ],
+      "correctIndex": 0,
+      "explanation": "La Gorge du Diable est le point le plus spectaculaire d'Iguazú, concentrant la moitié du débit d'eau de tout le site."
+    }
+  },
+  {
+    "id": "card_wonder_fournaise",
+    "number": 60,
+    "name": "Piton de la Fournaise",
+    "category": "wonder",
+    "rarity": "common",
+    "continent": "Afrique",
+    "icon": "🌋",
+    "tagline": "Le Cœur Flamboyant de l'Île de La Réunion",
+    "description": "Volcan bouclier effusif culminant à 2 632 mètres sur l'île de La Réunion, l'un des plus actifs et spectaculaires de la planète, crachant régulièrement des rivières de lave fluide.",
+    "stats": {
+      "Altitude": "2 632 mètres",
+      "Localisation": "Île de La Réunion (France, Océan Indien)",
+      "Type": "Volcan bouclier effusif (point chaud)",
+      "Fréquence": "Éruption en moyenne tous les 9 mois"
+    },
+    "funFact": "Contrairement aux volcans explosifs dangereux, le Piton de la Fournaise produit des laves effusives très fluides qui permettent aux scientifiques et passionnés de l'observer de près en toute sécurité !",
+    "colorScheme": {
+      "from": "from-orange-600",
+      "via": "via-red-600",
+      "to": "to-stone-900",
+      "accent": "#EA580C"
+    },
+    "trivia": {
+      "question": "Sur quelle île française de l'Océan Indien s'élève le volcan actif du Piton de la Fournaise ?",
+      "options": [
+        "La Réunion",
+        "Mayotte",
+        "Tahiti",
+        "La Martinique"
+      ],
+      "correctIndex": 0,
+      "explanation": "Le Piton de la Fournaise occupe le tiers sud-est de l'île de La Réunion et entre en éruption presque chaque année."
+    }
+  }
+]

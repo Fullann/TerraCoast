@@ -144,26 +144,107 @@ export function getDeletedCardIds(): string[] {
   }
 }
 
+export const REMOTE_CARDS_CATALOG_KEY = "terracoast_remote_cards_catalog_v1";
+
+/**
+ * Récupère le catalogue distant mis en cache localement
+ */
+export function getRemoteCardsCatalog(): TerraCard[] | null {
+  const raw = getStoredString(REMOTE_CARDS_CATALOG_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as TerraCard[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Définit ou vide le catalogue distant mis en cache localement
+ */
+export function setRemoteCardsCatalog(cards: TerraCard[] | null): void {
+  if (cards && cards.length > 0) {
+    setStoredString(REMOTE_CARDS_CATALOG_KEY, JSON.stringify(cards));
+  } else {
+    if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.removeItem(REMOTE_CARDS_CATALOG_KEY);
+      } catch {
+        // fallback
+      }
+    }
+    memoryCardsStore.delete(REMOTE_CARDS_CATALOG_KEY);
+  }
+  notifyCatalogUpdated();
+}
+
+/**
+ * Synchronise le catalogue de cartes depuis la base Supabase (table terra_cards).
+ * Met à jour le cache local et notifie l'application en cas de nouvelles cartes ou modifications.
+ */
+export async function syncCardsCatalogFromSupabase(): Promise<{ success: boolean; count: number }> {
+  try {
+    const { data, error } = await supabase
+      .from("terra_cards")
+      .select("*")
+      .eq("is_active", true)
+      .order("number", { ascending: true });
+
+    if (error || !data || data.length === 0) {
+      return { success: false, count: 0 };
+    }
+
+    const remoteCards: TerraCard[] = (data as any[]).map((row: any) => ({
+      id: row.id,
+      number: row.number,
+      name: row.name,
+      category: row.category as CardCategory,
+      rarity: row.rarity as CardRarity,
+      continent: row.continent as CardContinent,
+      flag: row.flag || undefined,
+      icon: row.icon,
+      tagline: row.tagline,
+      description: row.description,
+      stats: (row.stats as Record<string, string | number>) || {},
+      funFact: row.fun_fact,
+      quote: row.quote || undefined,
+      colorScheme: row.color_scheme,
+      trivia: row.trivia,
+    }));
+
+    setStoredString(REMOTE_CARDS_CATALOG_KEY, JSON.stringify(remoteCards));
+    notifyCatalogUpdated();
+    return { success: true, count: remoteCards.length };
+  } catch (err) {
+    console.warn("Synchronisation Supabase des cartes ignorée/échouée :", err);
+    return { success: false, count: 0 };
+  }
+}
+
 /**
  * Récupère le catalogue complet et actif des cartes TerraDex
- * (Cartes officielles + Cartes créées par l'admin - Cartes supprimées + Raretés personnalisées)
+ * (Cartes distantes ou officielles + Cartes créées par l'admin - Cartes supprimées + Raretés personnalisées)
  */
 export function getCardsCatalog(): TerraCard[] {
+  const remoteCards = getRemoteCardsCatalog();
+  const baseCatalog = remoteCards && remoteCards.length > 0 ? remoteCards : TERRA_CARDS_CATALOG;
   const customCards = getCustomCards();
   const overrides = getCardsOverrides();
   const deletedIds = new Set(getDeletedCardIds());
 
-  // 1. Cartes de base avec surcharges
-  const baseProcessed = TERRA_CARDS_CATALOG
+  // 1. Cartes de base (distantes ou intégrées) avec surcharges
+  const baseProcessed = baseCatalog
     .filter((c) => !deletedIds.has(c.id))
     .map((c) => {
       const override = overrides[c.id];
       return override ? { ...c, ...override } : c;
     });
 
-  // 2. Cartes personnalisées avec surcharges
+  // 2. Cartes personnalisées locales non encore présentes dans le catalogue distant
+  const baseIds = new Set(baseProcessed.map((c) => c.id));
   const customProcessed = customCards
-    .filter((c) => !deletedIds.has(c.id))
+    .filter((c) => !deletedIds.has(c.id) && !baseIds.has(c.id))
     .map((c) => {
       const override = overrides[c.id];
       return override ? { ...c, ...override } : c;
@@ -180,29 +261,63 @@ export function getCardById(id: string): TerraCard | undefined {
 }
 
 /**
- * Sauvegarde ou met à jour une carte (pour l'admin)
+ * Sauvegarde ou met à jour une carte (pour l'admin) avec synchronisation Supabase en arrière-plan
  */
 export function adminSaveCard(card: TerraCard): { success: boolean; message: string } {
-  const isBuiltIn = TERRA_CARDS_CATALOG.some((c) => c.id === card.id);
+  const baseCatalog = getRemoteCardsCatalog() || TERRA_CARDS_CATALOG;
+  const isBuiltIn = baseCatalog.some((c) => c.id === card.id);
   const overrides = getCardsOverrides();
   const customCards = getCustomCards();
 
   if (isBuiltIn) {
     overrides[card.id] = card;
     setStoredString(CARDS_OVERRIDES_KEY, JSON.stringify(overrides));
-    notifyCatalogUpdated();
-    return { success: true, message: `Carte « ${card.name} » mise à jour avec succès.` };
+  } else {
+    const existingIdx = customCards.findIndex((c) => c.id === card.id);
+    if (existingIdx >= 0) {
+      customCards[existingIdx] = card;
+    } else {
+      customCards.push(card);
+    }
+    setStoredString(CUSTOM_CARDS_KEY, JSON.stringify(customCards));
   }
 
-  const existingIdx = customCards.findIndex((c) => c.id === card.id);
-  if (existingIdx >= 0) {
-    customCards[existingIdx] = card;
-  } else {
-    customCards.push(card);
-  }
-  setStoredString(CUSTOM_CARDS_KEY, JSON.stringify(customCards));
   notifyCatalogUpdated();
-  return { success: true, message: `Carte « ${card.name} » enregistrée dans le catalogue.` };
+
+  // Synchronisation distante Supabase en tâche de fond (si connecté & droits admin)
+  try {
+    supabase
+      .from("terra_cards")
+      .upsert({
+        id: card.id,
+        number: card.number,
+        name: card.name,
+        category: card.category,
+        rarity: card.rarity,
+        continent: card.continent,
+        flag: card.flag || null,
+        icon: card.icon,
+        tagline: card.tagline,
+        description: card.description,
+        stats: card.stats,
+        fun_fact: card.funFact,
+        quote: card.quote || null,
+        color_scheme: card.colorScheme,
+        trivia: card.trivia,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.warn("Échec de la sauvegarde distante Supabase :", error.message);
+        }
+      })
+      .catch(() => {});
+  } catch {
+    // Mode hors-ligne / fallback local
+  }
+
+  return { success: true, message: `Carte « ${card.name} » enregistrée avec succès.` };
 }
 
 /**
@@ -219,7 +334,8 @@ export function adminUpdateCardRarity(cardId: string, newRarity: CardRarity): { 
     return { success: true, message: `Rareté de « ${customCard.name} » passée à ${newRarity}.` };
   }
 
-  const baseCard = TERRA_CARDS_CATALOG.find((c) => c.id === cardId);
+  const baseCatalog = getRemoteCardsCatalog() || TERRA_CARDS_CATALOG;
+  const baseCard = baseCatalog.find((c) => c.id === cardId);
   if (!baseCard) {
     return { success: false, message: "Carte introuvable." };
   }
@@ -243,10 +359,23 @@ export function adminDeleteCard(cardId: string): { success: boolean; message: st
     customCards.splice(customIdx, 1);
     setStoredString(CUSTOM_CARDS_KEY, JSON.stringify(customCards));
     notifyCatalogUpdated();
+
+    try {
+      supabase
+        .from("terra_cards")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq("id", cardId)
+        .then(() => {})
+        .catch(() => {});
+    } catch {
+      // Offline fallback
+    }
+
     return { success: true, message: `Carte personnalisée « ${deletedName} » supprimée.` };
   }
 
-  const baseCard = TERRA_CARDS_CATALOG.find((c) => c.id === cardId);
+  const baseCatalog = getRemoteCardsCatalog() || TERRA_CARDS_CATALOG;
+  const baseCard = baseCatalog.find((c) => c.id === cardId);
   if (!baseCard) {
     return { success: false, message: "Carte introuvable." };
   }
@@ -256,6 +385,17 @@ export function adminDeleteCard(cardId: string): { success: boolean; message: st
     deletedIds.push(cardId);
     setStoredString(DELETED_CARDS_KEY, JSON.stringify(deletedIds));
     notifyCatalogUpdated();
+
+    try {
+      supabase
+        .from("terra_cards")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq("id", cardId)
+        .then(() => {})
+        .catch(() => {});
+    } catch {
+      // Offline fallback
+    }
   }
   return { success: true, message: `Carte « ${baseCard.name} » masquée du catalogue.` };
 }

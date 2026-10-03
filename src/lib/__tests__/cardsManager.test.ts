@@ -23,6 +23,9 @@ import {
   adminResetCardsCatalog,
   adminExportCardsCatalog,
   adminImportCardsCatalog,
+  getRemoteCardsCatalog,
+  setRemoteCardsCatalog,
+  syncCardsCatalogFromSupabase,
 } from "../cardsManager";
 import {
   getPlayerGamificationState,
@@ -350,6 +353,43 @@ describe("TerraDex Cards Manager & Data", () => {
       expect(importRes.success).toBe(true);
       expect(getCardsCatalog().length).toBe(61);
       expect(getCardById("card_custom_imported")?.rarity).toBe("mythic");
+    });
+
+    it("should handle remote cards catalog caching and precedence", () => {
+      expect(getRemoteCardsCatalog()).toBeNull();
+
+      const mockRemote = [
+        ...TERRA_CARDS_CATALOG,
+        {
+          id: "card_remote_mars",
+          number: 99,
+          name: "Planète Mars",
+          category: "wonder" as const,
+          rarity: "mythic" as const,
+          continent: "Monde" as const,
+          icon: "🔴",
+          tagline: "La Planète Rouge",
+          description: "Quatrième planète du système solaire.",
+          stats: {},
+          funFact: "Mars abrite le plus haut volcan du système solaire, Olympus Mons !",
+          colorScheme: { from: "from-red-600", to: "to-orange-600", accent: "#dc2626" },
+          trivia: { question: "Quel est le plus haut volcan de Mars ?", options: ["Olympus Mons"], correctIndex: 0, explanation: "" },
+        },
+      ];
+
+      setRemoteCardsCatalog(mockRemote);
+      const cached = getRemoteCardsCatalog();
+      expect(cached).not.toBeNull();
+      expect(cached?.length).toBe(61);
+
+      // getCardsCatalog should incorporate the remote card
+      const catalog = getCardsCatalog();
+      expect(catalog.length).toBe(61);
+      expect(catalog.some((c) => c.id === "card_remote_mars")).toBe(true);
+
+      // Clean up
+      setRemoteCardsCatalog(null);
+      expect(getCardsCatalog().length).toBe(60);
     });
   });
 });
