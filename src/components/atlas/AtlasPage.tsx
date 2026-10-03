@@ -38,8 +38,11 @@ import { CountryDetailDrawer } from "./CountryDetailDrawer";
 import { CountryComparisonModal } from "./CountryComparisonModal";
 import {
   GLOBE_LAYER_OPTIONS,
-  type GlobeLayerType,
+  GLOBE_THEMES,
+  getGlobeThemeConfig,
+  type GlobeThemeConfig,
 } from "../../lib/globeThemes";
+import { getPlayerGamificationState } from "../../lib/gamificationManager";
 
 const GlobeComponent = lazy(() => import("react-globe.gl"));
 
@@ -100,11 +103,40 @@ export function AtlasPage() {
     zoom: 1,
   });
 
-  const [selectedGlobeLayer, setSelectedGlobeLayer] = useState<GlobeLayerType>("satellite");
+  const [activeTheme, setActiveTheme] = useState(() =>
+    getPlayerGamificationState(user?.id).activeTheme || "default"
+  );
+  const [selectedGlobeLayer, setSelectedGlobeLayer] = useState<string>(() => {
+    const saved = getPlayerGamificationState(user?.id).activeTheme;
+    if (saved && saved !== "default" && GLOBE_THEMES[saved]) {
+      return saved;
+    }
+    return "satellite";
+  });
 
-  // Texture et ambiance selon le calque sélectionné (Politique, Satellite HD, Relief, Nocturne)
-  const layerOption = GLOBE_LAYER_OPTIONS.find((l) => l.id === selectedGlobeLayer) || GLOBE_LAYER_OPTIONS[1];
-  const themeConfig = layerOption.themeConfig;
+  useEffect(() => {
+    const handleGamification = () => {
+      const state = getPlayerGamificationState(user?.id);
+      setActiveTheme(state.activeTheme || "default");
+      if (state.activeTheme && state.activeTheme !== "default" && GLOBE_THEMES[state.activeTheme]) {
+        setSelectedGlobeLayer(state.activeTheme);
+      }
+    };
+    window.addEventListener("terracost_gamification_updated", handleGamification);
+    return () => window.removeEventListener("terracost_gamification_updated", handleGamification);
+  }, [user?.id]);
+
+  // Texture et ambiance selon le calque sélectionné ou le thème de boutique équipé
+  const themeConfig: GlobeThemeConfig = useMemo(() => {
+    if (GLOBE_THEMES[selectedGlobeLayer]) {
+      return GLOBE_THEMES[selectedGlobeLayer];
+    }
+    const layer = GLOBE_LAYER_OPTIONS.find((l) => l.id === selectedGlobeLayer);
+    if (layer) {
+      return layer.themeConfig;
+    }
+    return getGlobeThemeConfig(activeTheme);
+  }, [selectedGlobeLayer, activeTheme]);
 
   const allCountries = useMemo(() => {
     return getAllAtlasCountries(language);
@@ -724,8 +756,9 @@ export function AtlasPage() {
               🌍 {t("atlas.globeHint") || "Faites glisser pour tourner le globe. Cliquez sur un repère pour explorer."}
             </div>
 
-            {/* 🛰️ Sélecteur de Calques Flottant en haut à droite */}
+            {/* 🛰️ Sélecteur de Calques et Thèmes Flottant en haut à droite */}
             <div className="absolute top-4 right-4 z-30 flex items-center gap-1.5 p-1 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-700 shadow-xl overflow-x-auto max-w-[95%] sm:max-w-none">
+              {/* Calques standards */}
               {GLOBE_LAYER_OPTIONS.map((layer) => {
                 const isSelected = selectedGlobeLayer === layer.id;
                 return (
@@ -742,6 +775,38 @@ export function AtlasPage() {
                   >
                     <span>{layer.icon}</span>
                     <span className="hidden sm:inline">{layer.shortLabel}</span>
+                  </button>
+                );
+              })}
+
+              {/* Séparateur */}
+              <div className="w-px h-5 bg-slate-700 mx-0.5" />
+
+              {/* Thèmes Boutique Débloqués ou Équipés */}
+              {[
+                { id: "theme_antique", label: "Parchemin", icon: "📜", title: "Thème Globe Parchemin Antique" },
+                { id: "theme_night", label: "Nocturne HD", icon: "🌃", title: "Thème Globe Satellite Nocturne" },
+                { id: "theme_cyberpunk", label: "Cyberpunk", icon: "👾", title: "Thème Globe Cyberpunk / Néon" },
+              ].map((th) => {
+                const isSelected = selectedGlobeLayer === th.id;
+                const isEquipped = activeTheme === th.id;
+                return (
+                  <button
+                    key={th.id}
+                    type="button"
+                    onClick={() => setSelectedGlobeLayer(th.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                      isSelected
+                        ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 scale-105"
+                        : isEquipped
+                        ? "bg-purple-950/80 text-purple-300 border border-purple-500/50 hover:bg-purple-900"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800"
+                    }`}
+                    title={`${th.title}${isEquipped ? " (Équipé dans la boutique)" : ""}`}
+                  >
+                    <span>{th.icon}</span>
+                    <span className="hidden sm:inline">{th.label}</span>
+                    {isEquipped && <span className="text-[10px] text-amber-300">★</span>}
                   </button>
                 );
               })}

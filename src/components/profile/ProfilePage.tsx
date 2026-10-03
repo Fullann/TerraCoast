@@ -597,9 +597,11 @@ export function ProfilePage({ userId: propUserId }: ProfilePageProps = {}) {
   const displayedTitleName = activeTitleFromShop?.name || activeTitle?.titles?.name;
   const displayedTitleIcon = activeTitleFromShop?.icon || "⭐";
 
-  const currentActiveFrame = (profile?.frame_style && profile.frame_style !== "none")
-    ? profile.frame_style
-    : (isOwnProfile ? (gamification.activeAvatarFrame || "none") : "none");
+  const currentActiveFrame = isOwnProfile
+    ? (gamification.activeAvatarFrame && gamification.activeAvatarFrame !== "none"
+        ? gamification.activeAvatarFrame
+        : (profile?.frame_style && profile.frame_style !== "none" ? profile.frame_style : "none"))
+    : (profile?.frame_style && profile.frame_style !== "none" ? profile.frame_style : "none");
 
   const availableFrames = useMemo(() => {
     const unlockedSet = new Set<string>([

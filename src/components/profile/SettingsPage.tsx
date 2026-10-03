@@ -51,6 +51,24 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
   const EMAIL_UPDATE_COOLDOWN_MS = 60_000;
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [frameSaving, setFrameSaving] = useState(false);
+  const [gamification, setGamification] = useState(() =>
+    getPlayerGamificationState(profile?.id)
+  );
+
+  useEffect(() => {
+    const handleGamification = () => {
+      setGamification(getPlayerGamificationState(profile?.id));
+    };
+    window.addEventListener("terracost_gamification_updated", handleGamification);
+    return () => window.removeEventListener("terracost_gamification_updated", handleGamification);
+  }, [profile?.id]);
+
+  const activeFrame =
+    gamification.activeAvatarFrame && gamification.activeAvatarFrame !== "none"
+      ? gamification.activeAvatarFrame
+      : profile?.frame_style && profile.frame_style !== "none"
+      ? profile.frame_style
+      : "none";
 
   const ensureValidAuthSession = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -652,7 +670,7 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
               <Avatar
                 url={profile?.avatar_url}
                 pseudo={profile?.pseudo}
-                frameStyle={profile?.frame_style || getPlayerGamificationState(profile?.id).activeAvatarFrame}
+                frameStyle={activeFrame}
                 size="lg"
               />
               <div className="flex-1">
@@ -664,7 +682,7 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                 </label>
                 <select
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
-                  value={profile?.frame_style || getPlayerGamificationState(profile?.id).activeAvatarFrame || "none"}
+                  value={activeFrame}
                   disabled={frameSaving}
                   onChange={(e) => saveFrameStyle(e.target.value)}
                 >

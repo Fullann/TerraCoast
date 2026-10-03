@@ -10,6 +10,9 @@ import {
   getQuestPath,
   resetGamificationState,
   adminGrantResources,
+  buyShopItem,
+  equipShopItem,
+  getActiveTitleDetails,
 } from "../gamificationManager";
 
 describe("gamificationManager", () => {
@@ -116,6 +119,45 @@ describe("gamificationManager", () => {
     // Grant streak freezes
     const s6 = adminGrantResources(testUserId, { streakFreezesDelta: 3 });
     expect(s6.streakFreezes).toBe(3);
+  });
+
+  it("should equip shop items with strict exclusivity and update active item", () => {
+    // 1. Give gems and buy items
+    adminGrantResources(testUserId, { setGems: 10000 });
+    buyShopItem(testUserId, "frame_flame");
+    buyShopItem(testUserId, "frame_compass");
+    buyShopItem(testUserId, "title_cartographer");
+    buyShopItem(testUserId, "theme_antique");
+
+    let state = getPlayerGamificationState(testUserId);
+    expect(state.inventory.avatarFrames).toContain("frame_flame");
+    expect(state.inventory.avatarFrames).toContain("frame_compass");
+    expect(state.inventory.titles).toContain("title_cartographer");
+    expect(state.inventory.themes).toContain("theme_antique");
+
+    // Last bought was theme_antique, so activeTheme is theme_antique
+    expect(state.activeTheme).toBe("theme_antique");
+
+    // 2. Equip flame frame
+    state = equipShopItem(testUserId, "frame", "frame_flame");
+    expect(state.activeAvatarFrame).toBe("frame_flame");
+
+    // 3. Equip compass frame -> replaces flame frame (exclusive!)
+    state = equipShopItem(testUserId, "frame", "frame_compass");
+    expect(state.activeAvatarFrame).toBe("frame_compass");
+
+    // 4. Unequip frame -> activeAvatarFrame becomes none
+    state = equipShopItem(testUserId, "frame", null);
+    expect(state.activeAvatarFrame).toBe("none");
+
+    // 5. Title details
+    state = equipShopItem(testUserId, "title", "title_cartographer");
+    expect(state.activeTitle).toBe("title_cartographer");
+
+    const titleDetails = getActiveTitleDetails(testUserId);
+    expect(titleDetails).not.toBeNull();
+    expect(titleDetails?.name).toBe("Cartographe Suprême 📐");
+    expect(titleDetails?.icon).toBe("📐");
   });
 });
 

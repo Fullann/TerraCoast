@@ -623,15 +623,20 @@ export function equipShopItem(
   const state = getPlayerGamificationState(userId);
 
   if (itemType === "theme") {
-    if (!itemId || state.inventory.themes.includes(itemId)) {
+    if (!itemId || itemId === "default" || state.inventory.themes.includes(itemId)) {
       state.activeTheme = itemId || "default";
     }
   } else if (itemType === "frame") {
-    if (!itemId || state.inventory.avatarFrames.includes(itemId)) {
+    if (
+      !itemId ||
+      itemId === "none" ||
+      state.inventory.avatarFrames.includes(itemId) ||
+      ["emerald", "gold", "rainbow", "ice", "shadow"].includes(itemId)
+    ) {
       state.activeAvatarFrame = itemId || "none";
     }
   } else if (itemType === "title") {
-    if (!itemId || state.inventory.titles.includes(itemId)) {
+    if (!itemId || state.inventory.titles.includes(itemId) || SHOP_CATALOG.some((it) => it.id === itemId && state.inventory.titles.includes(it.name))) {
       state.activeTitle = itemId;
     }
   }

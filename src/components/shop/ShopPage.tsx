@@ -9,7 +9,6 @@ import {
   Globe2,
   Smile,
   Award,
-  Heart,
 } from "lucide-react";
 import {
   SHOP_CATALOG,
@@ -40,7 +39,6 @@ export function ShopPage() {
   >("all");
   const [activeBoosterPack, setActiveBoosterPack] = useState<BoosterPack | null>(null);
   const [adminCustomGems, setAdminCustomGems] = useState("");
-  const [adminCustomLives, setAdminCustomLives] = useState("");
 
   const refreshState = () => {
     setGamification(getPlayerGamificationState(profile?.id));
@@ -87,8 +85,8 @@ export function ShopPage() {
         .eq("name", cleanName)
         .maybeSingle();
 
-      // If title does not exist yet in DB, create it
-      if (!existingTitle) {
+      // If title does not exist yet in DB, only admins can insert it
+      if (!existingTitle && profile.role === "admin") {
         const { data: createdTitle } = await supabase
           .from("titles")
           .insert({
@@ -104,36 +102,36 @@ export function ShopPage() {
         existingTitle = createdTitle;
       }
 
-      if (!existingTitle) return;
-
-      // Deactivate all other titles first
-      await supabase
-        .from("user_titles")
-        .update({ is_active: false })
-        .eq("user_id", profile.id);
-
-      // Check if user already owns this title in user_titles
-      const { data: existingUserTitle } = await supabase
-        .from("user_titles")
-        .select("id")
-        .eq("user_id", profile.id)
-        .eq("title_id", existingTitle.id)
-        .maybeSingle();
-
-      if (existingUserTitle) {
+      if (existingTitle) {
+        // Deactivate all other titles first
         await supabase
           .from("user_titles")
-          .update({ is_active: true })
-          .eq("id", existingUserTitle.id);
-      } else {
-        await supabase
+          .update({ is_active: false })
+          .eq("user_id", profile.id);
+
+        // Check if user already owns this title in user_titles
+        const { data: existingUserTitle } = await supabase
           .from("user_titles")
-          .insert({
-            user_id: profile.id,
-            title_id: existingTitle.id,
-            is_active: true,
-            earned_at: new Date().toISOString(),
-          });
+          .select("id")
+          .eq("user_id", profile.id)
+          .eq("title_id", existingTitle.id)
+          .maybeSingle();
+
+        if (existingUserTitle) {
+          await supabase
+            .from("user_titles")
+            .update({ is_active: true })
+            .eq("id", existingUserTitle.id);
+        } else {
+          await supabase
+            .from("user_titles")
+            .insert({
+              user_id: profile.id,
+              title_id: existingTitle.id,
+              is_active: true,
+              earned_at: new Date().toISOString(),
+            });
+        }
       }
 
       if (typeof window !== "undefined") {
@@ -142,7 +140,7 @@ export function ShopPage() {
         );
       }
     } catch (e) {
-      console.error("Failed to sync title to Supabase:", e);
+      console.warn("Could not sync title to Supabase (using local gamification fallback):", e);
     }
   };
 
@@ -256,14 +254,6 @@ export function ShopPage() {
                 {gamification.streakFreezes} Gel{gamification.streakFreezes > 1 ? "s" : ""}
               </span>
             </div>
-
-            {/* Lives */}
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs font-black shadow-sm">
-              <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
-              <span>
-                {gamification.lives} / {gamification.maxLives} Vies
-              </span>
-            </div>
           </div>
         </div>
 
@@ -278,7 +268,7 @@ export function ShopPage() {
                     Outils Développeur & Administration TerraCoast
                   </h3>
                   <p className="text-xs text-amber-800 font-medium">
-                    Octroyez-vous des TerraGems 💎 et des Cœurs ❤️ instantanément pour tester tous les articles.
+                    Octroyez-vous des TerraGems 💎 et des boosters instantanément pour tester tous les articles.
                   </p>
                 </div>
               </div>
@@ -334,34 +324,6 @@ export function ShopPage() {
               <button
                 type="button"
                 onClick={() => {
-                  const s = adminGrantResources(profile?.id, { fullRefill: true, setLives: 5 });
-                  playSound("success");
-                  toast.success("Cœurs restaurés au maximum (5 ❤️) !");
-                  setGamification(s);
-                }}
-                className="p-2.5 bg-white hover:bg-rose-50 text-rose-900 font-extrabold text-xs rounded-2xl border border-rose-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-0.5"
-              >
-                <span className="text-base">❤️</span>
-                <span>5 Vies Max</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const s = adminGrantResources(profile?.id, { setLives: 99 });
-                  playSound("success");
-                  toast.success("Mode Immortel : 99 Cœurs ❤️ attribués !");
-                  setGamification(s);
-                }}
-                className="p-2.5 bg-white hover:bg-purple-50 text-purple-900 font-extrabold text-xs rounded-2xl border border-purple-300 shadow-sm active:scale-95 transition-all text-center flex flex-col items-center gap-0.5"
-              >
-                <span className="text-base">♾️</span>
-                <span>99 Vies Dev</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
                   const s = adminGrantResources(profile?.id, { streakFreezesDelta: 3 });
                   playSound("success");
                   toast.success("+3 Gels de Flamme 🧊 ajoutés !");
@@ -399,32 +361,6 @@ export function ShopPage() {
                   className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-xl text-xs whitespace-nowrap active:scale-95 shadow-sm transition-all"
                 >
                   + Gems 💎
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
-                <input
-                  type="number"
-                  placeholder="Fixer nombre de vies..."
-                  value={adminCustomLives}
-                  onChange={(e) => setAdminCustomLives(e.target.value)}
-                  className="px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-bold w-full sm:w-48 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const val = parseInt(adminCustomLives, 10);
-                    if (!isNaN(val) && val >= 0) {
-                      const s = adminGrantResources(profile?.id, { setLives: val });
-                      playSound("success");
-                      toast.success(`Cœurs fixés à ${val} ❤️ !`);
-                      setGamification(s);
-                      setAdminCustomLives("");
-                    }
-                  }}
-                  className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs whitespace-nowrap active:scale-95 shadow-sm transition-all"
-                >
-                  = Cœurs ❤️
                 </button>
               </div>
             </div>
@@ -581,8 +517,13 @@ export function ShopPage() {
 
             const isActive =
               (isTheme && gamification.activeTheme === item.id) ||
-              (isFrame && gamification.activeAvatarFrame === item.id) ||
-              (isTitle && gamification.activeTitle === item.id);
+              (isFrame &&
+                (gamification.activeAvatarFrame === item.id ||
+                  (item.id === "frame_flame" && gamification.activeAvatarFrame === "flame") ||
+                  (item.id === "frame_compass" && gamification.activeAvatarFrame === "compass") ||
+                  (item.id === "frame_crown" && gamification.activeAvatarFrame === "crown"))) ||
+              (isTitle &&
+                (gamification.activeTitle === item.id || gamification.activeTitle === item.name));
 
             const canAfford = gamification.gems >= item.priceGems;
 
@@ -659,15 +600,6 @@ export function ShopPage() {
                       <span>Réserve actuelle :</span>
                       <span className="font-black text-cyan-900">
                         {gamification.streakFreezes} gel(s) 🧊
-                      </span>
-                    </div>
-                  )}
-
-                  {item.id === "refill_lives" && (
-                    <div className="my-2 text-[11px] font-bold text-rose-700 bg-rose-50/70 p-2 rounded-xl border border-rose-100 flex items-center justify-between">
-                      <span>Vies actuelles :</span>
-                      <span className="font-black text-rose-900">
-                        {gamification.lives} / {gamification.maxLives} ❤️
                       </span>
                     </div>
                   )}

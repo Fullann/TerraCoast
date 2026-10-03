@@ -35,9 +35,14 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
   };
 
   useEffect(() => {
-    if (isOpen) {
-      refreshState();
-    }
+    refreshState();
+    const handleUpdate = () => refreshState();
+    window.addEventListener("terracost_gamification_updated", handleUpdate);
+    window.addEventListener("terracoast:profile_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("terracost_gamification_updated", handleUpdate);
+      window.removeEventListener("terracoast:profile_updated", handleUpdate);
+    };
   }, [isOpen, profile?.id]);
 
   if (!isOpen) return null;
@@ -70,8 +75,8 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
         .eq("name", cleanName)
         .maybeSingle();
 
-      // If title does not exist yet in DB, create it
-      if (!existingTitle) {
+      // If title does not exist yet in DB, only admins can insert it
+      if (!existingTitle && profile.role === "admin") {
         const { data: createdTitle } = await supabase
           .from("titles")
           .insert({
@@ -87,36 +92,36 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
         existingTitle = createdTitle;
       }
 
-      if (!existingTitle) return;
-
-      // Deactivate all other titles first
-      await supabase
-        .from("user_titles")
-        .update({ is_active: false })
-        .eq("user_id", profile.id);
-
-      // Check if user already owns this title in user_titles
-      const { data: existingUserTitle } = await supabase
-        .from("user_titles")
-        .select("id")
-        .eq("user_id", profile.id)
-        .eq("title_id", existingTitle.id)
-        .maybeSingle();
-
-      if (existingUserTitle) {
+      if (existingTitle) {
+        // Deactivate all other titles first
         await supabase
           .from("user_titles")
-          .update({ is_active: true })
-          .eq("id", existingUserTitle.id);
-      } else {
-        await supabase
+          .update({ is_active: false })
+          .eq("user_id", profile.id);
+
+        // Check if user already owns this title in user_titles
+        const { data: existingUserTitle } = await supabase
           .from("user_titles")
-          .insert({
-            user_id: profile.id,
-            title_id: existingTitle.id,
-            is_active: true,
-            earned_at: new Date().toISOString(),
-          });
+          .select("id")
+          .eq("user_id", profile.id)
+          .eq("title_id", existingTitle.id)
+          .maybeSingle();
+
+        if (existingUserTitle) {
+          await supabase
+            .from("user_titles")
+            .update({ is_active: true })
+            .eq("id", existingUserTitle.id);
+        } else {
+          await supabase
+            .from("user_titles")
+            .insert({
+              user_id: profile.id,
+              title_id: existingTitle.id,
+              is_active: true,
+              earned_at: new Date().toISOString(),
+            });
+        }
       }
 
       if (typeof window !== "undefined") {
@@ -125,7 +130,7 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
         );
       }
     } catch (e) {
-      console.error("Failed to sync title to Supabase:", e);
+      console.warn("Could not sync title to Supabase (using local gamification fallback):", e);
     }
   };
 
@@ -216,8 +221,7 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-xl text-xs font-bold border border-white/15">
               <span>🧊 {gamification.streakFreezes}</span>
-              <span>•</span>
-              <span>❤️ {gamification.lives}/5</span>
+              <span className="text-emerald-300">Gels</span>
             </div>
             <button
               onClick={onClose}
@@ -278,30 +282,7 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
               >
                 +5 000 💎
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const s = adminGrantResources(profile?.id, { fullRefill: true, setLives: 5 });
-                  playSound("success");
-                  toast.success("Cœurs restaurés à 5 ❤️ !");
-                  setGamification(s);
-                }}
-                className="px-2.5 py-1 bg-rose-500 hover:bg-rose-600 text-white text-xs font-extrabold rounded-lg shadow-sm active:scale-95 transition-all"
-              >
-                ❤️ 5 Vies
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const s = adminGrantResources(profile?.id, { setLives: 99 });
-                  playSound("success");
-                  toast.success("Mode Immortel : 99 ❤️ attribués !");
-                  setGamification(s);
-                }}
-                className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold rounded-lg shadow-sm active:scale-95 transition-all"
-              >
-                ♾️ 99 Vies
-              </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -351,8 +332,13 @@ export function ShopModal({ isOpen, onClose, defaultCategory = "all" }: ShopModa
 
             const isActive =
               (item.category === "theme" && gamification.activeTheme === item.id) ||
-              (item.category === "frame" && gamification.activeAvatarFrame === item.id) ||
-              (item.category === "title" && gamification.activeTitle === item.id);
+              (item.category === "frame" &&
+                (gamification.activeAvatarFrame === item.id ||
+                  (item.id === "frame_flame" && gamification.activeAvatarFrame === "flame") ||
+                  (item.id === "frame_compass" && gamification.activeAvatarFrame === "compass") ||
+                  (item.id === "frame_crown" && gamification.activeAvatarFrame === "crown"))) ||
+              (item.category === "title" &&
+                (gamification.activeTitle === item.id || gamification.activeTitle === item.name));
 
             const canAfford = gamification.gems >= item.priceGems;
             const isConsumable = item.category === "consumable";

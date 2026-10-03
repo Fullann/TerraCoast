@@ -19,6 +19,7 @@ import { DuolingoQuestPath } from "./DuolingoQuestPath";
 import {
   getLeagueForXp,
   getUserLeagueProgress,
+  getActiveTitleDetails,
 } from "../../lib/gamificationManager";
 import { FeaturedCountryCard } from "./FeaturedCountryCard";
 import { BOOSTER_PACKS, type BoosterPack } from "../../lib/cardsData";
@@ -43,6 +44,19 @@ export function HomePage() {
   const { t } = useLanguage();
   const [, setRecentQuizzes] = useState<Quiz[]>([]);
   const [, setRecentSessions] = useState<GameSession[]>([]);
+  const [activeTitle, setActiveTitle] = useState(() => getActiveTitleDetails(profile?.id));
+
+  useEffect(() => {
+    const handleGamification = () => {
+      setActiveTitle(getActiveTitleDetails(profile?.id));
+    };
+    window.addEventListener("terracost_gamification_updated", handleGamification);
+    window.addEventListener("terracoast:profile_updated", handleGamification);
+    return () => {
+      window.removeEventListener("terracost_gamification_updated", handleGamification);
+      window.removeEventListener("terracoast:profile_updated", handleGamification);
+    };
+  }, [profile?.id]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [dailyQuiz, setDailyQuiz] = useState<Quiz | null>(null);
@@ -245,6 +259,12 @@ export function HomePage() {
             </span>
             <span>👋</span>
           </h1>
+          {activeTitle && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black bg-gradient-to-r from-purple-100 via-indigo-50 to-purple-100 text-purple-900 border border-purple-200 shadow-2xs mt-1.5 mb-1 animate-fade-in">
+              <span>{activeTitle.icon}</span>
+              <span>{activeTitle.name}</span>
+            </div>
+          )}
           <p className="text-xs sm:text-sm font-bold text-slate-500 mt-1">
             {t("home.learningPathSubtitle") || "Parcours d'apprentissage géographique • Progressez étape par étape !"}
           </p>

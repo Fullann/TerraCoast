@@ -712,7 +712,13 @@ export function Navbar() {
                   <Avatar
                     url={(profile as any)?.avatar_url}
                     pseudo={profile?.pseudo}
-                    frameStyle={(profile as any)?.frame_style && (profile as any).frame_style !== "none" ? (profile as any).frame_style : gamification.activeAvatarFrame}
+                    frameStyle={
+                      gamification.activeAvatarFrame && gamification.activeAvatarFrame !== "none"
+                        ? gamification.activeAvatarFrame
+                        : ((profile as any)?.frame_style && (profile as any).frame_style !== "none"
+                        ? (profile as any).frame_style
+                        : "none")
+                    }
                     size="sm"
                   />
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block shrink-0" />
