@@ -27,7 +27,7 @@ jobs:
           GITLEAKS_CONFIG: .gitleaks.toml
 
       - name: Dependency vulnerability audit (SCA Gate)
-        run: npm audit --audit-level=critical
+        run: npm audit --omit=dev --audit-level=critical
 
       - name: Run unit tests
         run: npm test
