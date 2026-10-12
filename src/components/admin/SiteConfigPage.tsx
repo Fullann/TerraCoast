@@ -11,6 +11,10 @@ import {
   Sparkles,
   ShieldAlert,
   Globe,
+  MapPin,
+  Volume2,
+  VolumeX,
+  Landmark,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -21,6 +25,8 @@ import {
   type AnnouncementVariant,
 } from '../../lib/siteConfigManager';
 import { getAllAtlasCountries } from '../../lib/atlasData';
+import { getAudioAnecdoteForCountry } from '../../lib/audioAnecdotesData';
+import { audioAnecdoteSpeaker } from '../../lib/audioAnecdoteSpeaker';
 import { toast } from '../common/ToastContainer';
 import { playSound } from '../../lib/soundManager';
 import { triggerConfetti } from '../common/Confetti';
@@ -30,6 +36,7 @@ export function SiteConfigPage() {
   const { profile } = useAuth();
   const [config, setConfig] = useState<SiteConfig>(() => getSiteConfig());
   const [isDirty, setIsDirty] = useState(false);
+  const [isTestingAudio, setIsTestingAudio] = useState(false);
   const atlasCountries = getAllAtlasCountries('fr');
 
   useEffect(() => {
@@ -73,15 +80,46 @@ export function SiteConfigPage() {
     }
   };
 
+  useEffect(() => {
+    const unsub = audioAnecdoteSpeaker.subscribe((speaking) => {
+      setIsTestingAudio(speaking);
+    });
+    return () => {
+      unsub();
+      audioAnecdoteSpeaker.stop();
+    };
+  }, []);
+
   const handleCountrySelect = (iso3: string) => {
     const found = atlasCountries.find((c) => c.iso3 === iso3);
     if (found) {
+      const audioAnecdote = getAudioAnecdoteForCountry(found.iso3, found.name, found.flagEmoji);
       handleChange('featuredCountry', {
         iso3: found.iso3,
         name: found.name,
         flagEmoji: found.flagEmoji,
         headline: `Semaine Spéciale ${found.name} : Découvrez ses merveilles et gagnez +50% d'XP !`,
+        capital: found.capital || '',
+        continent: found.continent || '',
+        customBadgeText: 'PAYS DE LA SEMAINE',
+        customAnecdote: audioAnecdote.text || '',
+        highlightMonument: '',
       });
+    }
+  };
+
+  const handleToggleTestAudio = () => {
+    if (isTestingAudio) {
+      audioAnecdoteSpeaker.stop();
+    } else {
+      const anecdoteToSpeak = {
+        iso3: config.featuredCountry.iso3 || 'WLD',
+        countryName: config.featuredCountry.name || 'Pays Vedette',
+        flag: config.featuredCountry.flagEmoji || '🌍',
+        text: config.featuredCountry.customAnecdote || config.featuredCountry.headline || "Pays en vedette sur TerraCoast.",
+        durationSeconds: 10,
+      };
+      audioAnecdoteSpeaker.speak(anecdoteToSpeak, 'fr-FR');
     }
   };
 
@@ -410,7 +448,7 @@ export function SiteConfigPage() {
                 3. Pays à l'Honneur & Défi de la Semaine
               </h2>
               <p className="text-xs text-slate-500">
-                Mettez en avant un pays spécifique avec un bonus d'XP et un badge vedette.
+                Personnalisez le pays vedette affiché sur la page d'accueil avec son badge, ses anecdotes, sa voix et ses bonus.
               </p>
             </div>
           </div>
@@ -439,10 +477,11 @@ export function SiteConfigPage() {
           </label>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          {/* Sélection Pays (4 cols) */}
+          <div className="md:col-span-4">
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Sélectionner le Pays Vedette
+              Sélectionner le Territoire (250 Pays)
             </label>
             <select
               value={config.featuredCountry.iso3 || 'JPN'}
@@ -455,22 +494,100 @@ export function SiteConfigPage() {
                 </option>
               ))}
             </select>
+            <p className="text-[10px] text-slate-400 mt-1">
+              La sélection préremplit automatiquement la capitale, le continent et l'anecdote vocale.
+            </p>
           </div>
 
-          <div className="md:col-span-2">
+          {/* Badge Titre Personnalisé (4 cols) */}
+          <div className="md:col-span-4">
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Phrase d'Accroche sur l'Accueil et dans l'Atlas
+              Badge d'En-tête (ex: PAYS DE LA SEMAINE)
+            </label>
+            <input
+              type="text"
+              value={config.featuredCountry.customBadgeText || 'PAYS DE LA SEMAINE'}
+              onChange={(e) => handleChange('featuredCountry', { customBadgeText: e.target.value })}
+              placeholder="ex: PAYS DE LA SEMAINE, DÉFI SPÉCIAL..."
+              className="w-full text-xs sm:text-sm bg-white border border-slate-300 rounded-xl px-3 py-2 font-black uppercase text-amber-900"
+            />
+          </div>
+
+          {/* Nom affiché (4 cols) */}
+          <div className="md:col-span-4">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Nom Officiel Affiché
+            </label>
+            <input
+              type="text"
+              value={config.featuredCountry.name}
+              onChange={(e) => handleChange('featuredCountry', { name: e.target.value })}
+              placeholder="Nom du pays..."
+              className="w-full text-xs sm:text-sm bg-white border border-slate-300 rounded-xl px-3 py-2 font-bold"
+            />
+          </div>
+
+          {/* Phrase d'accroche (8 cols) */}
+          <div className="md:col-span-8">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Phrase d'Accroche Principale (Slogan)
             </label>
             <input
               type="text"
               value={config.featuredCountry.headline}
               onChange={(e) => handleChange('featuredCountry', { headline: e.target.value })}
-              placeholder="ex: Semaine Spéciale Japon : Découvrez l'archipel..."
+              placeholder="ex: Semaine Spéciale Japon : Découvrez l'archipel nippon..."
               className="w-full text-xs sm:text-sm bg-white border border-slate-300 rounded-xl px-3 py-2"
             />
           </div>
 
-          <div>
+          {/* Monument ou site emblématique (4 cols) */}
+          <div className="md:col-span-4">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Monument / Symbole Remarquable
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={config.featuredCountry.highlightMonument || ''}
+                onChange={(e) => handleChange('featuredCountry', { highlightMonument: e.target.value })}
+                placeholder="ex: Mont Fuji & Sanctuaires"
+                className="w-full text-xs sm:text-sm bg-white border border-slate-300 rounded-xl pl-8 pr-3 py-2"
+              />
+              <Landmark className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
+            </div>
+          </div>
+
+          {/* Capitale (3 cols) */}
+          <div className="md:col-span-3">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Capitale
+            </label>
+            <input
+              type="text"
+              value={config.featuredCountry.capital || ''}
+              onChange={(e) => handleChange('featuredCountry', { capital: e.target.value })}
+              placeholder="Capitale..."
+              className="w-full text-xs sm:text-sm bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium"
+            />
+          </div>
+
+          {/* Continent (3 cols) */}
+          <div className="md:col-span-3">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Continent
+            </label>
+            <input
+              type="text"
+              value={config.featuredCountry.continent || ''}
+              onChange={(e) => handleChange('featuredCountry', { continent: e.target.value })}
+              placeholder="Continent..."
+              className="w-full text-xs sm:text-sm bg-white border border-slate-300 rounded-xl px-3 py-2 font-medium"
+            />
+          </div>
+
+          {/* Multiplicateur XP (3 cols) */}
+          <div className="md:col-span-3">
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Bonus d'XP sur ce Pays
             </label>
@@ -484,10 +601,12 @@ export function SiteConfigPage() {
               <option value="1.25">+25% d'XP</option>
               <option value="1.5">+50% d'XP (Recommandé)</option>
               <option value="2.0">+100% d'XP (Double XP)</option>
+              <option value="3.0">+200% d'XP (Triple XP)</option>
             </select>
           </div>
 
-          <div>
+          {/* Gemmes Bonus (3 cols) */}
+          <div className="md:col-span-3">
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Gemmes Bonus à la Conquête
             </label>
@@ -499,20 +618,104 @@ export function SiteConfigPage() {
               onChange={(e) =>
                 handleChange('featuredCountry', { gemBonus: Number(e.target.value) || 25 })
               }
-              className="w-full text-xs sm:text-sm bg-white border border-slate-300 rounded-xl px-3 py-2"
+              className="w-full text-xs sm:text-sm bg-white border border-slate-300 rounded-xl px-3 py-2 font-bold"
             />
           </div>
 
-          {/* Visual Preview Pill */}
-          <div className="flex items-center p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 gap-3">
-            <span className="text-3xl">{config.featuredCountry.flagEmoji}</span>
-            <div>
-              <p className="text-xs font-black text-amber-900">
-                {config.featuredCountry.name} en Vedette
-              </p>
-              <p className="text-[11px] text-amber-700">
-                +{Math.round((config.featuredCountry.xpMultiplier - 1) * 100)}% XP • +{config.featuredCountry.gemBonus} 💎
-              </p>
+          {/* Capsule Culturelle / Anecdote Vocale (12 cols) */}
+          <div className="md:col-span-12 bg-amber-50/60 p-4 rounded-2xl border border-amber-200">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-black text-amber-950 flex items-center gap-1.5">
+                <span>💡</span>
+                <span>Capsule Culturelle & Anecdote Vocale (10 Secondes)</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={handleToggleTestAudio}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                  isTestingAudio
+                    ? 'bg-amber-500 text-white border-amber-600 animate-pulse'
+                    : 'bg-white hover:bg-amber-100 text-amber-900 border-amber-300'
+                }`}
+                title="Tester la synthèse vocale sur cette anecdote"
+              >
+                {isTestingAudio ? (
+                  <>
+                    <VolumeX className="w-3.5 h-3.5" />
+                    <span>Arrêter l'Écoute</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Tester la Voix (Lecture 10s)</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <textarea
+              rows={3}
+              value={config.featuredCountry.customAnecdote || ''}
+              onChange={(e) => handleChange('featuredCountry', { customAnecdote: e.target.value })}
+              placeholder="Écrivez une anecdote fascinante sur le pays. Elle sera affichée sur la page d'accueil et récitée par la voix naturelle..."
+              className="w-full text-xs sm:text-sm bg-white border border-amber-300 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 text-slate-800 italic"
+            />
+            <p className="text-[11px] text-amber-800/80 mt-1">
+              Cette anecdote est directement lue sur la page d'accueil par le lecteur audio interactif avec atténuation automatique du son.
+            </p>
+          </div>
+
+          {/* Aperçu en direct Haute Fidélité (12 cols) */}
+          <div className="md:col-span-12 bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-inner">
+            <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+              <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Rendu en Direct sur la Page d'Accueil</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {config.featuredCountry.isActive ? '🟢 En Ligne' : '⚪ Masqué'}
+              </span>
+            </div>
+
+            <div className="max-w-xl mx-auto bg-slate-800/90 rounded-2xl p-4 border border-amber-400/40 shadow-xl">
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider">
+                  {config.featuredCountry.customBadgeText || 'PAYS DE LA SEMAINE'}
+                </span>
+                <div className="flex items-center gap-1 text-[11px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                    +{Math.round((config.featuredCountry.xpMultiplier - 1) * 100)}% XP ⚡
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-300 border border-sky-400/40">
+                    +{config.featuredCountry.gemBonus} 💎
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-3xl">
+                  {config.featuredCountry.flagEmoji}
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-white">{config.featuredCountry.name}</h4>
+                  <p className="text-xs text-slate-300 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-emerald-400" />
+                    <span>Capitale : {config.featuredCountry.capital || 'À découvrir'}</span>
+                    <span className="text-slate-500">•</span>
+                    <span>{config.featuredCountry.continent || 'Monde'}</span>
+                  </p>
+                  {config.featuredCountry.highlightMonument && (
+                    <p className="text-[11px] text-amber-300 font-medium">
+                      🏛️ {config.featuredCountry.highlightMonument}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-slate-900/80 rounded-xl p-2.5 border border-amber-500/30 text-xs italic text-slate-300">
+                "{config.featuredCountry.customAnecdote || config.featuredCountry.headline}"
+              </div>
             </div>
           </div>
         </div>

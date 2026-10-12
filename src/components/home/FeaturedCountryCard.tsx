@@ -50,12 +50,23 @@ export function FeaturedCountryCard() {
   const isConquered = isCountryConquered(config.iso3, profile?.id);
   const xpBonusPercent = Math.round((config.xpMultiplier - 1) * 100);
 
+  const displayedBadgeText = config.customBadgeText || t("featured.countryOfTheWeek") || "Pays de la Semaine";
+  const displayedCapital = config.capital || atlasCountry?.capital || (t("featured.toDiscover") || "À découvrir");
+  const displayedContinent = config.continent || atlasCountry?.continent || "Monde";
+  const displayedAnecdoteText = config.customAnecdote || audioAnecdote.text || config.headline;
+
   const handleToggleAudio = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isSpeaking) {
       audioAnecdoteSpeaker.stop();
     } else {
-      audioAnecdoteSpeaker.speak(audioAnecdote, language === "fr" ? "fr-FR" : "en-US");
+      const anecdoteToSpeak = {
+        ...audioAnecdote,
+        text: displayedAnecdoteText,
+        countryName: config.name,
+        flagEmoji: config.flagEmoji,
+      };
+      audioAnecdoteSpeaker.speak(anecdoteToSpeak, language === "fr" ? "fr-FR" : "en-US");
     }
   };
 
@@ -76,7 +87,7 @@ export function FeaturedCountryCard() {
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[11px] font-black uppercase tracking-wider shadow-xs">
           <Sparkles className="w-3.5 h-3.5 fill-white" />
-          <span>{t("featured.countryOfTheWeek") || "Pays de la Semaine"}</span>
+          <span>{displayedBadgeText}</span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -115,10 +126,15 @@ export function FeaturedCountryCard() {
           </div>
           <p className="text-xs font-bold text-slate-600 flex items-center gap-1 mt-0.5">
             <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
-            <span>{t("featured.capital") || "Capitale :"} {atlasCountry?.capital || (t("featured.toDiscover") || "À découvrir")}</span>
+            <span>{t("featured.capital") || "Capitale :"} {displayedCapital}</span>
             <span className="text-slate-400">•</span>
-            <span>{atlasCountry?.continent || "Monde"}</span>
+            <span>{displayedContinent}</span>
           </p>
+          {config.highlightMonument && (
+            <p className="text-[11px] font-medium text-amber-800 mt-0.5 truncate">
+              🏛️ {config.highlightMonument}
+            </p>
+          )}
         </div>
       </div>
 
@@ -144,7 +160,7 @@ export function FeaturedCountryCard() {
           </button>
         </div>
         <p className="text-slate-700 font-medium leading-relaxed italic line-clamp-3">
-          "{audioAnecdote.text || config.headline}"
+          "{displayedAnecdoteText}"
         </p>
       </div>
 

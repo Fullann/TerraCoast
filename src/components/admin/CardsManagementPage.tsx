@@ -14,6 +14,10 @@ import {
   Layers,
   BookOpen,
   Award,
+  Copy,
+  Palette,
+  Globe,
+  Undo2,
 } from "lucide-react";
 import {
   type TerraCard,
@@ -22,17 +26,22 @@ import {
   type CardContinent,
   RARITY_CONFIG,
   CATEGORY_CONFIG,
+  TERRA_CARDS_CATALOG,
 } from "../../lib/cardsData";
 import {
   getCardsCatalog,
   adminSaveCard,
   adminUpdateCardRarity,
   adminDeleteCard,
+  adminRestoreCard,
+  getDeletedCardIds,
   adminResetCardsCatalog,
   adminExportCardsCatalog,
   adminImportCardsCatalog,
   syncCardsCatalogFromSupabase,
 } from "../../lib/cardsManager";
+import { getAllAtlasCountries } from "../../lib/atlasData";
+import { getAudioAnecdoteForCountry } from "../../lib/audioAnecdotesData";
 import { CollectibleCard } from "../cards/CollectibleCard";
 import { playSound } from "../../lib/soundManager";
 import { toast } from "../common/ToastContainer";
@@ -43,7 +52,7 @@ export function CardsManagementPage() {
   const [selectedRarity, setSelectedRarity] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedContinent, setSelectedContinent] = useState<string>("all");
-  const [selectedOrigin, setSelectedOrigin] = useState<"all" | "builtin" | "custom">("all");
+  const [selectedOrigin, setSelectedOrigin] = useState<"all" | "builtin" | "custom" | "deleted">("all");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
   // Modales
@@ -106,9 +115,30 @@ export function CardsManagementPage() {
     };
   }, [catalog]);
 
+  // Cartes masquées / supprimées
+  const deletedIds = useMemo(() => getDeletedCardIds(), [refreshTrigger]);
+  const deletedCards = useMemo(() => {
+    const idSet = new Set(deletedIds);
+    return TERRA_CARDS_CATALOG.filter((c) => idSet.has(c.id));
+  }, [deletedIds]);
+
   // Filtrage du catalogue
   const filteredCatalog = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
+    if (selectedOrigin === "deleted") {
+      return deletedCards.filter((card) => {
+        if (selectedRarity !== "all" && card.rarity !== selectedRarity) return false;
+        if (selectedCategory !== "all" && card.category !== selectedCategory) return false;
+        if (selectedContinent !== "all" && card.continent !== selectedContinent) return false;
+        if (q) {
+          const matchesName = card.name.toLowerCase().includes(q);
+          const matchesId = card.id.toLowerCase().includes(q);
+          return matchesName || matchesId;
+        }
+        return true;
+      });
+    }
+
     return catalog.filter((card) => {
       if (selectedRarity !== "all" && card.rarity !== selectedRarity) return false;
       if (selectedCategory !== "all" && card.category !== selectedCategory) return false;
@@ -138,7 +168,7 @@ export function CardsManagementPage() {
       }
       return true;
     });
-  }, [catalog, searchQuery, selectedRarity, selectedCategory, selectedContinent, selectedOrigin]);
+  }, [catalog, deletedCards, searchQuery, selectedRarity, selectedCategory, selectedContinent, selectedOrigin]);
 
   // Changement rapide de rareté en 1 clic
   const handleQuickRarityChange = (card: TerraCard, newRarity: CardRarity) => {
@@ -150,6 +180,29 @@ export function CardsManagementPage() {
     } else {
       toast.error(res.message);
     }
+  };
+
+  // Duplication d'une carte
+  const handleDuplicateCard = (card: TerraCard) => {
+    playSound("click");
+    const maxNum = catalog.reduce((max, c) => Math.max(max, c.number), 0);
+    const cloned: TerraCard = {
+      ...JSON.parse(JSON.stringify(card)),
+      id: `custom_card_${Date.now()}`,
+      number: maxNum + 1,
+      name: `${card.name} (Copie)`,
+    };
+    setEditingCard(cloned);
+    setIsCreating(true);
+    toast.info(`Carte dupliquée avec le numéro #${cloned.number}. Ajustez ses caractéristiques puis enregistrez.`);
+  };
+
+  // Restauration d'une carte masquée
+  const handleRestoreCard = (cardId: string) => {
+    playSound("success");
+    const res = adminRestoreCard(cardId);
+    toast.success(res.message);
+    forceRefresh();
   };
 
   // Suppression / Masquage
@@ -507,9 +560,12 @@ export function CardsManagementPage() {
             onChange={(e) => setSelectedOrigin(e.target.value as any)}
             className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-bold focus:outline-none"
           >
-            <option value="all">Toutes les Sources</option>
+            <option value="all">Toutes les Sources ({stats.total})</option>
             <option value="builtin">Cartes Officielles Base (60)</option>
-            <option value="custom">Cartes Personnalisées Admin</option>
+            <option value="custom">Cartes Personnalisées Admin (+{stats.customCount})</option>
+            {deletedIds.length > 0 && (
+              <option value="deleted">🗑️ Cartes Masquées ({deletedIds.length})</option>
+            )}
           </select>
 
           <span className="ml-auto text-xs text-slate-500 font-bold">
@@ -615,41 +671,65 @@ export function CardsManagementPage() {
                       {/* Actions */}
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Prévisualiser */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              playSound("click");
-                              setPreviewCard(card);
-                            }}
-                            className="p-1.5 rounded-xl hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                            title="Aperçu 3D interactif de la carte"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          {selectedOrigin === "deleted" ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRestoreCard(card.id)}
+                              className="px-2.5 py-1 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                              title="Restaurer cette carte dans le catalogue"
+                            >
+                              <Undo2 className="w-3.5 h-3.5" />
+                              <span>Restaurer</span>
+                            </button>
+                          ) : (
+                            <>
+                              {/* Prévisualiser */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound("click");
+                                  setPreviewCard(card);
+                                }}
+                                className="p-1.5 rounded-xl hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                                title="Aperçu 3D interactif de la carte"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
 
-                          {/* Éditer */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              playSound("click");
-                              setEditingCard(card);
-                            }}
-                            className="p-1.5 rounded-xl hover:bg-amber-100 text-amber-700 transition-colors cursor-pointer"
-                            title="Modifier cette carte"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
+                              {/* Dupliquer */}
+                              <button
+                                type="button"
+                                onClick={() => handleDuplicateCard(card)}
+                                className="p-1.5 rounded-xl hover:bg-indigo-100 text-indigo-700 transition-colors cursor-pointer"
+                                title="Dupliquer / Cloner cette carte"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
 
-                          {/* Supprimer / Masquer */}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCard(card)}
-                            className="p-1.5 rounded-xl hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
-                            title={isCustom ? "Supprimer définitivement" : "Masquer du catalogue"}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                              {/* Éditer */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound("click");
+                                  setEditingCard(card);
+                                }}
+                                className="p-1.5 rounded-xl hover:bg-amber-100 text-amber-700 transition-colors cursor-pointer"
+                                title="Modifier cette carte"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+
+                              {/* Supprimer / Masquer */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCard(card)}
+                                className="p-1.5 rounded-xl hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
+                                title={isCustom ? "Supprimer définitivement" : "Masquer du catalogue"}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -702,22 +782,44 @@ export function CardsManagementPage() {
                   </select>
 
                   <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setEditingCard(card)}
-                      className="p-1 rounded-lg hover:bg-amber-100 text-amber-700"
-                      title="Éditer"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCard(card)}
-                      className="p-1 rounded-lg hover:bg-rose-100 text-rose-600"
-                      title="Supprimer / Masquer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {selectedOrigin === "deleted" ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRestoreCard(card.id)}
+                        className="px-2 py-0.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-[10px] flex items-center gap-0.5"
+                        title="Restaurer"
+                      >
+                        <Undo2 className="w-3 h-3" />
+                        <span>Restaurer</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleDuplicateCard(card)}
+                          className="p-1 rounded-lg hover:bg-indigo-100 text-indigo-700"
+                          title="Dupliquer"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingCard(card)}
+                          className="p-1 rounded-lg hover:bg-amber-100 text-amber-700"
+                          title="Éditer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCard(card)}
+                          className="p-1 rounded-lg hover:bg-rose-100 text-rose-600"
+                          title="Supprimer / Masquer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -850,6 +952,91 @@ export function CardsManagementPage() {
   );
 }
 
+// ── PALETTES & DÉGRADÉS PRÉDÉFINIS ──
+const COLOR_SCHEME_PRESETS = [
+  {
+    id: "ocean",
+    name: "Océan",
+    from: "from-blue-600",
+    via: "via-cyan-600",
+    to: "to-indigo-800",
+    accent: "#0EA5E9",
+    previewClass: "bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-800",
+  },
+  {
+    id: "volcano",
+    name: "Volcan",
+    from: "from-red-600",
+    via: "via-orange-600",
+    to: "to-amber-700",
+    accent: "#EF4444",
+    previewClass: "bg-gradient-to-r from-red-600 via-orange-600 to-amber-700",
+  },
+  {
+    id: "emerald",
+    name: "Émeraude",
+    from: "from-emerald-600",
+    via: "via-teal-600",
+    to: "to-green-800",
+    accent: "#10B981",
+    previewClass: "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-800",
+  },
+  {
+    id: "gold",
+    name: "Or Royal",
+    from: "from-amber-500",
+    via: "via-yellow-600",
+    to: "to-orange-700",
+    accent: "#F59E0B",
+    previewClass: "bg-gradient-to-r from-amber-500 via-yellow-600 to-orange-700",
+  },
+  {
+    id: "cosmic",
+    name: "Cosmique",
+    from: "from-purple-600",
+    via: "via-pink-600",
+    to: "to-indigo-800",
+    accent: "#A855F7",
+    previewClass: "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-800",
+  },
+  {
+    id: "polar",
+    name: "Polaire",
+    from: "from-cyan-400",
+    via: "via-sky-500",
+    to: "to-blue-700",
+    accent: "#38BDF8",
+    previewClass: "bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-700",
+  },
+  {
+    id: "desert",
+    name: "Désert",
+    from: "from-orange-500",
+    via: "via-amber-600",
+    to: "to-yellow-700",
+    accent: "#F97316",
+    previewClass: "bg-gradient-to-r from-orange-500 via-amber-600 to-yellow-700",
+  },
+  {
+    id: "sakura",
+    name: "Sakura",
+    from: "from-pink-500",
+    via: "via-rose-500",
+    to: "to-purple-600",
+    accent: "#EC4899",
+    previewClass: "bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600",
+  },
+  {
+    id: "night",
+    name: "Obsidienne",
+    from: "from-slate-700",
+    via: "via-slate-800",
+    to: "to-zinc-900",
+    accent: "#64748B",
+    previewClass: "bg-gradient-to-r from-slate-700 via-slate-800 to-zinc-900",
+  },
+];
+
 // ── COMPOSANT DE FORMULAIRE & PREVIEW EN DIRECT ──
 interface CardEditorModalProps {
   initialCard?: TerraCard;
@@ -865,6 +1052,8 @@ function CardEditorModal({
   onSaved,
 }: CardEditorModalProps) {
   const isEditing = Boolean(initialCard);
+  const atlasList = useMemo(() => getAllAtlasCountries("fr"), []);
+  const [selectedAtlasIso3, setSelectedAtlasIso3] = useState("");
 
   const [formData, setFormData] = useState<TerraCard>(() => {
     if (initialCard) return JSON.parse(JSON.stringify(initialCard));
@@ -902,10 +1091,96 @@ function CardEditorModal({
     };
   });
 
+  const handleApplyAtlasCountry = (iso3: string) => {
+    const c = atlasList.find((item) => item.iso3 === iso3);
+    if (!c) return;
+
+    const mappedContinent: CardContinent =
+      c.continent === "Europe"
+        ? "Europe"
+        : c.continent === "Asie"
+        ? "Asie"
+        : c.continent === "Afrique"
+        ? "Afrique"
+        : c.continent === "Amériques"
+        ? "Amériques"
+        : c.continent === "Océanie"
+        ? "Océanie"
+        : "Monde";
+
+    const anecdote = getAudioAnecdoteForCountry(c.iso3, c.name, c.flagEmoji);
+
+    const otherCapitals = atlasList
+      .filter((o) => o.iso3 !== c.iso3 && o.capital)
+      .slice(0, 3)
+      .map((o) => o.capital);
+
+    const realCapital = c.capital || "Capitale";
+    const opts = [realCapital, ...otherCapitals];
+    const shuffled = [...opts].sort(() => 0.5 - Math.random());
+    const correctIdx = shuffled.indexOf(realCapital);
+
+    setFormData((prev) => ({
+      ...prev,
+      name: c.name,
+      category: "country",
+      continent: mappedContinent,
+      flag: c.flagEmoji,
+      icon: "🧭",
+      tagline: `Terre d'histoire et de merveilles (${realCapital})`,
+      description: `${c.name} est un territoire situé en ${c.continent}. Capitale : ${realCapital}.`,
+      stats: {
+        Capitale: realCapital,
+        Population: c.population ? `${(c.population / 1_000_000).toFixed(1)} M hab.` : "Inconnue",
+        Superficie: c.areaKm2 ? `${c.areaKm2.toLocaleString("fr-FR")} km²` : "Inconnue",
+      },
+      funFact: anecdote.text || `Saviez-vous que ${c.name} possède des particularités géographiques uniques ?`,
+      quote: `Découvrir ${c.name}, c'est explorer le monde.`,
+      trivia: {
+        question: `Quelle est la capitale officielle de ${c.name} ?`,
+        options: shuffled.length >= 2 ? shuffled : [realCapital, "Autre"],
+        correctIndex: Math.max(0, correctIdx),
+        explanation: `La capitale officielle de ${c.name} est bien ${realCapital}.`,
+      },
+    }));
+    toast.success(`Données de « ${c.name} » appliquées avec succès !`);
+  };
+
   const handleStatChange = (key: string, val: string) => {
     setFormData((prev) => ({
       ...prev,
       stats: { ...prev.stats, [key]: val },
+    }));
+  };
+
+  const handleStatRenameKey = (oldKey: string, newKey: string) => {
+    if (!newKey.trim() || oldKey === newKey) return;
+    setFormData((prev) => {
+      const newStats: Record<string, string | number> = {};
+      for (const [k, v] of Object.entries(prev.stats)) {
+        if (k === oldKey) {
+          newStats[newKey] = v;
+        } else {
+          newStats[k] = v;
+        }
+      }
+      return { ...prev, stats: newStats };
+    });
+  };
+
+  const handleStatDelete = (key: string) => {
+    setFormData((prev) => {
+      const newStats = { ...prev.stats };
+      delete newStats[key];
+      return { ...prev, stats: newStats };
+    });
+  };
+
+  const handleAddStatRow = () => {
+    const newKey = `Donnée_${Object.keys(formData.stats).length + 1}`;
+    setFormData((prev) => ({
+      ...prev,
+      stats: { ...prev.stats, [newKey]: "Valeur" },
     }));
   };
 
@@ -963,6 +1238,41 @@ function CardEditorModal({
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* ── ASSISTANT PRE-REMPLISSAGE ATLAS ── */}
+        <div className="mt-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-3.5 rounded-2xl border border-indigo-200/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-xl bg-white text-indigo-700 shadow-xs">
+              <Globe className="w-4 h-4 text-indigo-600" />
+            </span>
+            <div>
+              <span className="text-xs font-black text-indigo-950 block">
+                Assistant de Pré-remplissage Atlas (250 Pays)
+              </span>
+              <span className="text-[11px] text-indigo-800/80">
+                Sélectionnez un pays pour remplir instantanément le drapeau, les statistiques et le quiz.
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedAtlasIso3}
+              onChange={(e) => {
+                setSelectedAtlasIso3(e.target.value);
+                if (e.target.value) handleApplyAtlasCountry(e.target.value);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-white border border-indigo-200 text-xs font-bold text-slate-800 shadow-xs focus:ring-2 focus:ring-indigo-400"
+            >
+              <option value="">-- Choisir un pays mondial --</option>
+              {atlasList.map((c) => (
+                <option key={c.iso3} value={c.iso3}>
+                  {c.flagEmoji} {c.name} ({c.iso3})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Corps : Formulaire à gauche, Prévisualisation à droite */}
@@ -1104,10 +1414,98 @@ function CardEditorModal({
               </div>
             </div>
 
-            {/* Section 2 : Savoir & Anecdotes */}
+            {/* Section 2 : Palette Visuelle & Dégradé */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 block flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-indigo-600" />
+                <span>2. Palette Visuelle & Dégradé de la Carte</span>
+              </span>
+
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {COLOR_SCHEME_PRESETS.map((preset) => {
+                  const isSelected =
+                    formData.colorScheme.from === preset.from &&
+                    formData.colorScheme.to === preset.to;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          colorScheme: {
+                            from: preset.from,
+                            via: preset.via,
+                            to: preset.to,
+                            accent: preset.accent,
+                          },
+                        }));
+                      }}
+                      className={`p-2 rounded-xl text-left border transition-all cursor-pointer flex flex-col gap-1.5 ${
+                        isSelected
+                          ? "bg-white border-indigo-600 ring-2 ring-indigo-500/30 shadow-xs"
+                          : "bg-white/80 border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className={`h-4 w-full rounded-lg ${preset.previewClass}`} />
+                      <span className="text-[10px] font-bold text-slate-700 truncate block">
+                        {preset.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="font-bold text-slate-600 block mb-1 text-[11px]">
+                    Couleur d'Accentuation (Hex)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={formData.colorScheme.accent}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          colorScheme: { ...prev.colorScheme, accent: e.target.value },
+                        }))
+                      }
+                      className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={formData.colorScheme.accent}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          colorScheme: { ...prev.colorScheme, accent: e.target.value },
+                        }))
+                      }
+                      className="w-full p-1.5 rounded-lg bg-white border border-slate-200 font-mono text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-600 block mb-1 text-[11px]">
+                    Citation / Devise de la Carte
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.quote || ""}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, quote: e.target.value }))}
+                    placeholder="ex: Semper Explorator"
+                    className="w-full p-1.5 rounded-lg bg-white border border-slate-200 font-medium text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3 : Savoir & Anecdotes */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 block">
-                2. Données & Anecdotes
+                3. Données & Anecdotes
               </span>
 
               <div>
@@ -1130,30 +1528,58 @@ function CardEditorModal({
                 />
               </div>
 
-              {/* Statistiques clés */}
+              {/* Statistiques clés dynamiques */}
               <div>
-                <label className="font-bold text-slate-600 block mb-1">Statistiques Clés (Verso)</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(formData.stats).map(([k, v]) => (
-                    <div key={k}>
-                      <span className="text-[10px] text-slate-500 font-bold block">{k}</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="font-bold text-slate-600 block text-[11px]">
+                    Statistiques & Métadonnées Clés (Verso de la Carte)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddStatRow}
+                    className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Ajouter une stat</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {Object.entries(formData.stats).map(([k, v], idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={k}
+                        onChange={(e) => handleStatRenameKey(k, e.target.value)}
+                        placeholder="Libellé"
+                        className="w-1/3 p-1.5 rounded-lg bg-white border border-slate-200 font-bold text-[11px] text-slate-700"
+                      />
                       <input
                         type="text"
                         value={String(v)}
                         onChange={(e) => handleStatChange(k, e.target.value)}
-                        className="w-full p-1.5 rounded-lg bg-white border border-slate-200 font-bold"
+                        placeholder="Valeur"
+                        className="flex-1 p-1.5 rounded-lg bg-white border border-slate-200 font-medium text-[11px] text-slate-800"
                       />
+                      <button
+                        type="button"
+                        onClick={() => handleStatDelete(k)}
+                        className="p-1.5 rounded-lg hover:bg-rose-100 text-rose-500 hover:text-rose-700 cursor-pointer transition-colors"
+                        title="Supprimer cette statistique"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Section 3 : Mini-Quiz Flash */}
+            {/* Section 4 : Mini-Quiz Flash */}
             <div className="bg-purple-50/60 p-4 rounded-2xl border border-purple-200 space-y-3">
               <span className="text-[11px] font-black uppercase tracking-wider text-purple-900 block flex items-center gap-1">
                 <Award className="w-3.5 h-3.5 text-purple-600" />
-                <span>3. Mini-Quiz Flash (+5 💎)</span>
+                <span>4. Mini-Quiz Flash (+5 💎)</span>
               </span>
 
               <div>

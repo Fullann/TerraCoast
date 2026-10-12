@@ -25,6 +25,12 @@ export interface FeaturedCountryConfig {
   xpMultiplier: number;
   gemBonus: number;
   isActive: boolean;
+  customBadgeText?: string;
+  customAnecdote?: string;
+  capital?: string;
+  continent?: string;
+  highlightMonument?: string;
+  description?: string;
 }
 
 export interface GameplayConfig {
@@ -79,6 +85,11 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
     xpMultiplier: 1.5,
     gemBonus: 25,
     isActive: true,
+    customBadgeText: 'PAYS DE LA SEMAINE',
+    customAnecdote: 'Le Japon compte plus de 6 800 îles volcaniques et le mont Fuji est son point culminant vénéré depuis des millénaires.',
+    capital: 'Tokyo',
+    continent: 'Asie',
+    highlightMonument: 'Mont Fuji & Sanctuaire Fushimi Inari',
   },
   gameplay: {
     globalXpMultiplier: 1,
