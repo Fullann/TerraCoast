@@ -18,6 +18,7 @@ import {
   savePlayerGamificationState,
 } from "./gamificationManager";
 import { supabase } from "./supabase";
+import type { Json } from "./database.types";
 
 export interface PlayerCardEntry {
   count: number;
@@ -286,30 +287,32 @@ export function adminSaveCard(card: TerraCard): { success: boolean; message: str
 
   // Synchronisation distante Supabase en tâche de fond (si connecté & droits admin)
   try {
-    supabase
-      .from("terra_cards")
-      .upsert({
-        id: card.id,
-        number: card.number,
-        name: card.name,
-        category: card.category,
-        rarity: card.rarity,
-        continent: card.continent,
-        flag: card.flag || null,
-        icon: card.icon,
-        tagline: card.tagline,
-        description: card.description,
-        stats: card.stats,
-        fun_fact: card.funFact,
-        quote: card.quote || null,
-        color_scheme: card.colorScheme,
-        trivia: card.trivia,
-        is_active: true,
-        updated_at: new Date().toISOString(),
-      })
-      .then(({ error }) => {
-        if (error) {
-          console.warn("Échec de la sauvegarde distante Supabase :", error.message);
+    void Promise.resolve(
+      supabase
+        .from("terra_cards")
+        .upsert({
+          id: card.id,
+          number: card.number,
+          name: card.name,
+          category: card.category,
+          rarity: card.rarity,
+          continent: card.continent,
+          flag: card.flag || null,
+          icon: card.icon,
+          tagline: card.tagline,
+          description: card.description,
+          stats: card.stats as unknown as Json,
+          fun_fact: card.funFact,
+          quote: card.quote || null,
+          color_scheme: card.colorScheme as unknown as Json,
+          trivia: card.trivia as unknown as Json,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        })
+    )
+      .then((res) => {
+        if (res && "error" in res && res.error) {
+          console.warn("Échec de la sauvegarde distante Supabase :", res.error.message);
         }
       })
       .catch(() => {});
@@ -361,12 +364,12 @@ export function adminDeleteCard(cardId: string): { success: boolean; message: st
     notifyCatalogUpdated();
 
     try {
-      supabase
-        .from("terra_cards")
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .eq("id", cardId)
-        .then(() => {})
-        .catch(() => {});
+      void Promise.resolve(
+        supabase
+          .from("terra_cards")
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq("id", cardId)
+      ).catch(() => {});
     } catch {
       // Offline fallback
     }
@@ -387,12 +390,12 @@ export function adminDeleteCard(cardId: string): { success: boolean; message: st
     notifyCatalogUpdated();
 
     try {
-      supabase
-        .from("terra_cards")
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .eq("id", cardId)
-        .then(() => {})
-        .catch(() => {});
+      void Promise.resolve(
+        supabase
+          .from("terra_cards")
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq("id", cardId)
+      ).catch(() => {});
     } catch {
       // Offline fallback
     }

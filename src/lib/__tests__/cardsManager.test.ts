@@ -25,7 +25,6 @@ import {
   adminImportCardsCatalog,
   getRemoteCardsCatalog,
   setRemoteCardsCatalog,
-  syncCardsCatalogFromSupabase,
 } from "../cardsManager";
 import {
   getPlayerGamificationState,

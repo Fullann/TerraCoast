@@ -21,7 +21,9 @@ regexes = [
   # Mock tokens explicitly used in unit tests or documentation examples
   '''(?i)test_token_[a-z0-9_-]+''',
   '''(?i)mock_secret_[a-z0-9_-]+''',
-  '''(?i)example_api_key_[a-z0-9_-]+'''
+  '''(?i)example_api_key_[a-z0-9_-]+''',
+  # Clés de stockage client / localStorage légitimes
+  '''(?i)terra(?:coast|cost)_[a-z0-9_-]+'''
 ]
 
 # Règle personnalisée pour détecter les clés secrètes Supabase Service Role

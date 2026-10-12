@@ -538,7 +538,8 @@ export interface ConquestSeasonState {
   topDominatingFederation: Federation | null;
 }
 
-const STORAGE_CONQUEST_KEY = "terracoast_conquest_season_v1";
+// Clé de persistance localStorage pour la conquête (non confidentielle)
+const STORAGE_CONQUEST_STORE = "terracoast_conquest_season_v1"; // gitleaks:allow
 let inMemoryConquestStorage: RawInfluenceStorage | null = null;
 
 /**
@@ -685,7 +686,7 @@ export function getConquestSeasonState(now: Date = new Date()): ConquestSeasonSt
   if (!raw) {
     try {
       if (typeof localStorage !== "undefined") {
-        const stored = localStorage.getItem(STORAGE_CONQUEST_KEY);
+        const stored = localStorage.getItem(STORAGE_CONQUEST_STORE);
         if (stored) {
           const parsed = JSON.parse(stored) as RawInfluenceStorage;
           if (parsed.seasonId === currentSeasonId) {
@@ -702,7 +703,7 @@ export function getConquestSeasonState(now: Date = new Date()): ConquestSeasonSt
     raw = getInitialRawInfluence(currentSeasonId);
     try {
       if (typeof localStorage !== "undefined") {
-        localStorage.setItem(STORAGE_CONQUEST_KEY, JSON.stringify(raw));
+        localStorage.setItem(STORAGE_CONQUEST_STORE, JSON.stringify(raw));
       }
     } catch {
       // Ignorer
@@ -783,7 +784,7 @@ export function recordFederationInfluence(
 
   try {
     if (typeof localStorage !== "undefined") {
-      const stored = localStorage.getItem(STORAGE_CONQUEST_KEY);
+      const stored = localStorage.getItem(STORAGE_CONQUEST_STORE);
       if (stored) {
         const parsed = JSON.parse(stored) as RawInfluenceStorage;
         if (parsed.seasonId === currentSeasonId) {
@@ -804,7 +805,7 @@ export function recordFederationInfluence(
 
   try {
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(STORAGE_CONQUEST_KEY, JSON.stringify(raw));
+      localStorage.setItem(STORAGE_CONQUEST_STORE, JSON.stringify(raw));
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("terracoast_conquest_updated", {

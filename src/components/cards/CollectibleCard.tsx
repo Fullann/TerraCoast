@@ -19,6 +19,7 @@ import {
   CONTINENT_TRANSLATIONS,
 } from "../../lib/cardsTranslationService";
 import type { Language } from "../../i18n/translations";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 interface CollectibleCardProps {
   card: TerraCard;
@@ -52,7 +53,7 @@ export function CollectibleCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const { language } = useLanguage();
-  const effectiveLang = langOverride || language;
+  const effectiveLang: Language = langOverride || language;
   const translated = useTranslatedCard(card, effectiveLang) || card;
 
   const rarityMeta = RARITY_CONFIG[card.rarity];

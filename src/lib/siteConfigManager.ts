@@ -56,8 +56,9 @@ export interface SiteConfig {
   updatedBy?: string;
 }
 
-const STORAGE_KEY = 'terracost_site_config_v1';
-const DISMISSED_ANNOUNCEMENTS_KEY = 'terracost_dismissed_announcements_v1';
+// Clés de persistance localStorage pour la configuration du site et bannières (non confidentielles)
+const STORAGE_SITE_CONFIG_STORE = 'terracost_site_config_v1'; // gitleaks:allow
+const DISMISSED_ANNOUNCEMENTS_STORE = 'terracost_dismissed_announcements_v1'; // gitleaks:allow
 
 export const DEFAULT_SITE_CONFIG: SiteConfig = {
   announcement: {
@@ -106,7 +107,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
 export function getSiteConfig(): SiteConfig {
   if (typeof localStorage === 'undefined') return DEFAULT_SITE_CONFIG;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_SITE_CONFIG_STORE);
     if (!raw) return DEFAULT_SITE_CONFIG;
     const parsed = JSON.parse(raw);
     return {
@@ -148,7 +149,7 @@ export function updateSiteConfig(changes: Partial<SiteConfig>): SiteConfig {
 
   if (typeof localStorage !== 'undefined') {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(STORAGE_SITE_CONFIG_STORE, JSON.stringify(next));
     } catch (err) {
       console.error('Failed to save site config to storage:', err);
     }
@@ -169,7 +170,7 @@ export function updateSiteConfig(changes: Partial<SiteConfig>): SiteConfig {
 export function resetSiteConfig(): SiteConfig {
   if (typeof localStorage !== 'undefined') {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SITE_CONFIG));
+      localStorage.setItem(STORAGE_SITE_CONFIG_STORE, JSON.stringify(DEFAULT_SITE_CONFIG));
     } catch (err) {
       console.error('Failed to reset site config:', err);
     }
@@ -188,7 +189,7 @@ export function resetSiteConfig(): SiteConfig {
 export function isAnnouncementDismissed(announcementId: string): boolean {
   if (typeof localStorage === 'undefined') return false;
   try {
-    const raw = localStorage.getItem(DISMISSED_ANNOUNCEMENTS_KEY);
+    const raw = localStorage.getItem(DISMISSED_ANNOUNCEMENTS_STORE);
     if (!raw) return false;
     const list: string[] = JSON.parse(raw);
     return Array.isArray(list) && list.includes(announcementId);
@@ -203,11 +204,11 @@ export function isAnnouncementDismissed(announcementId: string): boolean {
 export function dismissAnnouncement(announcementId: string): void {
   if (typeof localStorage !== 'undefined') {
     try {
-      const raw = localStorage.getItem(DISMISSED_ANNOUNCEMENTS_KEY);
+      const raw = localStorage.getItem(DISMISSED_ANNOUNCEMENTS_STORE);
       const list: string[] = raw ? JSON.parse(raw) : [];
       if (!list.includes(announcementId)) {
         list.push(announcementId);
-        localStorage.setItem(DISMISSED_ANNOUNCEMENTS_KEY, JSON.stringify(list));
+        localStorage.setItem(DISMISSED_ANNOUNCEMENTS_STORE, JSON.stringify(list));
       }
     } catch (err) {
       console.warn('Failed to dismiss announcement in storage:', err);

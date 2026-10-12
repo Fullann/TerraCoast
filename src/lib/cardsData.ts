@@ -213,4 +213,4 @@ export const BOOSTER_PACKS: BoosterPack[] = [
 
 import defaultCardsCatalog from "../data/defaultCardsCatalog.json";
 
-export const TERRA_CARDS_CATALOG: TerraCard[] = defaultCardsCatalog as TerraCard[];
+export const TERRA_CARDS_CATALOG: TerraCard[] = defaultCardsCatalog as unknown as TerraCard[];
