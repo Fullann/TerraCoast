@@ -1,0 +1,63 @@
+name: Build & Deploy TerraCoast (Dev)
+
+on:
+  push:
+    branches:
+      - correct-bug
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Contrôle de sécurité DevSecOps pré-déploiement ──
+      - name: Secret scan check (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+      - name: Dependency vulnerability audit (SCA Gate)
+        run: npm audit --audit-level=critical
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+
+      - name: Copy .htaccess to dist
+        run: cp public/.htaccess dist/.htaccess
+
+      - name: Verify dist contents
+        run: ls -la dist/
+
+      - name: Deploy via FTP (Dev)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_DEV_USER }}
+          password: ${{ secrets.SFTP_DEV_PASSWORD }}
+          port: ${{ secrets.SFTP_PORT }}
+          protocol: ftps
+          local-dir: dist/
+          server-dir: /
+          dangerous-clean-slate: true
