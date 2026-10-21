@@ -1,14 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Award, Calendar, ChevronRight, Check } from "lucide-react";
+import { X, Award, Calendar, ChevronRight, Check, Sparkles, Gift } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import {
   isStreakPlayedToday,
   isStreakAtRisk,
   getNextStreakMilestone,
   getWeekStreakStatus,
+  STREAK_MILESTONES,
+  getClaimedStreakMilestones,
+  claimStreakMilestone,
 } from "../../lib/streakUtils";
 import { getPlayerGamificationState } from "../../lib/gamificationManager";
+import { triggerConfetti } from "../common/Confetti";
+import { playVictoryFanfare, playClickSound } from "../../lib/soundManager";
+import { toast } from "../common/ToastContainer";
 import type { Database } from "../../lib/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -40,6 +46,10 @@ export function StreakModal({
 
   if (!isOpen) return null;
 
+  const [claimedSet, setClaimedSet] = useState<number[]>(() =>
+    getClaimedStreakMilestones(profile?.id)
+  );
+
   const currentStreak = profile?.current_streak || 0;
   const longestStreak = profile?.longest_streak || 0;
   const lastActivityDate = profile?.last_activity_date;
@@ -49,6 +59,19 @@ export function StreakModal({
   const atRisk = isStreakAtRisk(lastActivityDate, currentStreak);
   const milestone = getNextStreakMilestone(currentStreak);
   const weekDays = getWeekStreakStatus(lastActivityDate, currentStreak);
+
+  const handleClaimMilestone = (days: number) => {
+    playClickSound();
+    const res = claimStreakMilestone(profile?.id, days, currentStreak);
+    if (res.success) {
+      playVictoryFanfare();
+      triggerConfetti();
+      toast.success(res.message || "Récompense réclamée !");
+      setClaimedSet(getClaimedStreakMilestones(profile?.id));
+    } else {
+      toast.error(res.message || "Impossible de réclamer.");
+    }
+  };
 
   const handleAction = () => {
     onClose();
@@ -200,6 +223,70 @@ export function StreakModal({
                   } pour atteindre ce palier !`
                 : "Palier validé ! 🎉"}
             </p>
+          </div>
+
+          {/* Paliers & Coffres de Flamme */}
+          <div className="bg-white border-2 border-orange-200 rounded-2xl p-3.5 space-y-2 shadow-xs">
+            <div className="flex items-center justify-between text-xs font-black text-slate-800 mb-1">
+              <span className="flex items-center gap-1.5">
+                <Gift className="w-4 h-4 text-orange-500" />
+                <span>Paliers & Récompenses de Flamme</span>
+              </span>
+            </div>
+
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {STREAK_MILESTONES.map((m) => {
+                const reached = currentStreak >= m.days;
+                const claimed = claimedSet.includes(m.days);
+
+                return (
+                  <div
+                    key={m.days}
+                    className={`flex items-center justify-between p-2 rounded-xl text-xs border transition-all ${
+                      claimed
+                        ? "bg-slate-50 border-slate-200 opacity-75"
+                        : reached
+                        ? "bg-amber-50 border-amber-300 shadow-xs"
+                        : "bg-slate-50/50 border-slate-200/60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{m.badgeEmoji}</span>
+                      <div>
+                        <span className="font-black text-slate-800 block">
+                          {m.days} jours : {m.label}
+                        </span>
+                        <span className="text-[10px] text-orange-700 font-bold">
+                          {m.rewardDescription}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      {claimed ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                          Réclamé
+                        </span>
+                      ) : reached ? (
+                        <button
+                          type="button"
+                          onClick={() => handleClaimMilestone(m.days)}
+                          className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[11px] rounded-lg shadow-sm border border-amber-600 active:scale-95 transition-all flex items-center gap-1 animate-pulse cursor-pointer"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>Réclamer</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] font-bold text-slate-400">
+                          {currentStreak}/{m.days} j
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Stats Grid */}

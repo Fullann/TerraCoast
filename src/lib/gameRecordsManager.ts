@@ -15,6 +15,9 @@ const KEY_TRAVLE_RECORD = "terracoast_travle_record";
 const KEY_SILHOUETTE_RECORD = "terracoast_silhouette_record";
 const KEY_MAP_BLITZ_RECORD = "terracoast_map_blitz_record";
 const KEY_PHYSICAL_GEO_RECORD = "terracoast_physical_geo_record";
+const KEY_BORDER_PUZZLE_RECORD = "terracoast_border_puzzle_record";
+const KEY_TIME_GUESSR_RECORD = "terracoast_time_guessr_record";
+const KEY_CITY_GUESSER_RECORD = "terracoast_city_guesser_record";
 
 export interface GamePersonalRecords {
   chronoRush: { highScore: number; bestAnswers: number; display: string };
@@ -25,6 +28,9 @@ export interface GamePersonalRecords {
   mapBlitz: { bestCount: number; bestPercent: number; display: string };
   physicalGeo: { bestScore: number; bestChronoAnswers: number; display: string };
   srs: { dueToday: number; masteredCount: number; display: string };
+  borderPuzzle: { puzzlesSolved: number; bestTimeSeconds: number; display: string };
+  timeGuessr: { highScore: number; bestAccuracyPercent: number; display: string };
+  cityGuesser: { highScore: number; bestAltitudeKm: number; display: string };
 }
 
 // ── Chrono Rush ──
@@ -264,6 +270,114 @@ export function getSrsRecordSummary(userId: string | null): {
   };
 }
 
+// ── Border Puzzle (Tangram Frontalier) ──
+export function saveBorderPuzzleRecord(timeSeconds: number): void {
+  if (typeof window === "undefined") return;
+  const current = getBorderPuzzleRecord();
+  const next = {
+    puzzlesSolved: current.puzzlesSolved + 1,
+    bestTimeSeconds:
+      current.bestTimeSeconds > 0
+        ? Math.min(current.bestTimeSeconds, timeSeconds)
+        : timeSeconds,
+  };
+  localStorage.setItem(KEY_BORDER_PUZZLE_RECORD, JSON.stringify(next));
+}
+
+export function getBorderPuzzleRecord(): {
+  puzzlesSolved: number;
+  bestTimeSeconds: number;
+  display: string;
+} {
+  if (typeof window === "undefined") {
+    return { puzzlesSolved: 0, bestTimeSeconds: 0, display: "Pièces TopoJSON détachées" };
+  }
+  try {
+    const raw = localStorage.getItem(KEY_BORDER_PUZZLE_RECORD);
+    if (!raw) return { puzzlesSolved: 0, bestTimeSeconds: 0, display: "Tangram Frontalier • 3-4 pays" };
+    const parsed = JSON.parse(raw);
+    const puzzlesSolved = Number(parsed.puzzlesSolved) || 0;
+    const bestTimeSeconds = Number(parsed.bestTimeSeconds) || 0;
+    const display =
+      puzzlesSolved > 0
+        ? `${puzzlesSolved} résolu${puzzlesSolved > 1 ? "s" : ""} • Meilleur : ${bestTimeSeconds}s`
+        : "Tangram Frontalier • 3-4 pays";
+    return { puzzlesSolved, bestTimeSeconds, display };
+  } catch {
+    return { puzzlesSolved: 0, bestTimeSeconds: 0, display: "Tangram Frontalier • 3-4 pays" };
+  }
+}
+
+// ── TimeGuessr Géo-Historique ──
+export function saveTimeGuessrRecord(score: number, accuracyPercent: number): void {
+  if (typeof window === "undefined") return;
+  const current = getTimeGuessrRecord();
+  const next = {
+    highScore: Math.max(current.highScore, score),
+    bestAccuracyPercent: Math.max(current.bestAccuracyPercent, accuracyPercent),
+  };
+  localStorage.setItem(KEY_TIME_GUESSR_RECORD, JSON.stringify(next));
+}
+
+export function getTimeGuessrRecord(): {
+  highScore: number;
+  bestAccuracyPercent: number;
+  display: string;
+} {
+  if (typeof window === "undefined") {
+    return { highScore: 0, bestAccuracyPercent: 0, display: "Où & Quand (1850-2024)" };
+  }
+  try {
+    const raw = localStorage.getItem(KEY_TIME_GUESSR_RECORD);
+    if (!raw) return { highScore: 0, bestAccuracyPercent: 0, display: "Record : 25 000 pts max" };
+    const parsed = JSON.parse(raw);
+    const highScore = Number(parsed.highScore) || 0;
+    const bestAccuracyPercent = Number(parsed.bestAccuracyPercent) || 0;
+    const display =
+      highScore > 0
+        ? `Record : ${highScore.toLocaleString()} pts (${bestAccuracyPercent}%)`
+        : "Record : 25 000 pts max";
+    return { highScore, bestAccuracyPercent, display };
+  } catch {
+    return { highScore: 0, bestAccuracyPercent: 0, display: "Record : 25 000 pts max" };
+  }
+}
+
+// ── City Guesser / Satellite Zoom-In ──
+export function saveCityGuesserRecord(score: number, altitudeKm: number): void {
+  if (typeof window === "undefined") return;
+  const current = getCityGuesserRecord();
+  const next = {
+    highScore: Math.max(current.highScore, score),
+    bestAltitudeKm: Math.max(current.bestAltitudeKm, altitudeKm),
+  };
+  localStorage.setItem(KEY_CITY_GUESSER_RECORD, JSON.stringify(next));
+}
+
+export function getCityGuesserRecord(): {
+  highScore: number;
+  bestAltitudeKm: number;
+  display: string;
+} {
+  if (typeof window === "undefined") {
+    return { highScore: 0, bestAltitudeKm: 0, display: "Descente orbitale & Buzzer" };
+  }
+  try {
+    const raw = localStorage.getItem(KEY_CITY_GUESSER_RECORD);
+    if (!raw) return { highScore: 0, bestAltitudeKm: 0, display: "Buzz en haute altitude 🛰️" };
+    const parsed = JSON.parse(raw);
+    const highScore = Number(parsed.highScore) || 0;
+    const bestAltitudeKm = Number(parsed.bestAltitudeKm) || 0;
+    const display =
+      highScore > 0
+        ? `Record : ${highScore.toLocaleString()} pts (${bestAltitudeKm} km)`
+        : "Buzz en haute altitude 🛰️";
+    return { highScore, bestAltitudeKm, display };
+  } catch {
+    return { highScore: 0, bestAltitudeKm: 0, display: "Buzz en haute altitude 🛰️" };
+  }
+}
+
 /**
  * Récupère l'ensemble des records de tous les mini-jeux d'un seul coup
  */
@@ -277,5 +391,8 @@ export function getAllGamePersonalRecords(userId: string | null): GamePersonalRe
     mapBlitz: getMapBlitzRecord(),
     physicalGeo: getPhysicalGeoRecord(),
     srs: getSrsRecordSummary(userId),
+    borderPuzzle: getBorderPuzzleRecord(),
+    timeGuessr: getTimeGuessrRecord(),
+    cityGuesser: getCityGuesserRecord(),
   };
 }

@@ -108,12 +108,35 @@ Chaque carte de collection présente :
 ### G. Travle (`/games/travle`)
 - **Principe** : Relier un pays de départ à un pays d'arrivée en nommant successivement les pays frontaliers nécessaires, en minimisant le nombre d'étapes (algorithme BFS de plus court chemin).
 
-### H. Radio Globe 3D (`/radio-globe`)
+### H. Border Puzzle (`/games/border-puzzle`)
+- **Principe** : Reconstitution vectorielle de cartes régionales et mondiales où le joueur doit assembler les pays limitrophes et reconnaître les enclaves et frontières.
+
+### I. TimeGuessr (`/games/time-guessr`)
+- **Principe** : Double défi historico-géographique : deviner à la fois le lieu exact d'un événement sur la carte et l'année précise où la photo a été prise.
+
+### J. City Guesser (`/games/city-guesser`)
+- **Principe** : Identification de métropoles et capitales mondiales avec jauges de précision kilométrique et estimation de l'altitude.
+
+### K. Radio Globe 3D (`/radio-globe`)
 - **Principe** : Explorer le monde à travers les fréquences sonores en écoutant en direct des webradios géolocalisées sur le globe 3D (*Radio Browser API*).
+
+### L. Records Personnels & Récompenses Sécurisées
+- **Gestionnaire centralisé [`gameRecordsManager.ts`](file:///Users/fullann/Documents/GitHub/TerraCoast/src/lib/gameRecordsManager.ts)** : conserve et synchronise les records de survie, de précision et de temps pour les 11 mini-jeux.
+- **RPC `grant_arcade_rewards`** : attribution server-side atomique de l'XP et progression dans le classement mensuel avec borne anti-triche (max 1000 XP/partie) et verrou `FOR UPDATE`.
 
 ---
 
-## 5. Apprentissage & Mémorisation Durable
+## 5. TerraDex : Cartes à Collectionner & Boosters (`/cards`)
+
+En complément de la conquête géographique, le **TerraDex** offre une expérience TCG complète :
+- **Collection de Cartes Numérotées** : cartes nationales et régionales classées par rareté (`Commune`, `Rare`, `Épique`, `Légendaire`, `Mythique`).
+- **Anatomie de Carte 3D** : badges de drapeau, statistiques de puissance démographique et territoriale, anecdotes culturelles et finitions holographiques avec dégradés dynamiques.
+- **Ouverture de Boosters Animée (`BoosterOpeningModal.tsx`)** : ouverture de paquets de cartes avec effets de secousse, éclats de lumière et révélation progressive des raretés.
+- **Pilotage Admin en Direct (`/admin/cards`)** : création de nouvelles cartes, modification de rareté en 1 clic et synchronisation immédiate avec la table `terra_cards`.
+
+---
+
+## 6. Apprentissage & Mémorisation Durable
 
 ### A. Répétition Espacée SRS (`/games/srs`)
 - Basé sur l'algorithme de Leitner en 5 boîtes de mémorisation.
@@ -124,9 +147,10 @@ Chaque carte de collection présente :
 - Parcours libre à travers l'ensemble des quiz du site.
 - Aucun chronomètre, explications détaillées après chaque question, possibilité de rejouer immédiatement.
 
-### C. Flamme Quotidienne & Quiz du Jour
+### C. Flamme Quotidienne, Gels & Quiz du Jour
 - Algorithme de hachage déterministe (`YYYY-MM-DD`) pour proposer le même défi quotidien à l'ensemble de la communauté mondiale.
 - Validation de la série quotidienne (flamme 🔥) octroyant jusqu'à +50% de bonus d'XP.
+- **Gels de Flamme (Ice Freezes 🧊)** : consommables disponibles en boutique pour protéger la série en cas d'oubli d'une journée.
 
 ### D. Modèle d'Apprentissage Sans Blocage (Zéro Cœurs/Vies)
 - Afin de privilégier la curiosité et l'expérimentation, TerraCoast a banni tout système de pénalité de cœurs ou de vies.
@@ -134,6 +158,6 @@ Chaque carte de collection présente :
 
 ---
 
-## 6. Référence des Données & Algorithmes de Jeu
+## 7. Référence des Données & Algorithmes de Jeu
 Pour découvrir le détail de la provenance de chaque donnée (populations, polygones de frontières, monuments, flux radio, photos satellites) et leurs composants consommateurs, consultez [`16-data-sources-and-usage.md`](./16-data-sources-and-usage.md).
 

@@ -36,12 +36,19 @@ import {
   playClickSound,
 } from "../../../lib/soundManager";
 import { saveSilhouetteGameResult } from "../../../lib/gameRecordsManager";
+import { useAuth } from "../../../contexts/AuthContext";
+import {
+  calculateGameReward,
+  applyPlayerRewards,
+  type RewardApplicationResult,
+} from "../../../lib/rewardManager";
 
 const MAX_ATTEMPTS = 5;
 
 export function SilhouetteGamePage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user, profile } = useAuth();
 
   const [mode, setMode] = useState<"daily" | "training">("daily");
   const [targetCountry, setTargetCountry] = useState<AtlasCountry>(() =>
@@ -51,6 +58,7 @@ export function SilhouetteGamePage() {
   const [query, setQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [gameStatus, setGameStatus] = useState<"playing" | "won" | "lost">("playing");
+  const [rewardResult, setRewardResult] = useState<RewardApplicationResult | null>(null);
   const [soundOn, setSoundOn] = useState<boolean>(() => isSoundEnabled());
   const [zoomMultiplier, setZoomMultiplier] = useState(1);
   const [copiedShare, setCopiedShare] = useState(false);
@@ -71,6 +79,7 @@ export function SilhouetteGamePage() {
     setMode(newMode);
     setGuesses([]);
     setGameStatus("playing");
+    setRewardResult(null);
     setQuery("");
     setZoomMultiplier(1);
     setCopiedShare(false);
@@ -125,11 +134,27 @@ export function SilhouetteGamePage() {
       playVictoryFanfare();
       triggerConfetti();
       saveSilhouetteGameResult(newGuesses.length, true);
+
+      const calculated = calculateGameReward("silhouette", {
+        attempts: newGuesses.length,
+        won: true,
+      });
+      applyPlayerRewards(user?.id, calculated, "silhouette", profile?.current_streak || 0, 100).then(
+        (res) => setRewardResult(res)
+      );
     } else {
       if (newGuesses.length >= MAX_ATTEMPTS) {
         setGameStatus("lost");
         playIncorrectSound();
         saveSilhouetteGameResult(MAX_ATTEMPTS, false);
+
+        const calculated = calculateGameReward("silhouette", {
+          attempts: MAX_ATTEMPTS,
+          won: false,
+        });
+        applyPlayerRewards(user?.id, calculated, "silhouette", profile?.current_streak || 0, 15).then(
+          (res) => setRewardResult(res)
+        );
       } else {
         playIncorrectSound();
       }
@@ -530,6 +555,46 @@ export function SilhouetteGamePage() {
                 </p>
               </div>
             </div>
+
+            {/* Récompenses XP & Gems */}
+            {rewardResult && (
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-2 border-emerald-300 rounded-2xl p-4 max-w-sm mx-auto shadow-sm space-y-2">
+                <div className="flex items-center justify-around gap-2">
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-slate-500 uppercase block">XP Gagnée</span>
+                    <span className="text-2xl font-black text-amber-600 font-mono">
+                      +{rewardResult.totalXp} XP ⭐
+                    </span>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200" />
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-slate-500 uppercase block">TerraGems</span>
+                    <span className="text-2xl font-black text-sky-600 font-mono">
+                      +{rewardResult.gems} 💎
+                    </span>
+                  </div>
+                </div>
+
+                {/* Badges de multiplicateurs */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-[11px] font-bold">
+                  {rewardResult.isFirstWin && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                      🥇 1ère victoire du jour (+100 XP)
+                    </span>
+                  )}
+                  {rewardResult.streakMultiplier > 1 && (
+                    <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-300">
+                      🔥 Flamme +{Math.round((rewardResult.streakMultiplier - 1) * 100)}%
+                    </span>
+                  )}
+                  {rewardResult.doubleXpActive && (
+                    <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300">
+                      ⚡ Double XP Actif
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-3">

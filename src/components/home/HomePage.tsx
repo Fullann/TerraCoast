@@ -9,8 +9,9 @@ import {
   Ban,
   CheckCircle2,
 } from "lucide-react";
-import type { Database } from "../../lib/database.types";
 import { DailyChallengeCard } from "../daily/DailyChallengeCard";
+import { DailyMissionsCard } from "../missions/DailyMissionsCard";
+import type { Database } from "../../lib/database.types";
 import { getDailyQuizForDate } from "../../lib/dailyChallenge";
 import { StreakModal } from "../profile/StreakModal";
 import { isStreakPlayedToday } from "../../lib/streakUtils";
@@ -398,9 +399,10 @@ export function HomePage() {
               </button>
             </div>
 
-            {/* Pays de la Semaine & Défi du Jour sur mobile */}
+            {/* Pays de la Semaine, Missions du Jour & Défi du Jour sur mobile */}
             <div className="mb-4 space-y-4">
               <FeaturedCountryCard />
+              <DailyMissionsCard />
               <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
             </div>
           </div>
@@ -432,7 +434,10 @@ export function HomePage() {
           {/* ⭐ 0. Pays de la Semaine (Admin Featured Country) */}
           <FeaturedCountryCard />
 
-          {/* 1. Défi du Jour */}
+          {/* 🎯 1. Missions du Jour (3 objectifs rapides + Grand Coffre) */}
+          <DailyMissionsCard />
+
+          {/* 2. Défi du Jour */}
           <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
 
           {/* 2. Ligue Duolingo Hebdomadaire */}

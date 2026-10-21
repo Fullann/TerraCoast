@@ -62,8 +62,15 @@ export function ProtectedRoute({ requireAdmin = false }: { requireAdmin?: boolea
     return <Navigate to="/terra" replace />;
   }
 
-  const hideNavbarPaths = ["/quizzes/play", "/quizzes/training", "/duels/play", "/party"];
-  const shouldShowNavbar = !hideNavbarPaths.some(path => location.pathname.startsWith(path));
+  const isPlayOrGameSession =
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/quizzes/play") ||
+    location.pathname.startsWith("/duels/play") ||
+    location.pathname.startsWith("/party") ||
+    (location.pathname.startsWith("/quizzes/training/") && location.pathname !== "/quizzes/training") ||
+    (location.pathname.startsWith("/games/") && location.pathname !== "/games");
+
+  const shouldShowNavbar = !isPlayOrGameSession;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-emerald-50/20 flex flex-col">

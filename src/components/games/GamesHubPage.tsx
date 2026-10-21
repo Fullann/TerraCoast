@@ -8,9 +8,12 @@ import {
   Crosshair,
   Sparkles,
   Navigation,
+  Puzzle,
+  Clock,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAllGamePersonalRecords } from "../../lib/gameRecordsManager";
+import { DailyMissionsCard } from "../missions/DailyMissionsCard";
 
 export function GamesHubPage() {
   const navigate = useNavigate();
@@ -146,6 +149,54 @@ export function GamesHubPage() {
       stat: records.srs.display,
       statIcon: Layers,
     },
+    {
+      id: "border-puzzle",
+      title: "Border Puzzle : Tangram Frontalier",
+      badge: "Nouveau • Puzzle 🧩",
+      badgeClass: "bg-purple-100 text-purple-800 border-purple-200",
+      iconBg: "bg-purple-50 border-purple-200 text-purple-600",
+      accentHover: "hover:border-purple-500 group-hover:text-purple-700",
+      btnClass: "bg-purple-600 hover:bg-purple-700 border-purple-800 text-white",
+      icon: "🧩",
+      description:
+        "3 ou 4 pays limitrophes détachés sous forme de pièces vectorielles TopoJSON. Glissez-les et assemblez-les comme un puzzle sur le socle !",
+      path: "/games/border-puzzle",
+      cta: "Assembler le puzzle",
+      stat: records.borderPuzzle.display,
+      statIcon: Puzzle,
+    },
+    {
+      id: "time-guessr",
+      title: "TimeGuessr Géo-Historique",
+      badge: "Nouveau • Où & Quand ⏳",
+      badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
+      iconBg: "bg-amber-50 border-amber-200 text-amber-600",
+      accentHover: "hover:border-amber-500 group-hover:text-amber-700",
+      btnClass: "bg-amber-600 hover:bg-amber-700 border-amber-800 text-white",
+      icon: "⏳",
+      description:
+        "Une photo d'archive ou un monument historique. Pointez le lieu exact sur la mappemonde et ajustez l'année sur la frise (1850-2024) !",
+      path: "/games/time-guessr",
+      cta: "Explorer l'Histoire",
+      stat: records.timeGuessr.display,
+      statIcon: Clock,
+    },
+    {
+      id: "city-guesser",
+      title: "City Guesser / Satellite Zoom-In",
+      badge: "Nouveau • Buzz Rapide 🛰️",
+      badgeClass: "bg-sky-100 text-sky-800 border-sky-200",
+      iconBg: "bg-sky-50 border-sky-200 text-sky-600",
+      accentHover: "hover:border-sky-500 group-hover:text-sky-700",
+      btnClass: "bg-sky-600 hover:bg-sky-700 border-sky-800 text-white",
+      icon: "🛰️",
+      description:
+        "Plongez depuis l'orbite géostationnaire (25 000 km) vers une métropole mondiale. Plus vous buzzez tôt en haute altitude, plus vous scorez !",
+      path: "/games/city-guesser",
+      cta: "Buzzer en orbite",
+      stat: records.cityGuesser.display,
+      statIcon: Crosshair,
+    },
   ];
 
   return (
@@ -182,6 +233,11 @@ export function GamesHubPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* 🎯 Missions du Jour dans l'Arcade */}
+        <section>
+          <DailyMissionsCard />
         </section>
 
         {/* Grid of Game Cards */}

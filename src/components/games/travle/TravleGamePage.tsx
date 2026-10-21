@@ -22,7 +22,10 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { playSound } from "../../../lib/soundManager";
 import { triggerConfetti } from "../../common/Confetti";
 import { toast } from "../../common/ToastContainer";
-import { addGems } from "../../../lib/gamificationManager";
+import {
+  calculateGameReward,
+  applyPlayerRewards,
+} from "../../../lib/rewardManager";
 
 const VOYAGE_FILTERS: Array<{ id: TravleFilterType; label: string; icon: string }> = [
   { id: "all", label: "Tous les Voyages", icon: "🗺️" },
@@ -103,8 +106,18 @@ export function TravleGamePage() {
         saveTravleWin(newSession.guessesUsed, newSession.optimalStepsCount);
         triggerConfetti();
         playSound("fanfare");
-        addGems(profile?.id, 25);
-        toast.success("Victoire ! Vous avez atteint la destination 🌍 (+25 💎)");
+        const reward = calculateGameReward("travle", { won: true });
+        applyPlayerRewards(
+          profile?.id,
+          reward,
+          "travle",
+          profile?.current_streak || 0,
+          150
+        ).then((res) => {
+          toast.success(
+            `Victoire ! Vous avez atteint la destination 🌍 (+${res.gems} 💎 & +${res.totalXp} XP)`
+          );
+        });
       } else {
         toast.success(attempt.message);
       }

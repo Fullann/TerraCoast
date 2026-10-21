@@ -680,7 +680,8 @@ function pickCard(rarity: CardRarity, continent?: CardContinent): TerraCard {
 export function openBoosterPack(
   userId: string | undefined,
   packId: string,
-  targetContinent?: CardContinent
+  targetContinent?: CardContinent,
+  options?: { free?: boolean }
 ): {
   success: boolean;
   message: string;
@@ -716,7 +717,7 @@ export function openBoosterPack(
       };
     }
     cardsState.lastDailyPackClaimedAt = Date.now();
-  } else {
+  } else if (!options?.free) {
     // Vérification des TerraGems
     if (gamificationState.gems < pack.priceGems) {
       return {
@@ -855,6 +856,7 @@ export function answerCardTrivia(
 ): {
   correct: boolean;
   rewardGems: number;
+  rewardXp?: number;
   explanation: string;
   message: string;
 } {
@@ -887,16 +889,34 @@ export function answerCardTrivia(
     cardEntry.answeredTrivia = true;
     savePlayerCardsState(userId, cardsState);
 
-    // Créditer 5 gemmes
+    // Créditer 10 gemmes et 30 XP
     const gamification = getPlayerGamificationState(userId);
-    gamification.gems += 5;
+    gamification.gems += 10;
+    const currentXp = gamification.xp || 0;
+    const newXp = currentXp + 30;
+    gamification.xp = newXp;
+    gamification.level = Math.max(1, Math.floor(newXp / 100) + 1);
     savePlayerGamificationState(userId, gamification);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("terracoast:profile_updated", {
+          detail: {
+            userId,
+            newXp,
+            newLevel: gamification.level,
+            gemsAdded: 10,
+          },
+        })
+      );
+    }
 
     return {
       correct: true,
-      rewardGems: 5,
+      rewardGems: 10,
+      rewardXp: 30,
       explanation: card.trivia.explanation,
-      message: "Excellente réponse ! +5 TerraGems 💎 ajoutées à votre trésor !",
+      message: "Excellente réponse ! +10 TerraGems 💎 et +30 XP ajoutés à votre trésor !",
     };
   }
 

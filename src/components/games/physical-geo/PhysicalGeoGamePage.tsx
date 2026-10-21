@@ -22,8 +22,11 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { playSound } from "../../../lib/soundManager";
 import { triggerConfetti } from "../../common/Confetti";
 import { toast } from "../../common/ToastContainer";
-import { addGems } from "../../../lib/gamificationManager";
 import { savePhysicalGeoRecord } from "../../../lib/gameRecordsManager";
+import {
+  calculateGameReward,
+  applyPlayerRewards,
+} from "../../../lib/rewardManager";
 
 const CHRONO_DURATION_SECONDS = 60;
 
@@ -129,8 +132,20 @@ export function PhysicalGeoGamePage() {
       if (score >= questions.length * 70) {
         playSound("fanfare");
         triggerConfetti();
-        addGems(profile?.id, 30);
-        toast.success("Bravo ! Géographie physique maîtrisée (+30 💎) !");
+        const calculated = calculateGameReward("physical-geo", {
+          score,
+        });
+        applyPlayerRewards(
+          profile?.id,
+          calculated,
+          "physical-geo",
+          profile?.current_streak || 0,
+          score
+        ).then((res) => {
+          toast.success(
+            `Bravo ! Géographie physique maîtrisée (+${res.gems} 💎 & +${res.totalXp} XP) !`
+          );
+        });
       }
     }
   };

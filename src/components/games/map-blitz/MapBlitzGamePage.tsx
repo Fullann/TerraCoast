@@ -20,7 +20,10 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { playSound } from "../../../lib/soundManager";
 import { triggerConfetti } from "../../common/Confetti";
 import { toast } from "../../common/ToastContainer";
-import { addGems } from "../../../lib/gamificationManager";
+import {
+  calculateGameReward,
+  applyPlayerRewards,
+} from "../../../lib/rewardManager";
 
 // Normalisation du texte (minuscule, sans accents, sans tirets)
 function normalizeText(str: string): string {
@@ -164,8 +167,18 @@ export function MapBlitzGamePage() {
           setIsRunning(false);
           playSound("fanfare");
           triggerConfetti();
-          addGems(profile?.id, 50);
-          toast.success("INCROYABLE ! Vous avez nommé TOUS les pays ! (+50 💎)");
+          const calculated = calculateGameReward("map-blitz", { score: newSet.size });
+          applyPlayerRewards(
+            profile?.id,
+            calculated,
+            "map-blitz",
+            profile?.current_streak || 0,
+            150
+          ).then((res) => {
+            toast.success(
+              `INCROYABLE ! Vous avez nommé TOUS les pays ! (+${res.gems} 💎 & +${res.totalXp} XP)`
+            );
+          });
         }
         break;
       }

@@ -16,11 +16,8 @@ interface QuizHeaderProps {
   currentQuestionIndex: number;
   totalQuestions: number;
   progress: number;
-  lives?: number;
-  maxLives?: number;
   streakFreezes?: number;
   isDoubleXp?: boolean;
-  onRefillHearts?: () => void;
 }
 
 export const QuizHeader: React.FC<QuizHeaderProps> = ({

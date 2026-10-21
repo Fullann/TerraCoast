@@ -16,22 +16,22 @@ export function LegalDocumentPage({ type, onBack }: LegalDocumentPageProps) {
       : t("legal.title.privacy");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-sky-50/50 via-slate-50 to-white py-8 sm:py-12">
+      <div className="max-w-3xl mx-auto px-4">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium mb-8"
+          className="btn-duo btn-duo-white inline-flex items-center gap-2 px-4 py-2.5 text-xs font-black text-slate-700 mb-6"
         >
-          <ArrowLeft className="w-5 h-5" />
-          {t("common.back")}
+          <ArrowLeft className="w-4 h-4" />
+          <span>{t("common.back")}</span>
         </button>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
+        <div className="card-duo p-6 sm:p-10 bg-white">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-6 tracking-tight">
             {title}
           </h1>
 
-          <div className="prose prose-sm max-w-none text-gray-700 space-y-6">
+          <div className="prose prose-sm max-w-none text-slate-700 space-y-6 font-medium leading-relaxed">
             {type === "terms" && <TermsContent />}
             {type === "privacy" && <PrivacyContent />}
           </div>

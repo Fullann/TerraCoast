@@ -561,67 +561,58 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* ✅ HEADER FIXE AVEC NAVIGATION ET DÉCONNEXION */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50 text-slate-800 pb-20">
+      <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-slate-200">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/profile")}
-              className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-black border-2 border-slate-200 border-b-4 active:translate-y-0.5 shadow-2xs transition-all cursor-pointer"
             >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              <span className="hidden sm:inline">
-                {t("settings.backToProfile")}
-              </span>
+              <ArrowLeft className="w-4 h-4 text-emerald-600" />
+              <span>{t("settings.backToProfile") || "Retour au profil"}</span>
             </button>
-
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center">
-              <Settings className="w-6 h-6 md:w-7 md:h-7 mr-2 text-emerald-600" />
-              <span className="hidden sm:inline">
-                {t("settings.accountSettings")}
-              </span>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <Settings className="w-7 h-7 text-emerald-600" />
+              <span>{t("settings.accountSettings") || "Paramètres"}</span>
             </h1>
-
-            {/* ✅ BOUTON DÉCONNEXION */}
-            <button
-              onClick={handleLogout}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                {t("settings.logout") || "Déconnexion"}
-              </span>
-            </button>
           </div>
-        </div>
-      </div>
 
-      {/* ✅ CONTENU PRINCIPAL */}
-      <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+          <button
+            onClick={handleLogout}
+            disabled={loading}
+            className="btn-duo btn-duo-white self-start sm:self-auto px-4 py-2.5 text-rose-600 hover:text-rose-700 text-xs font-black border-rose-200 flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t("settings.logout") || "Déconnexion"}</span>
+          </button>
+        </div>
+
         {/* Messages de succès/erreur */}
         {message && (
-          <div className="bg-green-50 border-l-4 border-green-400 rounded-lg p-4 mb-6 animate-fade-in">
-            <p className="text-green-700 font-medium">{message}</p>
+          <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-emerald-900 font-bold text-sm shadow-2xs flex items-center gap-2 animate-fade-in">
+            <span>✅</span>
+            <span>{message}</span>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 rounded-lg p-4 mb-6 animate-fade-in">
-            <p className="text-red-700 font-medium">{error}</p>
+          <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 text-rose-900 font-bold text-sm shadow-2xs flex items-center gap-2 animate-fade-in">
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        {/* ✅ GRILLE RESPONSIVE POUR CARTES */}
+        {/* Grille Responsive pour Cartes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* CARTE PHOTO DE PROFIL */}
-          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+          <div className="card-duo p-5 sm:p-6 bg-white shadow-sm">
             <div className="flex items-center mb-4">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <User className="w-6 h-6 text-amber-700" />
+              <div className="p-2.5 bg-amber-100 rounded-2xl text-amber-700 mr-3">
+                <User className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 ml-3">
+              <h2 className="text-lg font-black text-slate-900">
                 {t("settings.profilePhoto")}
               </h2>
             </div>
@@ -634,10 +625,10 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                 size="lg"
               />
               <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-xs text-slate-500 font-medium mb-3">
                   {t("settings.profilePhotoHint")}
                 </p>
-                <label className="inline-flex items-center justify-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors text-sm font-semibold cursor-pointer disabled:opacity-50">
+                <label className="btn-duo btn-duo-green px-4 py-2 text-xs font-black inline-flex items-center justify-center cursor-pointer">
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
@@ -656,12 +647,12 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
           </div>
 
           {/* CARTE EFFETS VISUELS */}
-          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+          <div className="card-duo p-5 sm:p-6 bg-white shadow-sm">
             <div className="flex items-center mb-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Shield className="w-6 h-6 text-purple-700" />
+              <div className="p-2.5 bg-purple-100 rounded-2xl text-purple-700 mr-3">
+                <Shield className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 ml-3">
+              <h2 className="text-lg font-black text-slate-900">
                 {t("settings.visualEffects")}
               </h2>
             </div>
@@ -674,14 +665,14 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                 size="lg"
               />
               <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-xs text-slate-500 font-medium mb-2">
                   {t("settings.visualEffectsHint")}
                 </p>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-wider">
                   {t("profile.frame")}
                 </label>
                 <select
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
+                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-purple-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm transition-all cursor-pointer"
                   value={activeFrame}
                   disabled={frameSaving}
                   onChange={(e) => saveFrameStyle(e.target.value)}
@@ -701,25 +692,25 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
           </div>
 
           {/* CARTE LANGUE */}
-          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+          <div className="card-duo p-5 sm:p-6 bg-white shadow-sm">
             <div className="flex items-center mb-4">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <Globe className="w-6 h-6 text-emerald-600" />
+              <div className="p-2.5 bg-emerald-100 rounded-2xl text-emerald-700 mr-3">
+                <Globe className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 ml-3">
+              <h2 className="text-lg font-black text-slate-900">
                 {t("settings.languagePreferences")}
               </h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-wider">
                   {t("settings.interfaceLanguage")}
                 </label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as Language)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-emerald-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm transition-all cursor-pointer"
                 >
                   {Object.entries(languageNames).map(([code, name]) => (
                     <option key={code} value={code}>
@@ -729,17 +720,17 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                 </select>
               </div>
 
-              <div className="flex items-start p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-start p-3 bg-slate-50 rounded-2xl border border-slate-200">
                 <input
                   type="checkbox"
                   id="showAllLanguages"
                   checked={showAllLanguages}
                   onChange={(e) => setShowAllLanguages(e.target.checked)}
-                  className="mt-1 w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                  className="mt-0.5 w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
                 />
                 <label
                   htmlFor="showAllLanguages"
-                  className="ml-3 text-sm text-gray-700"
+                  className="ml-3 text-xs font-bold text-slate-700 cursor-pointer"
                 >
                   {t("settings.showAllLanguagesDescription")}
                 </label>
@@ -748,26 +739,26 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
           </div>
 
           {/* CARTE NOM D'UTILISATEUR */}
-          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+          <div className="card-duo p-5 sm:p-6 bg-white shadow-sm">
             <div className="flex items-center mb-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <User className="w-6 h-6 text-blue-600" />
+              <div className="p-2.5 bg-blue-100 rounded-2xl text-blue-700 mr-3">
+                <User className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 ml-3">
+              <h2 className="text-lg font-black text-slate-900">
                 {t("settings.username")}
               </h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-wider">
                   {t("settings.newUsername")}
                 </label>
                 <input
                   type="text"
                   value={pseudo}
                   onChange={(e) => setPseudo(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-blue-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm transition-all focus:ring-4 focus:ring-blue-100"
                   placeholder={t("settings.yourUsername")}
                 />
               </div>
@@ -777,43 +768,43 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                 disabled={
                   loading || !pseudo.trim() || pseudo === profile?.pseudo
                 }
-                className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                className="btn-duo btn-duo-blue w-full py-2.5 text-xs sm:text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
-                {t("settings.updateUsername")}
+                <span>{t("settings.updateUsername")}</span>
               </button>
             </div>
           </div>
 
           {/* CARTE EMAIL */}
-          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+          <div className="card-duo p-5 sm:p-6 bg-white shadow-sm">
             <div className="flex items-center mb-4">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <Mail className="w-6 h-6 text-emerald-600" />
+              <div className="p-2.5 bg-emerald-100 rounded-2xl text-emerald-700 mr-3">
+                <Mail className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 ml-3">
+              <h2 className="text-lg font-black text-slate-900">
                 {t("settings.emailAddress")}
               </h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-wider">
                   {t("settings.newEmail")}
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-emerald-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm transition-all focus:ring-4 focus:ring-emerald-100"
                   placeholder={t("settings.newEmailPlaceholder")}
                 />
-                <p className="text-xs text-gray-500 mt-2">
-                  Email actuel: {user?.email || "-"}
+                <p className="text-xs text-slate-500 font-semibold mt-1.5">
+                  Email actuel : {user?.email || "-"}
                 </p>
                 {emailPendingTarget && (
-                  <p className="text-xs text-amber-700 mt-1">
-                    Changement en attente de confirmation: {emailPendingTarget}
+                  <p className="text-xs text-amber-700 font-bold mt-1">
+                    Changement en attente de confirmation : {emailPendingTarget}
                   </p>
                 )}
               </div>
@@ -826,61 +817,61 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                   email.trim() === (user?.email || "") ||
                   Date.now() < emailCooldownUntil
                 }
-                className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                className="btn-duo btn-duo-green w-full py-2.5 text-xs sm:text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
-                {t("settings.updateEmail")}
+                <span>{t("settings.updateEmail")}</span>
               </button>
             </div>
           </div>
 
           {/* CARTE MOT DE PASSE */}
-          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+          <div className="card-duo p-5 sm:p-6 bg-white shadow-sm">
             <div className="flex items-center mb-4">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Lock className="w-6 h-6 text-amber-600" />
+              <div className="p-2.5 bg-amber-100 rounded-2xl text-amber-700 mr-3">
+                <Lock className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 ml-3">
+              <h2 className="text-lg font-black text-slate-900">
                 {t("settings.password")}
               </h2>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-black text-slate-700 mb-1 uppercase tracking-wider">
                   {t("settings.currentPassword")}
                 </label>
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-amber-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm transition-all"
                   placeholder="••••••••"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-black text-slate-700 mb-1 uppercase tracking-wider">
                   {t("settings.newPassword")}
                 </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-amber-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm transition-all"
                   placeholder="••••••••"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-black text-slate-700 mb-1 uppercase tracking-wider">
                   {t("settings.confirmNewPassword")}
                 </label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"
+                  className="w-full px-4 py-2 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-amber-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -892,31 +883,31 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                   !newPassword.trim() ||
                   !confirmPassword.trim()
                 }
-                className="w-full px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                className="btn-duo btn-duo-amber w-full py-2.5 text-xs sm:text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Shield className="w-4 h-4" />
-                {t("settings.updatePassword")}
+                <span>{t("settings.updatePassword")}</span>
               </button>
             </div>
           </div>
 
           {/* CARTE DOUBLE AUTHENTIFICATION */}
-          <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+          <div className="card-duo p-5 sm:p-6 bg-white shadow-sm lg:col-span-2">
             <div className="flex items-center mb-4">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Shield className="w-6 h-6 text-indigo-600" />
+              <div className="p-2.5 bg-indigo-100 rounded-2xl text-indigo-700 mr-3">
+                <Shield className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 ml-3">
+              <h2 className="text-lg font-black text-slate-900">
                 {t("settings.twoFactorTitle")}
               </h2>
             </div>
 
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm font-semibold text-slate-600">
                 {t("settings.twoFactorStatus")}:{" "}
                 <span
-                  className={`font-semibold ${
-                    mfaEnabled ? "text-green-600" : "text-gray-700"
+                  className={`font-black ${
+                    mfaEnabled ? "text-emerald-600" : "text-slate-700"
                   }`}
                 >
                   {mfaEnabled
@@ -929,7 +920,7 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                 <button
                   onClick={startMfaEnrollment}
                   disabled={mfaLoading}
-                  className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  className="btn-duo btn-duo-purple px-6 py-2.5 text-xs sm:text-sm font-black disabled:opacity-50"
                 >
                   {t("settings.twoFactorStart")}
                 </button>
@@ -937,23 +928,23 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
 
               {!mfaEnabled && mfaQrCode && (
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-700">
+                  <p className="text-xs text-slate-600 font-medium">
                     {t("settings.twoFactorScanInstructions")}
                   </p>
-                  <div className="bg-white border border-gray-200 rounded-lg p-3 inline-block">
+                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-3 inline-block shadow-xs">
                     <img
                       src={mfaQrCode}
                       alt="QR code 2FA"
-                      className="w-44 h-44"
+                      className="w-44 h-44 rounded-xl"
                     />
                   </div>
                   {mfaSecret && (
-                    <p className="text-xs text-gray-500 break-all">
+                    <p className="text-xs text-slate-500 font-mono break-all">
                       {t("settings.twoFactorBackupKey")}: {mfaSecret}
                     </p>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs font-black text-slate-700 mb-1 uppercase tracking-wider">
                       {t("settings.twoFactorCodeLabel")}
                     </label>
                     <input
@@ -962,15 +953,15 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                       onChange={(e) =>
                         setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                       }
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                      placeholder={t("settings.twoFactorCodePlaceholder")}
+                      className="w-full max-w-xs px-4 py-2.5 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-indigo-500 focus:bg-white rounded-2xl outline-none font-mono font-black text-slate-900 tracking-widest text-base"
+                      placeholder="000000"
                     />
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={verifyMfaEnrollment}
                       disabled={mfaLoading || mfaCode.length !== 6}
-                      className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      className="btn-duo btn-duo-green px-5 py-2 text-xs font-black disabled:opacity-50"
                     >
                       {t("settings.twoFactorConfirmActivation")}
                     </button>
@@ -982,7 +973,7 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
                         setMfaChallengeId(null);
                       }}
                       disabled={mfaLoading}
-                      className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      className="btn-duo btn-duo-white px-4 py-2 text-xs font-black"
                     >
                       {t("common.cancel")}
                     </button>
@@ -993,21 +984,21 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
               {mfaEnabled && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs font-black text-slate-700 mb-1 uppercase tracking-wider">
                       {t("settings.twoFactorDisablePassword")}
                     </label>
                     <input
                       type="password"
                       value={mfaDisablePassword}
                       onChange={(e) => setMfaDisablePassword(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                      className="w-full max-w-xs px-4 py-2.5 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-rose-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm"
                       placeholder="••••••••"
                     />
                   </div>
                   <button
                     onClick={disableMfa}
                     disabled={mfaLoading || !mfaDisablePassword.trim()}
-                    className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="btn-duo btn-duo-white text-rose-600 border-rose-300 px-5 py-2.5 text-xs font-black disabled:opacity-50"
                   >
                     {t("settings.twoFactorDisableButton")}
                   </button>
@@ -1017,25 +1008,28 @@ export function SettingsPage({ onNavigate: _onNavigate }: SettingsPageProps = {}
           </div>
         </div>
 
-        <div className="mt-6 bg-gradient-to-r from-red-50 to-red-100 rounded-xl shadow-md border-2 border-red-200 p-6">
-          <div className="flex items-center mb-4">
-            <div className="p-2 bg-red-200 rounded-lg">
-              <Trash2 className="w-6 h-6 text-red-700" />
+        {/* ZONE DE DANGER */}
+        <div className="card-duo p-5 sm:p-6 bg-gradient-to-r from-rose-50/80 via-red-50/70 to-rose-50/80 border-2 border-rose-200 border-b-4 border-rose-300">
+          <div className="flex items-center mb-3">
+            <div className="p-2.5 bg-rose-100 rounded-2xl text-rose-700 mr-3">
+              <Trash2 className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-bold text-red-800 ml-3">
+            <h2 className="text-lg font-black text-rose-950">
               {t("settings.dangerZone")}
             </h2>
           </div>
 
-          <p className="text-gray-700 mb-4">{t("settings.deleteWarning")}</p>
+          <p className="text-xs sm:text-sm text-slate-600 font-semibold mb-4 leading-relaxed">
+            {t("settings.deleteWarning")}
+          </p>
 
           <button
             onClick={deleteAccount}
             disabled={loading}
-            className="w-full md:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+            className="btn-duo btn-duo-white text-rose-700 border-rose-300 hover:bg-rose-50 px-5 py-2.5 text-xs font-black inline-flex items-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
-            {t("settings.deleteAccount")}
+            <span>{t("settings.deleteAccount")}</span>
           </button>
         </div>
       </div>

@@ -23,6 +23,7 @@ import {
 } from "../../../lib/chronoRushGame";
 import { saveChronoRushRecord } from "../../../lib/gameRecordsManager";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import { triggerConfetti } from "../../common/Confetti";
 import {
   isSoundEnabled,
@@ -33,14 +34,21 @@ import {
   playVictoryFanfare,
   playClickSound,
 } from "../../../lib/soundManager";
+import {
+  calculateGameReward,
+  applyPlayerRewards,
+  type RewardApplicationResult,
+} from "../../../lib/rewardManager";
 
 export function ChronoRushGamePage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user, profile } = useAuth();
 
   const [timeLeft, setTimeLeft] = useState(CHRONO_RUSH_CONFIG.initialTimeSeconds);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [rewardResult, setRewardResult] = useState<RewardApplicationResult | null>(null);
 
   const [score, setScore] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -71,6 +79,7 @@ export function ChronoRushGamePage() {
     setMaxStreak(0);
     setTotalQuestions(0);
     setCorrectAnswers(0);
+    setRewardResult(null);
     setIsGameOver(false);
     setIsPlaying(true);
     setCopiedShare(false);
@@ -105,7 +114,7 @@ export function ChronoRushGamePage() {
     return () => clearInterval(timerRef.current);
   }, [isPlaying, isGameOver]);
 
-  // Fin de partie : vérification du record
+  // Fin de partie : vérification du record et attribution des récompenses
   useEffect(() => {
     if (isGameOver) {
       saveChronoRushRecord(score, correctAnswers);
@@ -114,8 +123,20 @@ export function ChronoRushGamePage() {
         setHighScore(score);
         triggerConfetti();
       }
+
+      const calculated = calculateGameReward("chrono-rush", {
+        correctCount: correctAnswers,
+        timeLeft,
+      });
+      applyPlayerRewards(
+        user?.id,
+        calculated,
+        "chrono-rush",
+        profile?.current_streak || 0,
+        score
+      ).then((res) => setRewardResult(res));
     }
-  }, [isGameOver, score, correctAnswers]);
+  }, [isGameOver, score, correctAnswers, timeLeft, user?.id, profile?.current_streak]);
 
   // Réponse du joueur
   const handleAnswer = (option: ChronoRushOption) => {
@@ -394,6 +415,45 @@ export function ChronoRushGamePage() {
               <div className="flex items-center justify-center gap-2 text-xs font-black text-amber-900 bg-amber-100 border border-amber-300 py-2.5 rounded-2xl">
                 <Sparkles className="w-4 h-4 text-amber-600" />
                 <span>Nouveau Record Chrono Battu ! 🎉</span>
+              </div>
+            )}
+
+            {/* Récompenses XP & Gems */}
+            {rewardResult && (
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-2 border-emerald-300 rounded-2xl p-4 shadow-sm space-y-2">
+                <div className="flex items-center justify-around gap-2">
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-slate-500 uppercase block">XP Chrono</span>
+                    <span className="text-2xl font-black text-amber-600 font-mono">
+                      +{rewardResult.totalXp} XP ⭐
+                    </span>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200" />
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-slate-500 uppercase block">TerraGems</span>
+                    <span className="text-2xl font-black text-sky-600 font-mono">
+                      +{rewardResult.gems} 💎
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-[11px] font-bold">
+                  {rewardResult.isFirstWin && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                      🥇 1ère victoire du jour (+100 XP)
+                    </span>
+                  )}
+                  {rewardResult.streakMultiplier > 1 && (
+                    <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-300">
+                      🔥 Flamme +{Math.round((rewardResult.streakMultiplier - 1) * 100)}%
+                    </span>
+                  )}
+                  {rewardResult.doubleXpActive && (
+                    <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300">
+                      ⚡ Double XP Actif
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 

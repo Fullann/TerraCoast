@@ -45,7 +45,11 @@ Le projet est une **SPA React moderne** connectée à **Supabase** (Authentifica
 - **Map Blitz** : course d'identification rapide de territoires sur carte.
 - **Physical Geo** : identification des reliefs, fleuves, montagnes et déserts.
 - **Travle** : relie deux pays frontière par frontière avec le moins de détours possible (algorithme BFS).
+- **Border Puzzle** : reconstitution de cartes vectorielles et reconnaissance des frontières et enclaves.
+- **TimeGuessr** : défi historico-géographique associant localisation spatiale et époque temporelle de photos.
+- **City Guesser** : identification de grandes métropoles mondiales avec calcul kilométrique et repérage d'altitude.
 - **Radio Globe 3D (`/radio-globe`)** : écoute en direct de stations webradio géolocalisées sur le globe 3D (*Radio Browser API*).
+- **Attribution Sécurisée des Récompenses** : fonction RPC server-side `grant_arcade_rewards` assurant une distribution atomique d'XP avec borne anti-triche et verrou `FOR UPDATE`.
 
 ### ⚔️ 4. Duels 1v1 & Matchmaking (`/duels`)
 - **Interface Tactile Simplifiée** : statut visuel instantané indiquant clairement à qui revient le tour de jeu (*"À toi de jouer !"* vs *"En attente de l'adversaire"*).
@@ -67,20 +71,23 @@ Le projet est une **SPA React moderne** connectée à **Supabase** (Authentifica
 - **Recherche Prédictive Intelligente** : autocomplétion insensible aux accents et à la casse avec centrage automatique immédiat sur le pays sélectionné.
 - **Prise en Charge des Micro-États** : pastilles d'accentuation circulaires rendant cliquables et visibles les plus petits territoires (Monaco, Vatican, Saint-Marin, Nauru, Singapour, etc.).
 - **Comparateur de Pays & TrueSize Overlay** : superposition vectorielle pour comparer la taille réelle des pays sans la déformation de Mercator.
+- **Barre d'Outils Tactile Dockée** : arrimage fluide sous la barre de navigation principale sans chevauchement.
 
-### 🏆 7. Gamification & Boutique (`/shop`)
+### 🏆 7. Gamification, Cartes & Boutique (`/shop`, `/cards`)
 - **Modèle d'Apprentissage Positif** : zéro restriction de vies ou de cœurs pour s'entraîner sans barrière punitive.
 - **Points d'XP, Niveaux & Rangs**.
-- **Séries Quotidiennes (Flamme / Streaks 🔥)** avec calendrier hebdomadaire et bonus d'XP progressif (+10% à +50%).
+- **Séries Quotidiennes (Flamme / Streaks 🔥)** avec calendrier hebdomadaire, bonus d'XP progressif (+10% à +50%) et Gels de Flamme 🧊 pour protéger sa série.
 - **Boutique Cosmétique** : cadres d'avatar exclusifs, thèmes de globe 3D et titres de profil.
 - **Classements Hebdomadaires & Mensuels** : ligues compétitives et coffres de gemmes pour le Top 3 le dimanche soir à minuit.
+- **TerraDex (`/cards`)** : collection de cartes nationales avec raretés (`Commune` à `Mythique`), finitions holographiques et ouverture animée de boosters.
 
-### 🛡️ 8. Console d'Administration v2.4 (`/admin`)
-- **Hub Central de Configuration Directe** : 18 modules classés en 4 catégories (Données & Utilisateurs, Modes de Jeux, Cartographie, Système).
+### 🛡️ 8. Console d'Administration v2.4 (`/admin`) — 100% Configurable en Direct
+- **Hub Central de Pilotage** : 18 modules classés en 4 catégories (Pilotage, Quêtes & Jeux, Modération, Configuration & Économie).
+- **Spotlight Pays de la Semaine en Direct** : sélection parmi les 250 pays ou bouton 1-clic direct ⭐ dans l'Intelligence Géo, personnalisation du badge, slogan, monument, capsule culturelle TTS, multiplicateurs d'XP (+50%) et bonus de gemmes.
+- **Créateur de Cartes TerraDex (`/admin/cards`)** : création de cartes en direct avec modale 3D, changement de rareté en 1 clic et synchronisation Supabase `terra_cards`.
 - **Gestionnaire Geo Detective Photos** : ajout de clichés avec coordonnées GPS précises, modification, suppression et prévisualisation.
-- **Équilibrage Gameplay en Direct** : configuration du seuil de conquête Pokédex, minuterie par question et économie d'XP.
-- **Tableau de Bord & Analytics** : métriques d'activité comparées J-1, J-7 et J-30 avec exports CSV.
-- **Validation des Quiz & Journal d'Audit** : workflow de modération avant publication communautaire et traçabilité immuable via RPC `log_admin_event`.
+- **Configuration Globale en Temps Réel (`site_config`)** : gestion des annonces mondiales, week-ends Double XP, équilibrage gameplay et mode maintenance, synchronisés sur Supabase pour tous les utilisateurs.
+- **Audit & Sécurité** : journalisation de toutes les actions d'administration via la fonction RPC `log_admin_event`.
 
 ---
 

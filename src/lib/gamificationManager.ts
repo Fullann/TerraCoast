@@ -2,7 +2,7 @@
  * 🎮 TerraCoast Gamification Manager (Duolingo Style)
  * Gère les ressources du joueur :
  * - 💎 TerraGems : monnaie du jeu gagnée à chaque étape et coffre
- * - ❤️ Cœurs / Vies (5 max) : régénération temporelle automatique (1 cœur / 20 min)
+ * - 🔥 Séries & Gels : flammes quotidiennes et protection anti-rupture
  * - 🏆 Ligues Duolingo (Bronze, Argent, Or, Saphir, Rubis, Diamant)
  * - 🗺️ Parcours d'Apprentissage (Unités, Nœuds oscillants, Étoiles ⭐⭐⭐, Coffres au trésor 🎁)
  */
@@ -500,7 +500,7 @@ export function calculateLevelForXp(xp: number = 0): number {
 }
 
 /**
- * Outil d'administration / Développeur pour s'octroyer ou octroyer des gemmes, cœurs et bonus
+ * Outil d'administration / Développeur pour s'octroyer ou octroyer des gemmes, XP, freezes et bonus
  */
 export function adminGrantResources(
   userId: string | undefined,

@@ -49,11 +49,33 @@ Tracking des parties :
 - session : score, précision, temps, mode (solo/duel), timestamps
 - answers : user_answer, is_correct, points_earned, time_taken_seconds
 
-### Social
+### Social & Multijoueur
 
-- `friendships`
-- `chat_messages`
-- `quiz_shares`
+- `friendships` : relations d'amitié (statut en attente, accepté, bloqué)
+- `chat_messages` : messages instantanés chiffrés entre amis
+- `quiz_shares` : partages de quiz directs
+- `party_rooms` : salons multijoueurs temps réel façon Kahoot (code PIN, statut, paramètres d'hôte)
+- `party_players` : participants du salon (pseudo, avatar, score, statut éliminé)
+
+### Cartes de Collection (`terra_cards`)
+
+Catalogue des cartes géographiques TerraDex :
+- `id` (text, PK)
+- `number`, `name`, `category`, `rarity` (`common`, `rare`, `epic`, `legendary`, `mythic`), `continent`
+- `flag`, `icon`, `tagline`, `description`
+- `stats` (JSONB) : puissance, superficie, population, culture
+- `fun_fact`, `quote`, `color_scheme` (JSONB), `trivia` (JSONB)
+- `is_active` (boolean), timestamps
+
+### Configuration Globale en Direct (`site_config`)
+
+Table maîtresse de configuration du site en temps réel :
+- `id` (text, PK, default `'current'`)
+- `announcement` (JSONB) : bannière d'annonce (message, variante, badge, actionUrl)
+- `featured_country` (JSONB) : pays à l'honneur de la semaine (iso3, name, flag, bonus XP, gemmes, slogan, capsule audio)
+- `gameplay` (JSONB) : double XP actif, gemmes quotidiennes de série, seuil de conquête
+- `theme` (JSONB) : thème 3D du globe, continent en vedette, mode maintenance
+- `updated_at`, `updated_by`
 
 ### Modération
 
@@ -63,13 +85,9 @@ Deux systèmes coexistent dans l’historique :
 
 ### Admin / Observabilité
 
-- `admin_activity_logs` : logs admin
-- RPC : `log_admin_event(...)` (SECURITY DEFINER) pour tracer les actions admin
-
-### Duels / ranked (selon migrations)
-
-Plusieurs migrations ajoutent :
-- matchmaking, ranked duels, flags de features, scheduler, guards, etc.
+- `admin_activity_logs` : journalisation d'audit des actions d'administration
+- RPC : `log_admin_event(...)` (SECURITY DEFINER)
+- RPC : `grant_arcade_rewards(p_xp, p_score, p_game_mode)` (SECURITY DEFINER) pour distribuer en toute sécurité l'XP des mini-jeux et actualiser le classement mensuel avec borne anti-triche et verrou atomique `FOR UPDATE`.
 
 ## Migrations notables
 
@@ -77,4 +95,8 @@ Plusieurs migrations ajoutent :
 - Logs admin : `20260308230000_add_admin_activity_logs.sql`
 - Localisation quiz (admin) : `20260326113000_quiz_admin_location.sql`
 - Cartes GeoJSON custom : `20260324180000_geojson_custom_maps.sql`
+- Salons multijoueurs Party : `20260327000000_party_rooms.sql`
+- Catalogue TerraCards : `20261003120000_create_terra_cards_catalog.sql`
+- Récompenses Arcade Sécurisées : `20261016180000_grant_arcade_rewards_rpc.sql`
+- Configuration en Direct : `20261021120000_create_site_config_table.sql`
 

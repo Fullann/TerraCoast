@@ -3,92 +3,79 @@
 ## 1. Sécurité & Droits d'Accès
 
 L'accès à la console d'administration (`/admin`) est strictement restreint au niveau du routeur React et des politiques PostgreSQL RLS :
-- **Condition d'accès** : `profiles.role === 'admin'`.
-- Toute tentative d'appel API par un utilisateur non-administrateur est immédiatement rejetée par la base de données PostgreSQL.
+- **Condition d'accès frontend** : `profiles.role === 'admin'` vérifié dans `ProtectedRoute.tsx`.
+- **Masquage intelligent du header joueur** : la Navbar globale gamifiée est masquée pour donner 100% de la surface au bandeau exécutive sombre et à la console de pilotage.
+- **Sécurité base de données** : chaque requête et fonction RPC (`site_config`, `terra_cards`, `log_admin_event`) valide les droits admin via PostgreSQL RLS.
 
 ---
 
-## 2. Structure & Hub Central de Configuration Directe
+## 2. Structure & 18 Modules de Pilotage
 
-La console d'administration intègre un **Hub Central de Configuration Directe** composé de **18 modules d'administration** organisés en 4 piliers stratégiques :
+La console d'administration intègre **18 modules spécialisés** sous [`AdminDashboardLayout.tsx`](file:///Users/fullann/Documents/GitHub/TerraCoast/src/components/admin/layout/AdminDashboardLayout.tsx) répartis en 4 sections :
 
-### 📊 Pilier 1 : Données, Utilisateurs & Sécurité
-1. **Analytics & Métriques Clés (`/admin`)** :
-   - Indicateurs globaux (utilisateurs, quiz validés, sessions terminées, signalements en attente).
-   - Sélecteur de période temporelle dynamique (**J-1**, **J-7**, **J-30**) avec calcul automatique des pourcentages de variation.
-   - Graphiques multi-courbes interactifs (`recharts`) et export CSV instantané des rapports d'activité.
-2. **Gestion des Utilisateurs (`/admin/users`)** :
-   - Recherche en direct par pseudo, email ou identifiant.
-   - Attribution et modification des rôles (`user`, `moderator`, `admin`).
-   - Outils de modération : avertissements formels, bannissement temporaire ou révocation définitive.
-   - Outils développeur pour créditer ou réinitialiser l'XP des utilisateurs : synchronisation instantanée avec Supabase (`profiles.experience_points`, `profiles.level`, `profiles.monthly_score`), recalcul automatique du palier de ligue Duolingo, mise à jour des classements mensuels/généraux, déclenchement des titres gagnés via triggers PostgreSQL, et rafraîchissement temps réel de toute l'interface sans rechargement.
-3. **Validation & Modération des Quiz (`/admin/quizzes`)** :
-   - Examen des quiz soumis par la communauté (statut `pending`).
-   - Outil de géolocalisation inline permettant d'attribuer rapidement des coordonnées GPS (`latitude`, `longitude`) aux quiz orphelins pour les afficher sur le globe 3D.
-4. **Signalements & Modération (`/admin/reports`)** :
-   - Traitement des signalements d'erreurs géographiques, questions litigieuses ou comportements inappropriés.
-5. **Journal d'Audit Système (`/admin/audit`)** :
-   - Registre immuable de toutes les actions d'administration via la fonction RPC `log_admin_event()`.
+### 📊 Section 1 : Pilotage & Intelligence
+1. **Vue d'Ensemble & KPI (`/admin`)** :
+   - Indicateurs globaux en direct (utilisateurs inscrits, quiz validés, sessions terminées, duels joués).
+   - Outils développeur pour créditer/réinitialiser XP, gemmes, boosters et tester l'attribution instantanée de badges et titres.
+2. **Intelligence Géo — 250 Pays (`/admin/countries`)** :
+   - Surveillance en temps réel du taux de reconnaissance de chaque pays.
+   - Classement des pays les plus maîtrisés et des pièges géographiques mondiaux.
+   - **Bouton 1-clic direct ⭐ « Définir comme Pays de la Semaine »** sur chaque pays avec pré-remplissage automatique des anecdotes, de la capitale et du continent.
+   - Export CSV complet du rapport de géo-intelligence.
+3. **Statistiques & Rétention (`/admin/analytics`)** :
+   - Filtres temporels dynamiques (**J-1**, **J-7**, **J-30**).
+   - Graphiques d'engagement et de complétion des quiz (`recharts`).
 
-### 🎮 Pilier 2 : Modes de Jeux & Contenus
-6. **Éditeur de Quiz Général (`/quizzes/create`)** :
-   - Accès direct au constructeur de quiz multi-typologies (QCM, texte, puzzles cartographiques, classements Top 10).
-7. **Gestionnaire Geo Detective Photos (`/admin/geo-detective`)** :
-   - **Ajout de nouveaux clichés** : téléversement d'URL d'image haute résolution, nom du lieu, pays associé, niveau de difficulté et coordonnées GPS précises (latitude/longitude).
-   - **Édition & Correction** : mise à jour instantanée des coordonnées ou du cadrage d'une photo.
-   - **Suppression** : retrait en un clic d'un cliché de la rotation de jeu.
-   - **Prévisualisation interactive** : affichage du rendu photo et de l'emplacement cible sur mini-carte.
-8. **Gestion du Parcours de Quêtes (`/admin/learning-path`)** :
-   - Configuration des nœuds pédagogiques du sentier d'apprentissage mondial.
-9. **Supervision des Duels & Matchmaking (`/admin/duels`)** :
-   - Historique des affrontements 1v1, équilibrage des gains/pertes d'ELO et calibration du radar de matchmaking.
-10. **Salons Multijoueurs Party (`/admin/party`)** :
-    - Supervision des salons temps réel actifs et statistiques des sessions de groupe.
-11. **Stations Radio Globe (`/admin/radio`)** :
-    - Monitoring des flux audio et indexation géographique des stations.
+### 🗺️ Section 2 : Quêtes, Cartes & GeoGuessr
+4. **Parcours Pédagogique (`/admin/path`)** :
+   - Configuration des unités d'apprentissage, assignation des quiz aux nœuds oscillants, réglage des coffres et étoiles requises.
+5. **GeoGuessr & Lieux Photo (`/admin/geodetective`)** :
+   - Ajout de nouveaux clichés satellite ou sol avec coordonnées GPS précises (latitude/longitude), pays, difficulté et prévisualisation sur mini-carte.
+   - Édition et suppression en direct des photos existantes.
+6. **Quiz & Banques de Questions (`/admin/quizzes`)** :
+   - Gestion du catalogue, affectation de thématiques, géolocalisation inline des quiz orphelins.
+7. **Modération & Approbations (`/admin/validation`)** :
+   - Examen et validation des quiz soumis par les membres de la communauté.
+8. **Subdivisions Régionales GeoJSON (`/admin/geojson`)** :
+   - Téléversement et gestion des fichiers GeoJSON/TopoJSON (cantons suisses, régions françaises, etc.).
+9. **Cartes TerraDex & Raretés (`/admin/cards`)** :
+   - **Créateur de carte en direct** : modale tactile 3D pour créer de nouvelles cartes (numéro, nom, catégorie, rareté, statistiques, anecdote, citation, couleurs de dégradé).
+   - **Modification de rareté en 1 clic** (Commune, Rare, Épique, Légendaire, Mythique).
+   - **Gestion de catalogue** : masquage, suppression, restauration et import/export JSON.
+   - **Synchronisation automatique** avec la table Supabase `terra_cards`.
 
-### 🗺️ Pilier 3 : Cartographie, Données & Géographie
-12. **Matrice de Couverture des Pays (`/admin/tracking`)** :
-    - Synthèse cartographique des 250 pays et territoires reconnus.
-    - Identification visuelle immédiate des pays sous-représentés en quiz afin de guider la création de contenus.
-13. **Explorateur Atlas & Fiches Pays (`/atlas`)** :
-    - Inspection des fiches d'identité nationales et vérification des données démographiques ONU/Banque Mondiale.
-14. **Comparateur & TrueSize (`/atlas`)** :
-    - Outil d'analyse de projection vectorielle sans distorsion.
-15. **Subdivisions & Régions (`/admin/subdivisions`)** :
-    - Contrôle des entités infranationales (cantons suisses, départements français, provinces canadiennes).
+### 🛡️ Section 3 : Modération & Communauté
+10. **Utilisateurs & Permissions (`/admin/users`)** :
+    - Gestion des comptes, rôles (`user`, `moderator`, `admin`), sanctions et changement forcé de pseudo.
+11. **Signalements & Sanctions (`/admin/warnings`)** :
+    - Traitement des signalements communautaires et historique des avertissements.
+12. **Avis & Témoignages Homepage (`/admin/homepage-testimonials-management`)** :
+    - Modération et sélection des avis affichés sur la page vitrine.
 
-### ⚙️ Pilier 4 : Système, Configuration & Événements
-16. **Configuration Globale du Site & Gameplay (`/admin/site-config`)** :
-    - **Équilibrage Gameplay** :
-      - Seuil de précision pour la conquête Pokédex (`conquestAccuracyThreshold`, ex: 80%).
-      - Minuterie configurable par question de quiz (10s, 15s, 20s, 30s).
-      - Multiplicateur d'XP par défaut.
-    - **Modèle sans blocage** : suppression définitive des limites de cœurs/vies au profit de la pratique libre.
-17. **Événements & Double XP (`/admin/events`)** :
-    - Déclenchement d'opérations spéciales à durée déterminée (week-ends Double XP, festivités géographiques).
-    - Pays à l'honneur de la semaine (*Featured Country*) avec multiplicateur d'XP bonus.
-18. **Bannière d'Annonce & Maintenance** :
-    - Message d'alerte global personnalisable (variantes : information, succès, avertissement, alerte, célébration) avec bouton d'action et lien.
-    - Activation du mode maintenance avec message d'attente convivial pour les visiteurs.
-
----
-
-## 3. Outils Développeur & Test Rapide
-
-Dans l'onglet principal [`AdminPage.tsx`](file:///Users/fullann/Documents/GitHub/TerraCoast/src/components/admin/AdminPage.tsx), un panneau dédié aux tests permet :
-- **Ajustement instantané d'XP** : ajouter +100 XP, +500 XP ou réinitialiser le profil de test pour vérifier les passages de niveaux et l'attribution des titres de prestige.
-- **Lien direct "Voir le site ↗️"** : pour basculer facilement entre la console d'administration et la vue utilisateur.
+### ⚙️ Section 4 : Configuration & Économie
+13. **Personnalisation & Réglages du Site (`/admin/site-config`)** :
+    - **Pays de la Semaine (Spotlight National)** : sélection parmi les 250 pays, badge d'en-tête (ex: `PAYS DE LA SEMAINE`), slogan, monument vedette, capsule culturelle TTS, multiplicateur XP bonus (+50%, 2X) et gemmes bonus.
+    - **Bannière d'Annonce Globale** : activation, texte, type visuel (info, succès, alerte, célébration), bouton et URL de redirection.
+    - **Événements Mondiaux & Double XP** : titre de saison, activation et multiplicateur d'XP en direct.
+    - **Équilibrage Gameplay & Économie** : gemmes par série quotidienne, gemmes de victoire, seuil de conquête Pokédex (ex: 80%), minuterie par question.
+    - **Thème Visuel & Mode Maintenance** : thème du globe, continent en vedette, activation de maintenance avec message d'attente.
+    - **Synchronisation Temps Réel Supabase** : persistance sur la table `site_config` propagée à tous les joueurs connectés ou anonymes.
+    - Modale tactile 3D de confirmation pour la réinitialisation.
+14. **Duels, Kahoot & Battle Royale (`/admin/duels`)** :
+    - Paramètres de matchmaking ELO/MMR et supervision des salons party.
+15. **Badges & Trophées (`/admin/badges`)** :
+    - Configuration des critères d'attribution des badges.
+16. **Titres Honorifiques (`/admin/titles`)** :
+    - Définition des titres de prestige et réassignation globale.
+17. **Catégories Thématiques (`/admin/categories`)** :
+    - Gestion de l'arbre des thématiques de quiz.
+18. **Niveaux de Difficulté & Formats (`/admin/difficulties`, `/admin/types`)** :
+    - Gestion des coefficients et formats de questions.
 
 ---
 
-## 4. Journal d'Audit & Traçabilité (`admin_activity_logs`)
+## 3. Traçabilité & Journal d'Audit (`admin_activity_logs`)
 
-Toutes les actions d'administration sensibles sont consignées de manière immuable via la fonction RPC PostgreSQL :
+Toutes les actions sensibles sont consignées de manière immuable via la fonction RPC PostgreSQL :
 - **Fonction SQL** : `log_admin_event(action, entity_type, entity_id, details)`
 - **Champs enregistrés** : identifiant de l'administrateur (`actor_id`), action réalisée, type d'entité, identifiant de l'élément modifié, horodatage UTC et données contextuelles au format JSON.
-
----
-
-## 5. Référence aux Sources de Données
-Pour connaître l'origine détaillée de toutes les données exploitées et modérées par la console d'administration, consultez [`16-data-sources-and-usage.md`](./16-data-sources-and-usage.md).

@@ -1,8 +1,5 @@
-/**
- * Site Configuration & Live Personalization Manager for TerraCoast
- * Manages site-wide announcements, active events (e.g. Double XP),
- * featured country of the week, gameplay balancing and visual themes.
- */
+import { supabase } from './supabase';
+
 
 export type AnnouncementVariant = 'info' | 'success' | 'warning' | 'alert' | 'celebration';
 
@@ -172,7 +169,79 @@ export function updateSiteConfig(changes: Partial<SiteConfig>): SiteConfig {
     );
   }
 
+  // Synchronisation distante Supabase en tâche de fond (rend la config globale pour tous les visiteurs)
+  try {
+    void Promise.resolve(
+      supabase
+        .from('site_config' as any)
+        .upsert({
+          id: 'current',
+          announcement: next.announcement,
+          featured_country: next.featuredCountry,
+          gameplay: next.gameplay,
+          theme: next.theme,
+          updated_at: next.updatedAt,
+        })
+    )
+      .then((res: any) => {
+        if (res && 'error' in res && res.error) {
+          console.warn('Sauvegarde distante Supabase de site_config non disponible :', res.error.message);
+        }
+      })
+      .catch(() => {});
+  } catch {
+    // Mode hors-ligne / fallback local
+  }
+
   return next;
+}
+
+/**
+ * Synchronise la configuration du site depuis Supabase
+ * Permet à tous les joueurs de recevoir immédiatement le Pays de la Semaine et les annonces
+ */
+export async function syncSiteConfigFromSupabase(): Promise<{ success: boolean; config?: SiteConfig }> {
+  try {
+    const { data, error } = await supabase
+      .from('site_config' as any)
+      .select('*')
+      .eq('id', 'current')
+      .maybeSingle();
+
+    if (error || !data) {
+      return { success: false };
+    }
+
+    const row = data as {
+      announcement?: Partial<SiteAnnouncement>;
+      featured_country?: Partial<FeaturedCountryConfig>;
+      gameplay?: Partial<GameplayConfig>;
+      theme?: Partial<VisualThemeConfig>;
+      updated_at?: string;
+    };
+
+    const remoteConfig: SiteConfig = {
+      ...DEFAULT_SITE_CONFIG,
+      announcement: { ...DEFAULT_SITE_CONFIG.announcement, ...(row.announcement || {}) },
+      featuredCountry: { ...DEFAULT_SITE_CONFIG.featuredCountry, ...(row.featured_country || {}) },
+      gameplay: { ...DEFAULT_SITE_CONFIG.gameplay, ...(row.gameplay || {}) },
+      theme: { ...DEFAULT_SITE_CONFIG.theme, ...(row.theme || {}) },
+      updatedAt: row.updated_at || new Date().toISOString(),
+    };
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_SITE_CONFIG_STORE, JSON.stringify(remoteConfig));
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('terracost_site_config_updated', { detail: remoteConfig })
+      );
+    }
+
+    return { success: true, config: remoteConfig };
+  } catch {
+    return { success: false };
+  }
 }
 
 /**

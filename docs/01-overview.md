@@ -35,8 +35,12 @@ Sa philosophie repose sur quatre piliers :
 - **Higher or Lower (`/games/higher-lower`)** : jeu de cartes comparatif opposant populations ou superficies.
 - **Map Blitz (`/games/map-blitz`)** : course contre la montre de localisation sur carte 2D.
 - **Physical Geo (`/games/physical-geo`)** : défi sur les reliefs, fleuves, mers et déserts du globe.
-- **Travle (`/games/travle`)** : relier deux pays frontière par frontière avec le chemin le plus court.
-- **Radio Globe 3D (`/radio-globe`)** : écoute en direct de milliers de stations webradio géolocalisées sur le globe.
+- **Travle (`/games/travle`)** : relier deux pays frontière par frontière avec le chemin le plus court (algorithme BFS).
+- **Border Puzzle (`/games/border-puzzle`)** : reconstitution vectorielle des frontières et des pays limitrophes.
+- **TimeGuessr (`/games/time-guessr`)** : deviner à la fois le lieu géographique et l'époque temporelle d'événements historiques à travers le monde.
+- **City Guesser (`/games/city-guesser`)** : identification de métropoles mondiales et repérage de leur altitude et position.
+- **Radio Globe 3D (`/radio-globe`)** : écoute en direct de milliers de stations webradio géolocalisées sur le globe 3D (*Radio Browser API*).
+- **Sauvegarde Sécurisée des Récompenses** : attribution atomique de points d'XP et progression de classement via la fonction RPC `grant_arcade_rewards` avec protection anti-triche.
 
 ### D. Duels 1v1 & Compétition (`/duels`)
 - **Tour de jeu limpide** : affichage immédiat de l'état d'action (*C'est à toi de jouer !* vs *En attente du tour de l'adversaire*).
@@ -59,21 +63,28 @@ Sa philosophie repose sur quatre piliers :
 - **Prise en Charge des Micro-États** : repères circulaires accentués pour rendre parfaitement cliquables les micro-états (Monaco, Vatican, Saint-Marin, Andorre, Liechtenstein, Singapour, Tuvalu, etc.).
 - **Fiches pays complètes** : populations certifiées (ONU/Banque Mondiale 2023), superficies, langues, capitales, monnaies et pays limitrophes cliquables.
 - **Comparateur & TrueSize** : outil de superposition vectorielle pour apprécier la superficie réelle des pays sans distorsion cartographique.
+- **Barre d'outils tactile** : ancrage fluide sous la barre de navigation globale (`sticky top-16 md:top-[72px]`) sans chevauchement.
 
-### G. Gamification & Boutique (`/shop`)
+### G. Gamification, Cartes & Boutique (`/shop`, `/cards`)
 - **Philosophie d'Apprentissage Positif** : aucune barrière punitive de vies ou cœurs limités ; le joueur peut s'entraîner en continu sans restriction.
 - **Progression globale** : XP, niveaux de joueur, titres de prestige.
-- **Flamme Quotidienne (Streaks 🔥)** : suivi du nombre de jours consécutifs avec calendrier hebdomadaire et bonus d'XP progressif (+10% à +50%).
+- **Flamme Quotidienne (Streaks 🔥)** : suivi du nombre de jours consécutifs avec calendrier hebdomadaire, bonus d'XP progressif (+10% à +50%) et Gels de Flamme 🧊 anti-rupture.
 - **Boutique cosmétique** : cadres d'avatars personnalisés et thèmes graphiques pour le globe 3D.
 - **Ligues & Récompenses hebdomadaires** : distribution automatique de coffres et gemmes pour le Top 3 tous les dimanches soir à minuit.
+- **TerraDex (`/cards`)** : collection de cartes de pays avec raretés, effets holographiques 3D et ouverture animée de boosters.
 
-### H. Console d'Administration v2.4 (`/admin`)
-- **Hub Central de Configuration Directe** : 18 modules classés en 4 piliers stratégiques (Données & Utilisateurs, Modes de Jeux, Cartographie, Système).
-- **Gestionnaire Geo Detective** : interface complète pour ajouter, modifier ou supprimer des photographies avec coordonnées GPS et prévisualisation.
-- **Équilibrage du Gameplay** : ajustement en direct du seuil de conquête Pokédex (ex. 80%), de la minuterie par question et de l'économie d'XP.
+### H. Console d'Administration v2.4 (`/admin`) — 100% Configurable en Direct
+- **Hub Central de Pilotage** : 18 modules classés en 4 piliers stratégiques (Pilotage & Intelligence, Quêtes & Jeux, Modération & Communauté, Configuration & Économie).
+- **Configuration en Temps Réel (`site_config`)** :
+  - **Pays de la Semaine** : sélection parmi les 250 pays de l'Atlas ou via un bouton 1-clic direct dans l'Intelligence Géo, personnalisation du badge, slogan, monument, capsule culturelle TTS, multiplicateurs d'XP (+50%) et bonus de gemmes.
+  - **Bannière d'Annonce Globale** : activation, texte, variantes visuelles (info, succès, alerte, célébration) et liens d'action.
+  - **Événements Mondiaux & Double XP** : activation en direct avec intitulé de saison et multiplicateurs (1.5x, 2x, 3x).
+  - **Équilibrage de l'Économie & Gameplay** : montants de gemmes distribuées par série quotidienne et par victoire, seuil de précision en mode Conquête, temps limite par question.
+  - **Thème Visuel & Mode Maintenance** : thème du globe, continent en vedette, et message d'information pour la maintenance.
+- **Créateur & Gestionnaire de Cartes TerraDex (`/admin/cards`)** : modale complète pour créer, modifier, tester en prévisualisation directe, changer la rareté en 1 clic et synchroniser avec Supabase.
+- **Gestionnaire Geo Detective Photos (`/admin/geodetective`)** : interface complète pour ajouter, modifier ou supprimer des photographies avec coordonnées GPS et prévisualisation.
+- **Intelligence Géo (250 Pays) (`/admin/countries`)** : statistiques de reconnaissance, pays pièges, taux d'échec et définition du pays vedette en 1 clic.
 - **Tableau de bord & Analytics** : suivi de fréquentation avec filtres J-1, J-7, J-30 et graphiques multi-courbes.
-- **Modération & Validation** : validation des quiz communautaires et géolocalisation inline des quiz orphelins.
-- **Couverture Géographique** : matrice des pays couverts par des contenus pédagogiques.
 - **Audit & Sécurité** : journalisation de toutes les actions d'administration via la fonction RPC `log_admin_event`.
 
 ---

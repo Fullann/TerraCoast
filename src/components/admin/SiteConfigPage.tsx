@@ -21,6 +21,7 @@ import {
   getSiteConfig,
   updateSiteConfig,
   resetSiteConfig,
+  syncSiteConfigFromSupabase,
   type SiteConfig,
   type AnnouncementVariant,
 } from '../../lib/siteConfigManager';
@@ -37,6 +38,7 @@ export function SiteConfigPage() {
   const [config, setConfig] = useState<SiteConfig>(() => getSiteConfig());
   const [isDirty, setIsDirty] = useState(false);
   const [isTestingAudio, setIsTestingAudio] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const atlasCountries = getAllAtlasCountries('fr');
 
   useEffect(() => {
@@ -72,13 +74,24 @@ export function SiteConfigPage() {
   };
 
   const handleReset = () => {
-    if (confirm('Voulez-vous rétablir la configuration par défaut du site ?')) {
-      const def = resetSiteConfig();
-      setConfig(def);
-      setIsDirty(false);
-      toast.info('Configuration réinitialisée aux valeurs par défaut.');
-    }
+    setShowResetConfirm(true);
   };
+
+  const handleConfirmReset = () => {
+    const def = resetSiteConfig();
+    setConfig(def);
+    setIsDirty(false);
+    setShowResetConfirm(false);
+    toast.info('Configuration réinitialisée aux valeurs par défaut.');
+  };
+
+  useEffect(() => {
+    syncSiteConfigFromSupabase().then((res) => {
+      if (res.success && res.config) {
+        setConfig(res.config);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const unsub = audioAnecdoteSpeaker.subscribe((speaking) => {
@@ -934,6 +947,49 @@ export function SiteConfigPage() {
           </div>
         )}
       </div>
+
+      {/* ── MODALE DE CONFIRMATION DE RÉINITIALISATION ── */}
+      {showResetConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in"
+          onClick={() => setShowResetConfirm(false)}
+        >
+          <div
+            className="card-duo bg-white p-6 max-w-md w-full border-2 border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 rounded-2xl bg-rose-100 text-rose-700">
+                <RotateCcw className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900">
+                Rétablir la Configuration ?
+              </h3>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-600 font-medium mb-6 leading-relaxed">
+              Êtes-vous sûr de vouloir rétablir les réglages par défaut de TerraCoast ?
+              La bannière d'annonce, le pays à l'honneur et l'équilibrage de jeu seront réinitialisés.
+            </p>
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="btn-duo btn-duo-white px-4 py-2 text-xs font-black text-slate-700"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReset}
+                className="btn-duo btn-duo-white text-rose-700 border-rose-300 hover:bg-rose-50 px-4 py-2 text-xs font-black inline-flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Rétablir par défaut</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

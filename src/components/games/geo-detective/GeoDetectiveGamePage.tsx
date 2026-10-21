@@ -16,12 +16,20 @@ import { MiniPinMap } from "./MiniPinMap";
 import { RoundResultModal } from "./RoundResultModal";
 import { GeoDetectiveSummary } from "./GeoDetectiveSummary";
 import { triggerConfetti } from "../../common/Confetti";
+import { useAuth } from "../../../contexts/AuthContext";
+import {
+  calculateGameReward,
+  applyPlayerRewards,
+  type RewardApplicationResult,
+} from "../../../lib/rewardManager";
 
 export function GeoDetectiveGamePage() {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const [gameState, setGameState] = useState(() => startNewGeoDetectiveGame("all", 5));
   const [isResultPhase, setIsResultPhase] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [rewardResult, setRewardResult] = useState<RewardApplicationResult | null>(null);
 
   const currentRound = gameState.rounds[gameState.currentRoundIndex];
   const isGameOver = gameState.isGameOver;
@@ -34,6 +42,7 @@ export function GeoDetectiveGamePage() {
     setGameState(startNewGeoDetectiveGame("all", 5));
     setIsResultPhase(false);
     setShowResultModal(false);
+    setRewardResult(null);
     setMobileTab("photo");
   }, []);
 
@@ -99,6 +108,17 @@ export function GeoDetectiveGamePage() {
     if (gameState.currentRoundIndex >= gameState.rounds.length - 1) {
       // Fin de la partie
       saveGeoDetectiveHighScore(gameState.totalScore);
+      const calculated = calculateGameReward("geo-detective", {
+        score: gameState.totalScore,
+      });
+      applyPlayerRewards(
+        user?.id,
+        calculated,
+        "geo-detective",
+        profile?.current_streak || 0,
+        gameState.totalScore
+      ).then((res) => setRewardResult(res));
+
       setGameState((prev) => ({
         ...prev,
         isGameOver: true,
@@ -112,12 +132,16 @@ export function GeoDetectiveGamePage() {
       }));
       setIsResultPhase(false);
     }
-  }, [gameState]);
+  }, [gameState, user?.id, profile?.current_streak]);
 
   if (isGameOver) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-8">
-        <GeoDetectiveSummary gameState={gameState} onPlayAgain={handleRestart} />
+        <GeoDetectiveSummary
+          gameState={gameState}
+          rewardResult={rewardResult}
+          onPlayAgain={handleRestart}
+        />
       </div>
     );
   }

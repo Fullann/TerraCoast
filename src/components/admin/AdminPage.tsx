@@ -695,7 +695,7 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
         </button>
       </div>
 
-      {/* ⚡ Outils Développeur : Gestion des Ressources (Gemmes & Cœurs) */}
+      {/* ⚡ Outils Développeur : Gestion des Ressources (Gemmes, XP & Boosters) */}
       <div className="bg-gradient-to-br from-white via-amber-50/30 to-amber-100/20 rounded-2xl shadow-md border-2 border-amber-200/80 p-5 sm:p-6 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-amber-200/70">
           <div className="flex items-start gap-3">

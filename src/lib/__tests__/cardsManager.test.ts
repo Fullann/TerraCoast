@@ -193,10 +193,10 @@ describe("TerraDex Cards Manager & Data", () => {
       const res = answerCardTrivia(TEST_USER, card.id, card.trivia.correctIndex);
 
       expect(res.correct).toBe(true);
-      expect(res.rewardGems).toBe(5);
+      expect(res.rewardGems).toBe(10);
 
       const afterGems = getPlayerGamificationState(TEST_USER).gems;
-      expect(afterGems).toBe(initialGems + 5);
+      expect(afterGems).toBe(initialGems + 10);
 
       // Repeat should not grant gems twice
       const repeatRes = answerCardTrivia(TEST_USER, card.id, card.trivia.correctIndex);

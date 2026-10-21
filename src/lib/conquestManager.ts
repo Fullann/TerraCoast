@@ -1,6 +1,9 @@
 import { getAllAtlasCountries, getAtlasCountryByIso3, type AtlasCountry } from "./atlasData";
 import { getSiteConfig } from "./siteConfigManager";
 import type { Language } from "../i18n/translations";
+import { addGems } from "./gamificationManager";
+import { calculateGameReward, applyPlayerRewards } from "./rewardManager";
+import { trackMissionProgress } from "./dailyMissionsManager";
 
 export type ConquestRarity = "common" | "rare" | "epic" | "legendary";
 
@@ -422,26 +425,47 @@ export function isCountryConquered(
  * Enregistre une liste de pays conquis après un quiz réussi (score >= 80%).
  * Retourne les pays nouvellement conquis ainsi que le total conquis.
  */
+export interface RecordConquestResult {
+  newlyConquered: string[];
+  totalConquered: number;
+  earnedGems: number;
+  earnedXp: number;
+  continentBonusGranted?: boolean;
+}
+
 export function recordConqueredCountries(
   iso3List: string[],
   accuracy: number,
   userId?: string | null,
   source: "quiz" | "game" | "daily" = "quiz"
-): { newlyConquered: string[]; totalConquered: number } {
+): RecordConquestResult {
   if (!Array.isArray(iso3List) || iso3List.length === 0) {
-    return { newlyConquered: [], totalConquered: Object.keys(getConqueredRegistry(userId)).length };
+    return {
+      newlyConquered: [],
+      totalConquered: Object.keys(getConqueredRegistry(userId)).length,
+      earnedGems: 0,
+      earnedXp: 0,
+    };
   }
 
   // Seuls les quiz ou défis réussis avec au moins le seuil configuré (par défaut 80%) débloquent la conquête
   const threshold = getSiteConfig()?.gameplay?.conquestAccuracyThreshold ?? 80;
   if (accuracy < threshold) {
-    return { newlyConquered: [], totalConquered: Object.keys(getConqueredRegistry(userId)).length };
+    return {
+      newlyConquered: [],
+      totalConquered: Object.keys(getConqueredRegistry(userId)).length,
+      earnedGems: 0,
+      earnedXp: 0,
+    };
   }
 
   const key = getStorageKey(userId);
   const registry = getConqueredRegistry(userId);
   const newlyConquered: string[] = [];
   const now = new Date().toISOString();
+
+  let earnedGems = 0;
+  let earnedXp = 0;
 
   for (const rawIso of iso3List) {
     if (!rawIso || typeof rawIso !== "string") continue;
@@ -456,6 +480,16 @@ export function recordConqueredCountries(
         unlockedVia: source,
       };
       newlyConquered.push(iso3);
+
+      // Calcul des récompenses selon la rareté
+      // Commune : +5 💎 (+25 XP)
+      // Rare : +15 💎 (+50 XP)
+      // Épique : +30 💎 (+100 XP)
+      // Légendaire : +75 💎 (+250 XP)
+      const rarity = getCountryRarity(iso3);
+      const reward = calculateGameReward("conquest", { rarity });
+      earnedGems += reward.baseGems;
+      earnedXp += reward.baseXp;
     } else {
       // Met à jour la meilleure précision si améliorée
       if (Math.round(accuracy) > registry[iso3].bestAccuracy) {
@@ -466,9 +500,46 @@ export function recordConqueredCountries(
 
   setStoredJson(key, registry);
 
+  // Vérification du bonus de continent complété à 100% (+250 💎)
+  let continentBonusGranted = false;
+  if (newlyConquered.length > 0) {
+    const stats = getConquestStats(userId);
+    for (const cp of stats.continentProgress) {
+      if (cp.percentage >= 100 && cp.totalCountries > 0) {
+        const bonusKey = `terracoast_continent_bonus_${userId || "guest"}_${cp.continent}`;
+        if (typeof window !== "undefined" && window.localStorage && !window.localStorage.getItem(bonusKey)) {
+          window.localStorage.setItem(bonusKey, "true");
+          earnedGems += 250;
+          continentBonusGranted = true;
+        }
+      }
+    }
+
+    // Crédit des gains
+    if (earnedGems > 0) {
+      addGems(userId || undefined, earnedGems);
+    }
+    if (earnedXp > 0) {
+      applyPlayerRewards(
+        userId,
+        {
+          baseXp: earnedXp,
+          baseGems: 0,
+          title: "Conquête Pokédex 🌍",
+          summary: `${newlyConquered.length} pays capturé${newlyConquered.length > 1 ? "s" : ""}`,
+        },
+        "conquest"
+      );
+    }
+    trackMissionProgress(userId, "conquest_capture", newlyConquered.length);
+  }
+
   return {
     newlyConquered,
     totalConquered: Object.keys(registry).length,
+    earnedGems,
+    earnedXp,
+    continentBonusGranted,
   };
 }
 

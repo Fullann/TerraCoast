@@ -19,10 +19,34 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         maximumFileSizeToCacheInBytes: 5000000, // 5 MiB
+        // Ne pas pré-cacher les gros chunks rarement utilisés (globe 3D, données cartes,
+        // admin, langues non actives) : évite ~5 Mo de téléchargement à la 1re visite.
+        // Ils sont mis en cache à la demande via la règle runtime "app-chunks" ci-dessous.
+        globIgnores: [
+          '**/vendor-three-*.js',
+          '**/vendor-charts-*.js',
+          '**/data-*.js',
+          '**/*Management*.js',
+          '**/Admin*.js',
+          '**/SiteConfigPage-*.js',
+          '**/QuizValidationPage-*.js',
+          '**/{en,de,es,it,pt}-*.js',
+        ],
         runtimeCaching: [
           {
+            // 0. Chunks JS/CSS hashés non pré-cachés : immuables → CacheFirst
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && /\/assets\/.+-[A-Za-z0-9_-]{8}\.(?:js|css)$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'app-chunks',
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
             // 1. GeoJSON, TopoJSON et cartes custom / CDN (raw.githubusercontent, unpkg, etc.)
-            urlPattern: /^https:\/\/(?:raw\.githubusercontent\.com|unpkg\.com)\/.*|.*\/storage\/v1\/object\/public\/custom-maps\/.*|.*\.(?:geojson|topojson)(?:\?.*)?$/i,
+            urlPattern: /^https:\/\/(?:raw\.githubusercontent\.com|unpkg\.com)\/.*|.*\/storage\/v1\/object\/public\/custom-geojson\/.*|.*\.(?:geojson|topojson)(?:\?.*)?$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'geojson-maps-cache',
@@ -102,17 +126,27 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('three') || id.includes('react-globe.gl')) {
+            // ⚠️ React DOIT avoir son propre chunk : sinon Rollup l'aspire dans le
+            // premier chunk manuel qui en dépend (ex. vendor-charts), ce qui forçait
+            // le téléchargement de Recharts (~500 kB) sur toutes les pages.
+            if (
+              /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|@remix-run|use-sync-external-store|react-is)[\\/]/.test(id)
+            ) {
+              return 'vendor-react';
+            }
+            // d3 est partagé entre Recharts, react-simple-maps et le globe :
+            // chunk dédié pour éviter qu'un chunk n'importe l'autre.
+            if (/[\\/]node_modules[\\/](d3-[^\\/]+|internmap)[\\/]/.test(id)) {
+              return 'vendor-d3';
+            }
+            if (id.includes('three') || id.includes('globe.gl')) {
               return 'vendor-three';
             }
-            if (
-              id.includes('react-simple-maps') ||
-              id.includes('world-atlas') ||
-              id.includes('topojson-client') ||
-              id.includes('swiss-maps') ||
-              id.includes('us-atlas') ||
-              id.includes('/us/')
-            ) {
+            // Données cartographiques séparées : chaque jeu ne charge que ce qu'il utilise
+            if (id.includes('world-atlas')) return 'data-world-atlas';
+            if (id.includes('us-atlas') || id.includes('/node_modules/us/')) return 'data-us';
+            if (id.includes('swiss-maps')) return 'data-swiss';
+            if (id.includes('react-simple-maps') || id.includes('topojson-client')) {
               return 'vendor-maps';
             }
             if (id.includes('world-countries')) {

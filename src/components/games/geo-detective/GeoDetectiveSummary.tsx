@@ -16,14 +16,17 @@ import {
 } from "../../../lib/geoDetectiveGame";
 import { VisualShareModal } from "../../common/VisualShareModal";
 import { useAuth } from "../../../contexts/AuthContext";
+import type { RewardApplicationResult } from "../../../lib/rewardManager";
 
 interface GeoDetectiveSummaryProps {
   gameState: GeoDetectiveGameState;
+  rewardResult?: RewardApplicationResult | null;
   onPlayAgain: () => void;
 }
 
 export const GeoDetectiveSummary: React.FC<GeoDetectiveSummaryProps> = ({
   gameState,
+  rewardResult,
   onPlayAgain,
 }) => {
   const navigate = useNavigate();
@@ -91,6 +94,45 @@ export const GeoDetectiveSummary: React.FC<GeoDetectiveSummaryProps> = ({
               <div className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 border-2 border-amber-200 text-amber-800 text-xs font-black animate-bounce">
                 <Flame className="w-3.5 h-3.5 text-amber-500" />
                 Nouveau Record Personnel Établi !
+              </div>
+            )}
+
+            {/* Récompenses XP & Gems */}
+            {rewardResult && (
+              <div className="mt-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-2 border-emerald-300 rounded-3xl p-4 max-w-md mx-auto shadow-sm space-y-2">
+                <div className="flex items-center justify-around gap-2">
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-slate-500 uppercase block">XP Enquête</span>
+                    <span className="text-2xl sm:text-3xl font-black text-amber-600 font-mono">
+                      +{rewardResult.totalXp} XP ⭐
+                    </span>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200" />
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-slate-500 uppercase block">TerraGems</span>
+                    <span className="text-2xl sm:text-3xl font-black text-sky-600 font-mono">
+                      +{rewardResult.gems} 💎
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-[11px] font-bold">
+                  {rewardResult.isFirstWin && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                      🥇 1ère victoire du jour (+100 XP)
+                    </span>
+                  )}
+                  {rewardResult.streakMultiplier > 1 && (
+                    <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-300">
+                      🔥 Flamme +{Math.round((rewardResult.streakMultiplier - 1) * 100)}%
+                    </span>
+                  )}
+                  {rewardResult.doubleXpActive && (
+                    <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300">
+                      ⚡ Double XP Actif
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

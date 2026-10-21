@@ -21,6 +21,8 @@ import {
   ChevronRight,
   Star,
   Info,
+  Gift,
+  CheckCircle2,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { fetchUserFriends } from "../../lib/queries/friendQueries";
@@ -34,6 +36,17 @@ import {
   DUOLINGO_LEAGUES,
   getUserLeagueProgress,
 } from "../../lib/gamificationManager";
+import {
+  WEEKLY_LEAGUE_TIERS,
+  isWeeklyLeagueClaimed,
+  claimWeeklyLeagueReward,
+  getWeeklyLeagueTier,
+} from "../../lib/rewardManager";
+import { BOOSTER_PACKS, type BoosterPack } from "../../lib/cardsData";
+import { BoosterOpeningModal } from "../cards/BoosterOpeningModal";
+import { triggerConfetti } from "../common/Confetti";
+import { playVictoryFanfare, playClickSound } from "../../lib/soundManager";
+import { toast } from "../common/ToastContainer";
 import { FederationSelectModal } from "../profile/modals/FederationSelectModal";
 import { TerritorialConquestSection } from "./TerritorialConquestSection";
 
@@ -85,6 +98,47 @@ export function LeaderboardPage({ onNavigate: _onNavigate }: LeaderboardPageProp
   const userLeagueProgress = profile
     ? getUserLeagueProgress(profile.experience_points || 0)
     : null;
+
+  const [weeklyLeagueClaimed, setWeeklyLeagueClaimed] = useState<boolean>(() =>
+    isWeeklyLeagueClaimed(profile?.id)
+  );
+  const [claimingLeagueReward, setClaimingLeagueReward] = useState(false);
+  const [rewardBoosterToOpen, setRewardBoosterToOpen] = useState<BoosterPack | null>(null);
+
+  useEffect(() => {
+    setWeeklyLeagueClaimed(isWeeklyLeagueClaimed(profile?.id));
+  }, [profile?.id]);
+
+  const handleClaimLeagueChest = async () => {
+    if (!profile || !userLeagueProgress) return;
+    setClaimingLeagueReward(true);
+    playClickSound();
+
+    try {
+      const res = await claimWeeklyLeagueReward(
+        profile.id,
+        userLeagueProgress.divisionRank
+      );
+
+      if (res.success) {
+        setWeeklyLeagueClaimed(true);
+        triggerConfetti();
+        playVictoryFanfare();
+        toast.success(res.message);
+
+        if (res.tier?.boosterPackId) {
+          const pack = BOOSTER_PACKS.find((p) => p.id === res.tier?.boosterPackId);
+          if (pack) {
+            setRewardBoosterToOpen(pack);
+          }
+        }
+      } else {
+        toast.error(res.message);
+      }
+    } finally {
+      setClaimingLeagueReward(false);
+    }
+  };
 
   useEffect(() => {
     loadLeaderboard();
@@ -363,6 +417,100 @@ export function LeaderboardPage({ onNavigate: _onNavigate }: LeaderboardPageProp
                 </div>
               );
             })}
+          </div>
+
+          {/* 🎁 COFFRES DE FIN DE SEMAINE DES LIGUES (Dimanche soir à minuit) */}
+          <div className="mt-6 pt-5 border-t border-white/10 relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase tracking-wider font-black text-amber-300">
+                    Coffres de Fin de Semaine 🎁
+                  </span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/30">
+                    Dimanche à minuit ⏰ ({weeklyTime.label})
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1">
+                  Chaque dimanche soir, le Top 10 de chaque division décroche un coffre exclusif de TerraGems 💎 et de Boosters !
+                </p>
+              </div>
+
+              {/* Bouton Réclamer si éligible */}
+              {userLeagueProgress && (
+                <div className="shrink-0">
+                  {userLeagueProgress.divisionRank <= 10 ? (
+                    weeklyLeagueClaimed ? (
+                      <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>Coffre Hebdo Réclamé ✓</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleClaimLeagueChest}
+                        disabled={claimingLeagueReward}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 text-xs font-black uppercase tracking-wide border-2 border-amber-300 border-b-4 border-b-amber-600 shadow-lg active:translate-y-0.5 active:border-b-2 hover:scale-102 transition-all cursor-pointer animate-pulse"
+                      >
+                        <Gift className="w-4 h-4 text-slate-950" />
+                        <span>
+                          {claimingLeagueReward
+                            ? "Ouverture..."
+                            : `Réclamer mon Coffre (#${userLeagueProgress.divisionRank}) 🏆`}
+                        </span>
+                      </button>
+                    )
+                  ) : (
+                    <div className="text-[11px] font-bold text-slate-400 bg-black/30 px-3 py-1.5 rounded-xl border border-white/10">
+                      Rang #{userLeagueProgress.divisionRank} • Top 10 requis
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Paliers de Coffres */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {WEEKLY_LEAGUE_TIERS.map((tier) => {
+                const userTier = userLeagueProgress
+                  ? getWeeklyLeagueTier(userLeagueProgress.divisionRank)
+                  : null;
+                const isUserTier = userTier?.id === tier.id;
+
+                return (
+                  <div
+                    key={tier.id}
+                    className={`p-3 rounded-2xl border-2 transition-all flex flex-col justify-between ${
+                      isUserTier
+                        ? "bg-amber-500/20 border-amber-400 ring-2 ring-amber-400/30 shadow-md"
+                        : "bg-white/5 border-white/10"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-2xl">{tier.badge}</span>
+                      <span
+                        className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                          isUserTier
+                            ? "bg-amber-400 text-slate-950"
+                            : "bg-white/10 text-slate-300"
+                        }`}
+                      >
+                        {tier.rankLabel}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="block text-xs font-black text-white">
+                        {tier.title}
+                      </span>
+                      <span className="block text-[11px] font-bold text-amber-300 mt-0.5">
+                        +{tier.gems} 💎 {tier.boosterPackId ? "+ 1 Booster Mythique" : ""}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -1038,6 +1186,17 @@ export function LeaderboardPage({ onNavigate: _onNavigate }: LeaderboardPageProp
             loadLeaderboard();
           }}
         />
+
+        {/* Modal d'ouverture de booster offert */}
+        {rewardBoosterToOpen && (
+          <BoosterOpeningModal
+            isOpen={!!rewardBoosterToOpen}
+            pack={rewardBoosterToOpen}
+            isFreeGift={true}
+            userId={profile?.id}
+            onClose={() => setRewardBoosterToOpen(null)}
+          />
+        )}
       </div>
     </div>
   );

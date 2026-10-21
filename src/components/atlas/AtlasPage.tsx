@@ -393,7 +393,7 @@ export function AtlasPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-2xs px-4 sm:px-6 lg:px-8 py-3">
+      <div className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-16 md:top-[72px] z-30 shadow-2xs px-4 sm:px-6 lg:px-8 py-3">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Continent Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">

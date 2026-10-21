@@ -24,6 +24,8 @@ import { updateSiteConfig } from '../../lib/siteConfigManager';
 import { toast } from '../common/ToastContainer';
 import { playSound } from '../../lib/soundManager';
 
+import { getAudioAnecdoteForCountry } from '../../lib/audioAnecdotesData';
+
 export function CountryTrackingPage() {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -58,11 +60,16 @@ export function CountryTrackingPage() {
   };
 
   const handleSetFeatured = (country: CountryMetricData) => {
+    const audioAnecdote = getAudioAnecdoteForCountry(country.iso3, country.name, country.flagEmoji);
     updateSiteConfig({
       featuredCountry: {
         iso3: country.iso3,
         name: country.name,
         flagEmoji: country.flagEmoji,
+        capital: country.capital,
+        continent: country.continent,
+        customBadgeText: 'PAYS DE LA SEMAINE',
+        customAnecdote: audioAnecdote.text || '',
         headline: `Semaine Spéciale ${country.name} : Découvrez ses merveilles et gagnez +50% d'XP !`,
         xpMultiplier: 1.5,
         gemBonus: 25,

@@ -210,34 +210,51 @@ export function ChatPage({ friendId: propFriendId }: ChatPageProps = {}) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-6">
+    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+      {/* Top Navigation */}
+      <div className="mb-5 flex items-center justify-between">
         <button
-          onClick={() => navigate("/quizzes")}
-          className="flex items-center text-gray-600 hover:text-gray-800"
+          onClick={() => navigate("/friends")}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-black border-2 border-slate-200 border-b-4 active:translate-y-0.5 shadow-2xs transition-all cursor-pointer"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          {t("chat.backToQuizzes")}
+          <ArrowLeft className="w-4 h-4 text-emerald-600" />
+          <span>{t("chat.backToFriends") || "Retour aux amis"}</span>
         </button>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-black uppercase tracking-wider font-mono">
+          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Messagerie Instantanée</span>
+        </div>
       </div>
 
       <div
-        className="bg-white rounded-xl shadow-md overflow-hidden"
-        style={{ height: "70vh" }}
+        className="bg-white rounded-3xl border-2 border-slate-200 border-b-4 shadow-sm overflow-hidden"
+        style={{ height: "72vh" }}
       >
-        <div className="flex h-full">
-          <div className="w-80 border-r border-gray-200 overflow-y-auto">
-            <div className="p-4 border-b border-gray-200 bg-emerald-600">
-              <h2 className="text-xl font-bold text-white flex items-center">
-                <MessageCircle className="w-6 h-6 mr-2" />
-                {t("chat.messages")}
+        <div className="flex h-full flex-col sm:flex-row">
+          {/* Liste des amis à gauche */}
+          <div className="w-full sm:w-80 border-b sm:border-b-0 sm:border-r-2 border-slate-200 overflow-y-auto bg-slate-50/50">
+            <div className="p-4 border-b-2 border-slate-200 bg-white sticky top-0 z-10 flex items-center justify-between">
+              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-emerald-600" />
+                <span>{t("chat.messages") || "Conversations"}</span>
               </h2>
+              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                {friends.length}
+              </span>
             </div>
 
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-slate-100">
               {friends.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-gray-500">{t("chat.noFriends")}</p>
+                  <div className="text-3xl mb-2">💬</div>
+                  <p className="text-slate-500 font-bold text-xs">{t("chat.noFriends") || "Aucun ami pour le moment."}</p>
+                  <button
+                    onClick={() => navigate("/friends")}
+                    className="mt-3 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs transition"
+                  >
+                    Ajouter des amis
+                  </button>
                 </div>
               ) : (
                 friends.map((friend) => (
@@ -247,32 +264,34 @@ export function ChatPage({ friendId: propFriendId }: ChatPageProps = {}) {
                       setSelectedFriend(friend);
                       navigate(`/chat/${friend.id}`, { replace: true });
                     }}
-                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors relative ${
-                      selectedFriend?.id === friend.id ? "bg-emerald-50" : ""
+                    className={`w-full p-3.5 text-left transition-all relative flex items-center gap-3 ${
+                      selectedFriend?.id === friend.id
+                        ? "bg-emerald-50/80 border-l-4 border-emerald-600 text-emerald-950"
+                        : "hover:bg-slate-100/70 text-slate-800"
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <Avatar
-                          url={(friend as any).avatar_url}
-                          pseudo={friend.pseudo}
-                          frameStyle={(friend as any).frame_style}
-                          size="md"
-                        />
-                        {unreadCounts[friend.id] > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                            {unreadCounts[friend.id]}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 truncate">
+                    <div className="relative shrink-0">
+                      <Avatar
+                        url={(friend as any).avatar_url}
+                        pseudo={friend.pseudo}
+                        frameStyle={(friend as any).frame_style}
+                        size="md"
+                      />
+                      {unreadCounts[friend.id] > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black animate-pulse shadow-xs">
+                          {unreadCounts[friend.id]}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="font-black text-sm text-slate-900 truncate">
                           {friend.pseudo || t("chat.user")}
                         </p>
-                        <p className="text-sm text-gray-600">
-                          {t("profile.level")} {friend.level || 1}
-                        </p>
                       </div>
+                      <p className="text-xs text-slate-500 font-bold">
+                        {t("profile.level")} {friend.level || 1}
+                      </p>
                     </div>
                   </button>
                 ))
@@ -280,12 +299,13 @@ export function ChatPage({ friendId: propFriendId }: ChatPageProps = {}) {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col">
+          {/* Panneau de discussion à droite */}
+          <div className="flex-1 flex flex-col bg-slate-50/40">
             {selectedFriend ? (
               <>
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <div className="p-3.5 sm:p-4 border-b-2 border-slate-200 bg-white flex items-center justify-between gap-3 shadow-2xs">
                   <div
-                    className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-3 cursor-pointer group"
                     onClick={() => navigate(`/profile/${selectedFriend.id}`)}
                   >
                     <Avatar
@@ -295,20 +315,29 @@ export function ChatPage({ friendId: propFriendId }: ChatPageProps = {}) {
                       size="sm"
                     />
                     <div>
-                      <h3 className="font-bold text-gray-800 hover:text-emerald-600 transition-colors">
+                      <h3 className="font-black text-sm text-slate-900 group-hover:text-emerald-600 transition-colors">
                         {selectedFriend.pseudo || t("chat.user")}
                       </h3>
-                      <p className="text-sm text-gray-600">
-                        {t("profile.level")} {selectedFriend.level || 1}
+                      <p className="text-[11px] text-slate-500 font-semibold">
+                        {t("profile.level")} {selectedFriend.level || 1} • Cliquez pour voir le profil
                       </p>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => navigate(`/profile/${selectedFriend.id}`)}
+                    className="text-xs font-black px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                  >
+                    Profil
+                  </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 bg-slate-50/50">
                   {messages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-gray-500">{t("chat.noMessages")}</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                      <span className="text-4xl mb-2">👋</span>
+                      <p className="text-slate-700 font-black text-sm">{t("chat.noMessages") || "Aucun message pour le moment."}</p>
+                      <p className="text-slate-400 text-xs font-medium mt-1">Dites bonjour à votre ami pour démarrer la discussion !</p>
                     </div>
                   ) : (
                     messages.map((message) => {
@@ -324,23 +353,23 @@ export function ChatPage({ friendId: propFriendId }: ChatPageProps = {}) {
                           }`}
                         >
                           <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                            className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl shadow-2xs ${
                               isOwnMessage
-                                ? "bg-emerald-600 text-white"
-                                : "bg-white border border-gray-200 text-gray-800"
+                                ? "bg-emerald-600 text-white rounded-tr-xs border-b-2 border-emerald-700 font-medium"
+                                : "bg-white border-2 border-slate-200 text-slate-800 rounded-tl-xs font-medium"
                             }`}
                           >
                             {!isOwnMessage && (
-                              <p className="text-xs font-semibold mb-1 text-emerald-600">
+                              <p className="text-[11px] font-black mb-0.5 text-emerald-700">
                                 {senderName}
                               </p>
                             )}
-                            <p className="break-words">{message.message}</p>
+                            <p className="break-words text-sm leading-relaxed">{message.message}</p>
                             <p
-                              className={`text-xs mt-1 ${
+                              className={`text-[10px] mt-1 text-right font-bold ${
                                 isOwnMessage
                                   ? "text-emerald-100"
-                                  : "text-gray-500"
+                                  : "text-slate-400"
                               }`}
                             >
                               {new Date(message.created_at).toLocaleTimeString(
@@ -359,36 +388,42 @@ export function ChatPage({ friendId: propFriendId }: ChatPageProps = {}) {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className="p-4 border-t border-gray-200 bg-white">
+                <div className="p-3 sm:p-4 border-t-2 border-slate-200 bg-white">
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       sendMessage();
                     }}
-                    className="flex space-x-2"
+                    className="flex gap-2"
                   >
                     <input
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder={t("chat.typeMessage")}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                      placeholder={t("chat.typeMessage") || "Écrivez votre message..."}
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border-2 border-slate-200 border-b-4 focus:border-emerald-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-800 text-sm transition-all focus:ring-4 focus:ring-emerald-100"
                     />
                     <button
                       type="submit"
                       disabled={!newMessage.trim() || loading}
-                      className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                      className="btn-duo btn-duo-green px-5 py-2.5 text-sm font-black flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                     >
-                      <Send className="w-5 h-5" />
+                      <Send className="w-4 h-4" />
+                      <span className="hidden sm:inline">Envoyer</span>
                     </button>
                   </form>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                  <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">{t("chat.selectFriend")}</p>
+              <div className="flex-1 flex items-center justify-center p-8 text-center bg-slate-50/50">
+                <div className="max-w-sm">
+                  <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 border-2 border-emerald-200 border-b-4 flex items-center justify-center text-2xl mx-auto mb-3 shadow-xs">
+                    💬
+                  </div>
+                  <h3 className="font-black text-slate-900 text-base mb-1">Vos messages privés</h3>
+                  <p className="text-slate-500 text-xs font-semibold leading-relaxed">
+                    {t("chat.selectFriend") || "Sélectionnez un ami dans la liste à gauche pour démarrer ou poursuivre votre conversation."}
+                  </p>
                 </div>
               </div>
             )}

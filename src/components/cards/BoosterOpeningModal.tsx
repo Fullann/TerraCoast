@@ -30,6 +30,7 @@ interface BoosterOpeningModalProps {
   onClose: () => void;
   pack: BoosterPack;
   userId?: string;
+  isFreeGift?: boolean;
   onPackOpened?: () => void;
 }
 
@@ -78,6 +79,7 @@ export function BoosterOpeningModal({
   onClose,
   pack,
   userId,
+  isFreeGift,
   onPackOpened,
 }: BoosterOpeningModalProps) {
   const { language } = useLanguage();
@@ -104,7 +106,7 @@ export function BoosterOpeningModal({
   const lastSoundProgressRef = useRef(0);
 
   const gamification = getPlayerGamificationState(userId);
-  const canAfford = pack.category === "daily" || gamification.gems >= pack.priceGems;
+  const canAfford = isFreeGift || pack.category === "daily" || gamification.gems >= pack.priceGems;
 
   // Déclenche l'ouverture complète du booster avec effets et sons
   const triggerPackOpening = useCallback(() => {
@@ -117,7 +119,8 @@ export function BoosterOpeningModal({
     const res = openBoosterPack(
       userId,
       pack.id,
-      pack.requiresContinentChoice ? selectedContinent : undefined
+      pack.requiresContinentChoice ? selectedContinent : undefined,
+      { free: isFreeGift }
     );
 
     if (!res.success) {

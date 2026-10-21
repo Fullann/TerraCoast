@@ -23,6 +23,8 @@ import { RadioGlobeProvider } from "./contexts/RadioGlobeContext";
 import { RadioGlobeFloatingPlayer } from "./components/audio/RadioGlobeFloatingPlayer";
 import { RadioAnecdoteBanner } from "./components/audio/RadioAnecdoteBanner";
 
+import { syncSiteConfigFromSupabase } from "./lib/siteConfigManager";
+import { syncCardsCatalogFromSupabase } from "./lib/cardsManager";
 import { lazyWithRetry } from "./lib/lazyWithRetry";
 
 // Pages avec Lazy Loading et reprise automatique en cas de mise à jour (stale chunk)
@@ -54,6 +56,9 @@ const SrsStudyPage = lazyWithRetry(() => import("./components/games/srs/SrsStudy
 const TravleGamePage = lazyWithRetry(() => import("./components/games/travle/TravleGamePage").then(m => ({ default: m.TravleGamePage })));
 const MapBlitzGamePage = lazyWithRetry(() => import("./components/games/map-blitz/MapBlitzGamePage").then(m => ({ default: m.MapBlitzGamePage })));
 const PhysicalGeoGamePage = lazyWithRetry(() => import("./components/games/physical-geo/PhysicalGeoGamePage").then(m => ({ default: m.PhysicalGeoGamePage })));
+const BorderPuzzleGamePage = lazyWithRetry(() => import("./components/games/border-puzzle/BorderPuzzleGamePage").then(m => ({ default: m.BorderPuzzleGamePage })));
+const TimeGuessrGamePage = lazyWithRetry(() => import("./components/games/time-guessr/TimeGuessrGamePage").then(m => ({ default: m.TimeGuessrGamePage })));
+const CityGuesserGamePage = lazyWithRetry(() => import("./components/games/city-guesser/CityGuesserGamePage").then(m => ({ default: m.CityGuesserGamePage })));
 const ShopPage = lazyWithRetry(() => import("./components/shop/ShopPage").then(m => ({ default: m.ShopPage })));
 const TerraDexPage = lazyWithRetry(() => import("./components/cards/TerraDexPage").then(m => ({ default: m.TerraDexPage })));
 
@@ -113,6 +118,11 @@ function AppContent() {
   const { setNavigationCallback } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    void syncSiteConfigFromSupabase();
+    void syncCardsCatalogFromSupabase();
+  }, []);
 
   useEffect(() => {
     setNavigationCallback((view: string, data?: any) => {
@@ -194,6 +204,9 @@ function AppContent() {
         <Route path="/games/travle" element={<Lazy><TravleGamePage /></Lazy>} />
         <Route path="/games/map-blitz" element={<Lazy><MapBlitzGamePage /></Lazy>} />
         <Route path="/games/physical-geo" element={<Lazy><PhysicalGeoGamePage /></Lazy>} />
+        <Route path="/games/border-puzzle" element={<Lazy><BorderPuzzleGamePage /></Lazy>} />
+        <Route path="/games/time-guessr" element={<Lazy><TimeGuessrGamePage /></Lazy>} />
+        <Route path="/games/city-guesser" element={<Lazy><CityGuesserGamePage /></Lazy>} />
         <Route path="/shop" element={<Lazy><ShopPage /></Lazy>} />
         <Route path="/terradex" element={<Lazy><TerraDexPage /></Lazy>} />
         <Route path="/cards" element={<Lazy><TerraDexPage /></Lazy>} />
