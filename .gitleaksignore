@@ -1,0 +1,6 @@
+# Gitleaks ignore list for false positives
+# Format: path:rule-id:line-number or commit:path:rule-id:line-number
+46d1c2c11c3c9725c1b00db71fc0ad27ff93157e:src/lib/federations.ts:generic-api-key:541
+46d1c2c11c3c9725c1b00db71fc0ad27ff93157e:src/lib/siteConfigManager.ts:generic-api-key:60
+src/lib/federations.ts:generic-api-key:541
+src/lib/siteConfigManager.ts:generic-api-key:60

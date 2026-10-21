@@ -7,7 +7,11 @@ title = "TerraCoast Gitleaks Security Policy"
 useDefault = true
 
 [allowlist]
-description = "Global allowlists for safe files, documentation and mock test data"
+description = "Global allowlists for safe files, documentation, historical false-positive commits and mock test data"
+commits = [
+  "46d1c2c11c3c9725c1b00db71fc0ad27ff93157e"
+]
+
 paths = [
   '''(?i)^\.env\.example$''',
   '''(?i)^package-lock\.json$''',
@@ -17,13 +21,21 @@ paths = [
   '''(?i)^dist/.*$'''
 ]
 
+stopwords = [
+  "terracoast_conquest_season_v1",
+  "terracost_site_config_v1",
+  "terracost_dismissed_announcements_v1"
+]
+
 regexes = [
   # Mock tokens explicitly used in unit tests or documentation examples
   '''(?i)test_token_[a-z0-9_-]+''',
   '''(?i)mock_secret_[a-z0-9_-]+''',
   '''(?i)example_api_key_[a-z0-9_-]+''',
   # Clés de stockage client / localStorage légitimes
-  '''(?i)terra(?:coast|cost)_[a-z0-9_-]+'''
+  '''(?i)terra(?:coast|cost)_[a-z0-9_-]+''',
+  '''(?i)STORAGE_[A-Z0-9_]+_KEY''',
+  '''(?i)STORAGE_[A-Z0-9_]+_STORE'''
 ]
 
 # Règle personnalisée pour détecter les clés secrètes Supabase Service Role
