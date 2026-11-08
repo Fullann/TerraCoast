@@ -544,6 +544,14 @@ export type Database = {
         Args: Record<string, unknown>;
         Returns: Json;
       };
+      grant_arcade_rewards: {
+        Args: {
+          p_xp: number;
+          p_score?: number;
+          p_game_mode?: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;

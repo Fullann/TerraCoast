@@ -10,7 +10,6 @@ import {
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { Database } from "../lib/database.types";
-import { hydrateCardsFromCloud } from "../lib/cardsManager";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
@@ -62,7 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       const profileData = await fetchProfile(user.id);
       setProfile(profileData);
-      hydrateCardsFromCloud(user.id).catch(() => {});
+      import("../lib/cardsManager")
+        .then((m) => m.hydrateCardsFromCloud(user.id))
+        .catch(() => {});
     }
   }, [user, fetchProfile]);
 
@@ -92,45 +93,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       (async () => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-
-          setProfile(profileData);
+          const [profileData] = await Promise.all([
+            fetchProfile(session.user.id),
+            refreshMfaStatus(),
+          ]);
+          if (mounted) {
+            setProfile(profileData);
+          }
+        } else {
+          await refreshMfaStatus();
         }
 
-        await refreshMfaStatus();
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       })();
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return;
       (async () => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-
-          setProfile(profileData);
+          const [profileData] = await Promise.all([
+            fetchProfile(session.user.id),
+            refreshMfaStatus(),
+          ]);
+          if (mounted) {
+            setProfile(profileData);
+          }
         } else {
           setProfile(null);
           setMfaRequired(false);
           setMfaFactorId(null);
           setMfaChallengeId(null);
+          await refreshMfaStatus();
         }
-        await refreshMfaStatus();
       })();
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile, refreshMfaStatus]);
 
   const signUp = useCallback(
     async (

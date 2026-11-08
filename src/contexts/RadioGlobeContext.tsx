@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import {
   type RadioStation,
@@ -222,33 +223,59 @@ export function RadioGlobeProvider({ children }: { children: React.ReactNode }) 
     });
   }, []);
 
+  const contextValue = useMemo(
+    () => ({
+      isPlaying,
+      isMuted,
+      volume,
+      mode,
+      currentStation,
+      currentSoundscape,
+      currentCountry,
+      anecdotesEnabled,
+      isSpeakingAnecdote,
+      currentAnecdote,
+      play,
+      pause,
+      togglePlay,
+      setMode,
+      setVolume,
+      toggleMute,
+      tuneToCountry,
+      setStation,
+      setSoundscape,
+      triggerCountryAnecdote,
+      skipAnecdote,
+      toggleAnecdotesEnabled,
+    }),
+    [
+      isPlaying,
+      isMuted,
+      volume,
+      mode,
+      currentStation,
+      currentSoundscape,
+      currentCountry,
+      anecdotesEnabled,
+      isSpeakingAnecdote,
+      currentAnecdote,
+      play,
+      pause,
+      togglePlay,
+      setMode,
+      setVolume,
+      toggleMute,
+      tuneToCountry,
+      setStation,
+      setSoundscape,
+      triggerCountryAnecdote,
+      skipAnecdote,
+      toggleAnecdotesEnabled,
+    ]
+  );
+
   return (
-    <RadioGlobeContext.Provider
-      value={{
-        isPlaying,
-        isMuted,
-        volume,
-        mode,
-        currentStation,
-        currentSoundscape,
-        currentCountry,
-        anecdotesEnabled,
-        isSpeakingAnecdote,
-        currentAnecdote,
-        play,
-        pause,
-        togglePlay,
-        setMode,
-        setVolume,
-        toggleMute,
-        tuneToCountry,
-        setStation,
-        setSoundscape,
-        triggerCountryAnecdote,
-        skipAnecdote,
-        toggleAnecdotesEnabled,
-      }}
-    >
+    <RadioGlobeContext.Provider value={contextValue}>
       {children}
     </RadioGlobeContext.Provider>
   );

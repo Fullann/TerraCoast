@@ -171,11 +171,12 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps = {}) {
 
       if (questionsError) throw questionsError;
 
-      if (formData.isPublic) {
-        await supabase
-          .from("profiles")
-          .update({ published_quiz_count: profile.published_quiz_count + 1 })
-          .eq("id", profile.id);
+      if (formData.isPublic && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("terracoast:profile_updated", {
+            detail: { userId: profile.id },
+          })
+        );
       }
 
       // Celebrate!

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotifications } from "../../contexts/NotificationContext";
@@ -24,8 +24,6 @@ import {
   Award,
   ShoppingBag,
 } from "lucide-react";
-import { StreakModal } from "../profile/StreakModal";
-import { ShopModal } from "../shop/ShopModal";
 import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
 import {
   getPlayerGamificationState,
@@ -33,7 +31,15 @@ import {
   getActiveTitleDetails,
 } from "../../lib/gamificationManager";
 import { canClaimDailyPack } from "../../lib/cardsManager";
+import { lazyWithRetry } from "../../lib/lazyWithRetry";
 import { MobileBottomNav } from "./MobileBottomNav";
+
+const StreakModal = lazyWithRetry(() =>
+  import("../profile/StreakModal").then((m) => ({ default: m.StreakModal }))
+);
+const ShopModal = lazyWithRetry(() =>
+  import("../shop/ShopModal").then((m) => ({ default: m.ShopModal }))
+);
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -102,6 +108,16 @@ export function Navbar() {
     pendingFriendRequests +
     (pendingDuelsToPlay || 0) +
     (newDuelResults || 0);
+
+  const activeTitleDetails = useMemo(
+    () => getActiveTitleDetails(profile?.id),
+    [profile?.id, gamification.activeTitle]
+  );
+
+  const leagueProgress = useMemo(
+    () => getUserLeagueProgress(profile?.experience_points || 0),
+    [profile?.experience_points]
+  );
 
   return (
     <>
@@ -655,40 +671,37 @@ export function Navbar() {
 
 
               {/* 🏆 Ligue Duolingo Capsule en direct */}
-              {profile && (() => {
-                const leagueProgress = getUserLeagueProgress(profile.experience_points || 0);
-                return (
-                  <button
-                    type="button"
-                    onClick={() => navigate("/leaderboard")}
-                    className="hidden xl:flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-2.5 py-1 rounded-2xl bg-amber-50/90 hover:bg-amber-100 text-amber-950 border-2 border-amber-200 border-b-4 border-b-amber-400 shadow-2xs transition-all active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 group"
-                    title={`${leagueProgress.rankLabel} • ${leagueProgress.statusText} • ${leagueProgress.progressPercent}% vers ${leagueProgress.nextLeague?.name || "Palier Max"}`}
-                  >
-                    <span className="text-sm 2xl:text-base group-hover:scale-110 transition-transform shrink-0">
-                      {leagueProgress.currentLeague.icon}
-                    </span>
-                    <div className="hidden 2xl:flex flex-col text-left leading-none">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[11px] font-black text-slate-800">
-                          {leagueProgress.currentLeague.name}
-                        </span>
-                        <span className="text-[10px] font-bold text-amber-700">
-                          • #{leagueProgress.divisionRank}
-                        </span>
-                      </div>
-                      <div className="w-16 h-1.5 bg-amber-200/80 rounded-full overflow-hidden mt-1">
-                        <div
-                          className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500"
-                          style={{ width: `${leagueProgress.progressPercent}%` }}
-                        />
-                      </div>
+              {profile && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/leaderboard")}
+                  className="hidden xl:flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-2.5 py-1 rounded-2xl bg-amber-50/90 hover:bg-amber-100 text-amber-950 border-2 border-amber-200 border-b-4 border-b-amber-400 shadow-2xs transition-all active:translate-y-0.5 active:border-b-2 whitespace-nowrap shrink-0 group"
+                  title={`${leagueProgress.rankLabel} • ${leagueProgress.statusText} • ${leagueProgress.progressPercent}% vers ${leagueProgress.nextLeague?.name || "Palier Max"}`}
+                >
+                  <span className="text-sm 2xl:text-base group-hover:scale-110 transition-transform shrink-0">
+                    {leagueProgress.currentLeague.icon}
+                  </span>
+                  <div className="hidden 2xl:flex flex-col text-left leading-none">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[11px] font-black text-slate-800">
+                        {leagueProgress.currentLeague.name}
+                      </span>
+                      <span className="text-[10px] font-bold text-amber-700">
+                        • #{leagueProgress.divisionRank}
+                      </span>
                     </div>
-                    <span className="2xl:hidden text-xs font-black text-slate-800">
-                      #{leagueProgress.divisionRank}
-                    </span>
-                  </button>
-                );
-              })()}
+                    <div className="w-16 h-1.5 bg-amber-200/80 rounded-full overflow-hidden mt-1">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${leagueProgress.progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="2xl:hidden text-xs font-black text-slate-800">
+                    #{leagueProgress.divisionRank}
+                  </span>
+                </button>
+              )}
 
               {/* 👑 Niveau Capsule (visible sur très grand écran 2xl) */}
               <div className="hidden 2xl:flex items-center gap-1 px-2.5 py-1.5 rounded-2xl text-xs sm:text-sm font-black bg-purple-50 text-purple-800 border-2 border-purple-200 border-b-4 border-b-purple-300 shadow-sm shrink-0 whitespace-nowrap">
@@ -731,10 +744,10 @@ export function Navbar() {
                       <p className="font-black text-slate-900 text-sm truncate">
                         {profile?.pseudo}
                       </p>
-                      {getActiveTitleDetails(profile?.id) && (
+                      {activeTitleDetails && (
                         <p className="text-[11px] font-black text-purple-700 truncate mt-0.5 flex items-center gap-1">
-                          <span>{getActiveTitleDetails(profile?.id)?.icon || "⭐"}</span>
-                          <span>{getActiveTitleDetails(profile?.id)?.name}</span>
+                          <span>{activeTitleDetails.icon || "⭐"}</span>
+                          <span>{activeTitleDetails.name}</span>
                         </p>
                       )}
                       <p className="text-xs text-slate-500 font-bold mt-0.5">
@@ -743,50 +756,45 @@ export function Navbar() {
                     </div>
 
                     {/* 🏆 Badge & Jauge de Ligue en direct dans le profil */}
-                    {(() => {
-                      const lp = getUserLeagueProgress(profile?.experience_points || 0);
-                      return (
-                        <div
-                          onClick={() => {
-                            setOpenDropdown(null);
-                            navigate("/leaderboard");
-                          }}
-                          className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl mb-2.5 border border-amber-200/80 cursor-pointer hover:border-amber-300 shadow-2xs group transition-all text-left"
-                        >
-                          <div className="flex items-center justify-between mb-1.5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl group-hover:scale-110 transition-transform">
-                                {lp.currentLeague.icon}
-                              </span>
-                              <div>
-                                <p className="font-black text-slate-900 text-xs leading-tight">
-                                  {lp.currentLeague.name}
-                                </p>
-                                <p className="text-[10px] font-bold text-amber-700">
-                                  Rang #{lp.divisionRank} • {lp.statusText}
-                                </p>
-                              </div>
-                            </div>
-                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900">
-                              {lp.progressPercent}%
-                            </span>
+                    <div
+                      onClick={() => {
+                        setOpenDropdown(null);
+                        navigate("/leaderboard");
+                      }}
+                      className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl mb-2.5 border border-amber-200/80 cursor-pointer hover:border-amber-300 shadow-2xs group transition-all text-left"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl group-hover:scale-110 transition-transform">
+                            {leagueProgress.currentLeague.icon}
+                          </span>
+                          <div>
+                            <p className="font-black text-slate-900 text-xs leading-tight">
+                              {leagueProgress.currentLeague.name}
+                            </p>
+                            <p className="text-[10px] font-bold text-amber-700">
+                              Rang #{leagueProgress.divisionRank} • {leagueProgress.statusText}
+                            </p>
                           </div>
-
-                          {/* Jauge vers la ligue suivante */}
-                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mt-1">
-                            <div
-                              className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500"
-                              style={{ width: `${lp.progressPercent}%` }}
-                            />
-                          </div>
-                          <p className="text-[10px] text-slate-500 font-bold mt-1 text-right">
-                            {lp.nextLeague
-                              ? `Encore ${lp.xpToNext} XP vers ${lp.nextLeague.name} ⬆️`
-                              : "Palier de Ligue Maximum 👑"}
-                          </p>
                         </div>
-                      );
-                    })()}
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900">
+                          {leagueProgress.progressPercent}%
+                        </span>
+                      </div>
+
+                      {/* Jauge vers la ligue suivante */}
+                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mt-1">
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500"
+                          style={{ width: `${leagueProgress.progressPercent}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-bold mt-1 text-right">
+                        {leagueProgress.nextLeague
+                          ? `Encore ${leagueProgress.xpToNext} XP vers ${leagueProgress.nextLeague.name} ⬆️`
+                          : "Palier de Ligue Maximum 👑"}
+                      </p>
+                    </div>
 
                     <button
                       type="button"
@@ -1067,16 +1075,24 @@ export function Navbar() {
         </div>
       )}
 
-      <StreakModal
-        isOpen={streakModalOpen}
-        onClose={() => setStreakModalOpen(false)}
-        profile={profile}
-      />
+      {streakModalOpen && (
+        <Suspense fallback={null}>
+          <StreakModal
+            isOpen={streakModalOpen}
+            onClose={() => setStreakModalOpen(false)}
+            profile={profile}
+          />
+        </Suspense>
+      )}
 
-      <ShopModal
-        isOpen={shopModalOpen}
-        onClose={() => setShopModalOpen(false)}
-      />
+      {shopModalOpen && (
+        <Suspense fallback={null}>
+          <ShopModal
+            isOpen={shopModalOpen}
+            onClose={() => setShopModalOpen(false)}
+          />
+        </Suspense>
+      )}
 
       <style>{`
         @media (max-width: 768px) {

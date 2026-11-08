@@ -12,7 +12,11 @@ const GUEST_AVATAR_KEY = "terracoast_party_avatar";
 export function getOrCreateGuestId(): string {
   let id = localStorage.getItem(GUEST_ID_KEY);
   if (!id) {
-    id = "guest_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+    const randomPart =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID().replace(/-/g, "").slice(0, 16)
+        : Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+    id = "guest_" + randomPart;
     localStorage.setItem(GUEST_ID_KEY, id);
   }
   return id;
@@ -35,15 +39,21 @@ export function saveGuestAvatar(avatar: string) {
 }
 
 /**
- * Génère un code PIN convivial du style TERRA-24 (ou TERRA-XX)
+ * Génère un code PIN convivial à 4 chiffres du style TERRA-4829 (9 000 combinaisons)
  */
 export function generatePartyPin(): string {
-  const num = Math.floor(10 + Math.random() * 90); // 10..99
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const num = 1000 + (buf[0] % 9000);
+    return `TERRA-${num}`;
+  }
+  const num = Math.floor(1000 + Math.random() * 9000); // 1000..9999
   return `TERRA-${num}`;
 }
 
 /**
- * Normalise un code saisi par l'utilisateur (ex: "terra24", "24", "TERRA-24")
+ * Normalise un code saisi par l'utilisateur (ex: "terra24", "24", "TERRA-4829", "4829")
  */
 export function normalizePartyPin(input: string): string {
   const clean = input.trim().toUpperCase().replace(/\s+/g, "");
@@ -52,7 +62,7 @@ export function normalizePartyPin(input: string): string {
   if (clean.startsWith("TERRA")) {
     return `TERRA-${clean.slice(5)}`;
   }
-  if (/^\d{2,4}$/.test(clean)) {
+  if (/^\d{2,6}$/.test(clean)) {
     return `TERRA-${clean}`;
   }
   return clean;

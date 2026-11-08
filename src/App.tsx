@@ -24,7 +24,6 @@ import { RadioGlobeFloatingPlayer } from "./components/audio/RadioGlobeFloatingP
 import { RadioAnecdoteBanner } from "./components/audio/RadioAnecdoteBanner";
 
 import { syncSiteConfigFromSupabase } from "./lib/siteConfigManager";
-import { syncCardsCatalogFromSupabase } from "./lib/cardsManager";
 import { lazyWithRetry } from "./lib/lazyWithRetry";
 
 // Pages avec Lazy Loading et reprise automatique en cas de mise à jour (stale chunk)
@@ -121,7 +120,7 @@ function AppContent() {
 
   useEffect(() => {
     void syncSiteConfigFromSupabase();
-    void syncCardsCatalogFromSupabase();
+    void import("./lib/cardsManager").then((m) => m.syncCardsCatalogFromSupabase());
   }, []);
 
   useEffect(() => {

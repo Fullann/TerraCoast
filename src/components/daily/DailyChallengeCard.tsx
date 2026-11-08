@@ -14,7 +14,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   getTimeUntilNextChallenge,
   fetchDailyLeaderboard,
-  fetchUserDailyStatus,
   type DailyLeaderboardEntry,
 } from "../../lib/dailyChallenge";
 import { DailyLeaderboardModal } from "./DailyLeaderboardModal";
@@ -57,24 +56,23 @@ export function DailyChallengeCard({ quiz, loading }: DailyChallengeCardProps) {
       .then((entries) => {
         if (!isMounted) return;
         setLeaderboardEntries(entries);
+        if (profile?.id) {
+          setUserDailyEntry(
+            entries.find((entry) => entry.playerId === profile.id) || null
+          );
+        } else {
+          setUserDailyEntry(null);
+        }
         setLeaderboardLoading(false);
       })
       .catch(() => {
         if (isMounted) setLeaderboardLoading(false);
       });
 
-    if (profile?.id) {
-      fetchUserDailyStatus(quiz.id, profile.id).then((status) => {
-        if (isMounted) {
-          setUserDailyEntry(status.userBestEntry);
-        }
-      });
-    }
-
     return () => {
       isMounted = false;
     };
-  }, [quiz, profile?.id]);
+  }, [quiz?.id, profile?.id]);
 
   if (loading || !quiz) {
     return (

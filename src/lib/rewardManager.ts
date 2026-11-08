@@ -399,41 +399,16 @@ export async function applyPlayerRewards(
   gamification.level = newLevel;
   savePlayerGamificationState(userId || undefined, gamification);
 
-  // 8. Synchronisation avec Supabase profiles (via RPC ou mise à jour directe)
+  // 8. Synchronisation avec Supabase profiles (via RPC SECURITY DEFINER)
   if (userId) {
     try {
-      // Appel RPC sécurisé (qui contourne le profil guard grâce à SECURITY DEFINER)
-      const { error: rpcErr } = await (supabase.rpc as any)("grant_arcade_rewards", {
-        p_xp: totalXp,
-        p_score: targetScore || reward.baseXp,
+      const cappedXp = Math.min(1000, Math.max(0, totalXp));
+      const cappedScore = Math.min(1000, Math.max(0, targetScore || reward.baseXp));
+      await supabase.rpc("grant_arcade_rewards", {
+        p_xp: cappedXp,
+        p_score: cappedScore,
         p_game_mode: gameType || "arcade",
       });
-
-      if (rpcErr) {
-        // Fallback doux : lecture du profil actuel pour synchroniser l'affichage
-        const { data: currentP } = await supabase
-          .from("profiles")
-          .select("experience_points, monthly_score")
-          .eq("id", userId)
-          .single();
-
-        if (currentP) {
-          const freshXp = (currentP.experience_points || 0) + totalXp;
-          const freshMonthly = (currentP.monthly_score || 0) + (targetScore || totalXp);
-          const freshLvl = calculateLevelForXp(freshXp);
-
-          // Tentative de mise à jour directe si les droits le permettent
-          await supabase
-            .from("profiles")
-            .update({
-              experience_points: freshXp,
-              level: freshLvl,
-              monthly_score: freshMonthly,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", userId);
-        }
-      }
     } catch (e) {
       console.warn("[rewardManager] Supabase sync skipped or failed:", e);
     }

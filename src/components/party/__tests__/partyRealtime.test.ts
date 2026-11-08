@@ -15,9 +15,9 @@ import {
 
 describe("Party Realtime Helpers & Scoring", () => {
   describe("generatePartyPin", () => {
-    it("should generate a valid PIN format like TERRA-XX", () => {
+    it("should generate a valid PIN format like TERRA-XXXX", () => {
       const pin = generatePartyPin();
-      expect(pin).toMatch(/^TERRA-\d{2}$/);
+      expect(pin).toMatch(/^TERRA-\d{4}$/);
     });
   });
 

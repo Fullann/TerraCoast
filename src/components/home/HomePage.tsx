@@ -31,7 +31,6 @@ import {
 import { BoosterOpeningModal } from "../cards/BoosterOpeningModal";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
-type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"];
 type Warning = {
   id: string;
   reason: string;
@@ -43,8 +42,6 @@ export function HomePage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { t } = useLanguage();
-  const [, setRecentQuizzes] = useState<Quiz[]>([]);
-  const [, setRecentSessions] = useState<GameSession[]>([]);
   const [activeTitle, setActiveTitle] = useState(() => getActiveTitleDetails(profile?.id));
 
   useEffect(() => {
@@ -62,25 +59,28 @@ export function HomePage() {
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [dailyQuiz, setDailyQuiz] = useState<Quiz | null>(null);
   const [loadingDailyQuiz, setLoadingDailyQuiz] = useState(true);
-  const [stats, setStats] = useState({
-    totalPlays: 0,
-    averageScore: 0,
-    dailyPoints: 0,
-    maxDailyPoints: 0,
-  });
+  const [dailyPoints, setDailyPoints] = useState(0);
   const [activeBoosterPack, setActiveBoosterPack] = useState<BoosterPack | null>(null);
   const [dailyStatus, setDailyStatus] = useState(() => canClaimDailyPack(profile?.id));
   const [collectionStats, setCollectionStats] = useState(() => getCollectionStats(profile?.id));
 
   useEffect(() => {
-    const updateDaily = () => {
+    const updateCards = () => {
       setDailyStatus(canClaimDailyPack(profile?.id));
       setCollectionStats(getCollectionStats(profile?.id));
     };
 
-    updateDaily();
-    const interval = setInterval(updateDaily, 15000);
-    return () => clearInterval(interval);
+    updateCards();
+    window.addEventListener("terracoast_cards_updated", updateCards);
+    window.addEventListener("terracoast_cards_catalog_updated", updateCards);
+    const interval = setInterval(() => {
+      setDailyStatus(canClaimDailyPack(profile?.id));
+    }, 60000);
+    return () => {
+      window.removeEventListener("terracoast_cards_updated", updateCards);
+      window.removeEventListener("terracoast_cards_catalog_updated", updateCards);
+      clearInterval(interval);
+    };
   }, [profile?.id]);
 
   const formatRemainingTime = (ms: number) => {
@@ -91,158 +91,86 @@ export function HomePage() {
   };
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile?.id) return;
+
+    const userId = profile.id;
+    const userLang = profile.language;
+    const showAllLangs = profile.show_all_languages;
 
     const loadData = async () => {
       try {
-        await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", profile.id)
-          .single();
-
-        let query = supabase
+        let quizzesQuery = supabase
           .from("quizzes")
           .select("*")
           .or("is_public.eq.true,is_global.eq.true");
 
-        if (!profile.show_all_languages && profile.language) {
-          query = query.eq("language", profile.language);
+        if (!showAllLangs && userLang) {
+          quizzesQuery = quizzesQuery.eq("language", userLang);
         }
 
-        const { data: allQuizzes, error } = await query;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayISO = today.toISOString();
 
-        if (error) {
-          console.error("Erreur chargement quiz:", error);
-          return;
-        }
-
-        if (allQuizzes && allQuizzes.length > 0) {
-          const pickedDaily = getDailyQuizForDate(allQuizzes);
-          setDailyQuiz(pickedDaily);
-          setLoadingDailyQuiz(false);
-
-          const now = Date.now();
-          const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-
-          const relevantQuizzes = allQuizzes
-            .map((quiz: any) => {
-              const quizAge = now - new Date(quiz.created_at).getTime();
-              const recencyScore = Math.max(0, 1 - quizAge / thirtyDaysMs);
-              const popularityScore = Math.min(
-                1,
-                (quiz.total_plays || 0) / 100
-              );
-              const qualityScore = Math.min(1, (quiz.average_score || 0) / 100);
-              const relevanceScore =
-                popularityScore * 0.55 + recencyScore * 0.3 + qualityScore * 0.15;
-              return { ...quiz, relevanceScore };
-            })
-            .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
-            .slice(0, 20);
-
-          setRecentQuizzes(relevantQuizzes);
-        }
-
-        const { data: sessions, count: totalSessionsCount } = await supabase
-          .from("game_sessions")
-          .select("*", { count: "exact" })
-          .eq("player_id", profile.id)
-          .eq("completed", true)
-          .order("completed_at", { ascending: false })
-          .limit(5);
-
-        if (sessions) {
-          const typedSessions = sessions as GameSession[];
-          setRecentSessions(typedSessions);
-
-          const totalPlays = totalSessionsCount || 0;
-          const averageScore =
-            typedSessions.reduce((acc, s) => acc + s.score, 0) / typedSessions.length ||
-            0;
-
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const todayISO = today.toISOString();
-
-          const { data: todaySessions } = await supabase
+        const [quizzesRes, todaySessionsRes, warningsRes] = await Promise.all([
+          quizzesQuery,
+          supabase
             .from("game_sessions")
             .select("score")
-            .eq("player_id", profile.id)
+            .eq("player_id", userId)
             .eq("completed", true)
-            .gte("completed_at", todayISO);
+            .gte("completed_at", todayISO),
+          supabase
+            .from("warnings")
+            .select("id, reason, admin_notes, created_at")
+            .eq("reported_user_id", userId)
+            .in("status", ["action_taken"])
+            .order("created_at", { ascending: false })
+            .limit(3),
+        ]);
 
-          let dailyPoints = 0;
-          if (todaySessions) {
-            const typedTodaySessions = todaySessions as Array<{ score: number }>;
-            dailyPoints = typedTodaySessions.reduce((sum, s) => sum + s.score, 0);
-          }
+        if (!quizzesRes.error && quizzesRes.data && quizzesRes.data.length > 0) {
+          const pickedDaily = getDailyQuizForDate(quizzesRes.data);
+          setDailyQuiz(pickedDaily);
+        }
+        setLoadingDailyQuiz(false);
 
-          const { data: allCompletedSessions } = await supabase
-            .from("game_sessions")
-            .select("score, completed_at")
-            .eq("player_id", profile.id)
-            .eq("completed", true)
-            .order("completed_at", { ascending: false });
-
-          let maxDailyPoints = 0;
-          if (allCompletedSessions) {
-            const typedCompletedSessions = allCompletedSessions as Array<{
-              score: number;
-              completed_at: string | null;
-            }>;
-            const dailyPointsMap = new Map<string, number>();
-            typedCompletedSessions.forEach((s) => {
-              if (!s.completed_at) return;
-              const date = new Date(s.completed_at).toISOString().split("T")[0];
-              dailyPointsMap.set(
-                date,
-                (dailyPointsMap.get(date) || 0) + s.score
-              );
-            });
-            maxDailyPoints = Math.max(...dailyPointsMap.values(), 0);
-          }
-
-          setStats({ totalPlays, averageScore, dailyPoints, maxDailyPoints });
+        if (todaySessionsRes.data) {
+          const typedTodaySessions = todaySessionsRes.data as Array<{ score: number }>;
+          setDailyPoints(typedTodaySessions.reduce((sum, s) => sum + s.score, 0));
         }
 
-        const { data: userWarnings } = await supabase
-          .from("warnings")
-          .select("*")
-          .eq("reported_user_id", profile.id)
-          .in("status", ["action_taken"])
-          .order("created_at", { ascending: false })
-          .limit(3);
-
-        if (userWarnings) setWarnings(userWarnings);
+        if (warningsRes.data) {
+          setWarnings(warningsRes.data);
+        }
       } catch (err) {
         console.error("Erreur:", err);
+        setLoadingDailyQuiz(false);
       }
     };
 
     loadData();
 
     const sessionSubscription = supabase
-      .channel(`sessions_${profile.id}`)
+      .channel(`sessions_${userId}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "UPDATE",
           schema: "public",
           table: "game_sessions",
-          filter: `player_id=eq.${profile.id}`,
+          filter: `player_id=eq.${userId}`,
         },
         () => {
-          console.log("🔄 Session mise à jour, rechargement...");
           loadData();
         }
       )
       .subscribe();
 
     return () => {
-      sessionSubscription.unsubscribe();
+      supabase.removeChannel(sessionSubscription);
     };
-  }, [profile]);
+  }, [profile?.id, profile?.language, profile?.show_all_languages]);
 
   const userLeague = getLeagueForXp(profile?.experience_points || 0);
   const leagueProgress = getUserLeagueProgress(profile?.experience_points || 0);
@@ -501,14 +429,14 @@ export function HomePage() {
                   <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
                     <span>{t("home.questEarnXp") || "Gagner 40 XP aujourd'hui"}</span>
                     <span className="text-emerald-600 font-black">
-                      {Math.min(40, stats.dailyPoints || 25)} / 40 XP
+                      {Math.min(40, dailyPoints || 25)} / 40 XP
                     </span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                     <div
                       className="bg-emerald-500 h-full rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min(100, Math.round(((stats.dailyPoints || 25) / 40) * 100))}%`,
+                        width: `${Math.min(100, Math.round(((dailyPoints || 25) / 40) * 100))}%`,
                       }}
                     />
                   </div>

@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
   useCallback,
   useMemo,
@@ -74,56 +75,65 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     useState<AppNotification | null>(null);
   const [pendingDuelsToPlay, setPendingDuelsToPlay] = useState(0);
   const [newDuelResults, setNewDuelResults] = useState(0);
-  const [navigationCallback, setNavigationCallbackState] = useState<
+  const navigationCallbackRef = useRef<
     ((view: string, params?: Record<string, unknown>) => void) | null
   >(null);
 
   const setNavigationCallback = useCallback(
     (callback: (view: string, params?: Record<string, unknown>) => void) => {
-      setNavigationCallbackState(() => callback);
+      navigationCallbackRef.current = callback;
     },
     []
   );
 
-  const refreshNotifications = useCallback(async () => {
-    if (!profile) return;
+  const userId = profile?.id;
 
-    const { count: messagesCount } = await supabase
-      .from("chat_messages")
-      .select("*", { count: "exact", head: true })
-      .eq("to_user_id", profile.id)
-      .eq("is_read", false);
+  const refreshNotifications = useCallback(async () => {
+    if (!userId) return;
+
+    const [
+      { count: messagesCount },
+      { count: duelsCount },
+      { count: friendRequestsCount },
+      { data: activeDuels },
+      { data: completedDuels },
+    ] = await Promise.all([
+      supabase
+        .from("chat_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("to_user_id", userId)
+        .eq("is_read", false),
+      supabase
+        .from("duel_invitations")
+        .select("*", { count: "exact", head: true })
+        .eq("to_user_id", userId)
+        .eq("status", "pending"),
+      supabase
+        .from("friendships")
+        .select("*", { count: "exact", head: true })
+        .eq("friend_id", userId)
+        .eq("status", "pending"),
+      supabase
+        .from("duels")
+        .select("id, player1_session_id, player2_session_id, player1_id, player2_id")
+        .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
+        .in("status", ["pending", "in_progress"]),
+      supabase
+        .from("duels")
+        .select("id, completed_at")
+        .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
+        .eq("status", "completed")
+        .order("completed_at", { ascending: false })
+        .limit(10),
+    ]);
 
     setUnreadMessages(messagesCount || 0);
-
-    const { count: duelsCount } = await supabase
-      .from("duel_invitations")
-      .select("*", { count: "exact", head: true })
-      .eq("to_user_id", profile.id)
-      .eq("status", "pending");
-
     setPendingDuels(duelsCount || 0);
-
-    const { count: friendRequestsCount } = await supabase
-      .from("friendships")
-      .select("*", { count: "exact", head: true })
-      .eq("friend_id", profile.id)
-      .eq("status", "pending");
-
     setPendingFriendRequests(friendRequestsCount || 0);
-    const { data: activeDuels } = await supabase
-      .from("duels")
-      .select(
-        "*, player1_session_id, player2_session_id, player1_id, player2_id"
-      )
-      .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
-      .in("status", ["pending", "in_progress"]);
 
     if (activeDuels) {
-      const typedActiveDuels =
-        activeDuels as Database["public"]["Tables"]["duels"]["Row"][];
-      const toPlay = typedActiveDuels.filter((duel) => {
-        const isPlayer1 = duel.player1_id === profile.id;
+      const toPlay = activeDuels.filter((duel) => {
+        const isPlayer1 = duel.player1_id === userId;
         const hasPlayed = isPlayer1
           ? !!duel.player1_session_id
           : !!duel.player2_session_id;
@@ -132,21 +142,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setPendingDuelsToPlay(toPlay);
     }
 
-    const { data: completedDuels } = await supabase
-      .from("duels")
-      .select("*")
-      .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
-      .eq("status", "completed")
-      .order("completed_at", { ascending: false })
-      .limit(10);
-
     if (completedDuels) {
       const stored = localStorage.getItem("viewedDuels");
       const viewedDuels = stored ? new Set(JSON.parse(stored)) : new Set();
-      const typedCompletedDuels =
-        completedDuels as Database["public"]["Tables"]["duels"]["Row"][];
 
-      const newResults = typedCompletedDuels.filter((duel) => {
+      const newResults = completedDuels.filter((duel) => {
         const completedAt = duel.completed_at
           ? new Date(duel.completed_at)
           : null;
@@ -158,7 +158,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       setNewDuelResults(newResults);
     }
-  }, [profile]);
+  }, [userId]);
 
   const clearDuelNotification = useCallback(() => setDuelNotification(null), []);
   const showDuelNotification = useCallback(
@@ -181,7 +181,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const clearAppNotification = useCallback(() => setAppNotification(null), []);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!userId) return;
     refreshNotifications();
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
@@ -189,15 +189,60 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }
     }, 60000);
 
+    const handleDuelCompletedRealtime = async (payload: { new: unknown }) => {
+      const completedDuel =
+        payload.new as Database["public"]["Tables"]["duels"]["Row"];
+      if (completedDuel.status !== "completed") return;
+
+      const opponentId =
+        completedDuel.player1_id === userId
+          ? completedDuel.player2_id
+          : completedDuel.player1_id;
+
+      const [{ data: opponentRaw }, { data: quizRaw }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("pseudo")
+          .eq("id", opponentId)
+          .single(),
+        supabase
+          .from("quizzes")
+          .select("title")
+          .eq("id", completedDuel.quiz_id)
+          .single(),
+      ]);
+
+      const opponent = opponentRaw as { pseudo: string } | null;
+      const quiz = quizRaw as { title: string } | null;
+
+      if (opponent && quiz) {
+        let result: "won" | "lost" | "draw" = "draw";
+        if (completedDuel.winner_id === userId) {
+          result = "won";
+        } else if (completedDuel.winner_id === opponentId) {
+          result = "lost";
+        }
+
+        setDuelNotification({
+          type: "completed",
+          from: opponent.pseudo,
+          quizTitle: quiz.title,
+          result,
+          onNavigate: () =>
+            navigationCallbackRef.current?.("duels", { tab: "history" }),
+        });
+      }
+    };
+
     const notificationChannel = supabase
-      .channel(`user_notifications_${profile.id}`)
+      .channel(`user_notifications_${userId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "chat_messages",
-          filter: `to_user_id=eq.${profile.id}`,
+          filter: `to_user_id=eq.${userId}`,
         },
         async (payload) => {
           const newMessage =
@@ -226,7 +271,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           event: "INSERT",
           schema: "public",
           table: "friendships",
-          filter: `friend_id=eq.${profile.id}`,
+          filter: `friend_id=eq.${userId}`,
         },
         async (payload) => {
           const newRequest =
@@ -254,24 +299,25 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           event: "INSERT",
           schema: "public",
           table: "duel_invitations",
-          filter: `to_user_id=eq.${profile.id}`,
+          filter: `to_user_id=eq.${userId}`,
         },
         async (payload) => {
           const newInvitation =
             payload.new as Database["public"]["Tables"]["duel_invitations"]["Row"];
 
-          const { data: fromUserRaw } = await supabase
-            .from("profiles")
-            .select("pseudo")
-            .eq("id", newInvitation.from_user_id)
-            .single();
+          const [{ data: fromUserRaw }, { data: quizRaw }] = await Promise.all([
+            supabase
+              .from("profiles")
+              .select("pseudo")
+              .eq("id", newInvitation.from_user_id)
+              .single(),
+            supabase
+              .from("quizzes")
+              .select("title")
+              .eq("id", newInvitation.quiz_id)
+              .single(),
+          ]);
           const fromUser = fromUserRaw as { pseudo: string } | null;
-
-          const { data: quizRaw } = await supabase
-            .from("quizzes")
-            .select("title")
-            .eq("id", newInvitation.quiz_id)
-            .single();
           const quiz = quizRaw as { title: string } | null;
 
           if (fromUser && quiz) {
@@ -280,7 +326,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               from: fromUser.pseudo,
               quizTitle: quiz.title,
               onNavigate: () =>
-                navigationCallback?.("duels", { tab: "invitations" }),
+                navigationCallbackRef.current?.("duels", { tab: "invitations" }),
             });
 
             setPendingDuels((prev) => prev + 1);
@@ -293,25 +339,26 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           event: "UPDATE",
           schema: "public",
           table: "duel_invitations",
-          filter: `from_user_id=eq.${profile.id}`,
+          filter: `from_user_id=eq.${userId}`,
         },
         async (payload) => {
           const updatedInvitation =
             payload.new as Database["public"]["Tables"]["duel_invitations"]["Row"];
 
           if (updatedInvitation.status === "accepted") {
-            const { data: toUserRaw } = await supabase
-              .from("profiles")
-              .select("pseudo")
-              .eq("id", updatedInvitation.to_user_id)
-              .single();
+            const [{ data: toUserRaw }, { data: quizRaw }] = await Promise.all([
+              supabase
+                .from("profiles")
+                .select("pseudo")
+                .eq("id", updatedInvitation.to_user_id)
+                .single(),
+              supabase
+                .from("quizzes")
+                .select("title")
+                .eq("id", updatedInvitation.quiz_id)
+                .single(),
+            ]);
             const toUser = toUserRaw as { pseudo: string } | null;
-
-            const { data: quizRaw } = await supabase
-              .from("quizzes")
-              .select("title")
-              .eq("id", updatedInvitation.quiz_id)
-              .single();
             const quiz = quizRaw as { title: string } | null;
 
             if (toUser && quiz) {
@@ -330,56 +377,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           event: "UPDATE",
           schema: "public",
           table: "duels",
-          filter: `status=eq.completed`,
+          filter: `player1_id=eq.${userId}`,
         },
-        async (payload) => {
-          const completedDuel =
-            payload.new as Database["public"]["Tables"]["duels"]["Row"];
-
-          if (
-            completedDuel.player1_id !== profile.id &&
-            completedDuel.player2_id !== profile.id
-          ) {
-            return;
-          }
-
-          const opponentId =
-            completedDuel.player1_id === profile.id
-              ? completedDuel.player2_id
-              : completedDuel.player1_id;
-
-          const { data: opponentRaw } = await supabase
-            .from("profiles")
-            .select("pseudo")
-            .eq("id", opponentId)
-            .single();
-          const opponent = opponentRaw as { pseudo: string } | null;
-
-          const { data: quizRaw } = await supabase
-            .from("quizzes")
-            .select("title")
-            .eq("id", completedDuel.quiz_id)
-            .single();
-          const quiz = quizRaw as { title: string } | null;
-
-          if (opponent && quiz) {
-            let result: "won" | "lost" | "draw" = "draw";
-            if (completedDuel.winner_id === profile.id) {
-              result = "won";
-            } else if (completedDuel.winner_id === opponentId) {
-              result = "lost";
-            }
-
-            setDuelNotification({
-              type: "completed",
-              from: opponent.pseudo,
-              quizTitle: quiz.title,
-              result,
-              onNavigate: () =>
-                navigationCallback?.("duels", { tab: "history" }),
-            });
-          }
-        }
+        handleDuelCompletedRealtime
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "duels",
+          filter: `player2_id=eq.${userId}`,
+        },
+        handleDuelCompletedRealtime
       )
       .subscribe();
 
@@ -387,7 +397,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(notificationChannel);
       clearInterval(interval);
     };
-  }, [profile, navigationCallback]);
+  }, [userId, refreshNotifications]);
 
   const value = useMemo(
     () => ({

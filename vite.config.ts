@@ -24,12 +24,28 @@ export default defineConfig({
         // Ils sont mis en cache à la demande via la règle runtime "app-chunks" ci-dessous.
         globIgnores: [
           '**/vendor-three-*.js',
+          '**/vendor-globe-*.js',
           '**/vendor-charts-*.js',
+          '**/vendor-d3-*.js',
           '**/data-*.js',
           '**/*Management*.js',
           '**/Admin*.js',
           '**/SiteConfigPage-*.js',
           '**/QuizValidationPage-*.js',
+          '**/DuelFeaturesPage-*.js',
+          '**/CountryTrackingPage-*.js',
+          '**/*GamePage-*.js',
+          '**/PlayQuizPage-*.js',
+          '**/PartyPage-*.js',
+          '**/AtlasPage-*.js',
+          '**/DuelsPage-*.js',
+          '**/ProfilePage-*.js',
+          '**/ConquestPage-*.js',
+          '**/LeaderboardPage-*.js',
+          '**/TerraDexPage-*.js',
+          '**/QuestionList-*.js',
+          '**/BoosterOpeningModal-*.js',
+          '**/CollectibleCard-*.js',
           '**/{en,de,es,it,pt}-*.js',
         ],
         runtimeCaching: [
@@ -139,7 +155,10 @@ export default defineConfig({
             if (/[\\/]node_modules[\\/](d3-[^\\/]+|internmap)[\\/]/.test(id)) {
               return 'vendor-d3';
             }
-            if (id.includes('three') || id.includes('globe.gl')) {
+            if (id.includes('globe.gl') || id.includes('three-globe') || id.includes('react-globe.gl')) {
+              return 'vendor-globe';
+            }
+            if (id.includes('three')) {
               return 'vendor-three';
             }
             // Données cartographiques séparées : chaque jeu ne charge que ce qu'il utilise
@@ -164,6 +183,9 @@ export default defineConfig({
             if (id.includes('@tanstack')) {
               return 'vendor-query';
             }
+          }
+          if (id.includes('defaultCardsCatalog.json') || id.includes('/src/lib/cardsData')) {
+            return 'data-cards';
           }
         },
       },
