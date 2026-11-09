@@ -484,30 +484,6 @@ export function QuizManagementPage({ onNavigate: _onNavigate }: QuizManagementPa
         return;
       }
 
-      // Mettre à jour le compteur de quiz publiés du créateur
-      if (selectedQuiz.is_public) {
-        const { data: creatorProfile } = await supabase
-          .from("profiles")
-          .select("published_quiz_count")
-          .eq("id", selectedQuiz.creator_id)
-          .single();
-        const typedCreatorProfile = creatorProfile as
-          | { published_quiz_count: number | null }
-          | null;
-
-        if (typedCreatorProfile) {
-          await (supabase as any)
-            .from("profiles")
-            .update({
-              published_quiz_count: Math.max(
-                0,
-                (typedCreatorProfile.published_quiz_count || 0) - 1
-              ),
-            })
-            .eq("id", selectedQuiz.creator_id);
-        }
-      }
-
       showAppNotification({
         type: "success",
         message: `Quiz "${selectedQuiz.title}" supprimé avec succès !`,

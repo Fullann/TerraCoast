@@ -155,10 +155,7 @@ export default defineConfig({
             if (/[\\/]node_modules[\\/](d3-[^\\/]+|internmap)[\\/]/.test(id)) {
               return 'vendor-d3';
             }
-            if (id.includes('globe.gl') || id.includes('three-globe') || id.includes('react-globe.gl')) {
-              return 'vendor-globe';
-            }
-            if (id.includes('three')) {
+            if (id.includes('three') || id.includes('globe.gl') || id.includes('react-globe.gl')) {
               return 'vendor-three';
             }
             // Données cartographiques séparées : chaque jeu ne charge que ce qu'il utilise

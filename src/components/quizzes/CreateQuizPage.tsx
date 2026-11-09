@@ -71,7 +71,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps = {}) {
       return;
     }
 
-    if (formData.isPublic && profile.published_quiz_count >= 10) {
+    if (profile.role !== "admin" && formData.isPublic && profile.published_quiz_count >= 10) {
       setError(t("createQuiz.errors.maxQuizReached"));
       return;
     }

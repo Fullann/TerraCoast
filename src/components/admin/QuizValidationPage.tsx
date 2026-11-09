@@ -193,24 +193,6 @@ export function QuizValidationPage() {
           status: 'approved',
         });
 
-      const quiz = pendingQuizzes.find(q => q.id === quizId);
-      if (quiz?.creator_id) {
-        const { data: author } = await supabase
-          .from('profiles')
-          .select('published_quiz_count')
-          .eq('id', quiz.creator_id)
-          .single();
-
-        if (author) {
-          await supabase
-            .from('profiles')
-            .update({
-              published_quiz_count: (author.published_quiz_count || 0) + 1,
-            })
-            .eq('id', quiz.creator_id);
-        }
-      }
-
       await loadPendingQuizzes();
       setSelectedQuiz(null);
       setLocationLat('');

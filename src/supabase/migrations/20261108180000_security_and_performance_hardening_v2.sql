@@ -225,6 +225,24 @@ GRANT EXECUTE ON FUNCTION public.grant_arcade_rewards(integer, integer, text) TO
 -- ------------------------------------------------------------------------------------
 -- 3. SERVER-SIDE TRIGGER FOR `published_quiz_count`
 -- ------------------------------------------------------------------------------------
+-- Nettoyage préventif des données existantes
+UPDATE public.profiles
+SET published_quiz_count = LEAST(10, GREATEST(0, COALESCE(published_quiz_count, 0)))
+WHERE (role IS NULL OR role <> 'admin') AND (published_quiz_count > 10 OR published_quiz_count < 0);
+
+-- Supprimer la contrainte restrictive CHECK (published_quiz_count <= 10) sur profiles
+-- pour permettre aux admins d'avoir plus de 10 quiz (et pour les utilisateurs normaux, la limite
+-- de 10 quiz publics est validée par l'application, avec borne à >= 0).
+ALTER TABLE public.profiles
+DROP CONSTRAINT IF EXISTS profiles_published_quiz_count_check;
+
+ALTER TABLE public.profiles
+ADD CONSTRAINT profiles_published_quiz_count_check
+CHECK (
+  published_quiz_count >= 0
+  AND (role = 'admin' OR published_quiz_count <= 10)
+);
+
 CREATE OR REPLACE FUNCTION public.sync_profile_published_quiz_count()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -233,18 +251,29 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_target_user_id uuid;
+  v_role text;
+  v_count integer;
 BEGIN
   PERFORM set_config('app.bypass_profile_guard', 'on', true);
 
   v_target_user_id := COALESCE(NEW.creator_id, OLD.creator_id);
   IF v_target_user_id IS NOT NULL THEN
+    SELECT role INTO v_role FROM public.profiles WHERE id = v_target_user_id;
+
+    SELECT count(*)::integer INTO v_count
+    FROM public.quizzes q
+    WHERE q.creator_id = v_target_user_id
+      AND (q.is_public = true OR q.pending_validation = true);
+
+    -- Pour un utilisateur régulier, borner entre 0 et 10; pour un admin, illimité
+    IF v_role <> 'admin' THEN
+      v_count := LEAST(10, GREATEST(0, v_count));
+    ELSE
+      v_count := GREATEST(0, v_count);
+    END IF;
+
     UPDATE public.profiles p
-    SET published_quiz_count = (
-      SELECT count(*)::integer
-      FROM public.quizzes q
-      WHERE q.creator_id = v_target_user_id
-        AND (q.is_public = true OR q.pending_validation = true)
-    )
+    SET published_quiz_count = v_count
     WHERE p.id = v_target_user_id;
   END IF;
 
