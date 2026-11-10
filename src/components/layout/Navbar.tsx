@@ -21,8 +21,6 @@ import {
   LogOut,
   User,
   Dumbbell,
-  Award,
-  ShoppingBag,
 } from "lucide-react";
 import { isStreakPlayedToday, isStreakAtRisk } from "../../lib/streakUtils";
 import {
@@ -186,7 +184,6 @@ export function Navbar() {
                   >
                     <div className="relative shrink-0">
                       <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse ring-1 ring-white" />
                     </div>
                     <span className="hidden lg:inline">ARCADE</span>
                     <ChevronDown
@@ -266,52 +263,20 @@ export function Navbar() {
                         </div>
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenDropdown(null);
-                          navigate("/quizzes/create");
-                        }}
-                        className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-sky-50 transition-all text-left group mt-1 border-t border-slate-100"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-lg">
-                          <Award className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <span className="font-black text-sm text-slate-800 group-hover:text-sky-700">
-                            Créer un Quiz
-                          </span>
-                          <p className="text-[11px] text-slate-500 font-semibold">
-                            Partagez vos questions à la communauté
-                          </p>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenDropdown(null);
-                          setShopModalOpen(true);
-                        }}
-                        className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-emerald-50 transition-all text-left group mt-1 border-t border-slate-100"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg">
-                          <ShoppingBag className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-black text-sm text-slate-800 group-hover:text-emerald-700">
-                              Boutique TerraGems
-                            </span>
-                            <span className="text-[9px] bg-emerald-500 text-white font-black px-1 rounded">
-                              💎 SHOP
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-semibold">
-                            Gels de flamme, thèmes de globe, cadres
-                          </p>
-                        </div>
-                      </button>
+                      <div className="mt-2 pt-2 border-t border-slate-100 px-2 flex justify-between items-center text-xs">
+                        <span className="text-slate-400 font-bold">Espace communauté</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenDropdown(null);
+                            navigate("/quizzes/create");
+                          }}
+                          className="font-black text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1"
+                        >
+                          <span>Proposer un quiz</span>
+                          <span>✍️</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -333,7 +298,7 @@ export function Navbar() {
                     <Compass className="w-4 h-4 text-teal-600 shrink-0" />
                     <span className="hidden lg:inline">ATLAS</span>
                     {dailyPackAvailable && (
-                      <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white animate-pulse shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white shrink-0" />
                     )}
                     <ChevronDown
                       className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${

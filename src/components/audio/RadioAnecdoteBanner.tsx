@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Mic, X, Volume2 } from "lucide-react";
 import { useRadioGlobe } from "../../contexts/RadioGlobeContext";
 
 export const RadioAnecdoteBanner: React.FC = () => {
+  const location = useLocation();
   const { isSpeakingAnecdote, currentAnecdote, skipAnecdote } = useRadioGlobe();
   const [progress, setProgress] = useState(0);
 
+  const isGameActive =
+    location.pathname.startsWith("/quizzes/play") ||
+    location.pathname.startsWith("/duels/play") ||
+    location.pathname.startsWith("/party") ||
+    (location.pathname.startsWith("/quizzes/training/") && location.pathname !== "/quizzes/training") ||
+    (location.pathname.startsWith("/games/") && location.pathname !== "/games");
+
   useEffect(() => {
-    if (!isSpeakingAnecdote || !currentAnecdote) {
+    if (isGameActive || !isSpeakingAnecdote || !currentAnecdote) {
       setProgress(0);
       return;
     }
@@ -29,7 +38,7 @@ export const RadioAnecdoteBanner: React.FC = () => {
     return () => clearInterval(timer);
   }, [isSpeakingAnecdote, currentAnecdote]);
 
-  if (!isSpeakingAnecdote || !currentAnecdote) return null;
+  if (isGameActive || !isSpeakingAnecdote || !currentAnecdote) return null;
 
   return (
     <aside

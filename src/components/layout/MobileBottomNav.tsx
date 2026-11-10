@@ -28,7 +28,21 @@ export function MobileBottomNav() {
 
   const currentPath = location.pathname;
 
-  const navItems = [
+  interface NavItem {
+    id: string;
+    label: string;
+    icon: any;
+    emoji: string;
+    path: string;
+    isActive: boolean;
+    color: string;
+    activeBg: string;
+    pillBg: string;
+    badge?: string;
+    badgeCount?: number;
+  }
+
+  const navItems: NavItem[] = [
     {
       id: "parcours",
       label: "Parcours",
@@ -50,7 +64,6 @@ export function MobileBottomNav() {
       color: "text-amber-600",
       activeBg: "bg-amber-50 text-amber-600 border-amber-300",
       pillBg: "bg-amber-500",
-      badge: "Nouveau",
     },
     {
       id: "atlas",

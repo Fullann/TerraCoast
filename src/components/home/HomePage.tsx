@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
@@ -7,7 +7,6 @@ import {
   BookOpen,
   AlertTriangle,
   Ban,
-  CheckCircle2,
 } from "lucide-react";
 import { DailyChallengeCard } from "../daily/DailyChallengeCard";
 import { DailyMissionsCard } from "../missions/DailyMissionsCard";
@@ -21,6 +20,7 @@ import {
   getLeagueForXp,
   getUserLeagueProgress,
   getActiveTitleDetails,
+  getQuestPath,
 } from "../../lib/gamificationManager";
 import { FeaturedCountryCard } from "./FeaturedCountryCard";
 import { BOOSTER_PACKS, type BoosterPack } from "../../lib/cardsData";
@@ -59,10 +59,22 @@ export function HomePage() {
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [dailyQuiz, setDailyQuiz] = useState<Quiz | null>(null);
   const [loadingDailyQuiz, setLoadingDailyQuiz] = useState(true);
-  const [dailyPoints, setDailyPoints] = useState(0);
   const [activeBoosterPack, setActiveBoosterPack] = useState<BoosterPack | null>(null);
   const [dailyStatus, setDailyStatus] = useState(() => canClaimDailyPack(profile?.id));
   const [collectionStats, setCollectionStats] = useState(() => getCollectionStats(profile?.id));
+  const [mobileTab, setMobileTab] = useState<"missions" | "daily" | "country">("missions");
+
+  const currentQuestNode = useMemo(() => {
+    const units = getQuestPath(profile?.id);
+    for (const unit of units) {
+      const found = unit.nodes.find((n) => n.status === "active");
+      if (found) return { node: found, unit };
+    }
+    if (units[0]?.nodes[0]) {
+      return { node: units[0].nodes[0], unit: units[0] };
+    }
+    return null;
+  }, [profile?.id]);
 
   useEffect(() => {
     const updateCards = () => {
@@ -108,18 +120,8 @@ export function HomePage() {
           quizzesQuery = quizzesQuery.eq("language", userLang);
         }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayISO = today.toISOString();
-
-        const [quizzesRes, todaySessionsRes, warningsRes] = await Promise.all([
+        const [quizzesRes, warningsRes] = await Promise.all([
           quizzesQuery,
-          supabase
-            .from("game_sessions")
-            .select("score")
-            .eq("player_id", userId)
-            .eq("completed", true)
-            .gte("completed_at", todayISO),
           supabase
             .from("warnings")
             .select("id, reason, admin_notes, created_at")
@@ -134,11 +136,6 @@ export function HomePage() {
           setDailyQuiz(pickedDaily);
         }
         setLoadingDailyQuiz(false);
-
-        if (todaySessionsRes.data) {
-          const typedTodaySessions = todaySessionsRes.data as Array<{ score: number }>;
-          setDailyPoints(typedTodaySessions.reduce((sum, s) => sum + s.score, 0));
-        }
 
         if (warningsRes.data) {
           setWarnings(warningsRes.data);
@@ -327,12 +324,84 @@ export function HomePage() {
               </button>
             </div>
 
-            {/* Pays de la Semaine, Missions du Jour & Défi du Jour sur mobile */}
-            <div className="mb-4 space-y-4">
-              <FeaturedCountryCard />
-              <DailyMissionsCard />
-              <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />
+            {/* Sélecteur compact à onglets sur mobile (Missions / Défi / Pays) */}
+            <div className="bg-slate-100 p-1 rounded-2xl flex text-xs font-black gap-1">
+              <button
+                type="button"
+                onClick={() => setMobileTab("missions")}
+                className={`flex-1 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                  mobileTab === "missions"
+                    ? "bg-white text-emerald-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>🎯</span>
+                <span>Missions</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTab("daily")}
+                className={`flex-1 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                  mobileTab === "daily"
+                    ? "bg-white text-amber-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>⭐</span>
+                <span>Défi du Jour</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTab("country")}
+                className={`flex-1 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                  mobileTab === "country"
+                    ? "bg-white text-sky-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>🌍</span>
+                <span>À l'honneur</span>
+              </button>
             </div>
+
+            {/* Carte active sur mobile */}
+            <div className="mb-4">
+              {mobileTab === "missions" && <DailyMissionsCard />}
+              {mobileTab === "daily" && <DailyChallengeCard quiz={dailyQuiz} loading={loadingDailyQuiz} />}
+              {mobileTab === "country" && <FeaturedCountryCard />}
+            </div>
+          </div>
+
+          {/* 🚀 Hero CTA Principal : 1 action évidente sans hésitation */}
+          <div className="w-full max-w-xl mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-lg border-2 border-emerald-400/40 flex items-center justify-between gap-3 sm:gap-4 transition-all">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl shrink-0 shadow-inner border border-white/20">
+                🧭
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-black uppercase tracking-wider text-emerald-200">
+                  {currentQuestNode?.unit ? currentQuestNode.unit.title : (t("home.adventure") || "Votre Aventure")}
+                </div>
+                <div className="text-base sm:text-lg font-black truncate">
+                  {currentQuestNode?.node.title || (t("home.continueAdventure") || "Continuer le Parcours")}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (currentQuestNode) {
+                  const targetQuizId = currentQuestNode.node.assignedQuizId || currentQuestNode.node.id;
+                  navigate(`/quizzes/play/${targetQuizId}?pathNodeId=${currentQuestNode.node.id}`);
+                } else {
+                  navigate("/quizzes");
+                }
+              }}
+              className="btn-duo btn-duo-white text-xs sm:text-sm font-black text-emerald-800 px-4 py-2.5 sm:px-5 sm:py-3 shrink-0 shadow-md flex items-center gap-1.5 active:scale-95 transition-transform"
+            >
+              <span>{t("home.playNow") || "JOUER"}</span>
+              <span>⚡</span>
+            </button>
           </div>
 
           {/* Composant Parcours Sinueux Duolingo */}
@@ -409,85 +478,7 @@ export function HomePage() {
             </button>
           </div>
 
-          {/* 3. Quêtes du Jour (3/3 Objectifs Gamifiés) */}
-          <div className="card-duo p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                <span>🎯</span>
-                <span>{t("home.dailyQuests") || "Quêtes du Jour"}</span>
-              </h3>
-              <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                {isStreakPlayedToday(profile?.last_activity_date) ? "2/3" : "1/3"} {t("home.completed") || "Complétées"}
-              </span>
-            </div>
-
-            <div className="space-y-3.5">
-              {/* Quête 1 */}
-              <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="text-xl shrink-0 mt-0.5">⚡</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
-                    <span>{t("home.questEarnXp") || "Gagner 40 XP aujourd'hui"}</span>
-                    <span className="text-emerald-600 font-black">
-                      {Math.min(40, dailyPoints || 25)} / 40 XP
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, Math.round(((dailyPoints || 25) / 40) * 100))}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Quête 2 */}
-              <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="text-xl shrink-0 mt-0.5">🗺️</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
-                    <span>{t("home.questCompleteStep") || "Franchir 1 étape du parcours"}</span>
-                    <span className="text-emerald-600 font-black flex items-center gap-0.5">
-                      1 / 1 <CheckCircle2 className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                  <div className="w-full bg-emerald-500 rounded-full h-2" />
-                </div>
-              </div>
-
-              {/* Quête 3 */}
-              <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="text-xl shrink-0 mt-0.5">🔥</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1">
-                    <span>{t("home.questValidateStreak") || "Valider la série du jour"}</span>
-                    <span
-                      className={`text-xs font-black ${
-                        isStreakPlayedToday(profile?.last_activity_date)
-                          ? "text-emerald-600"
-                          : "text-amber-600"
-                      }`}
-                    >
-                      {isStreakPlayedToday(profile?.last_activity_date) ? (t("home.questDone") || "Validée ✅") : (t("home.questTodo") || "À faire ⏳")}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${
-                        isStreakPlayedToday(profile?.last_activity_date)
-                          ? "bg-emerald-500 w-full"
-                          : "bg-amber-400 w-1/4"
-                      }`}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 3.5. TerraDex & Booster Quotidien */}
+          {/* 3. TerraDex & Booster Quotidien */}
           <div className="card-duo p-5 bg-gradient-to-br from-indigo-950 via-slate-900 to-amber-950/40 text-white border-amber-500/30 shadow-xl relative overflow-hidden group">
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/20 transition-all duration-700" />
             
@@ -499,7 +490,7 @@ export function HomePage() {
                 </span>
               </div>
               {dailyStatus.available ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-md animate-pulse">
+                <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-md">
                   <span>🎁</span> DISPO
                 </span>
               ) : (

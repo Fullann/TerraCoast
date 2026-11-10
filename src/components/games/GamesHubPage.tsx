@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -10,6 +11,11 @@ import {
   Navigation,
   Puzzle,
   Clock,
+  Swords,
+  Users,
+  BookOpen,
+  Dumbbell,
+  Compass,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAllGamePersonalRecords } from "../../lib/gameRecordsManager";
@@ -19,10 +25,136 @@ export function GamesHubPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const records = getAllGamePersonalRecords(user?.id || null);
+  const [activeTab, setActiveTab] = useState<"all" | "arcade" | "solo" | "multi">("all");
 
   const gameModes = [
+    // ⚔️ MULTIJOUEUR & COMPÉTITION
+    {
+      id: "duels",
+      category: "multi",
+      title: "Duels 1v1 Classés & Amis",
+      badge: "Compétition ⚔️",
+      badgeClass: "bg-rose-100 text-rose-800 border-rose-200",
+      iconBg: "bg-rose-50 border-rose-200 text-rose-600",
+      accentHover: "hover:border-rose-500 group-hover:text-rose-700",
+      btnClass: "bg-rose-600 hover:bg-rose-700 border-rose-800 text-white",
+      icon: "⚔️",
+      description:
+        "Défiez vos amis ou des joueurs en ligne dans des affrontements au tour par tour ou en direct. Gagnez des points ELO et montez au classement !",
+      path: "/duels",
+      cta: "Lancer un duel",
+      stat: "Matchmaking & Classement ELO",
+      statIcon: Swords,
+    },
+    {
+      id: "party",
+      category: "multi",
+      title: "Salons Party Multijoueur",
+      badge: "En Groupe 🎉",
+      badgeClass: "bg-purple-100 text-purple-800 border-purple-200",
+      iconBg: "bg-purple-50 border-purple-200 text-purple-600",
+      accentHover: "hover:border-purple-500 group-hover:text-purple-700",
+      btnClass: "bg-purple-600 hover:bg-purple-700 border-purple-800 text-white",
+      icon: "🎉",
+      description:
+        "Créez une partie en direct sur grand écran ou rejoignez avec un simple code PIN sur smartphone. Idéal pour jouer en famille ou en classe !",
+      path: "/party",
+      cta: "Rejoindre un salon",
+      stat: "Code PIN instantané",
+      statIcon: Users,
+    },
+    {
+      id: "leaderboard",
+      category: "multi",
+      title: "Championnat des Ligues",
+      badge: "Hebdomadaire 🏆",
+      badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
+      iconBg: "bg-amber-50 border-amber-200 text-amber-600",
+      accentHover: "hover:border-amber-500 group-hover:text-amber-700",
+      btnClass: "bg-amber-500 hover:bg-amber-600 border-amber-700 text-white",
+      icon: "🏆",
+      description:
+        "Affrontez 30 explorateurs chaque semaine. Les meilleurs sont promus dans la ligue supérieure (Bronze, Argent, Or, Saphir, Rubis, Diamant) !",
+      path: "/leaderboard",
+      cta: "Voir le classement",
+      stat: "Saison en direct",
+      statIcon: Trophy,
+    },
+
+    // 🧭 AVENTURE & PROGRESSION (SOLO)
+    {
+      id: "parcours",
+      category: "solo",
+      title: "Parcours d'Apprentissage",
+      badge: "Aventure 🌟",
+      badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
+      iconBg: "bg-emerald-50 border-emerald-200 text-emerald-600",
+      accentHover: "hover:border-emerald-500 group-hover:text-emerald-700",
+      btnClass: "bg-emerald-600 hover:bg-emerald-700 border-emerald-800 text-white",
+      icon: "🗺️",
+      description:
+        "Progressez étape par étape sur la carte d'aventure interactive. Débloquez des coffres, remportez des gemmes et validez vos séries de jours !",
+      path: "/terra",
+      cta: "Continuer l'aventure",
+      stat: "Niveaux & Coffres",
+      statIcon: Compass,
+    },
+    {
+      id: "quizzes-catalog",
+      category: "solo",
+      title: "Catalogue des 200+ Quiz",
+      badge: "Bibliothèque 📚",
+      badgeClass: "bg-sky-100 text-sky-800 border-sky-200",
+      iconBg: "bg-sky-50 border-sky-200 text-sky-600",
+      accentHover: "hover:border-sky-500 group-hover:text-sky-700",
+      btnClass: "bg-sky-600 hover:bg-sky-700 border-sky-800 text-white",
+      icon: "📚",
+      description:
+        "Explorez la totalité des quiz classés par continent (Europe, Asie, Afrique, Amériques, Océanie) et par thème (Drapeaux, Capitales, Cartes).",
+      path: "/quizzes",
+      cta: "Explorer les quiz",
+      stat: "200+ quiz disponibles",
+      statIcon: BookOpen,
+    },
+    {
+      id: "training",
+      category: "solo",
+      title: "Mode Entraînement Libre",
+      badge: "Zen 🧘",
+      badgeClass: "bg-teal-100 text-teal-800 border-teal-200",
+      iconBg: "bg-teal-50 border-teal-200 text-teal-600",
+      accentHover: "hover:border-teal-500 group-hover:text-teal-700",
+      btnClass: "bg-teal-600 hover:bg-teal-700 border-teal-800 text-white",
+      icon: "🏋️",
+      description:
+        "Apprenez sans stress : pas de chronomètre, explications détaillées après chaque question, réessayez autant de fois que vous le souhaitez.",
+      path: "/quizzes/training",
+      cta: "S'entraîner sans limite",
+      stat: "Sans timer ni pénalité",
+      statIcon: Dumbbell,
+    },
+    {
+      id: "srs",
+      category: "solo",
+      title: "Carnet de Révision SRS",
+      badge: "Scientifique 🧠",
+      badgeClass: "bg-indigo-100 text-indigo-800 border-indigo-200",
+      iconBg: "bg-indigo-50 border-indigo-200 text-indigo-600",
+      accentHover: "hover:border-indigo-500 group-hover:text-indigo-700",
+      btnClass: "bg-indigo-600 hover:bg-indigo-700 border-indigo-800 text-white",
+      icon: "🧠",
+      description:
+        "Mémorisation à long terme par répétition espacée (méthode de Leitner). Flashcards interactives avec progression en 5 boîtes.",
+      path: "/games/srs",
+      cta: "Ouvrir mon carnet",
+      stat: records.srs.display,
+      statIcon: Layers,
+    },
+
+    // 🎮 MINI-JEUX & DÉFIS INSTANTANÉS (ARCADE)
     {
       id: "geo-detective",
+      category: "arcade",
       title: "Geo-Detective Satellite",
       badge: "Nouveau • Style GeoGuessr 🎯",
       badgeClass: "bg-cyan-100 text-cyan-800 border-cyan-200",
@@ -39,6 +171,7 @@ export function GamesHubPage() {
     },
     {
       id: "silhouette",
+      category: "arcade",
       title: "Silhouette Mystère",
       badge: "Viral 🔥",
       badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
@@ -55,6 +188,7 @@ export function GamesHubPage() {
     },
     {
       id: "higher-lower",
+      category: "arcade",
       title: "Plus Grand / Plus Petit",
       badge: "Addictif ⚖️",
       badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
@@ -71,6 +205,7 @@ export function GamesHubPage() {
     },
     {
       id: "chrono-rush",
+      category: "arcade",
       title: "Chrono Rush",
       badge: "Survie ⏱️",
       badgeClass: "bg-rose-100 text-rose-800 border-rose-200",
@@ -87,6 +222,7 @@ export function GamesHubPage() {
     },
     {
       id: "travle",
+      category: "arcade",
       title: "Travle : Relieur de Continents",
       badge: "Frontières 🧭",
       badgeClass: "bg-teal-100 text-teal-800 border-teal-200",
@@ -103,6 +239,7 @@ export function GamesHubPage() {
     },
     {
       id: "map-blitz",
+      category: "arcade",
       title: "Blind Map Blitz",
       badge: "10 Min Chrono ⚡",
       badgeClass: "bg-orange-100 text-orange-800 border-orange-200",
@@ -119,6 +256,7 @@ export function GamesHubPage() {
     },
     {
       id: "physical-geo",
+      category: "arcade",
       title: "Reliefs, Fleuves & Merveilles",
       badge: "Nature & UNESCO 🏔️",
       badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
@@ -134,23 +272,8 @@ export function GamesHubPage() {
       statIcon: Layers,
     },
     {
-      id: "srs",
-      title: "Carnet de Révision",
-      badge: "Scientifique 🧠",
-      badgeClass: "bg-indigo-100 text-indigo-800 border-indigo-200",
-      iconBg: "bg-indigo-50 border-indigo-200 text-indigo-600",
-      accentHover: "hover:border-indigo-500 group-hover:text-indigo-700",
-      btnClass: "bg-indigo-600 hover:bg-indigo-700 border-indigo-800 text-white",
-      icon: "🧠",
-      description:
-        "Mémorisation à long terme par répétition espacée (méthode de Leitner). Flashcards interactives avec progression en 5 boîtes.",
-      path: "/games/srs",
-      cta: "Ouvrir mon carnet",
-      stat: records.srs.display,
-      statIcon: Layers,
-    },
-    {
       id: "border-puzzle",
+      category: "arcade",
       title: "Border Puzzle : Tangram Frontalier",
       badge: "Nouveau • Puzzle 🧩",
       badgeClass: "bg-purple-100 text-purple-800 border-purple-200",
@@ -167,6 +290,7 @@ export function GamesHubPage() {
     },
     {
       id: "time-guessr",
+      category: "arcade",
       title: "TimeGuessr Géo-Historique",
       badge: "Nouveau • Où & Quand ⏳",
       badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
@@ -183,6 +307,7 @@ export function GamesHubPage() {
     },
     {
       id: "city-guesser",
+      category: "arcade",
       title: "City Guesser / Satellite Zoom-In",
       badge: "Nouveau • Buzz Rapide 🛰️",
       badgeClass: "bg-sky-100 text-sky-800 border-sky-200",
@@ -198,6 +323,10 @@ export function GamesHubPage() {
       statIcon: Crosshair,
     },
   ];
+
+  const filteredModes = activeTab === "all"
+    ? gameModes
+    : gameModes.filter((g) => g.category === activeTab);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-20">
@@ -240,10 +369,65 @@ export function GamesHubPage() {
           <DailyMissionsCard />
         </section>
 
+        {/* 🧭 Sélecteur d'intention de jeu : 3 Piliers clairs */}
+        <section className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar select-none">
+          <button
+            type="button"
+            onClick={() => setActiveTab("all")}
+            className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all shrink-0 flex items-center gap-2 border-2 ${
+              activeTab === "all"
+                ? "bg-slate-900 text-white border-slate-900 shadow-md"
+                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+            }`}
+          >
+            <span>🌟</span>
+            <span>Tous les modes ({gameModes.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("arcade")}
+            className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all shrink-0 flex items-center gap-2 border-2 ${
+              activeTab === "arcade"
+                ? "bg-amber-500 text-white border-amber-600 shadow-md"
+                : "bg-white text-slate-600 border-slate-200 hover:border-amber-300"
+            }`}
+          >
+            <span>🎮</span>
+            <span>Mini-Jeux & Réflexes (10)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("solo")}
+            className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all shrink-0 flex items-center gap-2 border-2 ${
+              activeTab === "solo"
+                ? "bg-emerald-600 text-white border-emerald-700 shadow-md"
+                : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300"
+            }`}
+          >
+            <span>🧭</span>
+            <span>Solo & Progression (4)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("multi")}
+            className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all shrink-0 flex items-center gap-2 border-2 ${
+              activeTab === "multi"
+                ? "bg-rose-600 text-white border-rose-700 shadow-md"
+                : "bg-white text-slate-600 border-slate-200 hover:border-rose-300"
+            }`}
+          >
+            <span>⚔️</span>
+            <span>Multijoueur & Duels (3)</span>
+          </button>
+        </section>
+
         {/* Grid of Game Cards */}
         <section>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-            {gameModes.map((game) => {
+            {filteredModes.map((game) => {
               return (
                 <div
                   key={game.id}

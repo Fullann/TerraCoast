@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Play,
   Pause,
@@ -38,7 +39,17 @@ export const RadioGlobeFloatingPlayer: React.FC = () => {
     toggleAnecdotesEnabled,
   } = useRadioGlobe();
 
+  const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const isGameActive =
+    location.pathname.startsWith("/quizzes/play") ||
+    location.pathname.startsWith("/duels/play") ||
+    location.pathname.startsWith("/party") ||
+    (location.pathname.startsWith("/quizzes/training/") && location.pathname !== "/quizzes/training") ||
+    (location.pathname.startsWith("/games/") && location.pathname !== "/games");
+
+  if (isGameActive) return null;
 
   // Égaliseur animé néon
   const renderEqualizer = (active: boolean) => (
