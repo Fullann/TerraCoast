@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { LogIn } from 'lucide-react';
+import { notifyDatabaseDown } from '../../lib/databaseHealth';
 
 export function LoginForm({
   onSwitchToRegister,
@@ -28,7 +29,19 @@ export function LoginForm({
       const result = await signIn(email, password);
       setRequiresMfa(result.requiresMfa);
     } catch (err: any) {
-      setError(err.message || t('auth.connectionError'));
+      const msg = (err?.message || "").toLowerCase();
+      if (
+        msg.includes("fetch failed") ||
+        msg.includes("failed to fetch") ||
+        msg.includes("network") ||
+        msg.includes("timeout") ||
+        msg.includes("abort") ||
+        msg.includes("connection refused")
+      ) {
+        notifyDatabaseDown(err?.message || "Impossible de joindre le serveur");
+      } else {
+        setError(err.message || t('auth.connectionError'));
+      }
     } finally {
       setLoading(false);
     }
@@ -41,7 +54,19 @@ export function LoginForm({
     try {
       await verifyMfa(mfaCode);
     } catch (err: any) {
-      setError(err.message || t('auth.connectionError'));
+      const msg = (err?.message || "").toLowerCase();
+      if (
+        msg.includes("fetch failed") ||
+        msg.includes("failed to fetch") ||
+        msg.includes("network") ||
+        msg.includes("timeout") ||
+        msg.includes("abort") ||
+        msg.includes("connection refused")
+      ) {
+        notifyDatabaseDown(err?.message || "Impossible de joindre le serveur");
+      } else {
+        setError(err.message || t('auth.connectionError'));
+      }
     } finally {
       setLoading(false);
     }

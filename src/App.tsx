@@ -195,10 +195,21 @@ function AppContent() {
 }
 
 function DatabaseGuard({ children }: { children: React.ReactNode }) {
-  const { isDatabaseDown, checkNow, errorMessage } = useDatabaseStatus();
+  const { isDatabaseDown, isInitialChecking, checkNow, errorMessage } = useDatabaseStatus();
 
   if (isDatabaseDown) {
     return <DatabaseDownPage onRetry={checkNow} errorMessage={errorMessage} />;
+  }
+
+  if (isInitialChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-4" />
+        <p className="text-emerald-400/80 font-medium text-sm animate-pulse tracking-wide">
+          Connexion au serveur TerraCoast...
+        </p>
+      </div>
+    );
   }
 
   return <>{children}</>;
