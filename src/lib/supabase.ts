@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database as RawDatabase, Json } from './database.types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL ||
+  (import.meta.env.MODE === 'test' ? 'https://placeholder-test-project.supabase.co' : '');
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  (import.meta.env.MODE === 'test' ? 'test_token_placeholder_for_vitest_unit_tests' : '');
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
