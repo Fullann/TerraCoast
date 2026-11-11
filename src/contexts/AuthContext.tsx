@@ -45,13 +45,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
 
     if (error) {
+      const msg = (error.message || "").toLowerCase();
+      if (
+        status === 0 ||
+        status >= 500 ||
+        msg.includes("fetch failed") ||
+        msg.includes("failed to fetch") ||
+        msg.includes("network") ||
+        msg.includes("abort") ||
+        msg.includes("connection refused")
+      ) {
+        notifyDatabaseDown(error.message);
+      }
       return null;
     }
 

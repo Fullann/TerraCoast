@@ -44,7 +44,7 @@ export function notifyDatabaseRecovered() {
  * Teste la connectivité et la disponibilité de la base de données Supabase.
  * Utilise un AbortController avec timeout pour éviter tout blocage indéfini.
  */
-export async function checkDatabaseHealth(timeoutMs: number = 6000): Promise<DatabaseHealthResult> {
+export async function checkDatabaseHealth(timeoutMs: number = 3000): Promise<DatabaseHealthResult> {
   // Si le navigateur est formellement hors ligne dans un contexte client Web
   if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.onLine === false) {
     return { isHealthy: true };
@@ -86,6 +86,8 @@ export async function checkDatabaseHealth(timeoutMs: number = 6000): Promise<Dat
         msg.includes("network") ||
         msg.includes("connection refused") ||
         msg.includes("cannot connect") ||
+        msg.includes("abort") ||
+        msg.includes("timeout") ||
         msg.includes("paused") ||
         msg.includes("maintenance") ||
         msg.includes("unavailable") ||
@@ -123,18 +125,19 @@ export async function checkDatabaseHealth(timeoutMs: number = 6000): Promise<Dat
  */
 export function useDatabaseStatus() {
   const [isDatabaseDown, setIsDatabaseDown] = useState(false);
+  const [isInitialChecking, setIsInitialChecking] = useState(true);
   const [isChecking, setIsChecking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const isCheckingRef = useRef(false);
 
   const checkNow = useCallback(async (): Promise<boolean> => {
-    if (isCheckingRef.current) return !isDatabaseDown;
+    if (isCheckingRef.current) return false;
     isCheckingRef.current = true;
     setIsChecking(true);
 
     try {
-      const result = await checkDatabaseHealth();
+      const result = await checkDatabaseHealth(3000);
       setLastChecked(new Date());
 
       if (!result.isHealthy) {
@@ -142,18 +145,19 @@ export function useDatabaseStatus() {
         setErrorMessage(result.error || "Base de données inaccessible");
         return false;
       } else {
-        if (isDatabaseDown) {
-          notifyDatabaseRecovered();
-        }
-        setIsDatabaseDown(false);
+        setIsDatabaseDown((prev) => {
+          if (prev) notifyDatabaseRecovered();
+          return false;
+        });
         setErrorMessage(null);
         return true;
       }
     } finally {
       setIsChecking(false);
+      setIsInitialChecking(false);
       isCheckingRef.current = false;
     }
-  }, [isDatabaseDown]);
+  }, []);
 
   // Écoute des événements système globaux
   useEffect(() => {
@@ -161,6 +165,7 @@ export function useDatabaseStatus() {
       const ce = e as CustomEvent<DatabaseStatusEventDetail>;
       if (ce.detail?.isDown) {
         setIsDatabaseDown(true);
+        setIsInitialChecking(false);
         if (ce.detail.reason) {
           setErrorMessage(ce.detail.reason);
         }
@@ -194,6 +199,7 @@ export function useDatabaseStatus() {
 
   return {
     isDatabaseDown,
+    isInitialChecking,
     isChecking,
     errorMessage,
     lastChecked,
