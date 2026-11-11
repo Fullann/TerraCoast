@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
+import { DatabaseDownPage } from "./common/DatabaseDownPage";
 
 interface Props {
   children?: ReactNode;
@@ -40,6 +41,18 @@ function ErrorFallback({ error, onReset }: FallbackProps) {
     error?.message?.includes("Failed to fetch dynamically imported module") ||
     error?.message?.includes("Importing a module script failed") ||
     error?.name === "ChunkLoadError";
+
+  const isDatabaseError =
+    error?.message?.includes("fetch failed") ||
+    error?.message?.includes("Failed to fetch") ||
+    error?.message?.includes("Database error") ||
+    error?.message?.includes("PGRST") ||
+    error?.message?.includes("connection refused") ||
+    error?.message?.includes("Supabase");
+
+  if (isDatabaseError) {
+    return <DatabaseDownPage onRetry={onReset} errorMessage={error?.message} />;
+  }
 
   return (
     <div

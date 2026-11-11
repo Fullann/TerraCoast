@@ -16,6 +16,8 @@ import { PageTransition } from "./components/ui/PageTransition";
 import { ToastContainer } from "./components/common/ToastContainer";
 import { OfflineIndicator } from "./components/common/OfflineIndicator";
 import { ConfettiContainer } from "./components/common/Confetti";
+import { DatabaseDownPage } from "./components/common/DatabaseDownPage";
+import { useDatabaseStatus } from "./lib/databaseHealth";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 
@@ -192,16 +194,28 @@ function AppContent() {
   );
 }
 
+function DatabaseGuard({ children }: { children: React.ReactNode }) {
+  const { isDatabaseDown, checkNow, errorMessage } = useDatabaseStatus();
+
+  if (isDatabaseDown) {
+    return <DatabaseDownPage onRetry={checkNow} errorMessage={errorMessage} />;
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <LanguageProvider>
-          <NotificationProvider>
-            <AppContent />
-          </NotificationProvider>
-        </LanguageProvider>
-      </AuthProvider>
+      <DatabaseGuard>
+        <AuthProvider>
+          <LanguageProvider>
+            <NotificationProvider>
+              <AppContent />
+            </NotificationProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </DatabaseGuard>
     </QueryClientProvider>
   );
 }

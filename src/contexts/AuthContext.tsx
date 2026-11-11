@@ -9,6 +9,7 @@ import {
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { notifyDatabaseDown } from "../lib/databaseHealth";
 import type { Database } from "../lib/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -77,21 +78,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      (async () => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        (async () => {
+          setSession(session);
+          setUser(session?.user ?? null);
 
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
+          if (session?.user) {
+            const profileData = await fetchProfile(session.user.id);
 
-          setProfile(profileData);
-        }
+            setProfile(profileData);
+          }
 
-        await refreshMfaStatus();
+          await refreshMfaStatus();
+          setLoading(false);
+        })();
+      })
+      .catch((err) => {
         setLoading(false);
-      })();
-    });
+        notifyDatabaseDown(err?.message);
+      });
 
     const {
       data: { subscription },
